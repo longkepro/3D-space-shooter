@@ -21,7 +21,6 @@ MonoBehaviour:
   reticleLimitX: 30
   reticleLimitY: 18
   shipLimitX: 22
-  shipLimitY: 13
   reticleSpeedX: 140
   reticleSpeedY: 85
   useDirectAnalogMapping: 0
@@ -32,7 +31,7 @@ MonoBehaviour:
   autoFireHoldTime: 0.08
   shipSpeedX: 140
   shipSpeedY: 85
-  forceShowMobileUI: 0
+  forceShowMobileUI: 1
   joystickHandleRange: 65
   joystickDeadZone: 0.1
   mobileAimSensitivity: 1
@@ -46,13 +45,13 @@ MonoBehaviour:
   rotationSlerpSpeed: 12
   enableEdgeDamping: 1
   minEdgeRollAngle: 14
-  cameraPanFactor: 0.05
+  cameraDistance: 35
   cameraHeight: 8
   cameraFOV: 40
   fixedCameraPitch: 5
-  cameraDistance: 35
-  cameraLookAtWeight: 0.2
+  cameraPanFactor: 0.05
   enableDynamicLookAt: 0
+  cameraLookAtWeight: 0.2
   cameraSmoothSpeed: 8
   magnetismRadius: 2.5
   bulletSpeed: 220

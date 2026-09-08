@@ -54,7 +54,7 @@ namespace VirtualRail
 
         [Header("5b. Android & Mobile Touch Controls")]
         [Tooltip("Bắt buộc hiển thị cần gạt ảo trên Unity Editor để kiểm thử")]
-        public bool forceShowMobileUI = false;
+        public bool forceShowMobileUI = true;
         [Tooltip("Bán kính kéo của cần gạt ảo (pixels)")]
         public float joystickHandleRange = 65f;
         [Tooltip("Vùng chết của cần gạt ảo")]

@@ -25,7 +25,7 @@ namespace VirtualRail
         [Tooltip("Vùng chết tối thiểu để bắt đầu nhận giá trị")]
         public float deadZone = 0.1f;
         [Tooltip("Bật chế độ neo động: Khi chạm vào vùng này, gốc cần gạt tự động nhảy tới vị trí ngón tay chạm")]
-        public bool isDynamicFloating = true;
+        public bool isDynamicFloating = false;
 
         [Header("Runtime State")]
         [SerializeField] private Vector2 inputVector = Vector2.zero;

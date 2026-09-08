@@ -45,6 +45,14 @@ namespace VirtualRail
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
             if (inputReader == null && anchor != null) inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
+
+            // Nếu anchor/rig chưa có InputReader (do dùng prefab cũ), tự động thêm vào!
+            if (inputReader == null)
+            {
+                Transform rootTransform = (anchor != null) ? anchor.transform : transform;
+                inputReader = rootTransform.gameObject.AddComponent<VirtualRailInputReader>();
+                if (anchor != null) inputReader.config = anchor.config;
+            }
         }
 
         private void Update()

@@ -229,7 +229,8 @@ public class VirtualRailModeToggle
             config.forceShowMobileUI = true;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT XEM TRƯỚC CẦN GẠT ẢO TRÊN EDITOR:</b></color> 2 cần gạt ảo (Trái & Phải) sẽ hiển thị trong Game view để bạn test trực tiếp bằng chuột!");
+            SwitchToVirtualRail();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT XEM TRƯỚC CẦN GẠT ẢO TRÊN EDITOR:</b></color> 2 cần gạt ảo (Trái & Phải) đã được đồng bộ vào Prefab và sẽ hiển thị trên Game view!");
         }
     }
 
@@ -279,7 +280,10 @@ public class VirtualRailModeToggle
         canvasObj.transform.SetParent(reticleObj.transform, false);
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvasObj.AddComponent<CanvasScaler>();
+        canvas.sortingOrder = 100;
+        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
         canvasObj.AddComponent<GraphicRaycaster>();
 
         // Crosshair
@@ -315,7 +319,7 @@ public class VirtualRailModeToggle
         leftZone.transform.SetParent(mobileRoot.transform, false);
         RectTransform leftZoneRt = leftZone.AddComponent<RectTransform>();
         leftZoneRt.anchorMin = new Vector2(0f, 0f);
-        leftZoneRt.anchorMax = new Vector2(0.5f, 1f);
+        leftZoneRt.anchorMax = new Vector2(0.5f, 0.8f);
         leftZoneRt.offsetMin = Vector2.zero;
         leftZoneRt.offsetMax = Vector2.zero;
         Image leftZoneImg = leftZone.AddComponent<Image>();
@@ -324,25 +328,25 @@ public class VirtualRailModeToggle
         VirtualJoystick leftJoy = leftZone.AddComponent<VirtualJoystick>();
         leftJoy.handleRange = config.joystickHandleRange;
         leftJoy.deadZone = config.joystickDeadZone;
-        leftJoy.isDynamicFloating = true;
+        leftJoy.isDynamicFloating = false;
 
         GameObject leftBg = new GameObject("LeftJoyBackground");
         leftBg.transform.SetParent(leftZone.transform, false);
         RectTransform leftBgRt = leftBg.AddComponent<RectTransform>();
-        leftBgRt.anchorMin = new Vector2(0.35f, 0.25f);
-        leftBgRt.anchorMax = new Vector2(0.35f, 0.25f);
-        leftBgRt.anchoredPosition = Vector2.zero;
-        leftBgRt.sizeDelta = new Vector2(140, 140);
+        leftBgRt.anchorMin = new Vector2(0f, 0f);
+        leftBgRt.anchorMax = new Vector2(0f, 0f);
+        leftBgRt.anchoredPosition = new Vector2(170f, 170f);
+        leftBgRt.sizeDelta = new Vector2(160, 160);
         Image leftBgImg = leftBg.AddComponent<Image>();
-        leftBgImg.color = new Color(0.2f, 0.8f, 1f, 0.28f);
+        leftBgImg.color = new Color(0.1f, 0.7f, 1f, 0.45f);
         leftBgImg.raycastTarget = false;
 
         GameObject leftHandle = new GameObject("LeftJoyHandle");
         leftHandle.transform.SetParent(leftBg.transform, false);
         RectTransform leftHandleRt = leftHandle.AddComponent<RectTransform>();
-        leftHandleRt.sizeDelta = new Vector2(60, 60);
+        leftHandleRt.sizeDelta = new Vector2(70, 70);
         Image leftHandleImg = leftHandle.AddComponent<Image>();
-        leftHandleImg.color = new Color(0.3f, 0.9f, 1f, 0.85f);
+        leftHandleImg.color = new Color(0.3f, 0.9f, 1f, 0.95f);
         leftHandleImg.raycastTarget = false;
 
         leftJoy.background = leftBgRt;
@@ -353,7 +357,7 @@ public class VirtualRailModeToggle
         rightZone.transform.SetParent(mobileRoot.transform, false);
         RectTransform rightZoneRt = rightZone.AddComponent<RectTransform>();
         rightZoneRt.anchorMin = new Vector2(0.5f, 0f);
-        rightZoneRt.anchorMax = new Vector2(1f, 1f);
+        rightZoneRt.anchorMax = new Vector2(1f, 0.8f);
         rightZoneRt.offsetMin = Vector2.zero;
         rightZoneRt.offsetMax = Vector2.zero;
         Image rightZoneImg = rightZone.AddComponent<Image>();
@@ -362,25 +366,25 @@ public class VirtualRailModeToggle
         VirtualJoystick rightJoy = rightZone.AddComponent<VirtualJoystick>();
         rightJoy.handleRange = config.joystickHandleRange;
         rightJoy.deadZone = config.joystickDeadZone;
-        rightJoy.isDynamicFloating = true;
+        rightJoy.isDynamicFloating = false;
 
         GameObject rightBg = new GameObject("RightJoyBackground");
         rightBg.transform.SetParent(rightZone.transform, false);
         RectTransform rightBgRt = rightBg.AddComponent<RectTransform>();
-        rightBgRt.anchorMin = new Vector2(0.65f, 0.25f);
-        rightBgRt.anchorMax = new Vector2(0.65f, 0.25f);
-        rightBgRt.anchoredPosition = Vector2.zero;
-        rightBgRt.sizeDelta = new Vector2(140, 140);
+        rightBgRt.anchorMin = new Vector2(1f, 0f);
+        rightBgRt.anchorMax = new Vector2(1f, 0f);
+        rightBgRt.anchoredPosition = new Vector2(-170f, 170f);
+        rightBgRt.sizeDelta = new Vector2(160, 160);
         Image rightBgImg = rightBg.AddComponent<Image>();
-        rightBgImg.color = new Color(1f, 0.3f, 0.3f, 0.28f);
+        rightBgImg.color = new Color(1f, 0.3f, 0.3f, 0.45f);
         rightBgImg.raycastTarget = false;
 
         GameObject rightHandle = new GameObject("RightJoyHandle");
         rightHandle.transform.SetParent(rightBg.transform, false);
         RectTransform rightHandleRt = rightHandle.AddComponent<RectTransform>();
-        rightHandleRt.sizeDelta = new Vector2(60, 60);
+        rightHandleRt.sizeDelta = new Vector2(70, 70);
         Image rightHandleImg = rightHandle.AddComponent<Image>();
-        rightHandleImg.color = new Color(1f, 0.4f, 0.4f, 0.85f);
+        rightHandleImg.color = new Color(1f, 0.5f, 0.4f, 0.95f);
         rightHandleImg.raycastTarget = false;
 
         rightJoy.background = rightBgRt;
