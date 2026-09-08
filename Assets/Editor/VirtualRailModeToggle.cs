@@ -181,6 +181,36 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/7. Controls: Independent (Ship: Keys, Reticle: Mouse + Auto-Fire)")]
+    public static void EnableIndependentControls()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableIndependentControls = true;
+            config.enableMouseAim = true;
+            config.autoFireOnAimMove = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT ĐIỀU KHIỂN ĐỘC LẬP & TỰ ĐỘNG BẮN:</b></color> Tàu bay bằng phím (WASD/Arrows), Tâm ngắm trỏ chuột (Mouse), và tự động xả đạn khi rê chuột!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/8. Controls: Undo to Coupled (Ship follows Reticle, Manual Fire)")]
+    public static void DisableIndependentControls()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableIndependentControls = false;
+            config.enableMouseAim = false;
+            config.autoFireOnAimMove = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ ĐIỀU KHIỂN LIÊN KẾT CŨ:</b></color> Tàu bám theo tâm ngắm bằng phím bấm, chỉ bắn khi bấm Space/Click.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

@@ -17,11 +17,13 @@ namespace VirtualRail
 
         [Header("Runtime State")]
         [SerializeField] private Vector2 localPos2D;
+        [SerializeField] private Vector2 shipNormalizedPos;
         [SerializeField] private VirtualRailConfig.FrustumBounds shipBounds;
         private Vector2 currentVelocity;
         private Thruster[] thrusters;
 
         public Vector2 LocalPos2D => localPos2D;
+        public Vector2 NormalizedPos => shipNormalizedPos;
         public VirtualRailConfig.FrustumBounds ShipBounds => shipBounds;
         public Vector2 CurrentLimit => new Vector2(shipBounds.HalfWidth, shipBounds.HalfHeight);
         public Vector3 LocalPosition3D => new Vector3(localPos2D.x, localPos2D.y, 0f);
@@ -45,41 +47,13 @@ namespace VirtualRail
 
         private void Update()
         {
-            if (anchor == null || anchor.config == null || reticle == null) return;
+            if (anchor == null || anchor.config == null) return;
 
             var cfg = anchor.config;
             if (mainCamera == null) mainCamera = Camera.main;
 
             // 1. Tính toán biên trong Frustum chính xác tại mặt phẳng Z = 0 của tàu
             shipBounds = cfg.CalculateFrustumBounds(mainCamera, anchor, 0f, cfg.shipViewportRatio);
-
-            // 2. Lấy tọa độ chuẩn hóa không thiên lệch [-1, 1] từ tâm ngắm
-            float normX = reticle.NormalizedX;
-            float normY = reticle.NormalizedY;
-
-            // Nội suy vị trí mục tiêu từ tâm quang học (opticalCenter) tới đúng các mép Frustum của tàu
-            float targetX = normX >= 0f
-                ? Mathf.Lerp(shipBounds.opticalCenter.x, shipBounds.maxX, normX)
-                : Mathf.Lerp(shipBounds.opticalCenter.x, shipBounds.minX, -normX);
-
-            float targetY = normY >= 0f
-                ? Mathf.Lerp(shipBounds.opticalCenter.y, shipBounds.maxY, normY)
-                : Mathf.Lerp(shipBounds.opticalCenter.y, shipBounds.minY, -normY);
-
-            Vector2 targetPosOnShipPlane = new Vector2(targetX, targetY);
-
-            // 3. Tàu bám theo mục tiêu bằng hàm suy giảm chấn SmoothDamp mượt mà
-            localPos2D = Vector2.SmoothDamp(localPos2D, targetPosOnShipPlane, ref currentVelocity, cfg.smoothDampLag);
-
-            // Kẹp an toàn trong Khung biên trong (Inner Box: 75% Viewport)
-            localPos2D = shipBounds.Clamp(localPos2D);
-
-            // Cập nhật vị trí cục bộ của Ship Container
-            transform.localPosition = LocalPosition3D;
-
-            // 4. Tính toán góc xoay khí động học dựa trên độ trễ thực tế trên mặt phẳng tàu
-            float deltaX = targetPosOnShipPlane.x - localPos2D.x;
-            float deltaY = targetPosOnShipPlane.y - localPos2D.y;
 
             float halfW = shipBounds.HalfWidth;
             float halfH = shipBounds.HalfHeight;
@@ -94,10 +68,88 @@ namespace VirtualRail
                 kDamp = Mathf.Max(kDamp, minRatio);
             }
 
-            // Chuẩn hóa độ lệch theo biên của tàu để góc lượn tự nhiên và tỉ lệ
-            float rollNorm = (halfW > 0.001f) ? (deltaX / (halfW * 0.5f)) : 0f;
-            float pitchNorm = (halfH > 0.001f) ? (deltaY / (halfH * 0.5f)) : 0f;
+            float rollNorm = 0f;
+            float pitchNorm = 0f;
 
+            if (cfg.enableIndependentControls)
+            {
+                // ==================== CHẾ ĐỘ ĐIỀU KHIỂN ĐỘC LẬP BẰNG PHÍM ====================
+                float inputX = Input.GetAxis("Horizontal");
+                float inputY = Input.GetAxis("Vertical");
+
+                if (cfg.useDirectAnalogMapping)
+                {
+                    // Ánh xạ trực tiếp
+                    shipNormalizedPos.x = Mathf.Clamp(inputX, -1f, 1f);
+                    shipNormalizedPos.y = Mathf.Clamp(inputY, -1f, 1f);
+                }
+                else
+                {
+                    // Hướng A: Tích lũy vị trí tự do (Free Roam - nhả phím đứng yên tại chỗ)
+                    float speedNormX = (halfW > 0.001f) ? (cfg.shipSpeedX / halfW) : 1.5f;
+                    float speedNormY = (halfH > 0.001f) ? (cfg.shipSpeedY / halfH) : 1.5f;
+
+                    shipNormalizedPos.x = Mathf.Clamp(shipNormalizedPos.x + inputX * speedNormX * Time.deltaTime, -1f, 1f);
+                    shipNormalizedPos.y = Mathf.Clamp(shipNormalizedPos.y + inputY * speedNormY * Time.deltaTime, -1f, 1f);
+
+                    // Phím C: Giữ để chủ động đưa tàu lướt êm về trung tâm khi cần
+                    if (Input.GetKey(KeyCode.C))
+                    {
+                        shipNormalizedPos = Vector2.MoveTowards(shipNormalizedPos, Vector2.zero, 2.5f * Time.deltaTime);
+                    }
+                }
+
+                // Nội suy vị trí mục tiêu trên mặt phẳng tàu
+                float targetX = shipNormalizedPos.x >= 0f
+                    ? Mathf.Lerp(shipBounds.opticalCenter.x, shipBounds.maxX, shipNormalizedPos.x)
+                    : Mathf.Lerp(shipBounds.opticalCenter.x, shipBounds.minX, -shipNormalizedPos.x);
+
+                float targetY = shipNormalizedPos.y >= 0f
+                    ? Mathf.Lerp(shipBounds.opticalCenter.y, shipBounds.maxY, shipNormalizedPos.y)
+                    : Mathf.Lerp(shipBounds.opticalCenter.y, shipBounds.minY, -shipNormalizedPos.y);
+
+                Vector2 targetPos = new Vector2(targetX, targetY);
+
+                // Tàu lướt êm ái tới vị trí đích
+                localPos2D = Vector2.SmoothDamp(localPos2D, targetPos, ref currentVelocity, cfg.smoothDampLag);
+                localPos2D = shipBounds.Clamp(localPos2D);
+
+                // Lượn nghiêng khí động học trực tiếp từ tín hiệu phím
+                rollNorm = inputX;
+                pitchNorm = inputY;
+            }
+            else
+            {
+                // ==================== CHẾ ĐỘ BÁM THEO TÂM NGẮM CŨ (PHỤ THUỘC) ====================
+                if (reticle != null)
+                {
+                    float normX = reticle.NormalizedX;
+                    float normY = reticle.NormalizedY;
+
+                    float targetX = normX >= 0f
+                        ? Mathf.Lerp(shipBounds.opticalCenter.x, shipBounds.maxX, normX)
+                        : Mathf.Lerp(shipBounds.opticalCenter.x, shipBounds.minX, -normX);
+
+                    float targetY = normY >= 0f
+                        ? Mathf.Lerp(shipBounds.opticalCenter.y, shipBounds.maxY, normY)
+                        : Mathf.Lerp(shipBounds.opticalCenter.y, shipBounds.minY, -normY);
+
+                    Vector2 targetPosOnShipPlane = new Vector2(targetX, targetY);
+                    localPos2D = Vector2.SmoothDamp(localPos2D, targetPosOnShipPlane, ref currentVelocity, cfg.smoothDampLag);
+                    localPos2D = shipBounds.Clamp(localPos2D);
+
+                    float deltaX = targetPosOnShipPlane.x - localPos2D.x;
+                    float deltaY = targetPosOnShipPlane.y - localPos2D.y;
+
+                    rollNorm = (halfW > 0.001f) ? (deltaX / (halfW * 0.5f)) : 0f;
+                    pitchNorm = (halfH > 0.001f) ? (deltaY / (halfH * 0.5f)) : 0f;
+                }
+            }
+
+            // Cập nhật vị trí cục bộ của Ship Container
+            transform.localPosition = LocalPosition3D;
+
+            // Xoay khí động học (Roll, Pitch, Yaw)
             float targetRoll = Mathf.Clamp(-rollNorm * cfg.maxRollAngle, -cfg.maxRollAngle, cfg.maxRollAngle) * kDamp;
             float targetPitch = Mathf.Clamp(-pitchNorm * cfg.maxPitchAngle, -cfg.maxPitchAngle, cfg.maxPitchAngle);
             float targetYaw = Mathf.Clamp(rollNorm * cfg.maxYawAngle, -cfg.maxYawAngle, cfg.maxYawAngle);

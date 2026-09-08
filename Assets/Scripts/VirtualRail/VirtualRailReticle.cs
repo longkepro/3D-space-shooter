@@ -18,6 +18,10 @@ namespace VirtualRail
         [SerializeField] private Vector2 localPos2D;
         [SerializeField] private VirtualRailConfig.FrustumBounds currentBounds;
         [SerializeField] private Vector2 currentNormalizedInput;
+        [SerializeField] private bool isAimingMoving;
+
+        private Vector2 prevMousePos;
+        private float autoFireTimer;
 
         public Vector2 LocalPos2D => localPos2D;
         public float LocalX => localPos2D.x;
@@ -27,6 +31,7 @@ namespace VirtualRail
         public float NormalizedX => currentNormalizedInput.x;
         public float NormalizedY => currentNormalizedInput.y;
         public Vector2 CurrentLimit => new Vector2(currentBounds.HalfWidth, currentBounds.HalfHeight);
+        public bool IsAimingMoving => isAimingMoving;
 
         public Vector3 LocalPosition3D => new Vector3(localPos2D.x, localPos2D.y, anchor != null ? anchor.config.convergenceDistance : 150f);
         public Vector3 WorldPosition => anchor != null ? anchor.ToWorldPoint(LocalPosition3D) : transform.position;
@@ -38,6 +43,8 @@ namespace VirtualRail
             {
                 anchor = GetComponentInParent<VirtualRailAnchor>();
             }
+            prevMousePos = Input.mousePosition;
+            autoFireTimer = 0f;
         }
 
         private void Update()
@@ -50,42 +57,104 @@ namespace VirtualRail
             // 1. Tính toán biên ngoài Frustum chính xác (Outer Box: 80% - 85% Camera Frustum)
             currentBounds = cfg.CalculateFrustumBounds(mainCamera, anchor, cfg.convergenceDistance, cfg.reticleViewportRatio);
 
-            float inputX = Input.GetAxis("Horizontal");
-            float inputY = Input.GetAxis("Vertical");
-
-            if (cfg.useDirectAnalogMapping)
+            if (cfg.enableIndependentControls && cfg.enableMouseAim && mainCamera != null)
             {
-                // Ánh xạ trực tiếp từ analog cần gạt trong dải [-1, 1] (tự động hồi về tâm khi nhả phím)
-                currentNormalizedInput.x = Mathf.Clamp(inputX, -1f, 1f);
-                currentNormalizedInput.y = Mathf.Clamp(inputY, -1f, 1f);
+                // ==================== CHẾ ĐỘ ĐIỀU KHIỂN TÂM NGẮM BẰNG CHUỘT ====================
+                Vector2 currentMousePos = Input.mousePosition;
+                Vector2 mouseDelta = currentMousePos - prevMousePos;
+                prevMousePos = currentMousePos;
+
+                float rawMouseX = Input.GetAxisRaw("Mouse X");
+                float rawMouseY = Input.GetAxisRaw("Mouse Y");
+                bool mouseMoved = mouseDelta.sqrMagnitude > (cfg.aimMoveDeadzone * cfg.aimMoveDeadzone) ||
+                                  Mathf.Abs(rawMouseX) > 0.01f || Mathf.Abs(rawMouseY) > 0.01f;
+
+                if (mouseMoved)
+                {
+                    autoFireTimer = cfg.autoFireHoldTime;
+                }
+                else if (autoFireTimer > 0f)
+                {
+                    autoFireTimer -= Time.deltaTime;
+                }
+                isAimingMoving = autoFireTimer > 0f;
+
+                // Chiếu Ray-Plane từ con trỏ chuột trên màn hình vào mặt phẳng hội tụ Z = convergenceDistance
+                Vector3 planePoint = anchor.transform.position + anchor.transform.forward * cfg.convergenceDistance;
+                Plane convPlane = new Plane(anchor.transform.forward, planePoint);
+                Ray mouseRay = mainCamera.ScreenPointToRay(currentMousePos);
+
+                if (convPlane.Raycast(mouseRay, out float enterDist))
+                {
+                    Vector3 hitPointWorld = mouseRay.GetPoint(enterDist);
+                    Vector3 localHit = anchor.ToLocalPoint(hitPointWorld);
+
+                    // Kẹp an toàn trong Khung biên ngoài (Outer Box: 85% Viewport)
+                    localPos2D = currentBounds.Clamp(new Vector2(localHit.x, localHit.y));
+
+                    // Cập nhật tọa độ chuẩn hóa Normalized [-1, 1] từ tâm quang học
+                    float spanX = (localPos2D.x >= currentBounds.opticalCenter.x)
+                        ? (currentBounds.maxX - currentBounds.opticalCenter.x)
+                        : (currentBounds.opticalCenter.x - currentBounds.minX);
+                    float spanY = (localPos2D.y >= currentBounds.opticalCenter.y)
+                        ? (currentBounds.maxY - currentBounds.opticalCenter.y)
+                        : (currentBounds.opticalCenter.y - currentBounds.minY);
+
+                    currentNormalizedInput.x = spanX > 0.001f ? Mathf.Clamp((localPos2D.x - currentBounds.opticalCenter.x) / spanX, -1f, 1f) : 0f;
+                    currentNormalizedInput.y = spanY > 0.001f ? Mathf.Clamp((localPos2D.y - currentBounds.opticalCenter.y) / spanY, -1f, 1f) : 0f;
+                }
             }
             else
             {
-                // Hướng A: Tích lũy vị trí chuẩn hóa (Free Roam - Không bao giờ bị kéo về trung tâm)
-                float speedNormX = (currentBounds.HalfWidth > 0.001f) ? (cfg.reticleSpeedX / currentBounds.HalfWidth) : 1.5f;
-                float speedNormY = (currentBounds.HalfHeight > 0.001f) ? (cfg.reticleSpeedY / currentBounds.HalfHeight) : 1.5f;
+                // ==================== CHẾ ĐỘ PHỤ THUỘC CŨ (PHÍM BÀN PHÍM) ====================
+                float inputX = Input.GetAxis("Horizontal");
+                float inputY = Input.GetAxis("Vertical");
 
-                currentNormalizedInput.x = Mathf.Clamp(currentNormalizedInput.x + inputX * speedNormX * Time.deltaTime, -1f, 1f);
-                currentNormalizedInput.y = Mathf.Clamp(currentNormalizedInput.y + inputY * speedNormY * Time.deltaTime, -1f, 1f);
-
-                // Phím C: Giữ để chủ động đưa tàu & tâm ngắm lướt êm về lại trung tâm khi cần
-                if (Input.GetKey(KeyCode.C))
+                bool keysMoved = Mathf.Abs(inputX) > 0.05f || Mathf.Abs(inputY) > 0.05f;
+                if (keysMoved)
                 {
-                    currentNormalizedInput = Vector2.MoveTowards(currentNormalizedInput, Vector2.zero, 2.5f * Time.deltaTime);
+                    autoFireTimer = cfg.autoFireHoldTime;
                 }
+                else if (autoFireTimer > 0f)
+                {
+                    autoFireTimer -= Time.deltaTime;
+                }
+                isAimingMoving = autoFireTimer > 0f;
+
+                if (cfg.useDirectAnalogMapping)
+                {
+                    // Ánh xạ trực tiếp từ analog cần gạt trong dải [-1, 1] (tự động hồi về tâm khi nhả phím)
+                    currentNormalizedInput.x = Mathf.Clamp(inputX, -1f, 1f);
+                    currentNormalizedInput.y = Mathf.Clamp(inputY, -1f, 1f);
+                }
+                else
+                {
+                    // Hướng A: Tích lũy vị trí chuẩn hóa (Free Roam - Không bao giờ bị kéo về trung tâm)
+                    float speedNormX = (currentBounds.HalfWidth > 0.001f) ? (cfg.reticleSpeedX / currentBounds.HalfWidth) : 1.5f;
+                    float speedNormY = (currentBounds.HalfHeight > 0.001f) ? (cfg.reticleSpeedY / currentBounds.HalfHeight) : 1.5f;
+
+                    currentNormalizedInput.x = Mathf.Clamp(currentNormalizedInput.x + inputX * speedNormX * Time.deltaTime, -1f, 1f);
+                    currentNormalizedInput.y = Mathf.Clamp(currentNormalizedInput.y + inputY * speedNormY * Time.deltaTime, -1f, 1f);
+
+                    // Phím C: Giữ để chủ động đưa tàu & tâm ngắm lướt êm về lại trung tâm khi cần
+                    if (Input.GetKey(KeyCode.C))
+                    {
+                        currentNormalizedInput = Vector2.MoveTowards(currentNormalizedInput, Vector2.zero, 2.5f * Time.deltaTime);
+                    }
+                }
+
+                // Nội suy tọa độ 3D từ tâm quang học (opticalCenter) tới đúng các mép Frustum
+                float targetX = currentNormalizedInput.x >= 0f
+                    ? Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.maxX, currentNormalizedInput.x)
+                    : Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.minX, -currentNormalizedInput.x);
+
+                float targetY = currentNormalizedInput.y >= 0f
+                    ? Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.maxY, currentNormalizedInput.y)
+                    : Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.minY, -currentNormalizedInput.y);
+
+                // Kẹp an toàn trong Khung biên ngoài (Outer Box: 85% Viewport)
+                localPos2D = currentBounds.Clamp(new Vector2(targetX, targetY));
             }
-
-            // 2. Nội suy tọa độ 3D từ tâm quang học (opticalCenter) tới đúng các mép Frustum
-            float targetX = currentNormalizedInput.x >= 0f
-                ? Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.maxX, currentNormalizedInput.x)
-                : Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.minX, -currentNormalizedInput.x);
-
-            float targetY = currentNormalizedInput.y >= 0f
-                ? Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.maxY, currentNormalizedInput.y)
-                : Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.minY, -currentNormalizedInput.y);
-
-            // Kẹp an toàn trong Khung biên ngoài (Outer Box: 85% Viewport)
-            localPos2D = currentBounds.Clamp(new Vector2(targetX, targetY));
 
             // Cập nhật vị trí transform cục bộ
             transform.localPosition = LocalPosition3D;

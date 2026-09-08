@@ -25,6 +25,13 @@ MonoBehaviour:
   reticleSpeedX: 140
   reticleSpeedY: 85
   useDirectAnalogMapping: 0
+  enableIndependentControls: 1
+  enableMouseAim: 1
+  autoFireOnAimMove: 1
+  aimMoveDeadzone: 0.5
+  autoFireHoldTime: 0.08
+  shipSpeedX: 140
+  shipSpeedY: 85
   smoothDampLag: 0.1
   rollFactor: 2.5
   maxRollAngle: 65

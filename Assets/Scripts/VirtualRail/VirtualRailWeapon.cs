@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace VirtualRail
 {
@@ -33,7 +33,11 @@ namespace VirtualRail
 
         private void Update()
         {
-            if (Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space))
+            var cfg = anchor != null ? anchor.config : null;
+            bool isManualFire = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
+            bool isAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
+
+            if (isManualFire || isAutoFire)
             {
                 if (Time.time >= nextFireTime)
                 {

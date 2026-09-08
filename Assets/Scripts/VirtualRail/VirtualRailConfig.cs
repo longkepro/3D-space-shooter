@@ -36,7 +36,23 @@ namespace VirtualRail
         [Tooltip("Bật ánh xạ trực tiếp (tự động kéo về tâm). Tắt (Hướng A) để tự do di chuyển, nhả phím đứng yên")]
         public bool useDirectAnalogMapping = false;
 
-        [Header("5. Ship Tracking Settings")]
+        [Header("5. Independent Control & Mouse Aim")]
+        [Tooltip("Bật chế độ điều khiển độc lập: Tàu dùng phím/analog, Tâm ngắm dùng chuột")]
+        public bool enableIndependentControls = true;
+        [Tooltip("Bật điều khiển tâm ngắm bằng chuột")]
+        public bool enableMouseAim = true;
+        [Tooltip("Tự động xả đạn khi tâm ngắm/chuột di chuyển")]
+        public bool autoFireOnAimMove = true;
+        [Tooltip("Ngưỡng phát hiện di chuyển chuột tối thiểu (pixels/frame)")]
+        public float aimMoveDeadzone = 0.5f;
+        [Tooltip("Thời gian duy trì bắn tự động sau khi chuột dừng (giây) - chống giật cục micro-pause")]
+        public float autoFireHoldTime = 0.08f;
+        [Tooltip("Tốc độ bay tự do của tàu theo trục ngang X (m/s)")]
+        public float shipSpeedX = 140f;
+        [Tooltip("Tốc độ bay tự do của tàu theo trục dọc Y (m/s)")]
+        public float shipSpeedY = 85f;
+
+        [Header("6. Ship Tracking Settings (Chế độ phụ thuộc cũ)")]
         [Range(0.05f, 0.2f)]
         [Tooltip("Độ trễ lò xo suy giảm chấn (0.08s - 0.12s)")]
         public float smoothDampLag = 0.1f;
