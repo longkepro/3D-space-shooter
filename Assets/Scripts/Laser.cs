@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Light))]
@@ -6,9 +6,9 @@
 public class Laser : MonoBehaviour
 {
 
-    [Tooltip("Time in seconds")][SerializeField] private float _laserDuration = 0.5f;
+    [Tooltip("Time in seconds")][SerializeField] private float _laserDuration = 0.08f;
     [SerializeField] private float _laserDistance = 300f;
-    [SerializeField] private float _fireDelay = 2f;
+    [SerializeField] private float _fireDelay = 0.12f;
     private LineRenderer _laserBeam;
     private Light _laserLight;
     private bool _canFire = true;
