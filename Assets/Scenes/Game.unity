@@ -318,7 +318,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _mainMenu: {fileID: 1431326928}
   _gameUI: {fileID: 186998013}
-  _playerPrefab: {fileID: 8274491039598835654, guid: 96c0c7fe4b07c394da1988a7bb4e3f76,
+  _playerPrefab: {fileID: 6418148960762533910, guid: f35323486c15aab4ea2c7f43f5e51ee1,
     type: 3}
   _playerSpawner: {fileID: 1159263648}
 --- !u!114 &278197803
@@ -1715,6 +1715,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4745911667194073043, guid: dc879f158c9da924aa97d06bf09ee51e,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4745911667194073043, guid: dc879f158c9da924aa97d06bf09ee51e,
         type: 3}
       propertyPath: _followPosition.z

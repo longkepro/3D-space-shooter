@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9cc0fa9c728d55b428f256f5340321d5, type: 3}
+  m_Name: DefaultVirtualRailConfig
+  m_EditorClassIdentifier: 
+  forwardSpeed: 28
+  boostMultiplier: 1.6
+  convergenceDistance: 150
+  useDynamicFrustumBounds: 1
+  shipViewportRatio: 0.75
+  reticleViewportRatio: 0.85
+  reticleLimitX: 30
+  reticleLimitY: 18
+  shipLimitX: 22
+  shipLimitY: 13
+  reticleSpeedX: 140
+  reticleSpeedY: 85
+  useDirectAnalogMapping: 0
+  smoothDampLag: 0.1
+  rollFactor: 2.5
+  maxRollAngle: 65
+  pitchFactor: 2
+  maxPitchAngle: 30
+  yawFactor: 1.2
+  maxYawAngle: 25
+  rotationSlerpSpeed: 12
+  enableEdgeDamping: 1
+  minEdgeRollAngle: 14
+  cameraPanFactor: 0.05
+  cameraHeight: 8
+  cameraFOV: 40
+  fixedCameraPitch: 5
+  cameraDistance: 35
+  cameraLookAtWeight: 0.2
+  enableDynamicLookAt: 0
+  cameraSmoothSpeed: 8
+  magnetismRadius: 2.5
+  bulletSpeed: 220
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  chargeTime: 1.2
+  lockConeAngle: 18
+  lockMaxDistance: 250
