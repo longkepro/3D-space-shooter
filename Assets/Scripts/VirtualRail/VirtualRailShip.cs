@@ -12,6 +12,7 @@ namespace VirtualRail
         [Header("References")]
         public VirtualRailAnchor anchor;
         public VirtualRailReticle reticle;
+        public VirtualRailInputReader inputReader;
         public Transform shipVisualMesh;
         private Camera mainCamera;
 
@@ -43,6 +44,7 @@ namespace VirtualRail
             mainCamera = Camera.main;
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
+            if (inputReader == null && anchor != null) inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
         }
 
         private void Update()
@@ -73,9 +75,13 @@ namespace VirtualRail
 
             if (cfg.enableIndependentControls)
             {
-                // ==================== CHẾ ĐỘ ĐIỀU KHIỂN ĐỘC LẬP BẰNG PHÍM ====================
-                float inputX = Input.GetAxis("Horizontal");
-                float inputY = Input.GetAxis("Vertical");
+                // ==================== CHẾ ĐỘ ĐIỀU KHIỂN ĐỘC LẬP (PHÍM / JOYSTICK TRÁI) ====================
+                Vector2 moveInput = (inputReader != null)
+                    ? inputReader.GetShipMovement()
+                    : new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
+
+                float inputX = moveInput.x;
+                float inputY = moveInput.y;
 
                 if (cfg.useDirectAnalogMapping)
                 {

@@ -32,6 +32,10 @@ MonoBehaviour:
   autoFireHoldTime: 0.08
   shipSpeedX: 140
   shipSpeedY: 85
+  forceShowMobileUI: 0
+  joystickHandleRange: 65
+  joystickDeadZone: 0.1
+  mobileAimSensitivity: 1
   smoothDampLag: 0.1
   rollFactor: 2.5
   maxRollAngle: 65

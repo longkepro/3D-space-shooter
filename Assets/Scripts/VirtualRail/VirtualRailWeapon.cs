@@ -11,6 +11,7 @@ namespace VirtualRail
     {
         public VirtualRailAnchor anchor;
         public VirtualRailReticle reticle;
+        public VirtualRailInputReader inputReader;
         public Laser[] muzzles;
 
         [Header("Weapon Timing")]
@@ -29,15 +30,17 @@ namespace VirtualRail
         {
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
+            if (inputReader == null && anchor != null) inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
         }
 
         private void Update()
         {
             var cfg = anchor != null ? anchor.config : null;
             bool isManualFire = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
-            bool isAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
+            bool isInputReaderFiring = inputReader != null && inputReader.IsFiring();
+            bool isReticleAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
 
-            if (isManualFire || isAutoFire)
+            if (isManualFire || isInputReaderFiring || isReticleAutoFire)
             {
                 if (Time.time >= nextFireTime)
                 {

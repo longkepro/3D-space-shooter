@@ -52,6 +52,16 @@ namespace VirtualRail
         [Tooltip("Tốc độ bay tự do của tàu theo trục dọc Y (m/s)")]
         public float shipSpeedY = 85f;
 
+        [Header("5b. Android & Mobile Touch Controls")]
+        [Tooltip("Bắt buộc hiển thị cần gạt ảo trên Unity Editor để kiểm thử")]
+        public bool forceShowMobileUI = false;
+        [Tooltip("Bán kính kéo của cần gạt ảo (pixels)")]
+        public float joystickHandleRange = 65f;
+        [Tooltip("Vùng chết của cần gạt ảo")]
+        public float joystickDeadZone = 0.1f;
+        [Tooltip("Độ nhạy di chuyển tâm ngắm của cần gạt phải")]
+        public float mobileAimSensitivity = 1.0f;
+
         [Header("6. Ship Tracking Settings (Chế độ phụ thuộc cũ)")]
         [Range(0.05f, 0.2f)]
         [Tooltip("Độ trễ lò xo suy giảm chấn (0.08s - 0.12s)")]

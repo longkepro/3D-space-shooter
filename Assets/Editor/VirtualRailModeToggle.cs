@@ -56,6 +56,15 @@ public class VirtualRailModeToggle
                 EditorUtility.SetDirty(followCam);
             }
 
+            // Đảm bảo có EventSystem trong Scene cho uGUI Touch Joysticks
+            if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                GameObject es = new GameObject("EventSystem");
+                es.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                es.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+                Undo.RegisterCreatedObjectUndo(es, "Create EventSystem");
+            }
+
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
             Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT THÀNH CÔNG CHẾ ĐỘ VIRTUAL RAIL!</b></color>\nGameUI._playerPrefab hiện đã trỏ tới: VirtualRail_PlayerRig.prefab. Hãy bấm PLAY và click 'Play Game' để trải nghiệm!");
@@ -211,6 +220,32 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/9. Mobile: Force Show Touch Joysticks in Editor (ON)")]
+    public static void EnableForceShowMobileUI()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.forceShowMobileUI = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT XEM TRƯỚC CẦN GẠT ẢO TRÊN EDITOR:</b></color> 2 cần gạt ảo (Trái & Phải) sẽ hiển thị trong Game view để bạn test trực tiếp bằng chuột!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/10. Mobile: Auto-detect Mobile Only (OFF in Editor)")]
+    public static void DisableForceShowMobileUI()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.forceShowMobileUI = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT XEM TRƯỚC CẦN GẠT ẢO:</b></color> Cần gạt ảo chỉ tự động hiển thị khi build lên thiết bị di động (Android/iOS).");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
@@ -219,6 +254,10 @@ public class VirtualRailModeToggle
         // Gốc neo đường ray
         VirtualRailAnchor anchor = root.AddComponent<VirtualRailAnchor>();
         anchor.config = config;
+
+        // Bộ đọc Input tập trung (Hòa trộn PC Keyboard/Mouse và Android Dual Joysticks)
+        VirtualRailInputReader inputReader = root.AddComponent<VirtualRailInputReader>();
+        inputReader.config = config;
 
         // 1. Camera Rig
         GameObject camRigObj = new GameObject("[Camera Rig]");
@@ -233,6 +272,7 @@ public class VirtualRailModeToggle
         reticleObj.transform.localPosition = new Vector3(0, 0, config.convergenceDistance);
         VirtualRailReticle reticle = reticleObj.AddComponent<VirtualRailReticle>();
         reticle.anchor = anchor;
+        reticle.inputReader = inputReader;
 
         // UI Canvas cho Crosshair & Lock Marker
         GameObject canvasObj = new GameObject("VirtualRailCanvas");
@@ -260,6 +300,96 @@ public class VirtualRailModeToggle
         lockRt.sizeDelta = new Vector2(60, 60);
         lockObj.SetActive(false);
 
+        // ==================== CỤM GIAO DIỆN 2 CẦN GẠT ẢO CHO ANDROID ====================
+        GameObject mobileRoot = new GameObject("MobileTouchControls");
+        mobileRoot.transform.SetParent(canvasObj.transform, false);
+        RectTransform mobileRootRt = mobileRoot.AddComponent<RectTransform>();
+        mobileRootRt.anchorMin = Vector2.zero;
+        mobileRootRt.anchorMax = Vector2.one;
+        mobileRootRt.offsetMin = Vector2.zero;
+        mobileRootRt.offsetMax = Vector2.zero;
+        inputReader.mobileUIRoot = mobileRoot;
+
+        // --- CẦN GẠT TRÁI (LEFT JOYSTICK - ĐIỀU KHIỂN TÀU) ---
+        GameObject leftZone = new GameObject("LeftTouchZone");
+        leftZone.transform.SetParent(mobileRoot.transform, false);
+        RectTransform leftZoneRt = leftZone.AddComponent<RectTransform>();
+        leftZoneRt.anchorMin = new Vector2(0f, 0f);
+        leftZoneRt.anchorMax = new Vector2(0.5f, 1f);
+        leftZoneRt.offsetMin = Vector2.zero;
+        leftZoneRt.offsetMax = Vector2.zero;
+        Image leftZoneImg = leftZone.AddComponent<Image>();
+        leftZoneImg.color = new Color(0f, 0f, 0f, 0.001f); // Vùng chạm trong suốt
+        leftZoneImg.raycastTarget = true;
+        VirtualJoystick leftJoy = leftZone.AddComponent<VirtualJoystick>();
+        leftJoy.handleRange = config.joystickHandleRange;
+        leftJoy.deadZone = config.joystickDeadZone;
+        leftJoy.isDynamicFloating = true;
+
+        GameObject leftBg = new GameObject("LeftJoyBackground");
+        leftBg.transform.SetParent(leftZone.transform, false);
+        RectTransform leftBgRt = leftBg.AddComponent<RectTransform>();
+        leftBgRt.anchorMin = new Vector2(0.35f, 0.25f);
+        leftBgRt.anchorMax = new Vector2(0.35f, 0.25f);
+        leftBgRt.anchoredPosition = Vector2.zero;
+        leftBgRt.sizeDelta = new Vector2(140, 140);
+        Image leftBgImg = leftBg.AddComponent<Image>();
+        leftBgImg.color = new Color(0.2f, 0.8f, 1f, 0.28f);
+        leftBgImg.raycastTarget = false;
+
+        GameObject leftHandle = new GameObject("LeftJoyHandle");
+        leftHandle.transform.SetParent(leftBg.transform, false);
+        RectTransform leftHandleRt = leftHandle.AddComponent<RectTransform>();
+        leftHandleRt.sizeDelta = new Vector2(60, 60);
+        Image leftHandleImg = leftHandle.AddComponent<Image>();
+        leftHandleImg.color = new Color(0.3f, 0.9f, 1f, 0.85f);
+        leftHandleImg.raycastTarget = false;
+
+        leftJoy.background = leftBgRt;
+        leftJoy.handle = leftHandleRt;
+
+        // --- CẦN GẠT PHẢI (RIGHT JOYSTICK - TÂM NGẮM & TỰ ĐỘNG BẮN) ---
+        GameObject rightZone = new GameObject("RightTouchZone");
+        rightZone.transform.SetParent(mobileRoot.transform, false);
+        RectTransform rightZoneRt = rightZone.AddComponent<RectTransform>();
+        rightZoneRt.anchorMin = new Vector2(0.5f, 0f);
+        rightZoneRt.anchorMax = new Vector2(1f, 1f);
+        rightZoneRt.offsetMin = Vector2.zero;
+        rightZoneRt.offsetMax = Vector2.zero;
+        Image rightZoneImg = rightZone.AddComponent<Image>();
+        rightZoneImg.color = new Color(0f, 0f, 0f, 0.001f); // Vùng chạm trong suốt
+        rightZoneImg.raycastTarget = true;
+        VirtualJoystick rightJoy = rightZone.AddComponent<VirtualJoystick>();
+        rightJoy.handleRange = config.joystickHandleRange;
+        rightJoy.deadZone = config.joystickDeadZone;
+        rightJoy.isDynamicFloating = true;
+
+        GameObject rightBg = new GameObject("RightJoyBackground");
+        rightBg.transform.SetParent(rightZone.transform, false);
+        RectTransform rightBgRt = rightBg.AddComponent<RectTransform>();
+        rightBgRt.anchorMin = new Vector2(0.65f, 0.25f);
+        rightBgRt.anchorMax = new Vector2(0.65f, 0.25f);
+        rightBgRt.anchoredPosition = Vector2.zero;
+        rightBgRt.sizeDelta = new Vector2(140, 140);
+        Image rightBgImg = rightBg.AddComponent<Image>();
+        rightBgImg.color = new Color(1f, 0.3f, 0.3f, 0.28f);
+        rightBgImg.raycastTarget = false;
+
+        GameObject rightHandle = new GameObject("RightJoyHandle");
+        rightHandle.transform.SetParent(rightBg.transform, false);
+        RectTransform rightHandleRt = rightHandle.AddComponent<RectTransform>();
+        rightHandleRt.sizeDelta = new Vector2(60, 60);
+        Image rightHandleImg = rightHandle.AddComponent<Image>();
+        rightHandleImg.color = new Color(1f, 0.4f, 0.4f, 0.85f);
+        rightHandleImg.raycastTarget = false;
+
+        rightJoy.background = rightBgRt;
+        rightJoy.handle = rightHandleRt;
+
+        // Nối 2 cần gạt vào InputReader
+        inputReader.leftJoystick = leftJoy;
+        inputReader.rightJoystick = rightJoy;
+
         // 3. Ship Container
         GameObject shipContainer = new GameObject("[Ship Container]");
         shipContainer.transform.SetParent(root.transform, false);
@@ -283,11 +413,13 @@ public class VirtualRailModeToggle
         VirtualRailShip ship = shipContainer.AddComponent<VirtualRailShip>();
         ship.anchor = anchor;
         ship.reticle = reticle;
+        ship.inputReader = inputReader;
         ship.shipVisualMesh = shipVisual != null ? shipVisual.transform : shipContainer.transform;
 
         VirtualRailWeapon weapon = shipContainer.AddComponent<VirtualRailWeapon>();
         weapon.anchor = anchor;
         weapon.reticle = reticle;
+        weapon.inputReader = inputReader;
         weapon.muzzles = shipContainer.GetComponentsInChildren<Laser>();
 
         AimAssistModule aimAssist = shipContainer.AddComponent<AimAssistModule>();

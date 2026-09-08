@@ -11,6 +11,7 @@ namespace VirtualRail
     public class VirtualRailReticle : MonoBehaviour
     {
         public VirtualRailAnchor anchor;
+        public VirtualRailInputReader inputReader;
         public RectTransform crosshairUI;
         private Camera mainCamera;
 
@@ -43,6 +44,10 @@ namespace VirtualRail
             {
                 anchor = GetComponentInParent<VirtualRailAnchor>();
             }
+            if (inputReader == null && anchor != null)
+            {
+                inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
+            }
             prevMousePos = Input.mousePosition;
             autoFireTimer = 0f;
         }
@@ -57,7 +62,41 @@ namespace VirtualRail
             // 1. Tính toán biên ngoài Frustum chính xác (Outer Box: 80% - 85% Camera Frustum)
             currentBounds = cfg.CalculateFrustumBounds(mainCamera, anchor, cfg.convergenceDistance, cfg.reticleViewportRatio);
 
-            if (cfg.enableIndependentControls && cfg.enableMouseAim && mainCamera != null)
+            if (inputReader != null && inputReader.IsRightStickActive)
+            {
+                // ==================== CHẾ ĐỘ CẦN GẠT ẢO PHẢI (ANDROID RIGHT JOYSTICK) ====================
+                Vector2 aimStick = inputReader.GetAimMovement() * cfg.mobileAimSensitivity;
+
+                float speedNormX = (currentBounds.HalfWidth > 0.001f) ? (cfg.reticleSpeedX / currentBounds.HalfWidth) : 1.5f;
+                float speedNormY = (currentBounds.HalfHeight > 0.001f) ? (cfg.reticleSpeedY / currentBounds.HalfHeight) : 1.5f;
+
+                // Hướng A: Tích lũy vị trí ngắm theo độ lệch cần gạt (nhả tay đứng yên)
+                currentNormalizedInput.x = Mathf.Clamp(currentNormalizedInput.x + aimStick.x * speedNormX * Time.deltaTime, -1f, 1f);
+                currentNormalizedInput.y = Mathf.Clamp(currentNormalizedInput.y + aimStick.y * speedNormY * Time.deltaTime, -1f, 1f);
+
+                float targetX = currentNormalizedInput.x >= 0f
+                    ? Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.maxX, currentNormalizedInput.x)
+                    : Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.minX, -currentNormalizedInput.x);
+
+                float targetY = currentNormalizedInput.y >= 0f
+                    ? Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.maxY, currentNormalizedInput.y)
+                    : Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.minY, -currentNormalizedInput.y);
+
+                localPos2D = currentBounds.Clamp(new Vector2(targetX, targetY));
+
+                // Tín hiệu gạt cần -> Tự động khai hỏa
+                bool stickMoved = aimStick.sqrMagnitude > 0.01f;
+                if (stickMoved)
+                {
+                    autoFireTimer = cfg.autoFireHoldTime;
+                }
+                else if (autoFireTimer > 0f)
+                {
+                    autoFireTimer -= Time.deltaTime;
+                }
+                isAimingMoving = autoFireTimer > 0f;
+            }
+            else if (cfg.enableIndependentControls && cfg.enableMouseAim && mainCamera != null)
             {
                 // ==================== CHẾ ĐỘ ĐIỀU KHIỂN TÂM NGẮM BẰNG CHUỘT ====================
                 Vector2 currentMousePos = Input.mousePosition;
