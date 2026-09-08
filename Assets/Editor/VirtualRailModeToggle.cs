@@ -247,6 +247,47 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/11. Weapons: Direction 1 (Segmented Laser Bolts ON)")]
+    public static void EnableSegmentedLaserBolts()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useSegmentedLaser = true;
+            config.laserBoltLength = 8.5f;
+            config.laserBoltWidth = 0.85f;
+            config.laserBoltSpeed = 220f;
+            config.laserColor = new Color(0.1f, 1f, 0.85f, 1f);
+
+            var neonMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/LaserBolt_BrightNeon.mat");
+            if (neonMat != null)
+            {
+                config.laserBoltMaterial = neonMat;
+            }
+            else
+            {
+                config.laserBoltMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Stretched/CFX_RayRounded.mat");
+            }
+
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HƯỚNG 1 (SEGMENTED LASER BOLTS):</b></color> Đạn laser to rõ (0.85m), dài (8.5m), phát sáng Neon rực rỡ và có Point Light chiếu sáng!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/12. Weapons: Undo to Instant Raycast Beam (OFF)")]
+    public static void DisableSegmentedLaserBolts()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useSegmentedLaser = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ TIA LASER TỨC THỜI:</b></color> Tia laser kéo dài từ nòng súng tới mục tiêu.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
@@ -425,6 +466,20 @@ public class VirtualRailModeToggle
         weapon.reticle = reticle;
         weapon.inputReader = inputReader;
         weapon.muzzles = shipContainer.GetComponentsInChildren<Laser>();
+
+        if (config.laserBoltMaterial == null)
+        {
+            config.laserBoltMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/LaserBolt_BrightNeon.mat");
+            if (config.laserBoltMaterial == null)
+            {
+                config.laserBoltMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Stretched/CFX_RayRounded.mat");
+            }
+            if (config.laserBoltMaterial == null)
+            {
+                config.laserBoltMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Player Laser.mat");
+            }
+            EditorUtility.SetDirty(config);
+        }
 
         AimAssistModule aimAssist = shipContainer.AddComponent<AimAssistModule>();
         aimAssist.anchor = anchor;

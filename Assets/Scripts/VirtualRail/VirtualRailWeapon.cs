@@ -57,35 +57,83 @@ namespace VirtualRail
             Vector3 aimWorld = reticle.WorldPosition;
             var cfg = anchor.config;
 
+            if (muzzles == null || muzzles.Length == 0)
+            {
+                muzzles = GetComponentsInChildren<Laser>();
+            }
+
+            if (muzzles == null || muzzles.Length == 0)
+            {
+                // Fallback nếu prefab chưa có Laser component: Bắn từ 2 cánh tàu
+                Vector3 leftWing = transform.position - transform.right * 1.5f;
+                Vector3 rightWing = transform.position + transform.right * 1.5f;
+                FireSingleMuzzle(leftWing, null, aimWorld, cfg);
+                FireSingleMuzzle(rightWing, null, aimWorld, cfg);
+                return;
+            }
+
             foreach (var muzzle in muzzles)
             {
                 if (muzzle == null) continue;
+                FireSingleMuzzle(muzzle.transform.position, muzzle, aimWorld, cfg);
+            }
+        }
 
-                Vector3 muzzlePos = muzzle.transform.position;
-                Vector3 fireDirection = (aimWorld - muzzlePos).normalized;
+        private void FireSingleMuzzle(Vector3 muzzlePos, Laser muzzle, Vector3 aimWorld, VirtualRailConfig cfg)
+        {
+            Vector3 fireDirection = (aimWorld - muzzlePos).normalized;
+            RaycastHit hit;
+            Transform hitTarget = null;
+            Vector3 targetPoint = aimWorld;
 
-                // 1. Phễu từ tính (Bullet Magnetism) qua SphereCast
-                RaycastHit hit;
-                Transform hitTarget = null;
-                Vector3 targetPoint = aimWorld;
-
+            if (cfg.useSegmentedLaser)
+            {
+                // Hướng 1: Bắn đoạn đạn laser độc lập (Segmented Laser Bolt)
                 if (Physics.SphereCast(muzzlePos, cfg.magnetismRadius, fireDirection, out hit, cfg.convergenceDistance * 1.5f, cfg.enemyLayer))
                 {
-                    // Nắn nhẹ hướng đạn về trọng tâm mục tiêu
-                    fireDirection = (hit.point - muzzlePos).normalized;
-                    targetPoint = hit.point;
-                    hitTarget = hit.transform;
-
-                    // Kích nổ / xử lý sát thương
-                    if (hit.transform.CompareTag("Enemy"))
+                    bool isSelf = hit.transform == transform || hit.transform.IsChildOf(transform) || hit.transform.root == transform.root || hit.transform.CompareTag("Player");
+                    if (!isSelf)
                     {
-                        var enemy = hit.transform.GetComponent<EnemyMovement>();
-                        if (enemy != null) enemy.BlowUp();
+                        // Nắn nhẹ hướng bay về trọng tâm mục tiêu (Magnetism)
+                        fireDirection = (hit.point - muzzlePos).normalized;
                     }
-                    else if (hit.transform.CompareTag("Pickup"))
+                }
+
+                VirtualRailLaserPool.Instance.FireBolt(
+                    muzzlePos,
+                    fireDirection,
+                    cfg.laserBoltSpeed,
+                    cfg.laserBoltLength,
+                    cfg.laserBoltLifetime,
+                    cfg.laserColor,
+                    cfg.laserBoltWidth,
+                    cfg.laserBoltMaterial,
+                    transform,
+                    cfg.enemyLayer
+                );
+            }
+            else
+            {
+                // Fallback (Layer 2 Undo): Cơ chế tia tức thời cũ (Instant Hitscan Beam)
+                if (Physics.SphereCast(muzzlePos, cfg.magnetismRadius, fireDirection, out hit, cfg.convergenceDistance * 1.5f, cfg.enemyLayer))
+                {
+                    bool isSelf = hit.transform == transform || hit.transform.IsChildOf(transform) || hit.transform.root == transform.root || hit.transform.CompareTag("Player");
+                    if (!isSelf)
                     {
-                        var pickup = hit.transform.GetComponent<Pickup>();
-                        if (pickup != null) pickup.Collect();
+                        fireDirection = (hit.point - muzzlePos).normalized;
+                        targetPoint = hit.point;
+                        hitTarget = hit.transform;
+
+                        if (hit.transform.CompareTag("Enemy"))
+                        {
+                            var enemy = hit.transform.GetComponent<EnemyMovement>();
+                            if (enemy != null) enemy.BlowUp();
+                        }
+                        else if (hit.transform.CompareTag("Pickup"))
+                        {
+                            var pickup = hit.transform.GetComponent<Pickup>();
+                            if (pickup != null) pickup.Collect();
+                        }
                     }
                 }
                 else if (Physics.Raycast(muzzlePos, fireDirection, out hit, cfg.convergenceDistance * 2f))
@@ -95,12 +143,13 @@ namespace VirtualRail
                 }
                 else
                 {
-                    // Không trúng gì -> Bắn xuyên qua điểm hội tụ ra xa
                     targetPoint = muzzlePos + fireDirection * (cfg.convergenceDistance * 1.5f);
                 }
 
-                // Kích hoạt hiệu ứng tia laser từ nòng súng tới điểm đích
-                muzzle.FireLaser(targetPoint, hitTarget);
+                if (muzzle != null)
+                {
+                    muzzle.FireLaser(targetPoint, hitTarget);
+                }
             }
         }
     }

@@ -108,6 +108,22 @@ namespace VirtualRail
         public float lockConeAngle = 18f;
         public float lockMaxDistance = 250f;
 
+        [Header("11. Segmented Laser Bolts (Hướng 1 - Đoạn đạn laser)")]
+        [Tooltip("Bật chế độ bắn đạn laser thành từng đoạn (Direction 1). Nếu tắt sẽ quay lại tia tức thời (Layer 2 Undo)")]
+        public bool useSegmentedLaser = true;
+        [Tooltip("Tốc độ bay của đoạn đạn laser (m/s)")]
+        public float laserBoltSpeed = 220f;
+        [Tooltip("Chiều dài của mỗi đoạn đạn laser (m) - tăng lên để nhìn rõ và ấn tượng")]
+        public float laserBoltLength = 8.5f;
+        [Tooltip("Độ rộng của tia đạn laser - tăng lên để nhìn rõ trên màn hình")]
+        public float laserBoltWidth = 0.85f;
+        [Tooltip("Thời gian sống tối đa của viên đạn (giây)")]
+        public float laserBoltLifetime = 2.0f;
+        [Tooltip("Màu sắc của đoạn laser - màu Neon Cyan rực rỡ")]
+        public Color laserColor = new Color(0.1f, 1f, 0.85f, 1f);
+        [Tooltip("Vật liệu tùy chỉnh cho đoạn đạn laser")]
+        public Material laserBoltMaterial;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

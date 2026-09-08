@@ -61,3 +61,10 @@ MonoBehaviour:
   chargeTime: 1.2
   lockConeAngle: 18
   lockMaxDistance: 250
+  useSegmentedLaser: 1
+  laserBoltSpeed: 220
+  laserBoltLength: 8.5
+  laserBoltWidth: 0.85
+  laserBoltLifetime: 2
+  laserColor: {r: 0.1, g: 1, b: 0.85, a: 1}
+  laserBoltMaterial: {fileID: 2100000, guid: e1a2b3c4d5e6f7081920212223242526, type: 2}
