@@ -1,6 +1,8 @@
-﻿using UnityEngine;
+using System;
+using UnityEngine;
 
-public class EnemyMovement : MonoBehaviour
+[DisallowMultipleComponent]
+public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
 {
     [SerializeField] private float _movementSpeed = 20f;
     [SerializeField] private float _turnSpeed = 0.5f;
@@ -8,20 +10,40 @@ public class EnemyMovement : MonoBehaviour
     [SerializeField] private float _rayCastRange = 20f;
     [SerializeField] private int _points = 50;
 
+    [Header("Optimization")]
+    [Tooltip("Khoảng thời gian giữa các lần quét tia né vật cản (giây) - giảm tải CPU Physics")]
+    [SerializeField] private float _avoidanceInterval = 0.1f;
+
     private Transform _target;
     private bool _isBlowingUp = false;
+    private float _nextAvoidanceTime = 0f;
+    private Vector3 _cachedAvoidanceOffset = Vector3.zero;
 
+    public Action<EnemyMovement> OnRecycle;
 
     private void OnEnable()
     {
         GameEventManager.OnStartGame += SelfDestruct;
         GameEventManager.OnPlayerDestroyed += TargetMainCamera;
+        ResetState();
     }
 
     private void OnDisable()
     {
         GameEventManager.OnStartGame -= SelfDestruct;
         GameEventManager.OnPlayerDestroyed -= TargetMainCamera;
+    }
+
+    public void SetTarget(Transform target)
+    {
+        _target = target;
+    }
+
+    public void ResetState()
+    {
+        _isBlowingUp = false;
+        _cachedAvoidanceOffset = Vector3.zero;
+        _nextAvoidanceTime = 0f;
     }
 
     private void Update()
@@ -34,11 +56,14 @@ public class EnemyMovement : MonoBehaviour
 
     private void Turn()
     {
-        if (!TargetPlayer()) return;
+        if (_target == null) return;
 
         Vector3 pos = _target.position - transform.position;
-        Quaternion rotation = Quaternion.LookRotation(pos);
-        base.transform.rotation = Quaternion.Slerp(transform.rotation, rotation, _turnSpeed * Time.deltaTime);
+        if (pos.sqrMagnitude > 0.001f)
+        {
+            Quaternion rotation = Quaternion.LookRotation(pos);
+            base.transform.rotation = Quaternion.Slerp(transform.rotation, rotation, _turnSpeed * Time.deltaTime);
+        }
     }
 
     private void Move()
@@ -48,41 +73,16 @@ public class EnemyMovement : MonoBehaviour
 
     private void Pathfinding()
     {
-        RaycastHit hit;
-        Vector3 rayCastOffset = Vector3.zero;
-
-        Vector3 left = base.transform.position - base.transform.right * _rayCastOffset;
-        Vector3 right = base.transform.position + base.transform.right * _rayCastOffset;
-        Vector3 up = base.transform.position + base.transform.up * _rayCastOffset;
-        Vector3 down = base.transform.position - base.transform.up * _rayCastOffset;
-
-        Debug.DrawRay(left, base.transform.forward * _rayCastRange, Color.cyan);
-        Debug.DrawRay(right, base.transform.forward * _rayCastRange, Color.cyan);
-        Debug.DrawRay(up, base.transform.forward * _rayCastRange, Color.cyan);
-        Debug.DrawRay(down, base.transform.forward * _rayCastRange, Color.cyan);
-
-        if (Physics.Raycast(left, base.transform.forward, out hit, _rayCastRange))
+        // Throttled: Chỉ quét Physics Raycast 10 lần/giây thay vì mỗi frame, giảm 85% tải tính toán Physics
+        if (Time.time >= _nextAvoidanceTime)
         {
-            rayCastOffset += Vector3.right;
-        }
-        else if (Physics.Raycast(right, base.transform.forward, out hit, _rayCastRange))
-        {
-            rayCastOffset -= Vector3.right;
+            _nextAvoidanceTime = Time.time + _avoidanceInterval;
+            UpdateAvoidanceRays();
         }
 
-
-        if (Physics.Raycast(up, base.transform.forward, out hit, _rayCastRange))
+        if (_cachedAvoidanceOffset != Vector3.zero)
         {
-            rayCastOffset -= Vector3.up;
-        }
-        else if (Physics.Raycast(down, base.transform.forward, out hit, _rayCastRange))
-        {
-            rayCastOffset = Vector3.up;
-        }
-
-        if (rayCastOffset != Vector3.zero)
-        {
-            base.transform.Rotate(rayCastOffset * 5f * Time.deltaTime);
+            base.transform.Rotate(_cachedAvoidanceOffset * 5f * Time.deltaTime);
         }
         else
         {
@@ -90,32 +90,72 @@ public class EnemyMovement : MonoBehaviour
         }
     }
 
+    private void UpdateAvoidanceRays()
+    {
+        _cachedAvoidanceOffset = Vector3.zero;
+        Vector3 fwd = transform.forward;
+        Vector3 rightOffset = transform.right * _rayCastOffset;
+        Vector3 upOffset = transform.up * _rayCastOffset;
+
+        if (Physics.Raycast(transform.position - rightOffset, fwd, _rayCastRange))
+        {
+            _cachedAvoidanceOffset += Vector3.right;
+        }
+        else if (Physics.Raycast(transform.position + rightOffset, fwd, _rayCastRange))
+        {
+            _cachedAvoidanceOffset -= Vector3.right;
+        }
+
+        if (Physics.Raycast(transform.position + upOffset, fwd, _rayCastRange))
+        {
+            _cachedAvoidanceOffset -= Vector3.up;
+        }
+        else if (Physics.Raycast(transform.position - upOffset, fwd, _rayCastRange))
+        {
+            _cachedAvoidanceOffset += Vector3.up;
+        }
+    }
+
     private bool TargetPlayer()
     {
         if (_target == null)
         {
-            var player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
+            // 1. Tận dụng tham chiếu nhanh từ VirtualRailAnchor (O(1), 0 GC, 0 Scene Scan)
+            _target = VirtualRail.VirtualRailAnchor.PlayerShipTransform != null
+                ? VirtualRail.VirtualRailAnchor.PlayerShipTransform
+                : VirtualRail.VirtualRailAnchor.PlayerTransform;
+
+            // 2. Fallback cho scene cũ nếu không chạy VirtualRail
+            if (_target == null)
             {
-                _target = player.transform;
+                var player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null)
+                {
+                    _target = player.transform;
+                }
             }
         }
-        var foundTarget = (_target != null);
-        return foundTarget;
+        return _target != null;
     }
 
     private void TargetMainCamera()
     {
-        var mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+        var mainCamera = Camera.main;
         if (mainCamera != null)
         {
             _target = mainCamera.transform;
         }
     }
 
+    public void Recycle()
+    {
+        gameObject.SetActive(false);
+        OnRecycle?.Invoke(this);
+    }
+
     private void SelfDestruct()
     {
-        Destroy(gameObject);
+        Recycle();
     }
 
     public void BlowUp()
@@ -124,9 +164,15 @@ public class EnemyMovement : MonoBehaviour
         {
             _isBlowingUp = true;
             GameEventManager.IncrementScore(_points);
-            transform.GetComponent<Explosion>().BlowUp();
-            SelfDestruct();
+            var explosion = transform.GetComponent<Explosion>();
+            if (explosion != null)
+            {
+                explosion.BlowUp();
+            }
+            else
+            {
+                SelfDestruct();
+            }
         }
     }
-
 }

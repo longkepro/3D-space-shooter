@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace VirtualRail
 {
@@ -10,6 +10,10 @@ namespace VirtualRail
     [DisallowMultipleComponent]
     public class VirtualRailAnchor : MonoBehaviour
     {
+        public static VirtualRailAnchor Instance { get; private set; }
+        public static Transform PlayerTransform => Instance != null ? Instance.transform : null;
+        public static Transform PlayerShipTransform { get; set; }
+
         [Header("Configuration")]
         public VirtualRailConfig config;
 
@@ -22,11 +26,38 @@ namespace VirtualRail
 
         private void Awake()
         {
+            Instance = this;
             if (config == null)
             {
                 config = ScriptableObject.CreateInstance<VirtualRailConfig>();
             }
             currentSpeed = config.forwardSpeed;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+
+        private void Start()
+        {
+            if (config != null && config.useRailWaveSpawner)
+            {
+                if (GetComponentInChildren<VirtualRailWaveSpawner>() == null)
+                {
+                    var spawner = gameObject.AddComponent<VirtualRailWaveSpawner>();
+                    spawner.anchor = this;
+                }
+            }
+
+            if (config != null && config.useRailAsteroidSpawner)
+            {
+                if (GetComponentInChildren<VirtualRailAsteroidSpawner>() == null)
+                {
+                    var asteroidSpawner = gameObject.AddComponent<VirtualRailAsteroidSpawner>();
+                    asteroidSpawner.anchor = this;
+                }
+            }
         }
 
         private void Update()

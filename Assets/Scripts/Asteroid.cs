@@ -1,13 +1,16 @@
+using System;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Explosion))]
-public class Asteroid : MonoBehaviour
+public class Asteroid : MonoBehaviour, VirtualRail.IPoolableEntity
 {
     [SerializeField] private float _minScale = 0.8f;
     [SerializeField] private float _maxScale = 1.2f;
 
     public static float destructionDelay = 1f;
+    public Action<Asteroid> OnRecycle;
 
     private void Start()
     {
@@ -26,5 +29,11 @@ public class Asteroid : MonoBehaviour
         returnValue.y = Random.Range(minRange, maxRange);
         returnValue.z = Random.Range(minRange, maxRange);
         return returnValue;
+    }
+
+    public void Recycle()
+    {
+        gameObject.SetActive(false);
+        OnRecycle?.Invoke(this);
     }
 }

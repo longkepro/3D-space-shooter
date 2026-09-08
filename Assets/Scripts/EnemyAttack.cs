@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 
 public class EnemyAttack : MonoBehaviour
@@ -66,14 +66,20 @@ public class EnemyAttack : MonoBehaviour
     {
         if (_target == null)
         {
-            var player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
+            _target = VirtualRail.VirtualRailAnchor.PlayerShipTransform != null
+                ? VirtualRail.VirtualRailAnchor.PlayerShipTransform
+                : VirtualRail.VirtualRailAnchor.PlayerTransform;
+
+            if (_target == null)
             {
-                _target = player.transform;
+                var player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null)
+                {
+                    _target = player.transform;
+                }
             }
         }
-        var foundTarget = (_target != null);
-        return foundTarget;
+        return _target != null;
     }
 
 }

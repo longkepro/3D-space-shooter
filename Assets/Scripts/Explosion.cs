@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [DisallowMultipleComponent]
 public class Explosion : MonoBehaviour
@@ -21,8 +21,20 @@ public class Explosion : MonoBehaviour
 
     private void SpawnExplosion(Vector3 explosionPosition)
     {
-        GameObject spawnedExplosion = Instantiate(_explosion, explosionPosition, Quaternion.identity, transform);
-        Destroy(spawnedExplosion, _explosionDuration);
+        if (_explosion != null)
+        {
+            var vfxPool = VirtualRail.VirtualRailVFXPool.Instance;
+            if (vfxPool != null)
+            {
+                vfxPool.SpawnVFX(_explosion, explosionPosition, Quaternion.identity, transform, _explosionDuration);
+            }
+            else
+            {
+                GameObject spawnedExplosion = Instantiate(_explosion, explosionPosition, Quaternion.identity, transform);
+                Destroy(spawnedExplosion, _explosionDuration);
+            }
+        }
+
         if (_shield != null)
         {
             _shield.TakeDamage();
@@ -31,18 +43,36 @@ public class Explosion : MonoBehaviour
 
     public void AddForce(Vector3 hitPosition, Transform hitSource)
     {
-        Debug.LogWarning("AddForce: " + gameObject.name + " -> " + hitSource.name);
         SpawnExplosion(hitPosition);
-        if (_rigidBody == null) return;
+        if (_rigidBody == null || hitSource == null) return;
         Vector3 forceDirection = (hitSource.position - transform.position).normalized;
         _rigidBody.AddForceAtPosition(forceDirection * _laserHitForce, hitPosition, ForceMode.Impulse);
     }
 
     public void BlowUp()
     {
-        var spawnedExplosion = Instantiate(_blowUp, transform.position, Quaternion.identity);
-        Destroy(spawnedExplosion, _explosionDuration);
-        Destroy(gameObject);
+        if (_blowUp != null)
+        {
+            var vfxPool = VirtualRail.VirtualRailVFXPool.Instance;
+            if (vfxPool != null)
+            {
+                vfxPool.SpawnVFX(_blowUp, transform.position, Quaternion.identity, null, _explosionDuration);
+            }
+            else
+            {
+                var spawnedExplosion = Instantiate(_blowUp, transform.position, Quaternion.identity);
+                Destroy(spawnedExplosion, _explosionDuration);
+            }
+        }
+
+        if (TryGetComponent<VirtualRail.IPoolableEntity>(out var poolable))
+        {
+            poolable.Recycle();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
 }

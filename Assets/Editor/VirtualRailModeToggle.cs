@@ -288,6 +288,58 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/13. Spawner: Rail Wave Spawner (ON - Ahead of Player)")]
+    public static void EnableRailWaveSpawner()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useRailWaveSpawner = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT RAIL WAVE SPAWNER:</b></color> Quái vật sinh ra phía trước đón đầu người chơi (220m), tái sử dụng qua Object Pool 0 GC!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/14. Spawner: Undo to Legacy Static Spawner (OFF)")]
+    public static void DisableRailWaveSpawner()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useRailWaveSpawner = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ ENEMY SPAWNER CŨ:</b></color> Tắt bộ điều phối đợt sóng đường ray.");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/15. Asteroids: Streaming Rail Asteroids (ON - Ahead of Player)")]
+    public static void EnableStreamingAsteroids()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useRailAsteroidSpawner = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT STREAMING ASTEROIDS:</b></color> Thiên thạch liên tục sinh ra đón đầu phía trước mũi tàu (250m), thu hồi sau lưng (0 GC Alloc)!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/16. Asteroids: Undo to Legacy Static Asteroids (OFF)")]
+    public static void DisableStreamingAsteroids()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useRailAsteroidSpawner = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ THIÊN THẠCH TĨNH:</b></color> Tắt bộ điều phối thiên thạch đón đầu đường ray.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
@@ -488,6 +540,12 @@ public class VirtualRailModeToggle
         aimAssist.missilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(MISSILE_PREFAB);
 
         camRig.ship = ship;
+
+        VirtualRailWaveSpawner waveSpawner = root.AddComponent<VirtualRailWaveSpawner>();
+        waveSpawner.anchor = anchor;
+
+        VirtualRailAsteroidSpawner asteroidSpawner = root.AddComponent<VirtualRailAsteroidSpawner>();
+        asteroidSpawner.anchor = anchor;
 
         return root;
     }

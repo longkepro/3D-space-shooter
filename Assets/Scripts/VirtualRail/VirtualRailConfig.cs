@@ -124,6 +124,26 @@ namespace VirtualRail
         [Tooltip("Vật liệu tùy chỉnh cho đoạn đạn laser")]
         public Material laserBoltMaterial;
 
+        [Header("12. Wave Spawner & VFX Optimization")]
+        [Tooltip("Bật bộ điều phối đợt tấn công đường ray (sinh quái đón đầu phía trước trục Z)")]
+        public bool useRailWaveSpawner = true;
+        [Tooltip("Khoảng thời gian giữa các đợt quái xuất hiện (giây)")]
+        public float waveSpawnInterval = 3.5f;
+        [Tooltip("Khoảng cách xuất hiện quái vật phía trước tàu (m)")]
+        public float waveSpawnDistance = 220f;
+        [Tooltip("Bật tối ưu hóa bộ đệm vụ nổ (0 GC Alloc)")]
+        public bool useOptimizedVFXPool = true;
+
+        [Header("13. Asteroid Streaming Spawner")]
+        [Tooltip("Bật bộ điều phối thiên thạch đón đầu đường ray (0 GC Alloc)")]
+        public bool useRailAsteroidSpawner = true;
+        [Tooltip("Cự ly sinh thiên thạch phía trước tàu (m)")]
+        public float asteroidSpawnDistance = 250f;
+        [Tooltip("Khoảng cách bước Z giữa các cụm thiên thạch (m)")]
+        public float asteroidZInterval = 18f;
+        [Tooltip("Kích thước bộ đệm Object Pool thiên thạch")]
+        public int asteroidPoolSize = 32;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

@@ -32,10 +32,19 @@ namespace VirtualRail
 
         private void Awake()
         {
+            VirtualRailAnchor.PlayerShipTransform = transform;
             thrusters = GetComponentsInChildren<Thruster>();
             if (shipVisualMesh == null && transform.childCount > 0)
             {
                 shipVisualMesh = transform.GetChild(0);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (VirtualRailAnchor.PlayerShipTransform == transform)
+            {
+                VirtualRailAnchor.PlayerShipTransform = null;
             }
         }
 

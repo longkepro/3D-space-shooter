@@ -16,7 +16,7 @@ namespace VirtualRail
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<VirtualRailLaserPool>();
+                    _instance = FindAnyObjectByType<VirtualRailLaserPool>();
                     if (_instance == null)
                     {
                         GameObject poolObj = new GameObject("[VirtualRail_LaserPool]");
@@ -54,7 +54,7 @@ namespace VirtualRail
                 if (_defaultMaterial == null)
                 {
                     // 1. Thử lấy từ LineRenderer của súng Laser có sẵn trên tàu
-                    var existingLaser = FindObjectOfType<Laser>();
+                    var existingLaser = FindAnyObjectByType<Laser>();
                     if (existingLaser != null)
                     {
                         var lr = existingLaser.GetComponent<LineRenderer>();

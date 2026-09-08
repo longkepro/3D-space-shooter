@@ -64,7 +64,15 @@ MonoBehaviour:
   useSegmentedLaser: 1
   laserBoltSpeed: 220
   laserBoltLength: 8.5
-  laserBoltWidth: 0.85
+  laserBoltWidth: 4
   laserBoltLifetime: 2
-  laserColor: {r: 0.1, g: 1, b: 0.85, a: 1}
-  laserBoltMaterial: {fileID: 2100000, guid: e1a2b3c4d5e6f7081920212223242526, type: 2}
+  laserColor: {r: 1, g: 0.64705884, b: 0, a: 1}
+  laserBoltMaterial: {fileID: 2100000, guid: 123ac6dc79004e54b8b352a7e64acdca, type: 2}
+  useRailWaveSpawner: 1
+  waveSpawnInterval: 3.5
+  waveSpawnDistance: 220
+  useOptimizedVFXPool: 1
+  useRailAsteroidSpawner: 1
+  asteroidSpawnDistance: 250
+  asteroidZInterval: 18
+  asteroidPoolSize: 32
