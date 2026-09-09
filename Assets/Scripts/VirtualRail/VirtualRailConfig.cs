@@ -182,6 +182,20 @@ namespace VirtualRail
         [Tooltip("Bật sử dụng đạn vật lý Plasma Orb cho quái thay vì hitscan cũ")]
         public bool usePhysicalEnemyProjectiles = true;
 
+        [Header("15. Spatial Vectors & 4-Phase Lifecycle FSM (TDD v1.0.0 Phần II)")]
+        [Tooltip("Bật hệ thống 10 Vector xuất hiện không gian đa hướng")]
+        public bool useSpatialVectors = true;
+        [Tooltip("Bật máy trạng thái vòng đời 4 pha (Telegraph -> Approach -> Action -> Exit)")]
+        public bool enable4PhaseLifecycle = true;
+        [Tooltip("Thời gian pha báo hiệu Telegraph (giây)")]
+        public float telegraphDuration = 0.5f;
+        [Tooltip("Thời gian pha tiếp cận Approach (giây)")]
+        public float approachDuration = 1.2f;
+        [Tooltip("Thời gian pha tác chiến Action (giây)")]
+        public float actionDuration = 2.5f;
+        [Tooltip("Thời gian pha thoát ly Exit (giây)")]
+        public float exitDuration = 1.0f;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

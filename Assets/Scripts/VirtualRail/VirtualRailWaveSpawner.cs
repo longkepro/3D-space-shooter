@@ -1,12 +1,15 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace VirtualRail
 {
     /// <summary>
     /// Bộ điều phối đợt tấn công đường ray (Rail Wave Spawner - Hướng Star Fox 64).
-    /// Sinh quái vật đón đầu phía trước người chơi theo tiến trình trục Z,
-    /// quản lý Object Pool tái sử dụng 100% (0 GC Alloc), và tự động thu hồi khi trôi về sau lưng.
+    /// Tuân thủ TDD v1.0.0 Phần II:
+    /// - Quản lý 10 Vector xuất hiện không gian (Spatial Vectors).
+    /// - Quản lý máy trạng thái vòng đời 4 pha (EnemyLifecycleFSM).
+    /// - Quản lý Object Pool tái sử dụng 100% (0 GC Alloc), và tự động thu hồi khi trôi về sau lưng.
+    /// - Hỗ trợ phân rã thứ cấp Cluster Fracture (Vector 9).
     /// </summary>
     public class VirtualRailWaveSpawner : MonoBehaviour
     {
@@ -15,7 +18,7 @@ namespace VirtualRail
         [Header("Configuration")]
         public VirtualRailAnchor anchor;
         [SerializeField] private GameObject[] enemyPrefabs;
-        [SerializeField] private int poolSizePerType = 5;
+        [SerializeField] private int poolSizePerType = 8;
 
         [Header("Wave Spawning Settings")]
         [Tooltip("Cự ly sinh quái vật phía trước người chơi theo trục Z (m)")]
@@ -25,10 +28,26 @@ namespace VirtualRail
         [Tooltip("Cự ly thu hồi quái vật khi người chơi bay vượt qua phía sau (m)")]
         [SerializeField] private float despawnBehindDistance = 50f;
 
+        [Header("Spatial Vectors (TDD v1.0.0 Phần II)")]
+        [SerializeField] private bool useSpatialVectors = true;
+        [SerializeField] private bool enable4PhaseFSM = true;
+
         private readonly List<EnemyMovement> _pool = new List<EnemyMovement>();
         private float _nextWaveTime = 0f;
         private bool _isSpawning = false;
         private bool _isInitialized = false;
+        private int _vectorCycleIndex = 0;
+
+        private static readonly SpatialVectorType[] ACTIVE_SPATIAL_VECTORS = new SpatialVectorType[]
+        {
+            SpatialVectorType.FrontalHeadOn,
+            SpatialVectorType.RearAmbush,
+            SpatialVectorType.LateralFlankingLeft,
+            SpatialVectorType.OverheadDiveBomb,
+            SpatialVectorType.LateralFlankingRight,
+            SpatialVectorType.SubSurfaceBreach,
+            SpatialVectorType.WarpInDecloak
+        };
 
         private void Awake()
         {
@@ -84,6 +103,12 @@ namespace VirtualRail
                         if (movement != null)
                         {
                             _pool.Add(movement);
+                        }
+
+                        // Gắn sẵn EnemyLifecycleFSM để 0 GC Alloc lúc runtime
+                        if (enemyObj.GetComponent<EnemyLifecycleFSM>() == null)
+                        {
+                            enemyObj.AddComponent<EnemyLifecycleFSM>();
                         }
                     }
                 }
@@ -149,10 +174,54 @@ namespace VirtualRail
         {
             if (anchor == null) return;
 
+            var cfg = anchor.config;
+            bool useSpatial = (cfg != null) ? cfg.useSpatialVectors : useSpatialVectors;
+            bool useFSM = (cfg != null) ? cfg.enable4PhaseLifecycle : enable4PhaseFSM;
+
+            if (!useSpatial)
+            {
+                SpawnLegacyWave(leadDist);
+                return;
+            }
+
+            Camera mainCam = Camera.main;
+            int countInWave = Random.Range(2, 4);
+
+            for (int i = 0; i < countInWave; i++)
+            {
+                EnemyMovement availableEnemy = GetAvailableEnemy();
+                if (availableEnemy == null) break;
+
+                // Chọn vector tiếp theo theo chu kỳ phân bổ đa hướng 10 Vector
+                SpatialVectorType vectorType = ACTIVE_SPATIAL_VECTORS[_vectorCycleIndex % ACTIVE_SPATIAL_VECTORS.Length];
+                _vectorCycleIndex++;
+
+                SpatialTrajectoryData trajectory = SpatialVectorFactory.GenerateTrajectory(vectorType, anchor, mainCam, leadDist);
+
+                availableEnemy.ResetState();
+                availableEnemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
+
+                if (useFSM)
+                {
+                    var fsm = availableEnemy.GetComponent<EnemyLifecycleFSM>();
+                    if (fsm == null) fsm = availableEnemy.gameObject.AddComponent<EnemyLifecycleFSM>();
+                    fsm.InitializeTrajectory(trajectory, anchor);
+                }
+                else
+                {
+                    availableEnemy.transform.position = trajectory.spawnPosition;
+                    availableEnemy.transform.rotation = trajectory.spawnRotation;
+                }
+
+                availableEnemy.gameObject.SetActive(true);
+            }
+        }
+
+        private void SpawnLegacyWave(float leadDist)
+        {
             Vector3 playerPos = anchor.transform.position;
             float targetZ = playerPos.z + leadDist;
 
-            // Mỗi đợt sinh ngẫu nhiên 1 đến 3 quái vật dàn trận
             int countInWave = Random.Range(1, 4);
             float baseOffsetX = Random.Range(-14f, 14f);
             float baseOffsetY = Random.Range(3f, 13f);
@@ -162,7 +231,6 @@ namespace VirtualRail
                 EnemyMovement availableEnemy = GetAvailableEnemy();
                 if (availableEnemy == null) break;
 
-                // Tọa độ dàn đội hình đón đầu tàu người chơi
                 Vector3 spawnPos = new Vector3(
                     baseOffsetX + (i - 1) * 6f,
                     baseOffsetY + (i % 2 == 0 ? 2f : -2f),
@@ -170,7 +238,6 @@ namespace VirtualRail
                 );
 
                 availableEnemy.transform.position = spawnPos;
-                // Quay mặt về hướng tàu người chơi
                 Vector3 dirToPlayer = (playerPos - spawnPos).normalized;
                 availableEnemy.transform.rotation = Quaternion.LookRotation(dirToPlayer);
 
@@ -178,6 +245,36 @@ namespace VirtualRail
                 availableEnemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
                 availableEnemy.gameObject.SetActive(true);
             }
+        }
+
+        /// <summary>
+        /// Kích hoạt Vector 9: Cluster Fracture khi một thiên thạch hoặc tàu mẹ phát nổ (TDD Phần II.1).
+        /// </summary>
+        public void TriggerClusterFracture(Vector3 explosionCenter)
+        {
+            Camera mainCam = Camera.main;
+            int fragmentCount = Random.Range(3, 5);
+
+            for (int i = 0; i < fragmentCount; i++)
+            {
+                EnemyMovement fragment = GetAvailableEnemy();
+                if (fragment == null) break;
+
+                SpatialTrajectoryData trajectory = SpatialVectorFactory.GenerateTrajectory(
+                    SpatialVectorType.ClusterFracture, anchor, mainCam, 60f);
+                trajectory.spawnPosition = explosionCenter + Random.insideUnitSphere * 2.5f;
+
+                fragment.ResetState();
+                fragment.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
+
+                var fsm = fragment.GetComponent<EnemyLifecycleFSM>();
+                if (fsm == null) fsm = fragment.gameObject.AddComponent<EnemyLifecycleFSM>();
+                fsm.InitializeTrajectory(trajectory, anchor);
+
+                fragment.gameObject.SetActive(true);
+            }
+
+            Debug.Log($"<color=yellow><b>[CLUSTER FRACTURE]</b></color> Nổ văng {fragmentCount} mảnh vỡ quán tính từ tâm {explosionCenter}!");
         }
 
         private EnemyMovement GetAvailableEnemy()

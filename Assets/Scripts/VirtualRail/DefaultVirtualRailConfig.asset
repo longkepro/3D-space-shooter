@@ -87,3 +87,9 @@ MonoBehaviour:
   initialSmartBombs: 3
   chargeShotSplashRadius: 10
   usePhysicalEnemyProjectiles: 1
+  useSpatialVectors: 1
+  enable4PhaseLifecycle: 1
+  telegraphDuration: 0.5
+  approachDuration: 1.2
+  actionDuration: 2.5
+  exitDuration: 1

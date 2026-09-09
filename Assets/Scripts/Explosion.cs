@@ -65,6 +65,13 @@ public class Explosion : MonoBehaviour
             }
         }
 
+        // Vector 9: Cluster Fracture (TDD v1.0.0 Phần II.1)
+        // Khi thiên thạch hoặc quái vật phát nổ, kích hoạt vỡ mảnh thứ cấp
+        if (VirtualRail.VirtualRailWaveSpawner.Instance != null && Random.value < 0.25f)
+        {
+            VirtualRail.VirtualRailWaveSpawner.Instance.TriggerClusterFracture(transform.position);
+        }
+
         if (TryGetComponent<VirtualRail.IPoolableEntity>(out var poolable))
         {
             poolable.Recycle();

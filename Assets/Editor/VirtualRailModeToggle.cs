@@ -408,6 +408,34 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/21. Spatial Vectors: 10 Spawn Trajectories & 4-Phase FSM (ON)")]
+    public static void EnableSpatialVectors()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useSpatialVectors = true;
+            config.enable4PhaseLifecycle = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT 10 VECTOR KHÔNG GIAN & FSM 4 PHA (TDD PHẦN II):</b></color> Trực diện, Đột kích sau lưng, Cắt ngang sườn, Bổ nhào trần mây, Trồi đáy sâu, Warp-in, FSM Telegraph -> Approach -> Action -> Exit!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/22. Spatial Vectors: Undo to Legacy Static Spawn (OFF)")]
+    public static void DisableSpatialVectors()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useSpatialVectors = false;
+            config.enable4PhaseLifecycle = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ SINH QUÁI TĨNH CŨ:</b></color> Tắt 10 Vector không gian, tắt FSM 4 pha, quay lại vị trí tĩnh phía trước.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
