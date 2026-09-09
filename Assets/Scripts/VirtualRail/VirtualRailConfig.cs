@@ -196,6 +196,16 @@ namespace VirtualRail
         [Tooltip("Thời gian pha thoát ly Exit (giây)")]
         public float exitDuration = 1.0f;
 
+        [Header("16. Formation Choreography & Panic Scatter (TDD v1.0.0 Phần III)")]
+        [Tooltip("Bật biên đạo phi đội hình bay chữ V/Hàng ngang/Xoắn ốc")]
+        public bool enableFormations = true;
+        [Tooltip("Thời gian ráp nối tự do bằng đường cong Cubic Bézier 3D (giây)")]
+        public float formationAssemblyTime = 1.2f;
+        [Tooltip("Bật cơ chế phân rã hoảng loạn Panic Scatter khi mất tàu chỉ huy")]
+        public bool enablePanicScatter = true;
+        [Tooltip("Tần suất xuất hiện đợt đội hình (cứ sau mỗi X đợt quái)")]
+        public int formationIntervalWaves = 3;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

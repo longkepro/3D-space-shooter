@@ -5,11 +5,11 @@ namespace VirtualRail
 {
     /// <summary>
     /// Bộ điều phối đợt tấn công đường ray (Rail Wave Spawner - Hướng Star Fox 64).
-    /// Tuân thủ TDD v1.0.0 Phần II:
+    /// Tuân thủ TDD v1.0.0:
     /// - Quản lý 10 Vector xuất hiện không gian (Spatial Vectors).
     /// - Quản lý máy trạng thái vòng đời 4 pha (EnemyLifecycleFSM).
-    /// - Quản lý Object Pool tái sử dụng 100% (0 GC Alloc), và tự động thu hồi khi trôi về sau lưng.
-    /// - Hỗ trợ phân rã thứ cấp Cluster Fracture (Vector 9).
+    /// - Biên đạo phi đội hình bay (Formation Choreography) với Bézier 3D và Panic Scatter.
+    /// - Quản lý Object Pool tái sử dụng 100% (0 GC Alloc).
     /// </summary>
     public class VirtualRailWaveSpawner : MonoBehaviour
     {
@@ -32,11 +32,17 @@ namespace VirtualRail
         [SerializeField] private bool useSpatialVectors = true;
         [SerializeField] private bool enable4PhaseFSM = true;
 
+        [Header("Formation Choreography (TDD v1.0.0 Phần III)")]
+        [SerializeField] private bool enableFormations = true;
+        [SerializeField] private int formationWaveInterval = 3;
+
         private readonly List<EnemyMovement> _pool = new List<EnemyMovement>();
+        private readonly List<VirtualFormationAnchor> _formationPool = new List<VirtualFormationAnchor>();
         private float _nextWaveTime = 0f;
         private bool _isSpawning = false;
         private bool _isInitialized = false;
         private int _vectorCycleIndex = 0;
+        private int _waveCounter = 0;
 
         private static readonly SpatialVectorType[] ACTIVE_SPATIAL_VECTORS = new SpatialVectorType[]
         {
@@ -105,13 +111,27 @@ namespace VirtualRail
                             _pool.Add(movement);
                         }
 
-                        // Gắn sẵn EnemyLifecycleFSM để 0 GC Alloc lúc runtime
+                        // Gắn sẵn FSM và Wingman để 0 GC Alloc lúc runtime
                         if (enemyObj.GetComponent<EnemyLifecycleFSM>() == null)
                         {
                             enemyObj.AddComponent<EnemyLifecycleFSM>();
                         }
+                        if (enemyObj.GetComponent<FormationWingman>() == null)
+                        {
+                            enemyObj.AddComponent<FormationWingman>();
+                        }
                     }
                 }
+            }
+
+            // Khởi tạo sẵn 2 Formation Anchors (0 GC Alloc)
+            for (int f = 0; f < 2; f++)
+            {
+                GameObject fObj = new GameObject($"[VirtualFormationAnchor_{f}]");
+                fObj.transform.SetParent(transform, false);
+                VirtualFormationAnchor fa = fObj.AddComponent<VirtualFormationAnchor>();
+                fObj.SetActive(false);
+                _formationPool.Add(fa);
             }
 
             _isInitialized = true;
@@ -177,11 +197,24 @@ namespace VirtualRail
             var cfg = anchor.config;
             bool useSpatial = (cfg != null) ? cfg.useSpatialVectors : useSpatialVectors;
             bool useFSM = (cfg != null) ? cfg.enable4PhaseLifecycle : enable4PhaseFSM;
+            bool useFormations = (cfg != null) ? cfg.enableFormations : enableFormations;
+            int interval = (cfg != null) ? cfg.formationIntervalWaves : formationWaveInterval;
 
             if (!useSpatial)
             {
                 SpawnLegacyWave(leadDist);
                 return;
+            }
+
+            _waveCounter++;
+
+            // Kiểm tra đợt bay đội hình (Formation Wave)
+            if (useFormations && (_waveCounter % interval == 0))
+            {
+                if (TrySpawnFormationWave(leadDist, cfg))
+                {
+                    return;
+                }
             }
 
             Camera mainCam = Camera.main;
@@ -215,6 +248,50 @@ namespace VirtualRail
 
                 availableEnemy.gameObject.SetActive(true);
             }
+        }
+
+        private bool TrySpawnFormationWave(float leadDist, VirtualRailConfig cfg)
+        {
+            VirtualFormationAnchor availableAnchor = GetAvailableFormationAnchor();
+            if (availableAnchor == null) return false;
+
+            List<EnemyMovement> enemies = GetAvailableEnemies(5);
+            if (enemies.Count < 3) return false;
+
+            VirtualFormationAnchor.FormationType fType = (enemies.Count >= 5)
+                ? VirtualFormationAnchor.FormationType.WedgeV
+                : VirtualFormationAnchor.FormationType.EchelonLine;
+
+            Vector3 startPos = anchor.transform.position + anchor.ForwardTangent * leadDist + anchor.transform.up * 4f;
+            float assemblyTime = (cfg != null) ? cfg.formationAssemblyTime : 1.2f;
+
+            availableAnchor.InitializeFormation(fType, anchor, startPos, enemies, assemblyTime);
+            return true;
+        }
+
+        private VirtualFormationAnchor GetAvailableFormationAnchor()
+        {
+            for (int i = 0; i < _formationPool.Count; i++)
+            {
+                if (_formationPool[i] != null && !_formationPool[i].gameObject.activeSelf)
+                {
+                    return _formationPool[i];
+                }
+            }
+            return null;
+        }
+
+        private List<EnemyMovement> GetAvailableEnemies(int count)
+        {
+            List<EnemyMovement> list = new List<EnemyMovement>(count);
+            for (int i = 0; i < _pool.Count && list.Count < count; i++)
+            {
+                if (_pool[i] != null && !_pool[i].gameObject.activeSelf)
+                {
+                    list.Add(_pool[i]);
+                }
+            }
+            return list;
         }
 
         private void SpawnLegacyWave(float leadDist)
@@ -296,6 +373,13 @@ namespace VirtualRail
                 if (_pool[i] != null && _pool[i].gameObject.activeSelf)
                 {
                     _pool[i].Recycle();
+                }
+            }
+            for (int i = 0; i < _formationPool.Count; i++)
+            {
+                if (_formationPool[i] != null && _formationPool[i].gameObject.activeSelf)
+                {
+                    _formationPool[i].Recycle();
                 }
             }
         }

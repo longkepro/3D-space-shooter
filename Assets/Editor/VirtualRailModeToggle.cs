@@ -436,6 +436,35 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/23. Formations: Bézier Assembly & Panic Scatter (ON)")]
+    public static void EnableFormationChoreography()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableFormations = true;
+            config.enablePanicScatter = true;
+            config.formationAssemblyTime = 1.2f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT BIÊN ĐẠO ĐỘI HÌNH & PANIC SCATTER (TDD PHẦN III):</b></color> Đội hình chữ V ráp nối Bézier 3D 1.2s, Đánh đổi Rủi ro/Phần thưởng Combo, Bắn hạ chỉ huy kích hoạt Panic Scatter!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/24. Formations: Undo to Solitary Spawning (OFF)")]
+    public static void DisableFormationChoreography()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableFormations = false;
+            config.enablePanicScatter = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ SINH QUÁI ĐƠN LẺ:</b></color> Tắt bay đội hình chữ V, tắt Panic Scatter.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

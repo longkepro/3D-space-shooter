@@ -93,3 +93,7 @@ MonoBehaviour:
   approachDuration: 1.2
   actionDuration: 2.5
   exitDuration: 1
+  enableFormations: 1
+  formationAssemblyTime: 1.2
+  enablePanicScatter: 1
+  formationIntervalWaves: 3
