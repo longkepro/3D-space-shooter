@@ -14,6 +14,7 @@ namespace VirtualRail
         public float detonationDistance = 2f;
         [Header("Splash AoE (TDD v1.0.0 Phần I.6)")]
         public float splashRadius = 10f;
+        public GameObject explosionPrefab;
 
         private void Start()
         {
