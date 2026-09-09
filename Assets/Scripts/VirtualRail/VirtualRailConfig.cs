@@ -62,6 +62,30 @@ namespace VirtualRail
         [Tooltip("Độ nhạy di chuyển tâm ngắm của cần gạt phải")]
         public float mobileAimSensitivity = 1.0f;
 
+        [Header("5c. Golden-Ratio Kinematics (Tỷ Lệ Vàng Động Học)")]
+        [Tooltip("Bật động học tỷ lệ vàng: Vx = 50% Vz, Vy = 35% Vz, khống chế trôi dạt S_drift <= 2.5m")]
+        public bool useGoldenRatioMotion = true;
+        [Range(0.35f, 0.65f)]
+        [Tooltip("Hệ số phân bổ trục ngang X so với tốc độ tiến Z (chuẩn 0.50)")]
+        public float goldenRatioX = 0.50f;
+        [Range(0.20f, 0.50f)]
+        [Tooltip("Hệ số phân bổ trục dọc Y so với tốc độ tiến Z (chuẩn 0.35 cho khung 16:9)")]
+        public float goldenRatioY = 0.35f;
+        [Tooltip("Quãng đường trôi dạt an toàn tối đa (mét - chuẩn <= 2.5m)")]
+        public float maxSafeDriftDistance = 2.5f;
+        [Tooltip("Độ trễ đàn hồi cơ sở khi tàu bay chậm (giây)")]
+        public float goldenRatioBaseLag = 0.10f;
+
+        /// <summary>
+        /// Tính toán độ trễ đàn hồi thích ứng (Adaptive Damping) để đảm bảo quãng đường trôi dạt S_drift <= maxSafeDriftDistance.
+        /// </summary>
+        public float CalculateAdaptiveLag(float currentForwardSpeed)
+        {
+            if (!useGoldenRatioMotion) return smoothDampLag;
+            float safeSpeed = Mathf.Max(currentForwardSpeed, 1f);
+            return Mathf.Min(goldenRatioBaseLag, maxSafeDriftDistance / safeSpeed);
+        }
+
         [Header("6. Ship Tracking Settings (Chế độ phụ thuộc cũ)")]
         [Range(0.05f, 0.2f)]
         [Tooltip("Độ trễ lò xo suy giảm chấn (0.08s - 0.12s)")]
@@ -143,6 +167,20 @@ namespace VirtualRail
         public float asteroidZInterval = 18f;
         [Tooltip("Kích thước bộ đệm Object Pool thiên thạch")]
         public int asteroidPoolSize = 32;
+
+        [Header("14. Combat & Counter-Play (TDD v1.0.0 Phần I)")]
+        [Tooltip("Bật cơ chế lộn cánh phản xạ đạn 90 độ (Barrel Roll Deflection)")]
+        public bool enableBarrelRollDeflection = true;
+        [Tooltip("Thời gian lộn vòng Barrel Roll (giây)")]
+        public float barrelRollDuration = 0.40f;
+        [Tooltip("Bật bom thông minh quét sạch màn hình (Smart Bomb)")]
+        public bool enableSmartBomb = true;
+        [Tooltip("Số lượng bom thông minh ban đầu")]
+        public int initialSmartBombs = 3;
+        [Tooltip("Bán kính nổ lan của phát bắn tụ lực Charge Shot Splash (mét)")]
+        public float chargeShotSplashRadius = 10f;
+        [Tooltip("Bật sử dụng đạn vật lý Plasma Orb cho quái thay vì hitscan cũ")]
+        public bool usePhysicalEnemyProjectiles = true;
 
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).

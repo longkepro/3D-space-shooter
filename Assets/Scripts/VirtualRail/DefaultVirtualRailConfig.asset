@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cc0fa9c728d55b428f256f5340321d5, type: 3}
   m_Name: DefaultVirtualRailConfig
   m_EditorClassIdentifier: 
-  forwardSpeed: 28
-  boostMultiplier: 1.6
+  forwardSpeed: 120
+  boostMultiplier: 1.5
   convergenceDistance: 150
   useDynamicFrustumBounds: 1
   shipViewportRatio: 0.75
@@ -35,6 +35,11 @@ MonoBehaviour:
   joystickHandleRange: 65
   joystickDeadZone: 0.1
   mobileAimSensitivity: 1
+  useGoldenRatioMotion: 1
+  goldenRatioX: 0.5
+  goldenRatioY: 0.35
+  maxSafeDriftDistance: 2.5
+  goldenRatioBaseLag: 0.1
   smoothDampLag: 0.1
   rollFactor: 2.5
   maxRollAngle: 65
@@ -76,3 +81,9 @@ MonoBehaviour:
   asteroidSpawnDistance: 250
   asteroidZInterval: 18
   asteroidPoolSize: 32
+  enableBarrelRollDeflection: 1
+  barrelRollDuration: 0.4
+  enableSmartBomb: 1
+  initialSmartBombs: 3
+  chargeShotSplashRadius: 10
+  usePhysicalEnemyProjectiles: 1

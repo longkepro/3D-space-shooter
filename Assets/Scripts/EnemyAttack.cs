@@ -54,11 +54,47 @@ public class EnemyAttack : MonoBehaviour
         return false;
     }
 
+    [Header("Projectile Fire (TDD v1.0.0 Phần I.3)")]
+    [SerializeField] private bool _usePhysicalProjectiles = true;
+    [SerializeField] private float _fireCooldown = 1.2f;
+    private float _nextFireTime = 0f;
+
     private void FireLaser()
     {
-        foreach (var laser in _lasers)
+        bool usePhysical = _usePhysicalProjectiles;
+        if (VirtualRail.VirtualRailAnchor.Instance != null && VirtualRail.VirtualRailAnchor.Instance.config != null)
         {
-            laser.FireLaser(_hitPosition, _target);
+            usePhysical = _usePhysicalProjectiles && VirtualRail.VirtualRailAnchor.Instance.config.usePhysicalEnemyProjectiles;
+        }
+
+        if (usePhysical && VirtualRail.EnemyProjectilePool.Instance != null)
+        {
+            if (Time.time < _nextFireTime) return;
+            _nextFireTime = Time.time + _fireCooldown;
+
+            Vector3 toPlayer = _target.position - transform.position;
+            // Nếu người chơi đang bay tới đối đầu theo trục Z
+            bool isHeadOn = toPlayer.z < 0f;
+
+            // Toán học vận tốc tương đối TDD:
+            // - Head-on: V_bullet = 20 m/s (V_closing = 60 m/s, Reaction Window 1.5s)
+            // - Rear-chaser: V_bullet = 75 m/s (bắt kịp tàu người chơi)
+            float bulletSpeed = isHeadOn ? 20f : 75f;
+
+            foreach (var laser in _lasers)
+            {
+                if (laser == null) continue;
+                Vector3 muzzlePos = laser.transform.position;
+                Vector3 fireDir = (_target.position - muzzlePos).normalized;
+                VirtualRail.EnemyProjectilePool.Instance.SpawnProjectile(muzzlePos, fireDir, bulletSpeed, isHeadOn);
+            }
+        }
+        else
+        {
+            foreach (var laser in _lasers)
+            {
+                if (laser != null) laser.FireLaser(_hitPosition, _target);
+            }
         }
     }
 

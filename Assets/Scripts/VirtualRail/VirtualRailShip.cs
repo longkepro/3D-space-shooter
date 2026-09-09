@@ -23,6 +23,19 @@ namespace VirtualRail
         private Vector2 currentVelocity;
         private Thruster[] thrusters;
 
+        [Header("Barrel Roll Deflection (TDD v1.0.0 Phần I.5)")]
+        [SerializeField] private bool isDeflecting = false;
+        [SerializeField] private float barrelRollDuration = 0.40f;
+        private bool isRolling = false;
+        private float rollTimer = 0f;
+        private float rollDirection = 0f;
+        private float currentBarrelRollAngle = 0f;
+        private float lastTapTimeA = -1f;
+        private float lastTapTimeD = -1f;
+        private const float DOUBLE_TAP_THRESHOLD = 0.28f;
+
+        public bool IsDeflecting => isDeflecting;
+
         public Vector2 LocalPos2D => localPos2D;
         public Vector2 NormalizedPos => shipNormalizedPos;
         public VirtualRailConfig.FrustumBounds ShipBounds => shipBounds;
@@ -109,8 +122,16 @@ namespace VirtualRail
                 else
                 {
                     // Hướng A: Tích lũy vị trí tự do (Free Roam - nhả phím đứng yên tại chỗ)
-                    float speedNormX = (halfW > 0.001f) ? (cfg.shipSpeedX / halfW) : 1.5f;
-                    float speedNormY = (halfH > 0.001f) ? (cfg.shipSpeedY / halfH) : 1.5f;
+                    float effectiveSpeedX = cfg.useGoldenRatioMotion
+                        ? (anchor != null ? anchor.CurrentSpeed * cfg.goldenRatioX : cfg.shipSpeedX)
+                        : cfg.shipSpeedX;
+
+                    float effectiveSpeedY = cfg.useGoldenRatioMotion
+                        ? (anchor != null ? anchor.CurrentSpeed * cfg.goldenRatioY : cfg.shipSpeedY)
+                        : cfg.shipSpeedY;
+
+                    float speedNormX = (halfW > 0.001f) ? (effectiveSpeedX / halfW) : 1.5f;
+                    float speedNormY = (halfH > 0.001f) ? (effectiveSpeedY / halfH) : 1.5f;
 
                     shipNormalizedPos.x = Mathf.Clamp(shipNormalizedPos.x + inputX * speedNormX * Time.deltaTime, -1f, 1f);
                     shipNormalizedPos.y = Mathf.Clamp(shipNormalizedPos.y + inputY * speedNormY * Time.deltaTime, -1f, 1f);
@@ -133,8 +154,11 @@ namespace VirtualRail
 
                 Vector2 targetPos = new Vector2(targetX, targetY);
 
+                // Độ trễ lò xo thích ứng động học (khống chế S_drift <= 2.5m)
+                float adaptiveLag = (anchor != null) ? cfg.CalculateAdaptiveLag(anchor.CurrentSpeed) : cfg.smoothDampLag;
+
                 // Tàu lướt êm ái tới vị trí đích
-                localPos2D = Vector2.SmoothDamp(localPos2D, targetPos, ref currentVelocity, cfg.smoothDampLag);
+                localPos2D = Vector2.SmoothDamp(localPos2D, targetPos, ref currentVelocity, adaptiveLag);
                 localPos2D = shipBounds.Clamp(localPos2D);
 
                 // Lượn nghiêng khí động học trực tiếp từ tín hiệu phím
@@ -158,7 +182,8 @@ namespace VirtualRail
                         : Mathf.Lerp(shipBounds.opticalCenter.y, shipBounds.minY, -normY);
 
                     Vector2 targetPosOnShipPlane = new Vector2(targetX, targetY);
-                    localPos2D = Vector2.SmoothDamp(localPos2D, targetPosOnShipPlane, ref currentVelocity, cfg.smoothDampLag);
+                    float adaptiveLag = (anchor != null) ? cfg.CalculateAdaptiveLag(anchor.CurrentSpeed) : cfg.smoothDampLag;
+                    localPos2D = Vector2.SmoothDamp(localPos2D, targetPosOnShipPlane, ref currentVelocity, adaptiveLag);
                     localPos2D = shipBounds.Clamp(localPos2D);
 
                     float deltaX = targetPosOnShipPlane.x - localPos2D.x;
@@ -166,6 +191,43 @@ namespace VirtualRail
 
                     rollNorm = (halfW > 0.001f) ? (deltaX / (halfW * 0.5f)) : 0f;
                     pitchNorm = (halfH > 0.001f) ? (deltaY / (halfH * 0.5f)) : 0f;
+                }
+            }
+
+            // ==================== DOUBLE TAP DETECT: BARREL ROLL DEFLECTION ====================
+            if (cfg.enableBarrelRollDeflection)
+            {
+                if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.Q))
+                {
+                    if (Time.time - lastTapTimeA <= DOUBLE_TAP_THRESHOLD || Input.GetKeyDown(KeyCode.Q))
+                    {
+                        TriggerBarrelRoll(-1f);
+                    }
+                    lastTapTimeA = Time.time;
+                }
+                else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.E))
+                {
+                    if (Time.time - lastTapTimeD <= DOUBLE_TAP_THRESHOLD || Input.GetKeyDown(KeyCode.E))
+                    {
+                        TriggerBarrelRoll(1f);
+                    }
+                    lastTapTimeD = Time.time;
+                }
+            }
+
+            // Cập nhật trạng thái Barrel Roll
+            if (isRolling)
+            {
+                rollTimer += Time.deltaTime;
+                float t = Mathf.Clamp01(rollTimer / barrelRollDuration);
+                // Xoay 360 độ quanh trục Z bằng hàm làm mượt Cosine
+                currentBarrelRollAngle = -rollDirection * 360f * (0.5f - 0.5f * Mathf.Cos(t * Mathf.PI));
+
+                if (t >= 1.0f)
+                {
+                    isRolling = false;
+                    isDeflecting = false;
+                    currentBarrelRollAngle = 0f;
                 }
             }
 
@@ -177,11 +239,13 @@ namespace VirtualRail
             float targetPitch = Mathf.Clamp(-pitchNorm * cfg.maxPitchAngle, -cfg.maxPitchAngle, cfg.maxPitchAngle);
             float targetYaw = Mathf.Clamp(rollNorm * cfg.maxYawAngle, -cfg.maxYawAngle, cfg.maxYawAngle);
 
-            Quaternion targetRotation = Quaternion.Euler(targetPitch, targetYaw, targetRoll);
+            float totalRoll = targetRoll + currentBarrelRollAngle;
+            Quaternion targetRotation = Quaternion.Euler(targetPitch, targetYaw, totalRoll);
 
-            // Xoay visual mesh
+            // Xoay visual mesh (tốc độ quay nhanh hơn khi đang lộn vòng)
             Transform meshTransform = (shipVisualMesh != null) ? shipVisualMesh : transform;
-            meshTransform.localRotation = Quaternion.Slerp(meshTransform.localRotation, targetRotation, cfg.rotationSlerpSpeed * Time.deltaTime);
+            float slerpSpeed = isRolling ? 35f : cfg.rotationSlerpSpeed;
+            meshTransform.localRotation = Quaternion.Slerp(meshTransform.localRotation, targetRotation, slerpSpeed * Time.deltaTime);
 
             // Cập nhật hiệu ứng động cơ
             float boostIntensity = anchor.CurrentSpeed > cfg.forwardSpeed ? 1.0f : 0.5f;
@@ -192,6 +256,24 @@ namespace VirtualRail
                     if (t != null) t.Intensity(boostIntensity);
                 }
             }
+        }
+
+        public void TriggerBarrelRoll(float direction)
+        {
+            if (isRolling) return;
+            var cfg = (anchor != null) ? anchor.config : null;
+            if (cfg != null && !cfg.enableBarrelRollDeflection) return;
+
+            barrelRollDuration = (cfg != null) ? cfg.barrelRollDuration : 0.40f;
+            isRolling = true;
+            isDeflecting = true;
+            rollTimer = 0f;
+            rollDirection = Mathf.Sign(direction);
+
+            // Xung lực lách ngang nhẹ khi lộn vòng né đạn (Emergency Evasion)
+            shipNormalizedPos.x = Mathf.Clamp(shipNormalizedPos.x + rollDirection * 0.18f, -1f, 1f);
+
+            Debug.Log($"<color=cyan><b>[BARREL ROLL DEFLECTION]</b></color> Kích hoạt lộn cánh {(rollDirection > 0 ? "Phải" : "Trái")}! Phản xạ đạn 100% trong {barrelRollDuration:F2}s.");
         }
 
         private void OnDrawGizmosSelected()

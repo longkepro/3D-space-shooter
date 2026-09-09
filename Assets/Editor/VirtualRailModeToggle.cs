@@ -340,6 +340,74 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/17. Kinematics: Golden Ratio Motion (ON - 50% X, 35% Y, Adaptive Lag)")]
+    public static void EnableGoldenRatioMotion()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useGoldenRatioMotion = true;
+            config.forwardSpeed = 40f;
+            config.boostMultiplier = 1.5f;
+            config.goldenRatioX = 0.50f;
+            config.goldenRatioY = 0.35f;
+            config.maxSafeDriftDistance = 2.5f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT ĐỘNG HỌC TỶ LỆ VÀNG:</b></color> Vx:Vy:Vz = 0.50:0.35:1.00, Transit Time ~0.7s, Tự động siết trôi dạt S_drift <= 2.5m!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/18. Kinematics: Undo to Legacy Fixed Speeds (OFF)")]
+    public static void DisableGoldenRatioMotion()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useGoldenRatioMotion = false;
+            config.forwardSpeed = 28f;
+            config.boostMultiplier = 1.6f;
+            config.shipSpeedX = 140f;
+            config.shipSpeedY = 85f;
+            config.smoothDampLag = 0.1f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ VẬN TỐC CỐ ĐỊNH CŨ:</b></color> Dùng shipSpeedX = 140, shipSpeedY = 85, lag = 0.1s.");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/19. Combat: Active Counter-Play & Plasma Projectiles (ON)")]
+    public static void EnableCombatCounterPlay()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableBarrelRollDeflection = true;
+            config.enableSmartBomb = true;
+            config.usePhysicalEnemyProjectiles = true;
+            config.chargeShotSplashRadius = 10f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT COMBAT & ACTIVE COUNTER-PLAY (TDD PHẦN I):</b></color> Barrel Roll hất đạn 90°, Smart Bomb quét sạch màn hình, Đạn Plasma vật lý V_closing, Charge Shot nổ lan Combo!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/20. Combat: Undo to Legacy Hitscan Attack (OFF)")]
+    public static void DisableCombatCounterPlay()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableBarrelRollDeflection = false;
+            config.enableSmartBomb = false;
+            config.usePhysicalEnemyProjectiles = false;
+            config.chargeShotSplashRadius = 0f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ COMBAT CŨ:</b></color> Tắt Barrel Roll hất đạn, Tắt Smart Bomb, Quay lại Laser Hitscan truyền thống.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
@@ -348,6 +416,10 @@ public class VirtualRailModeToggle
         // Gốc neo đường ray
         VirtualRailAnchor anchor = root.AddComponent<VirtualRailAnchor>();
         anchor.config = config;
+
+        // Module Bom Thông Minh & Động cơ tính điểm Combo (TDD v1.0.0 Phần I)
+        root.AddComponent<SmartBombModule>();
+        root.AddComponent<ComboScoringEngine>();
 
         // Bộ đọc Input tập trung (Hòa trộn PC Keyboard/Mouse và Android Dual Joysticks)
         VirtualRailInputReader inputReader = root.AddComponent<VirtualRailInputReader>();

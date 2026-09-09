@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace VirtualRail
 {
@@ -12,7 +12,8 @@ namespace VirtualRail
         public float turnRate = 180f; // độ / giây
         public float lifeTime = 5f;
         public float detonationDistance = 2f;
-        public GameObject explosionPrefab;
+        [Header("Splash AoE (TDD v1.0.0 Phần I.6)")]
+        public float splashRadius = 10f;
 
         private void Start()
         {
@@ -47,16 +48,47 @@ namespace VirtualRail
 
         private void Detonate()
         {
-            if (target != null && target.CompareTag("Enemy"))
+            Vector3 impactPoint = transform.position;
+            int killCount = 0;
+
+            // 1. Quét nổ lan hình cầu R = 10m theo chuẩn TDD Phần I.6
+            Collider[] colliders = Physics.OverlapSphere(impactPoint, splashRadius);
+            for (int i = 0; i < colliders.Length; i++)
             {
-                var enemy = target.GetComponent<EnemyMovement>();
-                if (enemy != null) enemy.BlowUp();
+                if (colliders[i] == null) continue;
+
+                var enemy = colliders[i].GetComponentInParent<EnemyMovement>();
+                if (enemy != null && enemy.gameObject.activeSelf)
+                {
+                    enemy.BlowUp();
+                    killCount++;
+                    continue;
+                }
+
+                var asteroid = colliders[i].GetComponentInParent<Asteroid>();
+                if (asteroid != null && asteroid.gameObject.activeSelf)
+                {
+                    var exp = asteroid.GetComponent<Explosion>();
+                    if (exp != null) exp.BlowUp();
+                    else asteroid.Recycle();
+                }
             }
 
-            // Tạo hiệu ứng nổ nếu có
-            if (explosionPrefab != null)
+            // 2. Gửi tín hiệu tính điểm Combo cấp số cộng: TotalHits = N + (N - 1)
+            if (killCount > 0 && ComboScoringEngine.Instance != null)
             {
-                Instantiate(explosionPrefab, transform.position, Quaternion.identity);
+                ComboScoringEngine.Instance.RegisterSplashKill(killCount);
+            }
+
+            // 3. Tạo hiệu ứng nổ qua VFXPool (0 GC)
+            var vfxPool = VirtualRailVFXPool.Instance;
+            if (vfxPool != null && explosionPrefab != null)
+            {
+                vfxPool.SpawnVFX(explosionPrefab, impactPoint, Quaternion.identity, null, 3f);
+            }
+            else if (explosionPrefab != null)
+            {
+                Instantiate(explosionPrefab, impactPoint, Quaternion.identity);
             }
 
             Destroy(gameObject);

@@ -58,6 +58,23 @@ namespace VirtualRail
                     asteroidSpawner.anchor = this;
                 }
             }
+
+            // Module Bom Thông Minh & Động cơ tính điểm Combo (TDD v1.0.0 Phần I)
+            if (GetComponent<SmartBombModule>() == null)
+            {
+                gameObject.AddComponent<SmartBombModule>();
+            }
+
+            if (GetComponent<ComboScoringEngine>() == null)
+            {
+                gameObject.AddComponent<ComboScoringEngine>();
+            }
+
+            // Đảm bảo Pool đạn địch sẵn sàng
+            if (EnemyProjectilePool.Instance == null)
+            {
+                var pool = EnemyProjectilePool.Instance;
+            }
         }
 
         private void Update()

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace VirtualRail
 {
@@ -110,10 +110,25 @@ namespace VirtualRail
         {
             if (missilePrefab == null)
             {
-                // Nếu chưa có prefab riêng, dùng tia nổ trực tiếp
-                var enemy = lockedTarget.GetComponent<EnemyMovement>();
-                if (enemy != null) enemy.BlowUp();
-                Debug.Log($"[VirtualRail] Charge Shot Hit Locked Target: {lockedTarget.name}");
+                // Nếu chưa có prefab riêng, dùng nổ lan trực tiếp
+                Vector3 center = lockedTarget.position;
+                int killCount = 0;
+                Collider[] colliders = Physics.OverlapSphere(center, 10f);
+                for (int i = 0; i < colliders.Length; i++)
+                {
+                    if (colliders[i] == null) continue;
+                    var em = colliders[i].GetComponentInParent<EnemyMovement>();
+                    if (em != null && em.gameObject.activeSelf)
+                    {
+                        em.BlowUp();
+                        killCount++;
+                    }
+                }
+                if (killCount > 0 && ComboScoringEngine.Instance != null)
+                {
+                    ComboScoringEngine.Instance.RegisterSplashKill(killCount);
+                }
+                Debug.Log($"[VirtualRail] Direct Charge Shot Splash Hit: {killCount} enemies");
                 return;
             }
 
