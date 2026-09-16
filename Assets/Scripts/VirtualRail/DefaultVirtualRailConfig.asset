@@ -33,7 +33,9 @@ MonoBehaviour:
   autoFireHoldTime: 0.08
   shipSpeedX: 140
   shipSpeedY: 85
-  forceShowMobileUI: 1
+  enableMobileUI: 1
+  forceShowMobileUI: 0
+  toggleMobileUIKey: 282
   joystickHandleRange: 65
   joystickDeadZone: 0.1
   mobileAimSensitivity: 1

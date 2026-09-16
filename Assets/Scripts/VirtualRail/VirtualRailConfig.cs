@@ -57,8 +57,12 @@ namespace VirtualRail
         public float shipSpeedY = 85f;
 
         [Header("5b. Android & Mobile Touch Controls")]
+        [Tooltip("Bật/Tắt tổng thể cụm UI cảm ứng Mobile (Master Switch)")]
+        public bool enableMobileUI = true;
         [Tooltip("Bắt buộc hiển thị cần gạt ảo trên Unity Editor để kiểm thử")]
-        public bool forceShowMobileUI = true;
+        public bool forceShowMobileUI = false;
+        [Tooltip("Phím tắt bàn phím để bật/tắt nhanh giao diện Mobile UI khi đang chơi (Mặc định F1)")]
+        public KeyCode toggleMobileUIKey = KeyCode.F1;
         [Tooltip("Bán kính kéo của cần gạt ảo (pixels)")]
         public float joystickHandleRange = 65f;
         [Tooltip("Vùng chết của cần gạt ảo")]

@@ -220,21 +220,21 @@ public class VirtualRailModeToggle
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/9. Mobile: Force Show Touch Joysticks in Editor (ON)")]
+    [MenuItem("Tools/Virtual Rail/9. Mobile: Show Touch Joysticks (ON)")]
     public static void EnableForceShowMobileUI()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
+            config.enableMobileUI = true;
             config.forceShowMobileUI = true;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            SwitchToVirtualRail();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT XEM TRƯỚC CẦN GẠT ẢO TRÊN EDITOR:</b></color> 2 cần gạt ảo (Trái & Phải) đã được đồng bộ vào Prefab và sẽ hiển thị trên Game view!");
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT GIAO DIỆN MOBILE UI:</b></color> 2 cần gạt ảo (Trái & Phải) đang hiển thị. Trong lúc chơi có thể bấm F1 để ẩn/hiện nhanh!");
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/10. Mobile: Auto-detect Mobile Only (OFF in Editor)")]
+    [MenuItem("Tools/Virtual Rail/10. Mobile: Hide Touch Joysticks (OFF)")]
     public static void DisableForceShowMobileUI()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
@@ -243,7 +243,7 @@ public class VirtualRailModeToggle
             config.forceShowMobileUI = false;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT XEM TRƯỚC CẦN GẠT ẢO:</b></color> Cần gạt ảo chỉ tự động hiển thị khi build lên thiết bị di động (Android/iOS).");
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ ẨN GIAO DIỆN MOBILE UI:</b></color> Cần gạt ảo đã được ẩn tạm thời. Muốn bật lại chỉ cần chọn Menu 9 hoặc bấm F1 khi đang chơi!");
         }
     }
 

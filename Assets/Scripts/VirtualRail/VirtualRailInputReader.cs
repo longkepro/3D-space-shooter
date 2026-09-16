@@ -41,14 +41,37 @@ namespace VirtualRail
 
         private void Update()
         {
+            HandleHotkeyToggle();
             UpdateUIVisibility();
+        }
+
+        private void HandleHotkeyToggle()
+        {
+            KeyCode key = (config != null && config.toggleMobileUIKey != KeyCode.None) ? config.toggleMobileUIKey : KeyCode.F1;
+            if (Input.GetKeyDown(key))
+            {
+                if (config != null)
+                {
+                    if (Application.isMobilePlatform)
+                    {
+                        config.enableMobileUI = !config.enableMobileUI;
+                        Debug.Log($"<color=cyan><b>[VirtualRail] Phím {key}:</b> Đã chuyển đổi hiển thị Mobile UI -> {(config.enableMobileUI ? "HIỆN" : "ẨN")}</color>");
+                    }
+                    else
+                    {
+                        config.forceShowMobileUI = !config.forceShowMobileUI;
+                        Debug.Log($"<color=cyan><b>[VirtualRail] Phím {key}:</b> Đã chuyển đổi hiển thị Mobile UI trên PC -> {(config.forceShowMobileUI ? "HIỆN" : "ẨN")}</color>");
+                    }
+                }
+            }
         }
 
         private void UpdateUIVisibility()
         {
             if (mobileUIRoot != null)
             {
-                bool showMobile = Application.isMobilePlatform || (config != null && config.forceShowMobileUI);
+                bool allowMobile = (config == null) || config.enableMobileUI;
+                bool showMobile = allowMobile && (Application.isMobilePlatform || (config != null && config.forceShowMobileUI));
                 if (mobileUIRoot.activeSelf != showMobile)
                 {
                     mobileUIRoot.SetActive(showMobile);
