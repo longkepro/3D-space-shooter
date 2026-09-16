@@ -14,6 +14,12 @@ namespace VirtualRail
         [Header("2. Convergence (Cự ly hội tụ)")]
         [Tooltip("Khoảng cách Z hội tụ đạn đạo (120m - 200m)")]
         public float convergenceDistance = 150f;
+        [Tooltip("Bật hội tụ độ sâu động theo mục tiêu (Dynamic Depth Convergence). Tự động chụm nòng súng vào cự ly thực tế của kẻ địch thay vì cố định 150m")]
+        public bool enableDynamicDepthConvergence = true;
+        [Tooltip("Bán kính hình cầu quét tìm mục tiêu độ sâu dọc theo tia ngắm (mét - chuẩn 0.8m)")]
+        public float dynamicConvergenceRadius = 0.8f;
+        [Tooltip("Cự ly tối đa mà tia ngắm quét tìm mục tiêu độ sâu động (mét)")]
+        public float maxConvergenceScanDistance = 250f;
 
         [Header("3. Viewport Frustum Ratios (Khung biên động theo Camera)")]
         [Tooltip("Bật tính toán khung biên tự động theo tỷ lệ Camera Frustum")]
@@ -131,7 +137,11 @@ namespace VirtualRail
         public float cameraSmoothSpeed = 8f;
 
         [Header("9. Aim Assist & Bullet Magnetism")]
+        [Tooltip("Bật phễu từ tính uốn nhẹ đường đạn về kẻ địch")]
+        public bool enableBulletMagnetism = false;
         public float magnetismRadius = 2.5f;
+        [Tooltip("Góc lệch tối đa mà phễu từ tính được phép uốn nắn hướng đạn (độ)")]
+        public float magnetismMaxAngle = 6.0f;
         public float bulletSpeed = 220f;
         public LayerMask enemyLayer = ~0;
 

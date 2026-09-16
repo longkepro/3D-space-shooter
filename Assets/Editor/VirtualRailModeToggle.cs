@@ -522,6 +522,60 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/29. Aiming: Pure 3D Convergence to Reticle (ON - Star Fox 64 Arcade)")]
+    public static void EnablePureConvergenceAiming()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableBulletMagnetism = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT BẮN HỘI TỤ THUẦN TÚY (PURE 3D CONVERGENCE - STAR FOX 64 ARCADE):</b></color> Đạn từ mọi nòng luôn bay thẳng xuyên tâm ngắm reticle ở cự ly Z_conv, 100% không bị thiên thạch hay vật cản ven đường bẻ lệch!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/30. Aiming: Bullet Magnetism Assist (ON - Filtered Enemy Only)")]
+    public static void EnableFilteredBulletMagnetism()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableBulletMagnetism = true;
+            config.magnetismRadius = 1.2f;
+            config.magnetismMaxAngle = 6.0f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ BẬT PHỄU TỪ TÍNH CÓ KIỂM SOÁT (BULLET MAGNETISM ASSIST):</b></color> Chỉ nắn hướng đạn tối đa 6 độ về trọng tâm kẻ địch (Enemy), hoàn toàn bỏ qua thiên thạch.");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/31. Aiming: Dynamic Depth Convergence (ON - Star Fox 64)")]
+    public static void EnableDynamicDepthConvergence()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableDynamicDepthConvergence = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HỘI TỤ ĐỘ SÂU ĐỘNG (DYNAMIC DEPTH CONVERGENCE - STAR FOX 64):</b></color> Tia ngắm tự động đo độ sâu mục tiêu, chụm 2 nòng súng chính xác vào kẻ địch ở mọi cự ly (20m - 250m)!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/32. Aiming: Fixed Depth Convergence 150m (OFF - Legacy)")]
+    public static void DisableDynamicDepthConvergence()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableDynamicDepthConvergence = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ QUAY VỀ HỘI TỤ CỐ ĐỊNH 150M (FIXED DEPTH CONVERGENCE - LEGACY):</b></color> Đạn luôn chụm ở cự ly cố định 150m.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

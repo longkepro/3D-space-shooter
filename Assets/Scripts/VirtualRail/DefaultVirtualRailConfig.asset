@@ -15,6 +15,9 @@ MonoBehaviour:
   forwardSpeed: 120
   boostMultiplier: 1.5
   convergenceDistance: 150
+  enableDynamicDepthConvergence: 1
+  dynamicConvergenceRadius: 0.8
+  maxConvergenceScanDistance: 250
   useDynamicFrustumBounds: 1
   shipViewportRatio: 0.75
   reticleViewportRatio: 0.85
