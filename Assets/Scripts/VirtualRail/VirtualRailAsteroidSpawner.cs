@@ -28,6 +28,7 @@ namespace VirtualRail
         [SerializeField] private float despawnBehindDistance = 45f;
 
         private readonly List<Asteroid> _pool = new List<Asteroid>();
+        private readonly ICorridorPathStrategy _pathStrategy = new PerlinSpinePathStrategy();
         private float _lastSpawnZ = 0f;
         private bool _isSpawning = false;
         private bool _isInitialized = false;
@@ -159,11 +160,23 @@ namespace VirtualRail
             Asteroid ast = GetAvailableAsteroid();
             if (ast == null) return;
 
-            // Vị trí rải ngẫu nhiên trong hành lang bay
-            float x = Random.Range(-20f, 20f);
-            float y = Random.Range(1f, 16f);
+            var cfg = anchor != null ? anchor.config : null;
+            Vector3 spawnPos;
 
-            ast.transform.position = new Vector3(x, y, targetZ);
+            if (cfg != null && cfg.enableSafeCorridorPath)
+            {
+                // Áp dụng thuật toán luồng an toàn Perlin Safe Spine (0 GC Alloc)
+                spawnPos = _pathStrategy.CalculateSpawnPosition(targetZ, 40f, 15f, cfg);
+            }
+            else
+            {
+                // Hoàn nguyên về ngẫu nhiên thuần túy cũ (Fallback/Undo)
+                float x = Random.Range(-20f, 20f);
+                float y = Random.Range(1f, 16f);
+                spawnPos = new Vector3(x, y, targetZ);
+            }
+
+            ast.transform.position = spawnPos;
             ast.transform.rotation = Random.rotation;
             ast.ResetScale();
             ast.gameObject.SetActive(true);
@@ -189,6 +202,35 @@ namespace VirtualRail
                 {
                     _pool[i].Recycle();
                 }
+            }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            var cfg = anchor != null ? anchor.config : null;
+            if (cfg == null || !cfg.enableSafeCorridorPath) return;
+
+            float startZ = anchor != null ? anchor.transform.position.z : transform.position.z;
+            float endZ = startZ + (cfg != null ? cfg.asteroidSpawnDistance : 250f);
+            float clearR = cfg.safeCorridorRadius;
+
+            Gizmos.color = new Color(0.1f, 0.9f, 1f, 0.65f);
+            Vector3 prevCenter = Vector3.zero;
+            bool hasPrev = false;
+
+            for (float z = startZ; z <= endZ; z += 12f)
+            {
+                Vector2 center2D = _pathStrategy.SampleSafeCenter(z, cfg);
+                Vector3 center3D = new Vector3(center2D.x, center2D.y, z);
+
+                if (hasPrev)
+                {
+                    Gizmos.DrawLine(prevCenter, center3D);
+                }
+
+                Gizmos.DrawWireSphere(center3D, clearR);
+                prevCenter = center3D;
+                hasPrev = true;
             }
         }
     }

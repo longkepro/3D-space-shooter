@@ -492,6 +492,36 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/27. Asteroids: Guaranteed Safe Corridor Trench (ON)")]
+    public static void EnableSafeCorridorPath()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableSafeCorridorPath = true;
+            config.safeCorridorRadius = 5.5f;
+            config.safePathWiggleFrequency = 0.012f;
+            config.safePathWiggleAmplitudeX = 12f;
+            config.safePathWiggleAmplitudeY = 4.5f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT LÀN BAY AN TOÀN ĐẢM BẢO (PERLIN SAFE SPINE):</b></color> Thuật toán Perlin Noise tạo luồng hẻm núi an toàn R=5.5m xuyên qua biển thiên thạch, 100% không bị tường chắn bất khả thi!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/28. Asteroids: Undo to Pure Random Spawn (OFF)")]
+    public static void DisableSafeCorridorPath()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableSafeCorridorPath = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ NGẪU NHIÊN THUẦN TÚY:</b></color> Tắt luồng an toàn, quay lại rải thiên thạch Random.Range cũ.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

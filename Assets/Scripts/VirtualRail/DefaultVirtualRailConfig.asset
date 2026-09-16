@@ -85,6 +85,11 @@ MonoBehaviour:
   asteroidSpawnDistance: 250
   asteroidZInterval: 18
   asteroidPoolSize: 32
+  enableSafeCorridorPath: 1
+  safeCorridorRadius: 5.5
+  safePathWiggleFrequency: 0.012
+  safePathWiggleAmplitudeX: 12
+  safePathWiggleAmplitudeY: 4.5
   enableBarrelRollDeflection: 1
   barrelRollDuration: 0.4
   enableSmartBomb: 1

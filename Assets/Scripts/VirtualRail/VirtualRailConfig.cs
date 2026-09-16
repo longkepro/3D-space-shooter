@@ -175,6 +175,16 @@ namespace VirtualRail
         public float asteroidZInterval = 18f;
         [Tooltip("Kích thước bộ đệm Object Pool thiên thạch")]
         public int asteroidPoolSize = 32;
+        [Tooltip("Bật thuật toán quy hoạch làn bay an toàn đảm bảo (Guaranteed Safe Corridor Trench)")]
+        public bool enableSafeCorridorPath = true;
+        [Tooltip("Bán kính vùng ống an toàn không có thiên thạch (mét) - Sải cánh tàu 2.5m + đệm 3m")]
+        public float safeCorridorRadius = 5.5f;
+        [Tooltip("Tần số sóng uốn lượn của luồng an toàn dọc theo trục Z")]
+        public float safePathWiggleFrequency = 0.012f;
+        [Tooltip("Biên độ uốn lượn chiều ngang X của luồng an toàn (mét)")]
+        public float safePathWiggleAmplitudeX = 12f;
+        [Tooltip("Biên độ uốn lượn chiều cao Y của luồng an toàn (mét)")]
+        public float safePathWiggleAmplitudeY = 4.5f;
 
         [Header("14. Combat & Counter-Play (TDD v1.0.0 Phần I)")]
         [Tooltip("Bật cơ chế lộn cánh phản xạ đạn 90 độ (Barrel Roll Deflection)")]
