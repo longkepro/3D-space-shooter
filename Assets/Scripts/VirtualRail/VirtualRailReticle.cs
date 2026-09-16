@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace VirtualRail
 {
@@ -20,6 +21,14 @@ namespace VirtualRail
         [SerializeField] private VirtualRailConfig.FrustumBounds currentBounds;
         [SerializeField] private Vector2 currentNormalizedInput;
         [SerializeField] private bool isAimingMoving;
+
+        [Header("Hover-to-Fire (Hướng 1)")]
+        [SerializeField] private bool isMouseTouchingReticle;
+        private Image crosshairImage;
+        private Color originalCrosshairColor = new Color(0.2f, 1f, 0.4f, 0.85f);
+        private Color hoverCrosshairColor = new Color(0.1f, 1f, 0.95f, 1f);
+
+        public bool IsMouseTouchingReticle => isMouseTouchingReticle;
 
         private Vector2 prevMousePos;
         private float autoFireTimer;
@@ -47,6 +56,11 @@ namespace VirtualRail
             if (inputReader == null && anchor != null)
             {
                 inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
+            }
+            if (crosshairUI != null)
+            {
+                crosshairImage = crosshairUI.GetComponent<Image>();
+                if (crosshairImage != null) originalCrosshairColor = crosshairImage.color;
             }
             prevMousePos = Input.mousePosition;
             autoFireTimer = 0f;
@@ -200,6 +214,9 @@ namespace VirtualRail
 
             // Cập nhật Crosshair UI
             UpdateCrosshairUI();
+
+            // Kiểm tra con trỏ chuột chạm vào tâm ngắm (Hover-to-Fire Hướng 1)
+            CheckMouseTouchReticle(cfg);
         }
 
         private void UpdateCrosshairUI()
@@ -212,6 +229,65 @@ namespace VirtualRail
             if (screenPos.z > 0)
             {
                 crosshairUI.position = screenPos;
+            }
+        }
+
+        private void CheckMouseTouchReticle(VirtualRailConfig cfg)
+        {
+            if (cfg == null || !cfg.enableMouseHoverFire)
+            {
+                isMouseTouchingReticle = false;
+                if (crosshairImage != null) crosshairImage.color = originalCrosshairColor;
+                return;
+            }
+
+            if (mainCamera == null) mainCamera = Camera.main;
+
+            Vector2 mousePos = Input.mousePosition;
+
+            // Kiểm tra chuột có nằm trong cửa sổ game không
+            if (mousePos.x < 0 || mousePos.x > Screen.width || mousePos.y < 0 || mousePos.y > Screen.height)
+            {
+                isMouseTouchingReticle = false;
+                if (crosshairImage != null) crosshairImage.color = originalCrosshairColor;
+                return;
+            }
+
+            Vector3 reticleScreenPos;
+            if (crosshairUI != null)
+            {
+                reticleScreenPos = crosshairUI.position;
+            }
+            else if (mainCamera != null)
+            {
+                reticleScreenPos = mainCamera.WorldToScreenPoint(WorldPosition);
+            }
+            else
+            {
+                isMouseTouchingReticle = false;
+                return;
+            }
+
+            if (reticleScreenPos.z < 0)
+            {
+                isMouseTouchingReticle = false;
+                if (crosshairImage != null) crosshairImage.color = originalCrosshairColor;
+                return;
+            }
+
+            float effectiveRadius = cfg.reticleMouseTouchRadius;
+            if (crosshairUI != null && crosshairUI.rect.width > 0)
+            {
+                effectiveRadius = Mathf.Max(effectiveRadius, crosshairUI.rect.width * 0.6f);
+            }
+
+            float dist = Vector2.Distance(mousePos, new Vector2(reticleScreenPos.x, reticleScreenPos.y));
+            isMouseTouchingReticle = (dist <= effectiveRadius);
+
+            // Phản hồi thị giác khi chuột chạm tâm ngắm (đổi màu Neon Cyan sáng rực)
+            if (crosshairImage != null)
+            {
+                crosshairImage.color = isMouseTouchingReticle ? hoverCrosshairColor : originalCrosshairColor;
             }
         }
 

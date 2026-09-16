@@ -465,6 +465,33 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/25. Mouse Aim: Hover-to-Fire on Reticle (ON)")]
+    public static void EnableMouseHoverFire()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableMouseHoverFire = true;
+            config.reticleMouseTouchRadius = 45f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HOVER-TO-FIRE (HƯỚNG 1):</b></color> Chuột chạm/nằm trong vùng tâm ngắm sẽ luôn tự động xả đạn liên tục!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/26. Mouse Aim: Undo to Manual Click Fire (OFF)")]
+    public static void DisableMouseHoverFire()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableMouseHoverFire = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ BẮN THỦ CÔNG:</b></color> Tắt Hover-to-Fire, quay lại bấm chuột trái/Space để bắn.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

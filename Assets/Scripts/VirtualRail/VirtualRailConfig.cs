@@ -43,6 +43,10 @@ namespace VirtualRail
         public bool enableMouseAim = true;
         [Tooltip("Tự động xả đạn khi tâm ngắm/chuột di chuyển")]
         public bool autoFireOnAimMove = true;
+        [Tooltip("Bật cơ chế tự động bắn khi con trỏ chuột chạm/nằm trong vùng tâm ngắm (Hover-to-Fire Hướng 1)")]
+        public bool enableMouseHoverFire = true;
+        [Tooltip("Bán kính vùng chạm của chuột quanh tâm ngắm (pixels)")]
+        public float reticleMouseTouchRadius = 45f;
         [Tooltip("Ngưỡng phát hiện di chuyển chuột tối thiểu (pixels/frame)")]
         public float aimMoveDeadzone = 0.5f;
         [Tooltip("Thời gian duy trì bắn tự động sau khi chuột dừng (giây) - chống giật cục micro-pause")]

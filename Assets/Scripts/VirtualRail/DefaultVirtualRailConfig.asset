@@ -27,6 +27,8 @@ MonoBehaviour:
   enableIndependentControls: 1
   enableMouseAim: 1
   autoFireOnAimMove: 1
+  enableMouseHoverFire: 1
+  reticleMouseTouchRadius: 45
   aimMoveDeadzone: 0.5
   autoFireHoldTime: 0.08
   shipSpeedX: 140

@@ -39,8 +39,9 @@ namespace VirtualRail
             bool isManualFire = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
             bool isInputReaderFiring = inputReader != null && inputReader.IsFiring();
             bool isReticleAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
+            bool isHoverFire = cfg != null && cfg.enableMouseHoverFire && reticle != null && reticle.IsMouseTouchingReticle;
 
-            if (isManualFire || isInputReaderFiring || isReticleAutoFire)
+            if (isManualFire || isInputReaderFiring || isReticleAutoFire || isHoverFire)
             {
                 if (Time.time >= nextFireTime)
                 {
