@@ -14,6 +14,11 @@ namespace VirtualRail
         public VirtualRailAnchor anchor;
         public VirtualRailInputReader inputReader;
         public RectTransform crosshairUI;
+        [Header("Dual Reticle (Giai đoạn 2 - Chuẩn Star Fox 64)")]
+        public RectTransform nearCrosshairUI;
+        public VirtualRailShip ship;
+        private Image nearCrosshairImage;
+        private Color originalNearCrosshairColor = new Color(0.2f, 1f, 0.4f, 0.90f);
         private Camera mainCamera;
 
         [Header("Runtime Local Coordinates")]
@@ -57,11 +62,43 @@ namespace VirtualRail
             {
                 inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
             }
+            if (ship == null && anchor != null)
+            {
+                ship = anchor.GetComponentInChildren<VirtualRailShip>();
+            }
+            if (ship == null)
+            {
+                ship = FindAnyObjectByType<VirtualRailShip>();
+            }
+
+            var cfg = anchor != null ? anchor.config : null;
+
             if (crosshairUI != null)
             {
                 crosshairImage = crosshairUI.GetComponent<Image>();
-                if (crosshairImage != null) originalCrosshairColor = crosshairImage.color;
+                EnsureFarCrosshairStyling(cfg);
+
+                // Tự động tìm hoặc sinh tâm ngắm gần nếu chưa được liên kết
+                if (nearCrosshairUI == null && crosshairUI.parent != null)
+                {
+                    Transform existingNear = crosshairUI.parent.Find("ReticleNearCrosshair");
+                    if (existingNear != null)
+                    {
+                        nearCrosshairUI = existingNear.GetComponent<RectTransform>();
+                    }
+                    else if (cfg != null && cfg.enableDualReticle)
+                    {
+                        nearCrosshairUI = CreateProceduralNearCrosshair(crosshairUI.parent, cfg);
+                    }
+                }
+
+                if (nearCrosshairUI != null)
+                {
+                    nearCrosshairImage = nearCrosshairUI.GetComponent<Image>();
+                    if (nearCrosshairImage != null) originalNearCrosshairColor = nearCrosshairImage.color;
+                }
             }
+
             prevMousePos = Input.mousePosition;
             autoFireTimer = 0f;
         }
@@ -221,14 +258,58 @@ namespace VirtualRail
 
         private void UpdateCrosshairUI()
         {
-            if (crosshairUI == null) return;
             if (mainCamera == null) mainCamera = Camera.main;
             if (mainCamera == null) return;
 
-            Vector3 screenPos = mainCamera.WorldToScreenPoint(WorldPosition);
-            if (screenPos.z > 0)
+            var cfg = anchor != null ? anchor.config : null;
+
+            // 1. Cập nhật Tâm ngắm xa (Far Reticle - Điều khiển bởi chuột / cần gạt tại Z = convergenceDistance)
+            if (crosshairUI != null)
             {
-                crosshairUI.position = screenPos;
+                Vector3 screenPos = mainCamera.WorldToScreenPoint(WorldPosition);
+                if (screenPos.z > 0)
+                {
+                    crosshairUI.position = screenPos;
+                }
+            }
+
+            // 2. Cập nhật Tâm ngắm gần (Near Reticle - Neo theo mũi tàu tại Z = nearReticleDistance)
+            if (cfg != null && cfg.enableDualReticle)
+            {
+                if (nearCrosshairUI != null)
+                {
+                    if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
+                    if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
+
+                    Vector3 nearWorldPos;
+                    if (ship != null)
+                    {
+                        // Neo cự ly Z_near phía trước mũi tàu theo hướng vật lý thực tế của thân tàu
+                        nearWorldPos = ship.transform.position + ship.transform.forward * cfg.nearReticleDistance;
+                    }
+                    else if (anchor != null)
+                    {
+                        nearWorldPos = anchor.transform.position + anchor.transform.forward * cfg.nearReticleDistance;
+                    }
+                    else
+                    {
+                        nearWorldPos = transform.position + transform.forward * cfg.nearReticleDistance;
+                    }
+
+                    Vector3 nearScreenPos = mainCamera.WorldToScreenPoint(nearWorldPos);
+                    if (nearScreenPos.z > 0)
+                    {
+                        nearCrosshairUI.position = nearScreenPos;
+                        if (!nearCrosshairUI.gameObject.activeSelf) nearCrosshairUI.gameObject.SetActive(true);
+                    }
+                }
+            }
+            else
+            {
+                if (nearCrosshairUI != null && nearCrosshairUI.gameObject.activeSelf)
+                {
+                    nearCrosshairUI.gameObject.SetActive(false);
+                }
             }
         }
 
@@ -289,6 +370,73 @@ namespace VirtualRail
             {
                 crosshairImage.color = isMouseTouchingReticle ? hoverCrosshairColor : originalCrosshairColor;
             }
+        }
+
+        private void EnsureFarCrosshairStyling(VirtualRailConfig cfg)
+        {
+            if (crosshairUI == null) return;
+            float farSize = cfg != null && cfg.farReticleSize > 10f ? cfg.farReticleSize : 56f;
+            crosshairUI.sizeDelta = new Vector2(farSize, farSize);
+
+            if (crosshairImage != null)
+            {
+                // Màu kính ngắm Cyan trong suốt để nhìn rõ kẻ địch xuyên qua tâm
+                originalCrosshairColor = new Color(0.1f, 0.95f, 1f, 0.20f);
+                hoverCrosshairColor = new Color(1f, 1f, 1f, 0.55f);
+                crosshairImage.color = originalCrosshairColor;
+            }
+
+            // Nếu chưa có viền khung, tạo 4 đường viền vi tính mảnh 2px
+            if (crosshairUI.Find("BorderTop") == null)
+            {
+                CreateBorderLine(crosshairUI, "BorderTop", new Vector2(0, farSize * 0.5f - 1f), new Vector2(farSize, 2f), new Color(0.1f, 0.95f, 1f, 0.90f));
+                CreateBorderLine(crosshairUI, "BorderBottom", new Vector2(0, -farSize * 0.5f + 1f), new Vector2(farSize, 2f), new Color(0.1f, 0.95f, 1f, 0.90f));
+                CreateBorderLine(crosshairUI, "BorderLeft", new Vector2(-farSize * 0.5f + 1f, 0), new Vector2(2f, farSize), new Color(0.1f, 0.95f, 1f, 0.90f));
+                CreateBorderLine(crosshairUI, "BorderRight", new Vector2(farSize * 0.5f - 1f, 0), new Vector2(2f, farSize), new Color(0.1f, 0.95f, 1f, 0.90f));
+            }
+        }
+
+        private RectTransform CreateProceduralNearCrosshair(Transform parent, VirtualRailConfig cfg)
+        {
+            GameObject nearObj = new GameObject("ReticleNearCrosshair");
+            nearObj.transform.SetParent(parent, false);
+            RectTransform rt = nearObj.AddComponent<RectTransform>();
+            float size = cfg != null && cfg.nearReticleSize > 10f ? cfg.nearReticleSize : 28f;
+            rt.sizeDelta = new Vector2(size, size);
+
+            // Boresight crosshair màu Emerald Green thanh mảnh
+            Image img = nearObj.AddComponent<Image>();
+            img.color = new Color(0.2f, 1f, 0.4f, 0.25f);
+            img.raycastTarget = false;
+
+            // Chấm tâm nhỏ (Center Dot 4x4)
+            GameObject dotObj = new GameObject("CenterDot");
+            dotObj.transform.SetParent(nearObj.transform, false);
+            RectTransform dotRt = dotObj.AddComponent<RectTransform>();
+            dotRt.sizeDelta = new Vector2(4f, 4f);
+            Image dotImg = dotObj.AddComponent<Image>();
+            dotImg.color = new Color(1f, 1f, 1f, 0.95f);
+            dotImg.raycastTarget = false;
+
+            // 4 vạch ngạnh chữ thập (Crosshair Ticks)
+            CreateBorderLine(nearObj.transform, "NearTop", new Vector2(0, size * 0.35f), new Vector2(2f, size * 0.3f), new Color(0.2f, 1f, 0.4f, 0.95f));
+            CreateBorderLine(nearObj.transform, "NearBottom", new Vector2(0, -size * 0.35f), new Vector2(2f, size * 0.3f), new Color(0.2f, 1f, 0.4f, 0.95f));
+            CreateBorderLine(nearObj.transform, "NearLeft", new Vector2(-size * 0.35f, 0), new Vector2(size * 0.3f, 2f), new Color(0.2f, 1f, 0.4f, 0.95f));
+            CreateBorderLine(nearObj.transform, "NearRight", new Vector2(size * 0.35f, 0), new Vector2(size * 0.3f, 2f), new Color(0.2f, 1f, 0.4f, 0.95f));
+
+            return rt;
+        }
+
+        private static void CreateBorderLine(Transform parent, string name, Vector2 localPos, Vector2 size, Color color)
+        {
+            GameObject line = new GameObject(name);
+            line.transform.SetParent(parent, false);
+            RectTransform rt = line.AddComponent<RectTransform>();
+            rt.anchoredPosition = localPos;
+            rt.sizeDelta = size;
+            Image img = line.AddComponent<Image>();
+            img.color = color;
+            img.raycastTarget = false;
         }
 
         private void OnDrawGizmos()

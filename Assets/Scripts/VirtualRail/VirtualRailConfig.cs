@@ -21,6 +21,16 @@ namespace VirtualRail
         [Tooltip("Cự ly tối đa mà tia ngắm quét tìm mục tiêu độ sâu động (mét)")]
         public float maxConvergenceScanDistance = 250f;
 
+        [Header("2b. Dual Reticle System (Hệ tâm ngắm kép chuẩn Star Fox 64)")]
+        [Tooltip("Bật hệ thống tâm ngắm kép: Tâm ngắm xa (Far Reticle) điều khiển bởi chuột/cần gạt và Tâm ngắm gần (Near Reticle) neo trước mũi tàu")]
+        public bool enableDualReticle = true;
+        [Tooltip("Cự ly của tâm ngắm gần trước mũi tàu (mét - chuẩn 35m)")]
+        public float nearReticleDistance = 35f;
+        [Tooltip("Kích thước tâm ngắm xa (pixels)")]
+        public float farReticleSize = 56f;
+        [Tooltip("Kích thước tâm ngắm gần (pixels)")]
+        public float nearReticleSize = 28f;
+
         [Header("3. Viewport Frustum Ratios (Khung biên động theo Camera)")]
         [Tooltip("Bật tính toán khung biên tự động theo tỷ lệ Camera Frustum")]
         public bool useDynamicFrustumBounds = true;

@@ -576,6 +576,32 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/33. Aiming: Dual Reticle System (ON - Star Fox 64 Arcade)")]
+    public static void EnableDualReticleSystem()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableDualReticle = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT TÂM NGẮM KÉP DUAL RETICLE (STAR FOX 64 ARCADE):</b></color> Tâm ngắm xa Cyan ở Z=150m lồng cùng tâm ngắm gần Green ở Z=35m bám theo mũi tàu!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/34. Aiming: Single Reticle (OFF - Legacy)")]
+    public static void DisableDualReticleSystem()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableDualReticle = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ QUAY VỀ TÂM NGẮM ĐƠN (SINGLE RETICLE - LEGACY):</b></color> Chỉ hiển thị 1 tâm ngắm duy nhất.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
@@ -619,14 +645,42 @@ public class VirtualRailModeToggle
         scaler.referenceResolution = new Vector2(1920, 1080);
         canvasObj.AddComponent<GraphicRaycaster>();
 
-        // Crosshair
-        GameObject crossObj = new GameObject("ReticleCrosshair");
+        // 1. Far Reticle (Tâm ngắm xa - Outer Box Cyan 56x56)
+        GameObject crossObj = new GameObject("ReticleFarCrosshair");
         crossObj.transform.SetParent(canvasObj.transform, false);
         Image crossImg = crossObj.AddComponent<Image>();
-        crossImg.color = new Color(0.2f, 1f, 0.4f, 0.85f);
+        crossImg.color = new Color(0.1f, 0.95f, 1f, 0.20f);
         RectTransform crossRt = crossObj.GetComponent<RectTransform>();
-        crossRt.sizeDelta = new Vector2(48, 48);
+        float farSize = config.farReticleSize > 10f ? config.farReticleSize : 56f;
+        crossRt.sizeDelta = new Vector2(farSize, farSize);
         reticle.crosshairUI = crossRt;
+        CreateHollowBoxBorders(crossObj.transform, crossRt.sizeDelta, new Color(0.1f, 0.95f, 1f, 0.90f));
+
+        // 2. Near Reticle (Tâm ngắm gần - Inner Crosshair Emerald Green 28x28)
+        GameObject nearCrossObj = new GameObject("ReticleNearCrosshair");
+        nearCrossObj.transform.SetParent(canvasObj.transform, false);
+        Image nearCrossImg = nearCrossObj.AddComponent<Image>();
+        nearCrossImg.color = new Color(0.2f, 1f, 0.4f, 0.25f);
+        nearCrossImg.raycastTarget = false;
+        RectTransform nearCrossRt = nearCrossObj.GetComponent<RectTransform>();
+        float nearSize = config.nearReticleSize > 10f ? config.nearReticleSize : 28f;
+        nearCrossRt.sizeDelta = new Vector2(nearSize, nearSize);
+        reticle.nearCrosshairUI = nearCrossRt;
+
+        // Chấm tâm nhỏ 4x4
+        GameObject dotObj = new GameObject("CenterDot");
+        dotObj.transform.SetParent(nearCrossObj.transform, false);
+        RectTransform dotRt = dotObj.AddComponent<RectTransform>();
+        dotRt.sizeDelta = new Vector2(4f, 4f);
+        Image dotImg = dotObj.AddComponent<Image>();
+        dotImg.color = new Color(1f, 1f, 1f, 0.95f);
+        dotImg.raycastTarget = false;
+
+        // 4 vạch ngạnh chữ thập
+        CreateBorderLine(nearCrossObj.transform, "NearTop", new Vector2(0, nearSize * 0.35f), new Vector2(2f, nearSize * 0.3f), new Color(0.2f, 1f, 0.4f, 0.95f));
+        CreateBorderLine(nearCrossObj.transform, "NearBottom", new Vector2(0, -nearSize * 0.35f), new Vector2(2f, nearSize * 0.3f), new Color(0.2f, 1f, 0.4f, 0.95f));
+        CreateBorderLine(nearCrossObj.transform, "NearLeft", new Vector2(-nearSize * 0.35f, 0), new Vector2(nearSize * 0.3f, 2f), new Color(0.2f, 1f, 0.4f, 0.95f));
+        CreateBorderLine(nearCrossObj.transform, "NearRight", new Vector2(nearSize * 0.35f, 0), new Vector2(nearSize * 0.3f, 2f), new Color(0.2f, 1f, 0.4f, 0.95f));
 
         // Lock Marker
         GameObject lockObj = new GameObject("LockMarker");
@@ -814,5 +868,30 @@ public class VirtualRailModeToggle
         // Gỡ bỏ Canvas cũ nếu có
         Transform oldCanvas = obj.transform.Find("StarFoxCanvas");
         if (oldCanvas != null) Object.DestroyImmediate(oldCanvas.gameObject, true);
+    }
+
+    private static void CreateHollowBoxBorders(Transform parent, Vector2 size, Color borderColor)
+    {
+        float thickness = 2f;
+        // Top border
+        CreateBorderLine(parent, "BorderTop", new Vector2(0, size.y * 0.5f - thickness * 0.5f), new Vector2(size.x, thickness), borderColor);
+        // Bottom border
+        CreateBorderLine(parent, "BorderBottom", new Vector2(0, -size.y * 0.5f + thickness * 0.5f), new Vector2(size.x, thickness), borderColor);
+        // Left border
+        CreateBorderLine(parent, "BorderLeft", new Vector2(-size.x * 0.5f + thickness * 0.5f, 0), new Vector2(thickness, size.y), borderColor);
+        // Right border
+        CreateBorderLine(parent, "BorderRight", new Vector2(size.x * 0.5f - thickness * 0.5f, 0), new Vector2(thickness, size.y), borderColor);
+    }
+
+    private static void CreateBorderLine(Transform parent, string name, Vector2 localPos, Vector2 size, Color color)
+    {
+        GameObject line = new GameObject(name);
+        line.transform.SetParent(parent, false);
+        RectTransform rt = line.AddComponent<RectTransform>();
+        rt.anchoredPosition = localPos;
+        rt.sizeDelta = size;
+        Image img = line.AddComponent<Image>();
+        img.color = color;
+        img.raycastTarget = false;
     }
 }

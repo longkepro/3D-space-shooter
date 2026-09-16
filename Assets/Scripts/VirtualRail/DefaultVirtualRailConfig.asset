@@ -18,6 +18,10 @@ MonoBehaviour:
   enableDynamicDepthConvergence: 1
   dynamicConvergenceRadius: 0.8
   maxConvergenceScanDistance: 250
+  enableDualReticle: 1
+  nearReticleDistance: 35
+  farReticleSize: 56
+  nearReticleSize: 28
   useDynamicFrustumBounds: 1
   shipViewportRatio: 0.75
   reticleViewportRatio: 0.85
