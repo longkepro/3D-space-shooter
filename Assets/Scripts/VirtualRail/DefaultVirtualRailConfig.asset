@@ -18,7 +18,7 @@ MonoBehaviour:
   enableDynamicDepthConvergence: 1
   dynamicConvergenceRadius: 0.8
   maxConvergenceScanDistance: 250
-  enableDualReticle: 1
+  enableDualReticle: 0
   nearReticleDistance: 35
   farReticleSize: 56
   nearReticleSize: 28
@@ -26,6 +26,11 @@ MonoBehaviour:
   microAimWeight: 1
   maxMicroAimPitch: 15
   maxMicroAimYaw: 18
+  enableDepthResponsiveReticle: 1
+  enableDistanceTelemetry: 1
+  minReticleScale: 0.7
+  maxReticleScale: 1.4
+  reticleScaleLerpSpeed: 12
   useDynamicFrustumBounds: 1
   shipViewportRatio: 0.75
   reticleViewportRatio: 0.85

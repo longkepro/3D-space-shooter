@@ -4,7 +4,8 @@ using UnityEngine.UI;
 namespace VirtualRail
 {
     /// <summary>
-    /// Component chuyên trách hiển thị HUD và hệ tâm ngắm 2 tầng (Dual Reticle Presentation).
+    /// Component chuyên trách hiển thị HUD và hệ tâm ngắm Sci-Fi phản hồi độ sâu (Depth-Responsive Reticle Presentation).
+    /// Hướng A: Tâm ngắm đơn Sci-Fi tích hợp đo đạc cự ly số hóa (0 GC Telemetry) và co giãn quang học theo độ sâu 3D.
     /// Tuân thủ nguyên tắc Unidirectional Data Flow (Điều 4 GEMINI.md) và 0 GC Allocation.
     /// Toàn bộ phép chiếu màn hình thực thi trong LateUpdate() để đồng bộ 100% sau CameraRig và Ship.
     /// </summary>
@@ -19,13 +20,34 @@ namespace VirtualRail
         public RectTransform nearCrosshairUI;
         public Image farCrosshairImage;
         public Image nearCrosshairImage;
+        public Text telemetryText;
+
+        // 0 GC String Cache: Bảng chuỗi cự ly tĩnh từ 0m đến 350m để triệt tiêu hoàn toàn Heap Allocation trong LateUpdate
+        private static readonly string[] DIST_STRINGS = PrecomputeDistanceStrings();
+
+        private static string[] PrecomputeDistanceStrings()
+        {
+            string[] table = new string[351];
+            for (int i = 0; i <= 350; i++)
+            {
+                table[i] = i + "m";
+            }
+            return table;
+        }
+
+        // Bộ đệm quét độ sâu không cấp phát rác (0 GC Alloc)
+        private readonly RaycastHit[] _depthHits = new RaycastHit[8];
 
         private Camera mainCamera;
         private Color originalFarColor = new Color(0.1f, 0.95f, 1f, 0.20f);
         private Color hoverFarColor = new Color(1f, 1f, 1f, 0.55f);
         private bool isMouseHovering = false;
 
+        private float currentScale = 1.0f;
+        private int lastDistInt = -1;
+
         public bool IsMouseHovering => isMouseHovering;
+        public float CurrentScale => currentScale;
 
         private void Start()
         {
@@ -48,7 +70,7 @@ namespace VirtualRail
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
             if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
 
-            // 1. Tâm ngắm xa (Outer Box Cyan 56x56) - Chiếu từ reticle.WorldPosition
+            // 1. Tâm ngắm chính (Far Reticle) - Chiếu từ reticle.WorldPosition lên Screen Space
             if (farCrosshairUI != null && reticle != null)
             {
                 Vector3 farScreenPos = mainCamera.WorldToScreenPoint(reticle.WorldPosition);
@@ -58,35 +80,28 @@ namespace VirtualRail
                 }
             }
 
-            // 2. Tâm ngắm gần (Inner Crosshair Emerald Green 28x28) - Chiếu trục nòng súng (Boresight)
+            // 2. Phản hồi độ sâu quang học & Đo đạc cự ly số hóa (Depth-Responsive Reticle & Distance Telemetry)
+            if (cfg != null && cfg.enableDepthResponsiveReticle)
+            {
+                UpdateDepthResponsiveHUD(cfg);
+            }
+            else
+            {
+                // Trạng thái mặc định (1.0x, tắt Telemetry) khi không bật phản hồi độ sâu
+                if (farCrosshairUI != null && farCrosshairUI.localScale != Vector3.one)
+                {
+                    farCrosshairUI.localScale = Vector3.one;
+                }
+                if (telemetryText != null && telemetryText.gameObject.activeSelf)
+                {
+                    telemetryText.gameObject.SetActive(false);
+                }
+            }
+
+            // 3. Tâm ngắm gần (Dual Reticle Mode - Chỉ bật khi được kích hoạt rõ ràng)
             if (cfg != null && cfg.enableDualReticle)
             {
-                if (nearCrosshairUI != null)
-                {
-                    Vector3 boresightPoint;
-                    float targetDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
-
-                    if (ship != null)
-                    {
-                        Transform meshT = (ship.VisualMesh != null) ? ship.VisualMesh : ship.transform;
-                        boresightPoint = ship.transform.position + meshT.forward * targetDist;
-                    }
-                    else if (anchor != null)
-                    {
-                        boresightPoint = anchor.transform.position + anchor.transform.forward * targetDist;
-                    }
-                    else
-                    {
-                        boresightPoint = transform.position + transform.forward * targetDist;
-                    }
-
-                    Vector3 nearScreenPos = mainCamera.WorldToScreenPoint(boresightPoint);
-                    if (nearScreenPos.z > 0)
-                    {
-                        nearCrosshairUI.position = nearScreenPos;
-                        if (!nearCrosshairUI.gameObject.activeSelf) nearCrosshairUI.gameObject.SetActive(true);
-                    }
-                }
+                UpdateDualReticlePresentation(cfg);
             }
             else
             {
@@ -96,8 +111,138 @@ namespace VirtualRail
                 }
             }
 
-            // 3. Cập nhật trạng thái chuột chạm tâm ngắm (Hover-to-fire)
+            // 4. Cập nhật trạng thái chuột chạm tâm ngắm (Hover-to-fire)
             UpdateMouseHoverState(cfg);
+        }
+
+        /// <summary>
+        /// Quét độ sâu mục tiêu dọc theo trục ngắm Camera và cập nhật tỷ lệ co giãn + cự ly Telemetry (0 GC Alloc).
+        /// </summary>
+        private void UpdateDepthResponsiveHUD(VirtualRailConfig cfg)
+        {
+            float targetDistance = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
+            Vector3 aimWorld = (reticle != null) ? reticle.WorldPosition : (anchor != null ? anchor.ToWorldPoint(new Vector3(0, 0, targetDistance)) : transform.position + transform.forward * targetDistance);
+            Vector3 camPos = mainCamera.transform.position;
+            Vector3 rayDir = (aimWorld - camPos).normalized;
+
+            Vector3 shipPos = (ship != null) ? ship.transform.position : (anchor != null ? anchor.transform.position : transform.position);
+            float camToShipProj = Vector3.Dot(shipPos - camPos, rayDir);
+            Vector3 rayStart = camPos + rayDir * Mathf.Max(0f, camToShipProj + 1.5f);
+
+            float maxScanDist = (cfg.maxConvergenceScanDistance > 0f) ? cfg.maxConvergenceScanDistance : 250f;
+            float scanDist = Mathf.Max(50f, maxScanDist - camToShipProj);
+            float scanRadius = (cfg.dynamicConvergenceRadius > 0.05f) ? cfg.dynamicConvergenceRadius : 0.8f;
+            LayerMask mask = (cfg.enemyLayer.value != 0) ? cfg.enemyLayer : ~0;
+
+            int hitCount = Physics.SphereCastNonAlloc(
+                rayStart,
+                scanRadius,
+                rayDir,
+                _depthHits,
+                scanDist,
+                mask,
+                QueryTriggerInteraction.Ignore
+            );
+
+            float closestDist = float.MaxValue;
+            for (int i = 0; i < hitCount; i++)
+            {
+                RaycastHit h = _depthHits[i];
+                if (h.collider == null) continue;
+
+                // Loại trừ chính thân tàu người chơi
+                if (h.transform == transform || h.transform.IsChildOf(transform) || h.transform.root == transform.root || h.transform.CompareTag("Player")) continue;
+                if (ship != null && (h.transform == ship.transform || h.transform.IsChildOf(ship.transform))) continue;
+
+                // Đảm bảo mục tiêu nằm ở phía trước tàu theo trục tiến
+                Vector3 toHit = h.point - shipPos;
+                if (Vector3.Dot(toHit, anchor != null ? anchor.transform.forward : Vector3.forward) <= 1.0f) continue;
+
+                float d = Vector3.Distance(shipPos, h.point);
+                if (d < closestDist)
+                {
+                    closestDist = d;
+                    targetDistance = d;
+                }
+            }
+
+            // A. Dynamic Reticle Scaling: Phóng to khi gần (1.4x tại 25m), Thu nhỏ khi xa (0.7x tại 250m)
+            float minScale = (cfg.minReticleScale > 0.1f) ? cfg.minReticleScale : 0.7f;
+            float maxScale = (cfg.maxReticleScale > 0.1f) ? cfg.maxReticleScale : 1.4f;
+            float normDepth = Mathf.Clamp01((targetDistance - 25f) / (maxScanDist - 25f));
+            float targetScale = Mathf.Lerp(maxScale, minScale, normDepth);
+            float lerpSpeed = (cfg.reticleScaleLerpSpeed > 0.1f) ? cfg.reticleScaleLerpSpeed : 12f;
+
+            currentScale = Mathf.Lerp(currentScale, targetScale, lerpSpeed * Time.deltaTime);
+            if (farCrosshairUI != null)
+            {
+                farCrosshairUI.localScale = new Vector3(currentScale, currentScale, 1f);
+            }
+
+            // B. Distance Telemetry HUD: Cập nhật chữ số cự ly với 0 GC Alloc (chỉ đổi text khi sang mét khác)
+            if (cfg.enableDistanceTelemetry && telemetryText != null)
+            {
+                if (!telemetryText.gameObject.activeSelf) telemetryText.gameObject.SetActive(true);
+
+                int distInt = Mathf.Clamp(Mathf.RoundToInt(targetDistance), 0, 350);
+                if (distInt != lastDistInt)
+                {
+                    lastDistInt = distInt;
+                    telemetryText.text = DIST_STRINGS[distInt];
+
+                    if (targetDistance < 50f)
+                    {
+                        // Đỏ báo động: Kẻ địch hoặc thiên thạch áp sát nguy hiểm (< 50m)
+                        telemetryText.color = new Color(1f, 0.35f, 0.2f, 0.95f);
+                    }
+                    else if (targetDistance < 100f)
+                    {
+                        // Vàng hổ phách: Tầm giao chiến tầm gần/trung bình (50m - 100m)
+                        telemetryText.color = new Color(1f, 0.85f, 0.2f, 0.95f);
+                    }
+                    else
+                    {
+                        // Xanh neon Cyan: Cự ly xa an toàn (> 100m)
+                        telemetryText.color = new Color(0.1f, 0.95f, 1f, 0.95f);
+                    }
+                }
+            }
+            else if (telemetryText != null && telemetryText.gameObject.activeSelf)
+            {
+                telemetryText.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật tâm ngắm gần theo trục nòng súng (Boresight) khi bật Dual Reticle mode.
+        /// </summary>
+        private void UpdateDualReticlePresentation(VirtualRailConfig cfg)
+        {
+            if (nearCrosshairUI == null) return;
+
+            Vector3 boresightPoint;
+            float targetDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
+
+            if (ship != null)
+            {
+                Transform meshT = (ship.VisualMesh != null) ? ship.VisualMesh : ship.transform;
+                boresightPoint = ship.transform.position + meshT.forward * targetDist;
+            }
+            else if (anchor != null)
+            {
+                boresightPoint = anchor.transform.position + anchor.transform.forward * targetDist;
+            }
+            else
+            {
+                boresightPoint = transform.position + transform.forward * targetDist;
+            }
+
+            Vector3 nearScreenPos = mainCamera.WorldToScreenPoint(boresightPoint);
+            if (nearScreenPos.z > 0)
+            {
+                nearCrosshairUI.position = nearScreenPos;
+                if (!nearCrosshairUI.gameObject.activeSelf) nearCrosshairUI.gameObject.SetActive(true);
+            }
         }
 
         private void UpdateMouseHoverState(VirtualRailConfig cfg)
@@ -150,6 +295,20 @@ namespace VirtualRail
                     CreateBorderLine(farCrosshairUI, "BorderLeft", new Vector2(-farSize * 0.5f + 1f, 0), new Vector2(2f, farSize), new Color(0.1f, 0.95f, 1f, 0.90f));
                     CreateBorderLine(farCrosshairUI, "BorderRight", new Vector2(farSize * 0.5f - 1f, 0), new Vector2(2f, farSize), new Color(0.1f, 0.95f, 1f, 0.90f));
                 }
+
+                // Tự động kiểm tra hoặc sinh Text Telemetry nếu chưa có
+                if (telemetryText == null)
+                {
+                    Transform existingTelem = farCrosshairUI.Find("DistanceTelemetry");
+                    if (existingTelem != null)
+                    {
+                        telemetryText = existingTelem.GetComponent<Text>();
+                    }
+                    else
+                    {
+                        telemetryText = CreateProceduralTelemetryText(farCrosshairUI, farSize);
+                    }
+                }
             }
 
             if (nearCrosshairUI == null && cfg != null && cfg.enableDualReticle)
@@ -170,6 +329,31 @@ namespace VirtualRail
                 nearCrosshairUI.sizeDelta = new Vector2(nearSize, nearSize);
                 if (nearCrosshairImage == null) nearCrosshairImage = nearCrosshairUI.GetComponent<Image>();
             }
+        }
+
+        private Text CreateProceduralTelemetryText(Transform parent, float farSize)
+        {
+            GameObject telemObj = new GameObject("DistanceTelemetry");
+            telemObj.transform.SetParent(parent, false);
+            RectTransform rt = telemObj.AddComponent<RectTransform>();
+            rt.anchoredPosition = new Vector2(0, -farSize * 0.5f - 11f);
+            rt.sizeDelta = new Vector2(80f, 18f);
+
+            Text txt = telemObj.AddComponent<Text>();
+            Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            txt.font = defaultFont;
+            txt.fontSize = 11;
+            txt.fontStyle = FontStyle.Bold;
+            txt.alignment = TextAnchor.MiddleCenter;
+            txt.color = new Color(0.1f, 0.95f, 1f, 0.95f);
+            txt.raycastTarget = false;
+
+            Outline outline = telemObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0f, 0f, 0f, 0.85f);
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            return txt;
         }
 
         private RectTransform CreateProceduralNearCrosshair(Transform parent, float size)

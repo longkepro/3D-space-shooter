@@ -576,31 +576,35 @@ public class VirtualRailModeToggle
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/33. Aiming: Dual Reticle System (ON - Star Fox 64 Arcade)")]
-    public static void EnableDualReticleSystem()
+    [MenuItem("Tools/Virtual Rail/33. Aiming: Depth-Responsive Sci-Fi Reticle HUD (ON - Independent Aim)")]
+    public static void EnableDepthResponsiveReticleHUD()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
+            config.enableDepthResponsiveReticle = true;
+            config.enableDistanceTelemetry = true;
+            config.enableDualReticle = false;
+            config.enableMicroAimAlignment = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT TÂM NGẮM ĐƠN SCI-FI PHẢN HỒI ĐỘ SÂU (DEPTH-RESPONSIVE HUD):</b></color> Tâm ngắm tự động co giãn theo khoảng cách mục tiêu và hiển thị đo đạc cự ly số hóa (0 GC Telemetry).");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/34. Aiming: Classic Dual Reticle (OFF - Star Fox 64 Coupled)")]
+    public static void EnableClassicDualReticle()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableDepthResponsiveReticle = false;
+            config.enableDistanceTelemetry = false;
             config.enableDualReticle = true;
             config.enableMicroAimAlignment = true;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT TÂM NGẮM KÉP DUAL RETICLE (STAR FOX 64 ARCADE):</b></color> Tâm ngắm xa Cyan (56x56) và tâm ngắm gần Green (28x28) lồng khớp thành lồng ngắm 2 tầng!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/34. Aiming: Single Reticle (OFF - Legacy)")]
-    public static void DisableDualReticleSystem()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableDualReticle = false;
-            config.enableMicroAimAlignment = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ QUAY VỀ TÂM NGẮM ĐƠN (SINGLE RETICLE - LEGACY):</b></color> Chỉ hiển thị 1 tâm ngắm duy nhất.");
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ CHUYỂN VỀ TÂM NGẮM KÉP CỔ ĐIỂN (STAR FOX 64 DUAL RETICLE):</b></color> Bật tâm gần và tâm xa 2 tầng.");
         }
     }
 
@@ -690,6 +694,26 @@ public class VirtualRailModeToggle
         hud.reticle = reticle;
         hud.farCrosshairUI = crossRt;
         hud.nearCrosshairUI = nearCrossRt;
+
+        // 1b. Distance Telemetry Text (0 GC Telemetry HUD - Hướng A)
+        GameObject telemObj = new GameObject("DistanceTelemetry");
+        telemObj.transform.SetParent(crossObj.transform, false);
+        RectTransform telemRt = telemObj.AddComponent<RectTransform>();
+        telemRt.anchoredPosition = new Vector2(0, -farSize * 0.5f - 11f);
+        telemRt.sizeDelta = new Vector2(80f, 18f);
+        Text telemText = telemObj.AddComponent<Text>();
+        Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        telemText.font = defaultFont;
+        telemText.fontSize = 11;
+        telemText.fontStyle = FontStyle.Bold;
+        telemText.alignment = TextAnchor.MiddleCenter;
+        telemText.color = new Color(0.1f, 0.95f, 1f, 0.95f);
+        telemText.raycastTarget = false;
+        Outline telemOutline = telemObj.AddComponent<Outline>();
+        telemOutline.effectColor = new Color(0f, 0f, 0f, 0.85f);
+        telemOutline.effectDistance = new Vector2(1f, -1f);
+        hud.telemetryText = telemText;
 
         // Lock Marker
         GameObject lockObj = new GameObject("LockMarker");

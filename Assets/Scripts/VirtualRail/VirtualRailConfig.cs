@@ -42,6 +42,18 @@ namespace VirtualRail
         [Tooltip("Góc liếc ngang tối đa của mũi tàu theo tâm ngắm (độ)")]
         public float maxMicroAimYaw = 18f;
 
+        [Header("2d. Depth-Responsive Sci-Fi Reticle (Tâm ngắm phản hồi độ sâu 3D)")]
+        [Tooltip("Bật tâm ngắm đơn Sci-Fi phản hồi độ sâu: Tự động co giãn theo khoảng cách mục tiêu và hiển thị đo đạc cự ly")]
+        public bool enableDepthResponsiveReticle = true;
+        [Tooltip("Bật hiển thị cự ly mục tiêu số hóa (Distance Telemetry HUD)")]
+        public bool enableDistanceTelemetry = true;
+        [Tooltip("Tỷ lệ thu nhỏ tối thiểu của tâm ngắm khi mục tiêu ở xa (chuẩn 0.7)")]
+        public float minReticleScale = 0.7f;
+        [Tooltip("Tỷ lệ phóng to tối đa của tâm ngắm khi mục tiêu ở gần (chuẩn 1.4)")]
+        public float maxReticleScale = 1.4f;
+        [Tooltip("Tốc độ chuyển đổi kích thước tâm ngắm (Lerp speed)")]
+        public float reticleScaleLerpSpeed = 12f;
+
         [Header("3. Viewport Frustum Ratios (Khung biên động theo Camera)")]
         [Tooltip("Bật tính toán khung biên tự động theo tỷ lệ Camera Frustum")]
         public bool useDynamicFrustumBounds = true;
