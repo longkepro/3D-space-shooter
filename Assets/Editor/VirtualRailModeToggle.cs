@@ -655,12 +655,22 @@ public class VirtualRailModeToggle
         GameObject crossObj = new GameObject("ReticleFarCrosshair");
         crossObj.transform.SetParent(canvasObj.transform, false);
         Image crossImg = crossObj.AddComponent<Image>();
-        crossImg.color = new Color(0.1f, 0.95f, 1f, 0.20f);
+        crossImg.color = Color.clear; // Rỗng ruột hoàn toàn 100% để nhìn xuyên thấu không gian
+        crossImg.raycastTarget = false;
         RectTransform crossRt = crossObj.GetComponent<RectTransform>();
         float farSize = config.farReticleSize > 10f ? config.farReticleSize : 56f;
         crossRt.sizeDelta = new Vector2(farSize, farSize);
         reticle.crosshairUI = crossRt;
         CreateHollowBoxBorders(crossObj.transform, crossRt.sizeDelta, new Color(0.1f, 0.95f, 1f, 0.90f));
+
+        // Chấm tâm chính xác (FarCenterDot 4x4)
+        GameObject farDotObj = new GameObject("FarCenterDot");
+        farDotObj.transform.SetParent(crossObj.transform, false);
+        RectTransform farDotRt = farDotObj.AddComponent<RectTransform>();
+        farDotRt.sizeDelta = new Vector2(4f, 4f);
+        Image farDotImg = farDotObj.AddComponent<Image>();
+        farDotImg.color = new Color(0.1f, 0.95f, 1f, 0.95f);
+        farDotImg.raycastTarget = false;
 
         // 2. Near Reticle (Tâm ngắm gần - Inner Crosshair Emerald Green 28x28)
         GameObject nearCrossObj = new GameObject("ReticleNearCrosshair");

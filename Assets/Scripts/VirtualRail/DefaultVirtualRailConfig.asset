@@ -16,7 +16,7 @@ MonoBehaviour:
   boostMultiplier: 1.5
   convergenceDistance: 150
   enableDynamicDepthConvergence: 1
-  dynamicConvergenceRadius: 0.8
+  dynamicConvergenceRadius: 2.5
   maxConvergenceScanDistance: 250
   enableDualReticle: 0
   nearReticleDistance: 35
@@ -43,7 +43,7 @@ MonoBehaviour:
   enableIndependentControls: 1
   enableMouseAim: 1
   autoFireOnAimMove: 1
-  enableMouseHoverFire: 1
+  enableMouseHoverFire: 0
   reticleMouseTouchRadius: 45
   aimMoveDeadzone: 0.5
   autoFireHoldTime: 0.08

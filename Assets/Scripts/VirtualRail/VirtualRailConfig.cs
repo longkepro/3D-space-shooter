@@ -16,8 +16,8 @@ namespace VirtualRail
         public float convergenceDistance = 150f;
         [Tooltip("Bật hội tụ độ sâu động theo mục tiêu (Dynamic Depth Convergence). Tự động chụm nòng súng vào cự ly thực tế của kẻ địch thay vì cố định 150m")]
         public bool enableDynamicDepthConvergence = true;
-        [Tooltip("Bán kính hình cầu quét tìm mục tiêu độ sâu dọc theo tia ngắm (mét - chuẩn 0.8m)")]
-        public float dynamicConvergenceRadius = 0.8f;
+        [Tooltip("Bán kính hình cầu quét tìm mục tiêu độ sâu dọc theo tia ngắm (mét - chuẩn 2.5m khớp với kích thước khung ngắm 56px)")]
+        public float dynamicConvergenceRadius = 2.5f;
         [Tooltip("Cự ly tối đa mà tia ngắm quét tìm mục tiêu độ sâu động (mét)")]
         public float maxConvergenceScanDistance = 250f;
 

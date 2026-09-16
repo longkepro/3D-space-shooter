@@ -5,7 +5,7 @@ namespace VirtualRail
 {
     /// <summary>
     /// Component chuyên trách hiển thị HUD và hệ tâm ngắm Sci-Fi phản hồi độ sâu (Depth-Responsive Reticle Presentation).
-    /// Hướng A: Tâm ngắm đơn Sci-Fi tích hợp đo đạc cự ly số hóa (0 GC Telemetry) và co giãn quang học theo độ sâu 3D.
+    /// Hướng A: Tâm ngắm đơn Sci-Fi rỗng ruột (Hollow Box) tích hợp đo đạc cự ly số hóa (0 GC Telemetry) và co giãn quang học theo độ sâu 3D.
     /// Tuân thủ nguyên tắc Unidirectional Data Flow (Điều 4 GEMINI.md) và 0 GC Allocation.
     /// Toàn bộ phép chiếu màn hình thực thi trong LateUpdate() để đồng bộ 100% sau CameraRig và Ship.
     /// </summary>
@@ -37,12 +37,16 @@ namespace VirtualRail
 
         // Bộ đệm quét độ sâu không cấp phát rác (0 GC Alloc)
         private readonly RaycastHit[] _depthHits = new RaycastHit[8];
+        private Image[] _farBorderImages;
+        private Image _farCenterDotImage;
 
         private Camera mainCamera;
-        private Color originalFarColor = new Color(0.1f, 0.95f, 1f, 0.20f);
-        private Color hoverFarColor = new Color(1f, 1f, 1f, 0.55f);
-        private bool isMouseHovering = false;
+        private Color originalBorderColor = new Color(0.1f, 0.95f, 1f, 0.90f);
+        private Color hoverBorderColor = new Color(1f, 1f, 1f, 1.0f);
+        private Color warningBorderColor = new Color(1f, 0.35f, 0.2f, 0.95f);
+        private Color mediumBorderColor = new Color(1f, 0.85f, 0.2f, 0.95f);
 
+        private bool isMouseHovering = false;
         private float currentScale = 1.0f;
         private int lastDistInt = -1;
 
@@ -96,6 +100,7 @@ namespace VirtualRail
                 {
                     telemetryText.gameObject.SetActive(false);
                 }
+                SetBorderColors(originalBorderColor);
             }
 
             // 3. Tâm ngắm gần (Dual Reticle Mode - Chỉ bật khi được kích hoạt rõ ràng)
@@ -111,7 +116,7 @@ namespace VirtualRail
                 }
             }
 
-            // 4. Cập nhật trạng thái chuột chạm tâm ngắm (Hover-to-fire)
+            // 4. Cập nhật trạng thái chuột chạm tâm ngắm (Hover-to-fire - Chỉ dùng khi KHÔNG dùng Mouse Aim)
             UpdateMouseHoverState(cfg);
         }
 
@@ -131,7 +136,7 @@ namespace VirtualRail
 
             float maxScanDist = (cfg.maxConvergenceScanDistance > 0f) ? cfg.maxConvergenceScanDistance : 250f;
             float scanDist = Mathf.Max(50f, maxScanDist - camToShipProj);
-            float scanRadius = (cfg.dynamicConvergenceRadius > 0.05f) ? cfg.dynamicConvergenceRadius : 0.8f;
+            float scanRadius = (cfg.dynamicConvergenceRadius > 0.05f) ? cfg.dynamicConvergenceRadius : 2.5f;
             LayerMask mask = (cfg.enemyLayer.value != 0) ? cfg.enemyLayer : ~0;
 
             int hitCount = Physics.SphereCastNonAlloc(
@@ -145,6 +150,8 @@ namespace VirtualRail
             );
 
             float closestDist = float.MaxValue;
+            bool hasTarget = false;
+
             for (int i = 0; i < hitCount; i++)
             {
                 RaycastHit h = _depthHits[i];
@@ -163,6 +170,7 @@ namespace VirtualRail
                 {
                     closestDist = d;
                     targetDistance = d;
+                    hasTarget = true;
                 }
             }
 
@@ -179,7 +187,27 @@ namespace VirtualRail
                 farCrosshairUI.localScale = new Vector3(currentScale, currentScale, 1f);
             }
 
-            // B. Distance Telemetry HUD: Cập nhật chữ số cự ly với 0 GC Alloc (chỉ đổi text khi sang mét khác)
+            // B. Distance Telemetry HUD & Border Glow (0 GC Alloc)
+            Color activeColor;
+            if (targetDistance < 50f)
+            {
+                activeColor = warningBorderColor; // Đỏ báo động: Mục tiêu/thiên thạch sát mặt (< 50m)
+            }
+            else if (targetDistance < 100f)
+            {
+                activeColor = mediumBorderColor;  // Vàng hổ phách: Cự ly giao tranh trung bình (50m - 100m)
+            }
+            else if (hasTarget)
+            {
+                activeColor = hoverBorderColor;   // Trắng sáng: Khóa mục tiêu ở xa (> 100m)
+            }
+            else
+            {
+                activeColor = originalBorderColor; // Xanh neon Cyan chuẩn (không có mục tiêu, hiển thị 150m)
+            }
+
+            SetBorderColors(activeColor);
+
             if (cfg.enableDistanceTelemetry && telemetryText != null)
             {
                 if (!telemetryText.gameObject.activeSelf) telemetryText.gameObject.SetActive(true);
@@ -189,27 +217,27 @@ namespace VirtualRail
                 {
                     lastDistInt = distInt;
                     telemetryText.text = DIST_STRINGS[distInt];
-
-                    if (targetDistance < 50f)
-                    {
-                        // Đỏ báo động: Kẻ địch hoặc thiên thạch áp sát nguy hiểm (< 50m)
-                        telemetryText.color = new Color(1f, 0.35f, 0.2f, 0.95f);
-                    }
-                    else if (targetDistance < 100f)
-                    {
-                        // Vàng hổ phách: Tầm giao chiến tầm gần/trung bình (50m - 100m)
-                        telemetryText.color = new Color(1f, 0.85f, 0.2f, 0.95f);
-                    }
-                    else
-                    {
-                        // Xanh neon Cyan: Cự ly xa an toàn (> 100m)
-                        telemetryText.color = new Color(0.1f, 0.95f, 1f, 0.95f);
-                    }
+                    telemetryText.color = activeColor;
                 }
             }
             else if (telemetryText != null && telemetryText.gameObject.activeSelf)
             {
                 telemetryText.gameObject.SetActive(false);
+            }
+        }
+
+        private void SetBorderColors(Color color)
+        {
+            if (_farBorderImages != null)
+            {
+                for (int i = 0; i < _farBorderImages.Length; i++)
+                {
+                    if (_farBorderImages[i] != null) _farBorderImages[i].color = color;
+                }
+            }
+            if (_farCenterDotImage != null)
+            {
+                _farCenterDotImage.color = color;
             }
         }
 
@@ -247,11 +275,11 @@ namespace VirtualRail
 
         private void UpdateMouseHoverState(VirtualRailConfig cfg)
         {
-            if (cfg == null || !cfg.enableMouseHoverFire || farCrosshairUI == null)
+            // Trong chế độ điều khiển độc lập bằng chuột, chuột chính là tâm ngắm nên không dùng hover-touch
+            if (cfg == null || !cfg.enableMouseHoverFire || cfg.enableMouseAim || farCrosshairUI == null)
             {
                 isMouseHovering = false;
                 if (reticle != null) reticle.SetMouseTouching(false);
-                if (farCrosshairImage != null) farCrosshairImage.color = originalFarColor;
                 return;
             }
 
@@ -260,7 +288,6 @@ namespace VirtualRail
             {
                 isMouseHovering = false;
                 if (reticle != null) reticle.SetMouseTouching(false);
-                if (farCrosshairImage != null) farCrosshairImage.color = originalFarColor;
                 return;
             }
 
@@ -271,9 +298,9 @@ namespace VirtualRail
             isMouseHovering = (dist <= effectiveRadius);
             if (reticle != null) reticle.SetMouseTouching(isMouseHovering);
 
-            if (farCrosshairImage != null)
+            if (isMouseHovering)
             {
-                farCrosshairImage.color = isMouseHovering ? hoverFarColor : originalFarColor;
+                SetBorderColors(hoverBorderColor);
             }
         }
 
@@ -286,15 +313,40 @@ namespace VirtualRail
             {
                 farCrosshairUI.sizeDelta = new Vector2(farSize, farSize);
                 if (farCrosshairImage == null) farCrosshairImage = farCrosshairUI.GetComponent<Image>();
-                if (farCrosshairImage != null) farCrosshairImage.color = originalFarColor;
+                // Tâm ngắm rỗng ruột 100% để nhìn xuyên thấu không gian và kẻ địch
+                if (farCrosshairImage != null)
+                {
+                    farCrosshairImage.color = Color.clear;
+                    farCrosshairImage.raycastTarget = false;
+                }
 
                 if (farCrosshairUI.Find("BorderTop") == null)
                 {
-                    CreateBorderLine(farCrosshairUI, "BorderTop", new Vector2(0, farSize * 0.5f - 1f), new Vector2(farSize, 2f), new Color(0.1f, 0.95f, 1f, 0.90f));
-                    CreateBorderLine(farCrosshairUI, "BorderBottom", new Vector2(0, -farSize * 0.5f + 1f), new Vector2(farSize, 2f), new Color(0.1f, 0.95f, 1f, 0.90f));
-                    CreateBorderLine(farCrosshairUI, "BorderLeft", new Vector2(-farSize * 0.5f + 1f, 0), new Vector2(2f, farSize), new Color(0.1f, 0.95f, 1f, 0.90f));
-                    CreateBorderLine(farCrosshairUI, "BorderRight", new Vector2(farSize * 0.5f - 1f, 0), new Vector2(2f, farSize), new Color(0.1f, 0.95f, 1f, 0.90f));
+                    CreateBorderLine(farCrosshairUI, "BorderTop", new Vector2(0, farSize * 0.5f - 1f), new Vector2(farSize, 2f), originalBorderColor);
+                    CreateBorderLine(farCrosshairUI, "BorderBottom", new Vector2(0, -farSize * 0.5f + 1f), new Vector2(farSize, 2f), originalBorderColor);
+                    CreateBorderLine(farCrosshairUI, "BorderLeft", new Vector2(-farSize * 0.5f + 1f, 0), new Vector2(2f, farSize), originalBorderColor);
+                    CreateBorderLine(farCrosshairUI, "BorderRight", new Vector2(farSize * 0.5f - 1f, 0), new Vector2(2f, farSize), originalBorderColor);
                 }
+
+                // Chấm tâm nhỏ (FarCenterDot 4x4)
+                Transform existingDot = farCrosshairUI.Find("FarCenterDot");
+                if (existingDot == null)
+                {
+                    GameObject dotObj = new GameObject("FarCenterDot");
+                    dotObj.transform.SetParent(farCrosshairUI, false);
+                    RectTransform dotRt = dotObj.AddComponent<RectTransform>();
+                    dotRt.sizeDelta = new Vector2(4f, 4f);
+                    _farCenterDotImage = dotObj.AddComponent<Image>();
+                    _farCenterDotImage.color = originalBorderColor;
+                    _farCenterDotImage.raycastTarget = false;
+                }
+                else
+                {
+                    _farCenterDotImage = existingDot.GetComponent<Image>();
+                }
+
+                // Cache 4 đường viền
+                CacheBorderImages();
 
                 // Tự động kiểm tra hoặc sinh Text Telemetry nếu chưa có
                 if (telemetryText == null)
@@ -331,6 +383,18 @@ namespace VirtualRail
             }
         }
 
+        private void CacheBorderImages()
+        {
+            if (farCrosshairUI == null) return;
+            string[] names = { "BorderTop", "BorderBottom", "BorderLeft", "BorderRight" };
+            _farBorderImages = new Image[4];
+            for (int i = 0; i < 4; i++)
+            {
+                Transform t = farCrosshairUI.Find(names[i]);
+                if (t != null) _farBorderImages[i] = t.GetComponent<Image>();
+            }
+        }
+
         private Text CreateProceduralTelemetryText(Transform parent, float farSize)
         {
             GameObject telemObj = new GameObject("DistanceTelemetry");
@@ -346,7 +410,7 @@ namespace VirtualRail
             txt.fontSize = 11;
             txt.fontStyle = FontStyle.Bold;
             txt.alignment = TextAnchor.MiddleCenter;
-            txt.color = new Color(0.1f, 0.95f, 1f, 0.95f);
+            txt.color = originalBorderColor;
             txt.raycastTarget = false;
 
             Outline outline = telemObj.AddComponent<Outline>();
