@@ -42,6 +42,9 @@ namespace VirtualRail
         public Vector2 CurrentLimit => new Vector2(shipBounds.HalfWidth, shipBounds.HalfHeight);
         public Vector3 LocalPosition3D => new Vector3(localPos2D.x, localPos2D.y, 0f);
         public Vector3 WorldPosition => anchor != null ? anchor.ToWorldPoint(LocalPosition3D) : transform.position;
+        public Transform VisualMesh => (shipVisualMesh != null) ? shipVisualMesh : transform;
+        public Vector3 ShipForward => VisualMesh.forward;
+        public Ray BoresightRay => new Ray(transform.position, ShipForward);
 
         private void Awake()
         {
@@ -234,13 +237,33 @@ namespace VirtualRail
             // Cập nhật vị trí cục bộ của Ship Container
             transform.localPosition = LocalPosition3D;
 
+            if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
+
+            // Micro-Aim Alignment (Khí động học ngước/liếc mũi theo góc ngắm tâm)
+            float aimPitch = 0f;
+            float aimYaw = 0f;
+            if (cfg.enableMicroAimAlignment && reticle != null && anchor != null)
+            {
+                Vector3 toAimWorld = reticle.WorldPosition - transform.position;
+                Vector3 localAimDir = anchor.transform.InverseTransformDirection(toAimWorld);
+                if (localAimDir.z > 0.001f)
+                {
+                    float rawYaw = Mathf.Atan2(localAimDir.x, localAimDir.z) * Mathf.Rad2Deg;
+                    float rawPitch = -Mathf.Atan2(localAimDir.y, localAimDir.z) * Mathf.Rad2Deg;
+                    aimYaw = Mathf.Clamp(rawYaw * cfg.microAimWeight, -cfg.maxMicroAimYaw, cfg.maxMicroAimYaw);
+                    aimPitch = Mathf.Clamp(rawPitch * cfg.microAimWeight, -cfg.maxMicroAimPitch, cfg.maxMicroAimPitch);
+                }
+            }
+
             // Xoay khí động học (Roll, Pitch, Yaw)
             float targetRoll = Mathf.Clamp(-rollNorm * cfg.maxRollAngle, -cfg.maxRollAngle, cfg.maxRollAngle) * kDamp;
             float targetPitch = Mathf.Clamp(-pitchNorm * cfg.maxPitchAngle, -cfg.maxPitchAngle, cfg.maxPitchAngle);
             float targetYaw = Mathf.Clamp(rollNorm * cfg.maxYawAngle, -cfg.maxYawAngle, cfg.maxYawAngle);
 
+            float totalPitch = aimPitch + targetPitch;
+            float totalYaw = aimYaw + targetYaw;
             float totalRoll = targetRoll + currentBarrelRollAngle;
-            Quaternion targetRotation = Quaternion.Euler(targetPitch, targetYaw, totalRoll);
+            Quaternion targetRotation = Quaternion.Euler(totalPitch, totalYaw, totalRoll);
 
             // Xoay visual mesh (tốc độ quay nhanh hơn khi đang lộn vòng)
             Transform meshTransform = (shipVisualMesh != null) ? shipVisualMesh : transform;

@@ -583,9 +583,10 @@ public class VirtualRailModeToggle
         if (config != null)
         {
             config.enableDualReticle = true;
+            config.enableMicroAimAlignment = true;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT TÂM NGẮM KÉP DUAL RETICLE (STAR FOX 64 ARCADE):</b></color> Tâm ngắm xa Cyan ở Z=150m lồng cùng tâm ngắm gần Green ở Z=35m bám theo mũi tàu!");
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT TÂM NGẮM KÉP DUAL RETICLE (STAR FOX 64 ARCADE):</b></color> Tâm ngắm xa Cyan (56x56) và tâm ngắm gần Green (28x28) lồng khớp thành lồng ngắm 2 tầng!");
         }
     }
 
@@ -596,6 +597,7 @@ public class VirtualRailModeToggle
         if (config != null)
         {
             config.enableDualReticle = false;
+            config.enableMicroAimAlignment = false;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
             Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ QUAY VỀ TÂM NGẮM ĐƠN (SINGLE RETICLE - LEGACY):</b></color> Chỉ hiển thị 1 tâm ngắm duy nhất.");
@@ -681,6 +683,13 @@ public class VirtualRailModeToggle
         CreateBorderLine(nearCrossObj.transform, "NearBottom", new Vector2(0, -nearSize * 0.35f), new Vector2(2f, nearSize * 0.3f), new Color(0.2f, 1f, 0.4f, 0.95f));
         CreateBorderLine(nearCrossObj.transform, "NearLeft", new Vector2(-nearSize * 0.35f, 0), new Vector2(nearSize * 0.3f, 2f), new Color(0.2f, 1f, 0.4f, 0.95f));
         CreateBorderLine(nearCrossObj.transform, "NearRight", new Vector2(nearSize * 0.35f, 0), new Vector2(nearSize * 0.3f, 2f), new Color(0.2f, 1f, 0.4f, 0.95f));
+
+        // DualReticleHUD (Presentation Layer - Chuẩn hóa Điều 4 GEMINI.md)
+        DualReticleHUD hud = canvasObj.AddComponent<DualReticleHUD>();
+        hud.anchor = anchor;
+        hud.reticle = reticle;
+        hud.farCrosshairUI = crossRt;
+        hud.nearCrosshairUI = nearCrossRt;
 
         // Lock Marker
         GameObject lockObj = new GameObject("LockMarker");
@@ -834,6 +843,7 @@ public class VirtualRailModeToggle
         aimAssist.missilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(MISSILE_PREFAB);
 
         camRig.ship = ship;
+        hud.ship = ship;
 
         VirtualRailWaveSpawner waveSpawner = root.AddComponent<VirtualRailWaveSpawner>();
         waveSpawner.anchor = anchor;

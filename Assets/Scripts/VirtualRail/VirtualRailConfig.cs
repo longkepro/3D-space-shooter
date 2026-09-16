@@ -31,6 +31,17 @@ namespace VirtualRail
         [Tooltip("Kích thước tâm ngắm gần (pixels)")]
         public float nearReticleSize = 28f;
 
+        [Header("2c. Micro-Aim Alignment (Khí động học ngước mũi theo tâm)")]
+        [Tooltip("Bật ngước/liếc mũi tàu theo góc ngắm. Giúp nòng súng luôn thẳng trục với tâm ngắm và tâm gần lồng khớp vào tâm xa")]
+        public bool enableMicroAimAlignment = true;
+        [Range(0.1f, 1.0f)]
+        [Tooltip("Trọng số ảnh hưởng của góc ngắm lên mũi tàu")]
+        public float microAimWeight = 1.0f;
+        [Tooltip("Góc ngước chúc tối đa của mũi tàu theo tâm ngắm (độ)")]
+        public float maxMicroAimPitch = 15f;
+        [Tooltip("Góc liếc ngang tối đa của mũi tàu theo tâm ngắm (độ)")]
+        public float maxMicroAimYaw = 18f;
+
         [Header("3. Viewport Frustum Ratios (Khung biên động theo Camera)")]
         [Tooltip("Bật tính toán khung biên tự động theo tỷ lệ Camera Frustum")]
         public bool useDynamicFrustumBounds = true;

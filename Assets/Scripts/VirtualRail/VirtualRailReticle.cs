@@ -34,7 +34,9 @@ namespace VirtualRail
         private Color hoverCrosshairColor = new Color(0.1f, 1f, 0.95f, 1f);
 
         public bool IsMouseTouchingReticle => isMouseTouchingReticle;
+        public void SetMouseTouching(bool state) => isMouseTouchingReticle = state;
 
+        private DualReticleHUD hud;
         private Vector2 prevMousePos;
         private float autoFireTimer;
 
@@ -96,6 +98,18 @@ namespace VirtualRail
                 {
                     nearCrosshairImage = nearCrosshairUI.GetComponent<Image>();
                     if (nearCrosshairImage != null) originalNearCrosshairColor = nearCrosshairImage.color;
+                }
+
+                // Khởi tạo hoặc liên kết DualReticleHUD (Presentation Layer)
+                if (crosshairUI.parent != null)
+                {
+                    hud = crosshairUI.parent.GetComponent<DualReticleHUD>();
+                    if (hud == null) hud = crosshairUI.parent.gameObject.AddComponent<DualReticleHUD>();
+                    hud.anchor = anchor;
+                    hud.reticle = this;
+                    hud.ship = ship;
+                    hud.farCrosshairUI = crosshairUI;
+                    hud.nearCrosshairUI = nearCrosshairUI;
                 }
             }
 
@@ -249,11 +263,12 @@ namespace VirtualRail
             // Cập nhật vị trí transform cục bộ
             transform.localPosition = LocalPosition3D;
 
-            // Cập nhật Crosshair UI
-            UpdateCrosshairUI();
-
-            // Kiểm tra con trỏ chuột chạm vào tâm ngắm (Hover-to-Fire Hướng 1)
-            CheckMouseTouchReticle(cfg);
+            // Nếu chưa có DualReticleHUD (Presentation Layer), chạy fallback tương thích ngược
+            if (hud == null && crosshairUI != null)
+            {
+                UpdateCrosshairUI();
+                CheckMouseTouchReticle(cfg);
+            }
         }
 
         private void UpdateCrosshairUI()
@@ -282,18 +297,19 @@ namespace VirtualRail
                     if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
 
                     Vector3 nearWorldPos;
+                    float targetDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
                     if (ship != null)
                     {
-                        // Neo cự ly Z_near phía trước mũi tàu theo hướng vật lý thực tế của thân tàu
-                        nearWorldPos = ship.transform.position + ship.transform.forward * cfg.nearReticleDistance;
+                        Transform meshT = (ship.VisualMesh != null) ? ship.VisualMesh : ship.transform;
+                        nearWorldPos = ship.transform.position + meshT.forward * targetDist;
                     }
                     else if (anchor != null)
                     {
-                        nearWorldPos = anchor.transform.position + anchor.transform.forward * cfg.nearReticleDistance;
+                        nearWorldPos = anchor.transform.position + anchor.transform.forward * targetDist;
                     }
                     else
                     {
-                        nearWorldPos = transform.position + transform.forward * cfg.nearReticleDistance;
+                        nearWorldPos = transform.position + transform.forward * targetDist;
                     }
 
                     Vector3 nearScreenPos = mainCamera.WorldToScreenPoint(nearWorldPos);

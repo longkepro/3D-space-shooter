@@ -22,6 +22,10 @@ MonoBehaviour:
   nearReticleDistance: 35
   farReticleSize: 56
   nearReticleSize: 28
+  enableMicroAimAlignment: 1
+  microAimWeight: 1
+  maxMicroAimPitch: 15
+  maxMicroAimYaw: 18
   useDynamicFrustumBounds: 1
   shipViewportRatio: 0.75
   reticleViewportRatio: 0.85
