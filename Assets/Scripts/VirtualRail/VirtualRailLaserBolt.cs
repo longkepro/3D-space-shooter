@@ -165,20 +165,20 @@ namespace VirtualRail
 
         private void OnHit(RaycastHit hit)
         {
-            // Xử lý sát thương kẻ địch
-            if (hit.transform.CompareTag("Enemy"))
+            // Xử lý sát thương kẻ địch (tìm cả ở đối tượng trúng và đối tượng cha)
+            var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
+            if (enemy != null)
             {
-                var enemy = hit.transform.GetComponent<EnemyMovement>();
-                if (enemy != null) enemy.BlowUp();
+                enemy.BlowUp();
             }
             else if (hit.transform.CompareTag("Pickup"))
             {
-                var pickup = hit.transform.GetComponent<Pickup>();
+                var pickup = hit.transform.GetComponentInParent<Pickup>();
                 if (pickup != null) pickup.Collect();
             }
 
             // Kích nổ / đẩy thiên thạch và vật thể vật lý
-            var explosion = hit.transform.GetComponent<Explosion>();
+            var explosion = hit.transform.GetComponentInParent<Explosion>();
             if (explosion != null)
             {
                 Transform src = _source != null ? _source : transform;

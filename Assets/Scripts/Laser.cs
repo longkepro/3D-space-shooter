@@ -39,13 +39,18 @@ public class Laser : MonoBehaviour
             Debug.Log("Raycast Hit: " + hit.transform.name);
             SpawnExplostion(hit.point, hit.transform);
 
-            if (hit.transform.CompareTag("Pickup"))
+            var pickup = hit.transform.GetComponentInParent<Pickup>();
+            if (pickup != null)
             {
-                hit.transform.GetComponent<Pickup>().Collect();
+                pickup.Collect();
             }
-            else if (hit.transform.CompareTag("Enemy"))
+            else
             {
-                hit.transform.GetComponent<EnemyMovement>().BlowUp();
+                var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
+                if (enemy != null)
+                {
+                    enemy.BlowUp();
+                }
             }
 
 

@@ -171,6 +171,18 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
             }
             else
             {
+                // Fallback: Phát hiệu ứng vụ nổ từ VFXPool nếu prefab chưa gắn Explosion component
+                var vfxPool = VirtualRail.VirtualRailVFXPool.Instance;
+                if (vfxPool != null)
+                {
+#if UNITY_EDITOR
+                    var expPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire & Explosion Effects/Prefabs/BigExplosion.prefab");
+                    if (expPrefab != null)
+                    {
+                        vfxPool.SpawnVFX(expPrefab, transform.position, Quaternion.identity, null, 3f);
+                    }
+#endif
+                }
                 SelfDestruct();
             }
         }

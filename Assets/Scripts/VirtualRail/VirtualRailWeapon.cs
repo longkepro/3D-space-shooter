@@ -125,14 +125,14 @@ namespace VirtualRail
                         targetPoint = hit.point;
                         hitTarget = hit.transform;
 
-                        if (hit.transform.CompareTag("Enemy"))
+                        var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
+                        if (enemy != null)
                         {
-                            var enemy = hit.transform.GetComponent<EnemyMovement>();
-                            if (enemy != null) enemy.BlowUp();
+                            enemy.BlowUp();
                         }
                         else if (hit.transform.CompareTag("Pickup"))
                         {
-                            var pickup = hit.transform.GetComponent<Pickup>();
+                            var pickup = hit.transform.GetComponentInParent<Pickup>();
                             if (pickup != null) pickup.Collect();
                         }
                     }
