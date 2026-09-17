@@ -11,6 +11,7 @@ namespace VirtualRail
     {
         public VirtualRailAnchor anchor;
         public VirtualRailReticle reticle;
+        public VirtualRailShip ship;
         public VirtualRailInputReader inputReader;
         public Laser[] muzzles;
 
@@ -33,6 +34,8 @@ namespace VirtualRail
         {
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
+            if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
+            if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
             if (inputReader == null && anchor != null) inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
         }
 
@@ -185,7 +188,9 @@ namespace VirtualRail
 
             if (cfg.useSegmentedLaser)
             {
-                // Hướng 1: Bắn đoạn đạn laser độc lập (Segmented Laser Bolt)
+                float collisionRadius = cfg.laserBoltCollisionRadius > 0.05f ? cfg.laserBoltCollisionRadius : 1.0f;
+
+                // Hướng 1: Bắn đoạn đạn laser độc lập (Segmented Laser Bolt với Hành lang hỏa lực 3D thẳng tắp)
                 VirtualRailLaserPool.Instance.FireBolt(
                     muzzlePos,
                     fireDirection,
@@ -196,7 +201,8 @@ namespace VirtualRail
                     cfg.laserBoltWidth,
                     cfg.laserBoltMaterial,
                     transform,
-                    cfg.enemyLayer
+                    cfg.enemyLayer,
+                    collisionRadius
                 );
             }
             else

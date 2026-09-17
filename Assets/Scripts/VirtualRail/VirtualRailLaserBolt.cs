@@ -21,6 +21,8 @@ namespace VirtualRail
         private float _lifetime = 2.0f;
         private Transform _source;
         private LayerMask _hitMask;
+        private float _collisionRadius = 1.0f;
+        private Vector3 _inheritedVelocity;
 
         private Color _cachedColor;
         private float _cachedWidth = -1f;
@@ -89,7 +91,7 @@ namespace VirtualRail
             }
         }
 
-        public void Spawn(Vector3 startPos, Vector3 dir, float speed, float length, float maxLife, Transform source, LayerMask hitMask)
+        public void Spawn(Vector3 startPos, Vector3 dir, float speed, float length, float maxLife, Transform source, LayerMask hitMask, float collisionRadius = 1.0f, Vector3 inheritedVelocity = default)
         {
             _currentPos = startPos;
             _direction = dir.sqrMagnitude > 0.001f ? dir.normalized : Vector3.forward;
@@ -99,6 +101,8 @@ namespace VirtualRail
             _lifetime = maxLife;
             _source = source;
             _hitMask = hitMask;
+            _collisionRadius = collisionRadius > 0.05f ? collisionRadius : 1.0f;
+            _inheritedVelocity = inheritedVelocity;
 
             if (_lineRenderer == null) _lineRenderer = GetComponent<LineRenderer>();
             _lineRenderer.SetPosition(0, startPos);
@@ -120,16 +124,16 @@ namespace VirtualRail
             float moveDist = _speed * dt;
             Vector3 nextPos = _currentPos + _direction * moveDist;
 
-            // Continuous Collision Detection (SphereCast từ vị trí cũ tới vị trí mới)
+            // Continuous Collision Detection (SphereCast với bán kính hành lang _collisionRadius phủ kín khoảng hở)
             RaycastHit hit;
-            if (Physics.SphereCast(_currentPos, 0.35f, _direction, out hit, moveDist, _hitMask, QueryTriggerInteraction.Ignore))
+            if (Physics.SphereCast(_currentPos, _collisionRadius, _direction, out hit, moveDist, _hitMask, QueryTriggerInteraction.Ignore))
             {
                 // Bỏ qua nếu va chạm trúng chính tàu người chơi
                 bool isSelf = _source != null && (hit.transform == _source || hit.transform.IsChildOf(_source) || hit.transform.root == _source.root || hit.transform.CompareTag("Player"));
                 if (!isSelf)
                 {
                     _currentPos = hit.point;
-                    UpdatePositions();
+                    UpdatePositions(_direction);
                     OnHit(hit);
                     return;
                 }
@@ -139,7 +143,7 @@ namespace VirtualRail
             _distanceTraveled += moveDist;
             _lifetime -= dt;
 
-            UpdatePositions();
+            UpdatePositions(_direction);
 
             // Tự động thu hồi khi hết thời gian sống hoặc bay vượt quá tầm bắn
             if (_lifetime <= 0f || _distanceTraveled >= 600f)
@@ -148,11 +152,11 @@ namespace VirtualRail
             }
         }
 
-        private void UpdatePositions()
+        private void UpdatePositions(Vector3 moveDir)
         {
             // Đuôi đạn mọc dần từ nòng súng khi mới phóng ra, sau đó duy trì chiều dài cố định L
             float tailDist = Mathf.Min(_length, _distanceTraveled);
-            Vector3 tailPos = _currentPos - _direction * tailDist;
+            Vector3 tailPos = _currentPos - moveDir * tailDist;
 
             _lineRenderer.SetPosition(0, _currentPos); // Head
             _lineRenderer.SetPosition(1, tailPos);    // Tail

@@ -106,7 +106,9 @@ namespace VirtualRail
             float width,
             Material customMat,
             Transform source,
-            LayerMask hitMask)
+            LayerMask hitMask,
+            float collisionRadius = 1.0f,
+            Vector3 inheritedVelocity = default)
         {
             if (!_isInitialized) InitializePool(customMat);
 
@@ -133,7 +135,7 @@ namespace VirtualRail
             selectedBolt.SetupVisual(matToUse, color, width);
 
             // 4. Kích hoạt phóng đạn
-            selectedBolt.Spawn(startPos, direction, speed, length, lifetime, source, hitMask);
+            selectedBolt.Spawn(startPos, direction, speed, length, lifetime, source, hitMask, collisionRadius, inheritedVelocity);
 
             return selectedBolt;
         }

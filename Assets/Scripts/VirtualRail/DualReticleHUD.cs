@@ -249,12 +249,13 @@ namespace VirtualRail
             if (nearCrosshairUI == null) return;
 
             Vector3 boresightPoint;
-            float targetDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
+            float targetDist = (cfg != null && cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
 
             if (ship != null)
             {
                 Transform meshT = (ship.VisualMesh != null) ? ship.VisualMesh : ship.transform;
                 boresightPoint = ship.transform.position + meshT.forward * targetDist;
+                nearCrosshairUI.localEulerAngles = new Vector3(0, 0, meshT.localEulerAngles.z);
             }
             else if (anchor != null)
             {

@@ -192,6 +192,13 @@ namespace VirtualRail
         public float laserBoltLength = 8.5f;
         [Tooltip("Độ rộng của tia đạn laser - tăng lên để nhìn rõ trên màn hình")]
         public float laserBoltWidth = 0.85f;
+        [Tooltip("Bán kính quét va chạm của đạn laser (m) - chuẩn 1.0m giúp 2 nòng phủ kín hoàn toàn khoảng hở 3m giữa 2 cánh tàu")]
+        public float laserBoltCollisionRadius = 1.0f;
+        [Tooltip("Bật thừa kế vận tốc né ngang của tàu vào viên đạn khi xả đạn liên hoàn")]
+        public bool enableLateralVelocityInheritance = false;
+        [Range(0f, 1f)]
+        [Tooltip("Tỷ lệ thừa kế vận tốc né ngang của tàu (chuẩn 0.85)")]
+        public float lateralVelocityWeight = 0.85f;
         [Tooltip("Thời gian sống tối đa của viên đạn (giây)")]
         public float laserBoltLifetime = 2.0f;
         [Tooltip("Màu sắc của đoạn laser - màu Neon Cyan rực rỡ")]

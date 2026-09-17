@@ -576,35 +576,38 @@ public class VirtualRailModeToggle
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/33. Aiming: Depth-Responsive Sci-Fi Reticle HUD (ON - Independent Aim)")]
-    public static void EnableDepthResponsiveReticleHUD()
+    [MenuItem("Tools/Virtual Rail/33. Aiming: 3D Firing Corridor & Dual Reticle Iron-Sights (ON)")]
+    public static void Enable3DFiringCorridorAndDualReticle()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
-            config.enableDepthResponsiveReticle = true;
-            config.enableDistanceTelemetry = true;
-            config.enableDualReticle = false;
+            config.enableDualReticle = true;
+            config.laserBoltCollisionRadius = 1.0f;
+            config.enableLateralVelocityInheritance = false; // Triệt tiêu văng đạn xiên
             config.enableMicroAimAlignment = true;
+            config.enableDepthResponsiveReticle = false;
+            config.enableDynamicDepthConvergence = true; // Bật để triệt tiêu góc thị sai 4m khi bắn cự ly ngắn
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT TÂM NGẮM ĐƠN SCI-FI PHẢN HỒI ĐỘ SÂU (DEPTH-RESPONSIVE HUD):</b></color> Tâm ngắm tự động co giãn theo khoảng cách mục tiêu và hiển thị đo đạc cự ly số hóa (0 GC Telemetry).");
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HÀNH LANG HỎA LỰC 3D & TÂM NGẮM 2 TẦNG (3D FIRING CORRIDOR & DUAL RETICLE IRON-SIGHTS):</b></color> Bán kính va chạm R=1.0m phủ kín 3m sải cánh (0m khoảng hở), Đạn bay thẳng tắp 100% không văng lệch, Bắn gần hay xa đều chụm trúng đích!");
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/34. Aiming: Classic Dual Reticle (OFF - Star Fox 64 Coupled)")]
-    public static void EnableClassicDualReticle()
+    [MenuItem("Tools/Virtual Rail/34. Aiming: Undo to Single Reticle & Legacy Collision (OFF - Legacy)")]
+    public static void Disable3DFiringCorridorAndDualReticle()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
+            config.enableDualReticle = false;
+            config.laserBoltCollisionRadius = 0.35f;
+            config.enableLateralVelocityInheritance = false;
             config.enableDepthResponsiveReticle = false;
-            config.enableDistanceTelemetry = false;
-            config.enableDualReticle = true;
-            config.enableMicroAimAlignment = true;
+            config.enableDynamicDepthConvergence = false;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ CHUYỂN VỀ TÂM NGẮM KÉP CỔ ĐIỂN (STAR FOX 64 DUAL RETICLE):</b></color> Bật tâm gần và tâm xa 2 tầng.");
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ TÂM ĐƠN & VA CHẠM CŨ:</b></color> Tắt tâm gần, quay lại bán kính va chạm cũ 0.35m.");
         }
     }
 
@@ -676,7 +679,7 @@ public class VirtualRailModeToggle
         GameObject nearCrossObj = new GameObject("ReticleNearCrosshair");
         nearCrossObj.transform.SetParent(canvasObj.transform, false);
         Image nearCrossImg = nearCrossObj.AddComponent<Image>();
-        nearCrossImg.color = new Color(0.2f, 1f, 0.4f, 0.25f);
+        nearCrossImg.color = Color.clear; // Rỗng ruột hoàn toàn 100% để nhìn xuyên thấu
         nearCrossImg.raycastTarget = false;
         RectTransform nearCrossRt = nearCrossObj.GetComponent<RectTransform>();
         float nearSize = config.nearReticleSize > 10f ? config.nearReticleSize : 28f;

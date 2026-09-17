@@ -45,6 +45,10 @@ namespace VirtualRail
         public Transform VisualMesh => (shipVisualMesh != null) ? shipVisualMesh : transform;
         public Vector3 ShipForward => VisualMesh.forward;
         public Ray BoresightRay => new Ray(transform.position, ShipForward);
+        public Vector2 CurrentVelocity2D => currentVelocity;
+        public Vector3 CurrentLateralVelocityWorld => anchor != null 
+            ? anchor.transform.TransformDirection(new Vector3(currentVelocity.x, currentVelocity.y, 0f)) 
+            : new Vector3(currentVelocity.x, currentVelocity.y, 0f);
 
         private void Awake()
         {

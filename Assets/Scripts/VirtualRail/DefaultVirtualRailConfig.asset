@@ -18,7 +18,7 @@ MonoBehaviour:
   enableDynamicDepthConvergence: 1
   dynamicConvergenceRadius: 2.5
   maxConvergenceScanDistance: 250
-  enableDualReticle: 0
+  enableDualReticle: 1
   nearReticleDistance: 35
   farReticleSize: 56
   nearReticleSize: 28
@@ -26,8 +26,8 @@ MonoBehaviour:
   microAimWeight: 1
   maxMicroAimPitch: 15
   maxMicroAimYaw: 18
-  enableDepthResponsiveReticle: 1
-  enableDistanceTelemetry: 1
+  enableDepthResponsiveReticle: 0
+  enableDistanceTelemetry: 0
   minReticleScale: 0.7
   maxReticleScale: 1.4
   reticleScaleLerpSpeed: 12
@@ -90,6 +90,9 @@ MonoBehaviour:
   laserBoltSpeed: 220
   laserBoltLength: 8.5
   laserBoltWidth: 4
+  laserBoltCollisionRadius: 1
+  enableLateralVelocityInheritance: 0
+  lateralVelocityWeight: 0.85
   laserBoltLifetime: 2
   laserColor: {r: 1, g: 0.64705884, b: 0, a: 1}
   laserBoltMaterial: {fileID: 2100000, guid: 123ac6dc79004e54b8b352a7e64acdca, type: 2}
