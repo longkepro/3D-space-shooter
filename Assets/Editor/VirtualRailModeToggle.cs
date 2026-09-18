@@ -576,13 +576,17 @@ public class VirtualRailModeToggle
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/33. Aiming: 3D Firing Corridor & Dual Reticle Iron-Sights (ON)")]
-    public static void Enable3DFiringCorridorAndDualReticle()
+    [MenuItem("Tools/Virtual Rail/33. Aiming: Gimbaled Turrets & Dual Reticle Alignment (ON)")]
+    public static void EnableGimbaledTurretsAndDualReticle()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
             config.enableDualReticle = true;
+            config.enableGimbalWeapon = true;
+            config.gimbalTrackingSpeed = 220f;
+            config.maxGimbalAngle = 35f;
+            config.gimbalLockThreshold = 12f;
             config.laserBoltCollisionRadius = 1.0f;
             config.enableLateralVelocityInheritance = false; // Triệt tiêu văng đạn xiên
             config.enableMicroAimAlignment = true;
@@ -590,24 +594,25 @@ public class VirtualRailModeToggle
             config.enableDynamicDepthConvergence = true; // Bật để triệt tiêu góc thị sai 4m khi bắn cự ly ngắn
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HÀNH LANG HỎA LỰC 3D & TÂM NGẮM 2 TẦNG (3D FIRING CORRIDOR & DUAL RETICLE IRON-SIGHTS):</b></color> Bán kính va chạm R=1.0m phủ kín 3m sải cánh (0m khoảng hở), Đạn bay thẳng tắp 100% không văng lệch, Bắn gần hay xa đều chụm trúng đích!");
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT Ụ SÚNG XOAY CƠ HỌC & TÂM KÉP KHÓA MỤC TIÊU (GIMBALED TURRETS & DUAL RETICLE ALIGNMENT):</b></color> Nòng súng xoay cơ học 220°/s đuổi theo chuột trong nón 35°, Tâm Trong chỉ đúng hướng súng bắn, Khóa cứng mục tiêu khi 2 tâm khớp nhau!");
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/34. Aiming: Undo to Single Reticle & Legacy Collision (OFF - Legacy)")]
-    public static void Disable3DFiringCorridorAndDualReticle()
+    [MenuItem("Tools/Virtual Rail/34. Aiming: Undo to Fixed Muzzles & Legacy Aim (OFF - Legacy)")]
+    public static void DisableGimbaledTurretsAndDualReticle()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
             config.enableDualReticle = false;
+            config.enableGimbalWeapon = false;
             config.laserBoltCollisionRadius = 0.35f;
             config.enableLateralVelocityInheritance = false;
             config.enableDepthResponsiveReticle = false;
             config.enableDynamicDepthConvergence = false;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ TÂM ĐƠN & VA CHẠM CŨ:</b></color> Tắt tâm gần, quay lại bán kính va chạm cũ 0.35m.");
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ NÒNG SÚNG CỐ ĐỊNH & TÂM ĐƠN CŨ:</b></color> Tắt ụ xoay cơ học, tắt tâm gần, quay lại nòng súng cố định.");
         }
     }
 
@@ -881,6 +886,7 @@ public class VirtualRailModeToggle
 
         camRig.ship = ship;
         hud.ship = ship;
+        hud.weapon = weapon;
 
         VirtualRailWaveSpawner waveSpawner = root.AddComponent<VirtualRailWaveSpawner>();
         waveSpawner.anchor = anchor;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace VirtualRail
@@ -79,6 +79,9 @@ namespace VirtualRail
             _ctrl1 = _spawnPos + Vector3.up * 8f + Vector3.right * (UnityEngine.Random.Range(-12f, 12f));
             // Điểm điều khiển 2: Nắn theo hướng vector đường ray tới gần Slot
             _ctrl2 = targetSlotWorld - anchor.transform.forward * 20f + Vector3.up * 4f;
+
+            // Tắt EnemyMovement để toàn quyền kiểm soát vị trí bằng Bézier và Slot
+            if (_movement != null) _movement.enabled = false;
 
             // Trong lúc ráp nối, vẫn có thể bắn hạ (Risk vs Reward: Chiến thuật an toàn sớm)
             if (_collider != null) _collider.enabled = true;
@@ -204,6 +207,7 @@ namespace VirtualRail
         {
             if (_movement != null)
             {
+                _movement.enabled = true;
                 _movement.Recycle();
             }
             else

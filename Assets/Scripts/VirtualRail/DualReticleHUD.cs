@@ -16,6 +16,7 @@ namespace VirtualRail
         public VirtualRailAnchor anchor;
         public VirtualRailReticle reticle;
         public VirtualRailShip ship;
+        public VirtualRailWeapon weapon;
         public RectTransform farCrosshairUI;
         public RectTransform nearCrosshairUI;
         public Image farCrosshairImage;
@@ -39,12 +40,16 @@ namespace VirtualRail
         private readonly RaycastHit[] _depthHits = new RaycastHit[8];
         private Image[] _farBorderImages;
         private Image _farCenterDotImage;
+        private Image[] _nearTickImages;
+        private Image _nearCenterDotImage;
 
         private Camera mainCamera;
         private Color originalBorderColor = new Color(0.1f, 0.95f, 1f, 0.90f);
         private Color hoverBorderColor = new Color(1f, 1f, 1f, 1.0f);
         private Color warningBorderColor = new Color(1f, 0.35f, 0.2f, 0.95f);
         private Color mediumBorderColor = new Color(1f, 0.85f, 0.2f, 0.95f);
+        private readonly Color normalNearColor = new Color(0.2f, 1f, 0.4f, 0.95f);
+        private readonly Color lockedNearColor = new Color(1f, 0.95f, 0.35f, 1.0f);
 
         private bool isMouseHovering = false;
         private float currentScale = 1.0f;
@@ -59,6 +64,8 @@ namespace VirtualRail
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
             if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
             if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
+            if (weapon == null && anchor != null) weapon = anchor.GetComponentInChildren<VirtualRailWeapon>();
+            if (weapon == null) weapon = FindAnyObjectByType<VirtualRailWeapon>();
             if (mainCamera == null) mainCamera = Camera.main;
 
             var cfg = anchor != null ? anchor.config : null;
@@ -73,6 +80,7 @@ namespace VirtualRail
             var cfg = anchor != null ? anchor.config : null;
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
             if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
+            if (weapon == null && anchor != null) weapon = anchor.GetComponentInChildren<VirtualRailWeapon>();
 
             // 1. Tâm ngắm chính (Far Reticle) - Chiếu từ reticle.WorldPosition lên Screen Space
             if (farCrosshairUI != null && reticle != null)
@@ -251,7 +259,15 @@ namespace VirtualRail
             Vector3 boresightPoint;
             float targetDist = (cfg != null && cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
 
-            if (ship != null)
+            if (cfg != null && cfg.enableGimbalWeapon)
+            {
+                Vector3 origin = (ship != null) ? ship.transform.position : transform.position;
+                Vector3 gunDir = (weapon != null) ? weapon.CurrentGimbalDir : ((ship != null) ? ship.ShipForward : transform.forward);
+                boresightPoint = origin + gunDir * targetDist;
+                // Giữ nẹp ngang màn hình, không bị chao nghiêng theo roll của tàu
+                nearCrosshairUI.localEulerAngles = Vector3.zero;
+            }
+            else if (ship != null)
             {
                 Transform meshT = (ship.VisualMesh != null) ? ship.VisualMesh : ship.transform;
                 boresightPoint = ship.transform.position + meshT.forward * targetDist;
@@ -271,6 +287,38 @@ namespace VirtualRail
             {
                 nearCrosshairUI.position = nearScreenPos;
                 if (!nearCrosshairUI.gameObject.activeSelf) nearCrosshairUI.gameObject.SetActive(true);
+            }
+
+            // Phản hồi thị giác Locked-on khi Ụ súng xoay bắt kịp chuột (0 GC Alloc)
+            if (cfg != null && cfg.enableGimbalWeapon && farCrosshairUI != null)
+            {
+                float screenDist = Vector2.Distance(
+                    new Vector2(nearCrosshairUI.position.x, nearCrosshairUI.position.y),
+                    new Vector2(farCrosshairUI.position.x, farCrosshairUI.position.y)
+                );
+                float lockThreshold = (cfg.gimbalLockThreshold > 1f) ? cfg.gimbalLockThreshold : 12f;
+                bool isLocked = screenDist <= lockThreshold;
+                UpdateGimbalLockFeedback(isLocked);
+            }
+            else
+            {
+                UpdateGimbalLockFeedback(false);
+            }
+        }
+
+        private void UpdateGimbalLockFeedback(bool isLocked)
+        {
+            Color col = isLocked ? lockedNearColor : normalNearColor;
+            if (_nearTickImages != null)
+            {
+                for (int i = 0; i < _nearTickImages.Length; i++)
+                {
+                    if (_nearTickImages[i] != null) _nearTickImages[i].color = col;
+                }
+            }
+            if (_nearCenterDotImage != null)
+            {
+                _nearCenterDotImage.color = col;
             }
         }
 
@@ -381,6 +429,7 @@ namespace VirtualRail
             {
                 nearCrosshairUI.sizeDelta = new Vector2(nearSize, nearSize);
                 if (nearCrosshairImage == null) nearCrosshairImage = nearCrosshairUI.GetComponent<Image>();
+                CacheNearTickImages();
             }
         }
 
@@ -394,6 +443,20 @@ namespace VirtualRail
                 Transform t = farCrosshairUI.Find(names[i]);
                 if (t != null) _farBorderImages[i] = t.GetComponent<Image>();
             }
+        }
+
+        private void CacheNearTickImages()
+        {
+            if (nearCrosshairUI == null) return;
+            string[] names = { "NearTop", "NearBottom", "NearLeft", "NearRight" };
+            _nearTickImages = new Image[4];
+            for (int i = 0; i < 4; i++)
+            {
+                Transform t = nearCrosshairUI.Find(names[i]);
+                if (t != null) _nearTickImages[i] = t.GetComponent<Image>();
+            }
+            Transform dotT = nearCrosshairUI.Find("CenterDot");
+            if (dotT != null) _nearCenterDotImage = dotT.GetComponent<Image>();
         }
 
         private Text CreateProceduralTelemetryText(Transform parent, float farSize)

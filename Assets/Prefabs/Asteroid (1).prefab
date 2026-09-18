@@ -136,8 +136,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2857afc9d962e53478350047612d8d5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _minScale: 2.4
-  _maxScale: 6
+  _minScale: 0.6
+  _maxScale: 1.3
 --- !u!135 &2672919246450437384
 SphereCollider:
   m_ObjectHideFlags: 0

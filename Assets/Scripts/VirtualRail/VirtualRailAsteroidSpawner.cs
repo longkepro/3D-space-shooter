@@ -23,12 +23,13 @@ namespace VirtualRail
         [Tooltip("Cự ly sinh thiên thạch phía trước tàu (m)")]
         [SerializeField] private float spawnDistance = 250f;
         [Tooltip("Khoảng cách bước Z giữa các cụm thiên thạch (m)")]
-        [SerializeField] private float spawnZInterval = 18f;
+        [SerializeField] private float spawnZInterval = 50f;
         [Tooltip("Cự ly thu hồi thiên thạch phía sau tàu (m)")]
         [SerializeField] private float despawnBehindDistance = 45f;
 
         private readonly List<Asteroid> _pool = new List<Asteroid>();
         private readonly ICorridorPathStrategy _pathStrategy = new PerlinSpinePathStrategy();
+        private Transform _poolRoot;
         private float _lastSpawnZ = 0f;
         private bool _isSpawning = false;
         private bool _isInitialized = false;
@@ -37,6 +38,15 @@ namespace VirtualRail
         {
             if (Instance == null) Instance = this;
             InitializePool();
+        }
+
+        private void Start()
+        {
+            if (anchor == null) anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
+            if (!_isSpawning && anchor != null)
+            {
+                StartSpawning();
+            }
         }
 
         private void OnEnable()
@@ -64,11 +74,27 @@ namespace VirtualRail
 #endif
             }
 
+            if (_poolRoot == null)
+            {
+                GameObject existingRoot = GameObject.Find("[VirtualRail_AsteroidPool]");
+                if (existingRoot != null)
+                {
+                    _poolRoot = existingRoot.transform;
+                }
+                else
+                {
+                    GameObject rootObj = new GameObject("[VirtualRail_AsteroidPool]");
+                    _poolRoot = rootObj.transform;
+                    _poolRoot.position = Vector3.zero;
+                    _poolRoot.rotation = Quaternion.identity;
+                }
+            }
+
             if (asteroidPrefab != null)
             {
                 for (int i = 0; i < poolSize; i++)
                 {
-                    GameObject obj = Instantiate(asteroidPrefab, transform);
+                    GameObject obj = Instantiate(asteroidPrefab, _poolRoot);
                     obj.name = "Asteroid_Pooled_" + i;
                     obj.SetActive(false);
 
@@ -85,6 +111,7 @@ namespace VirtualRail
 
         public void StartSpawning()
         {
+            if (_isSpawning) return;
             _isSpawning = true;
             if (anchor != null)
             {
@@ -135,14 +162,7 @@ namespace VirtualRail
 
             float playerZ = anchor.transform.position.z;
 
-            // 1. Sinh thêm thiên thạch đón đầu khi tàu tiến lên
-            while (playerZ + effSpawnDist > _lastSpawnZ)
-            {
-                _lastSpawnZ += effZInterval;
-                SpawnSingleAsteroid(_lastSpawnZ);
-            }
-
-            // 2. Thu hồi thiên thạch trôi về sau lưng tàu
+            // 1. Thu hồi thiên thạch trôi về sau lưng tàu TRƯỚC để hoàn trả vào pool
             for (int i = 0; i < _pool.Count; i++)
             {
                 if (_pool[i] != null && _pool[i].gameObject.activeSelf)
@@ -152,6 +172,13 @@ namespace VirtualRail
                         _pool[i].Recycle();
                     }
                 }
+            }
+
+            // 2. Sinh thêm thiên thạch đón đầu khi tàu tiến lên
+            while (playerZ + effSpawnDist > _lastSpawnZ)
+            {
+                _lastSpawnZ += effZInterval;
+                SpawnSingleAsteroid(_lastSpawnZ);
             }
         }
 
@@ -202,6 +229,17 @@ namespace VirtualRail
                 {
                     _pool[i].Recycle();
                 }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            RecycleAll();
+            if (_poolRoot != null)
+            {
+                Destroy(_poolRoot.gameObject);
+                _poolRoot = null;
             }
         }
 

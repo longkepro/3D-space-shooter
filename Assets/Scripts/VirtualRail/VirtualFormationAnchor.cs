@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -104,11 +104,11 @@ namespace VirtualRail
                 bool isLeader = (i == 0);
                 if (isLeader) _leader = wingman;
 
-                // Tạo điểm xuất phát ngẫu nhiên ngoài màn hình cho từng tàu
+                // Tạo điểm xuất phát ngẫu nhiên ngoài màn hình cho từng tàu (chân trời 120m - 140m)
                 Vector3 spawnOffset = new Vector3(
-                    (i % 2 == 0 ? 1f : -1f) * UnityEngine.Random.Range(20f, 40f),
-                    UnityEngine.Random.Range(-10f, 25f),
-                    UnityEngine.Random.Range(30f, 80f)
+                    (i % 2 == 0 ? 1f : -1f) * UnityEngine.Random.Range(20f, 35f),
+                    UnityEngine.Random.Range(-5f, 15f),
+                    UnityEngine.Random.Range(10f, 30f)
                 );
                 Vector3 shipSpawnPos = anchorStartPosition + spawnOffset;
 
@@ -130,9 +130,11 @@ namespace VirtualRail
 
             _lifetimeTimer += Time.deltaTime;
 
-            // 1. Tịnh tiến dọc theo đường ray (đồng tốc với tiến trình ray)
-            float speed = _railAnchor.CurrentSpeed;
-            transform.position += _railAnchor.ForwardTangent * (speed * Time.deltaTime);
+            // 1. Tịnh tiến dọc theo đường ray với vận tốc tiếp cận tương đối (Closing Velocity)
+            float railSpeed = _railAnchor.CurrentSpeed;
+            float closingSpeed = (_railAnchor.config != null) ? _railAnchor.config.formationClosingSpeed : 35f;
+            float actualSpeed = Mathf.Max(20f, railSpeed - closingSpeed);
+            transform.position += _railAnchor.ForwardTangent * (actualSpeed * Time.deltaTime);
 
             // 2. Chuyển động uốn lượn hình sin và nghiêng cánh (Banking Roll)
             float sway = Mathf.Sin(_lifetimeTimer * _swaySpeed) * _swayAmplitudeX;

@@ -19,6 +19,12 @@ namespace VirtualRail
         public float fireRate = 0.15f;
         private float nextFireTime = 0f;
 
+        // Ụ súng xoay cơ học (Gimbaled Turrets - 0 GC Alloc)
+        private Vector3 _currentGimbalDir = Vector3.forward;
+        private bool _gimbalInitialized = false;
+
+        public Vector3 CurrentGimbalDir => _currentGimbalDir;
+
         // Bộ đệm RaycastHit dùng chung 0 GC Alloc cho Dynamic Depth Convergence
         private static readonly RaycastHit[] _depthScanHits = new RaycastHit[16];
 
@@ -42,6 +48,11 @@ namespace VirtualRail
         private void Update()
         {
             var cfg = anchor != null ? anchor.config : null;
+            if (cfg != null)
+            {
+                UpdateGimbalOrientation(cfg);
+            }
+
             bool isManualFire = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
             bool isInputReaderFiring = inputReader != null && inputReader.IsFiring();
             bool isReticleAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
@@ -54,6 +65,53 @@ namespace VirtualRail
                     FireAllMuzzles();
                     nextFireTime = Time.time + fireRate;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật hướng xoay của Ụ súng cơ học (Gimbaled Turrets - 0 GC Alloc).
+        /// Nòng súng tự động xoay đuổi theo con trỏ chuột trong nón hỏa lực maxGimbalAngle.
+        /// </summary>
+        public void UpdateGimbalOrientation(VirtualRailConfig cfg)
+        {
+            if (cfg == null) return;
+
+            Vector3 origin = (ship != null) ? ship.transform.position : transform.position;
+            Vector3 shipFwd = (ship != null) ? ship.ShipForward : transform.forward;
+            if (shipFwd.sqrMagnitude < 0.001f) shipFwd = Vector3.forward;
+
+            if (!cfg.enableGimbalWeapon)
+            {
+                _currentGimbalDir = shipFwd;
+                return;
+            }
+
+            float convDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
+            Vector3 targetAimWorld = (reticle != null) 
+                ? reticle.WorldPosition 
+                : (anchor != null ? anchor.ToWorldPoint(new Vector3(0, 0, convDist)) : origin + shipFwd * convDist);
+
+            Vector3 toTarget = targetAimWorld - origin;
+            Vector3 desiredDir = toTarget.sqrMagnitude > 0.001f ? toTarget.normalized : shipFwd;
+
+            // Khống chế trong hình nón hỏa lực tối đa (maxGimbalAngle)
+            float maxAngle = Mathf.Clamp(cfg.maxGimbalAngle, 5f, 85f);
+            float angle = Vector3.Angle(shipFwd, desiredDir);
+            Vector3 clampedTargetDir = desiredDir;
+            if (angle > maxAngle)
+            {
+                clampedTargetDir = Vector3.RotateTowards(shipFwd, desiredDir, maxAngle * Mathf.Deg2Rad, 0f);
+            }
+
+            if (!_gimbalInitialized)
+            {
+                _currentGimbalDir = clampedTargetDir;
+                _gimbalInitialized = true;
+            }
+            else
+            {
+                float speedRad = Mathf.Max(10f, cfg.gimbalTrackingSpeed) * Mathf.Deg2Rad;
+                _currentGimbalDir = Vector3.RotateTowards(_currentGimbalDir, clampedTargetDir, speedRad * Time.deltaTime, 0f);
             }
         }
 
@@ -151,13 +209,21 @@ namespace VirtualRail
 
         private void FireSingleMuzzle(Vector3 muzzlePos, Laser muzzle, Vector3 aimWorld, VirtualRailConfig cfg)
         {
-            // Vector ngắm chuẩn xác 100% từ nòng súng tới tọa độ hồng tâm 3D (Pure 3D Convergence)
-            Vector3 diff = aimWorld - muzzlePos;
-            Vector3 baseFireDirection = diff.sqrMagnitude > 0.001f ? diff.normalized : transform.forward;
+            Vector3 targetAim = aimWorld;
+            if (cfg != null && cfg.enableGimbalWeapon)
+            {
+                float convDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
+                Vector3 origin = (ship != null) ? ship.transform.position : transform.position;
+                targetAim = origin + _currentGimbalDir * convDist;
+            }
+
+            // Vector ngắm chuẩn xác từ nòng súng tới tọa độ mục tiêu súng đang chĩa
+            Vector3 diff = targetAim - muzzlePos;
+            Vector3 baseFireDirection = diff.sqrMagnitude > 0.001f ? diff.normalized : (cfg != null && cfg.enableGimbalWeapon ? _currentGimbalDir : transform.forward);
             Vector3 fireDirection = baseFireDirection;
             RaycastHit hit;
             Transform hitTarget = null;
-            Vector3 targetPoint = aimWorld;
+            Vector3 targetPoint = targetAim;
 
             // Kiểm tra phễu từ tính (Bullet Magnetism) - Chỉ can thiệp nếu được chủ động bật trong Config
             if (cfg.enableBulletMagnetism && cfg.magnetismRadius > 0.01f)
@@ -189,6 +255,15 @@ namespace VirtualRail
             if (cfg.useSegmentedLaser)
             {
                 float collisionRadius = cfg.laserBoltCollisionRadius > 0.05f ? cfg.laserBoltCollisionRadius : 1.0f;
+                Vector3 inheritedVel = Vector3.zero;
+                if (anchor != null)
+                {
+                    inheritedVel = anchor.transform.forward * anchor.CurrentSpeed;
+                }
+                if (cfg.enableLateralVelocityInheritance && ship != null)
+                {
+                    inheritedVel += ship.CurrentLateralVelocityWorld * cfg.lateralVelocityWeight;
+                }
 
                 // Hướng 1: Bắn đoạn đạn laser độc lập (Segmented Laser Bolt với Hành lang hỏa lực 3D thẳng tắp)
                 VirtualRailLaserPool.Instance.FireBolt(
@@ -202,7 +277,8 @@ namespace VirtualRail
                     cfg.laserBoltMaterial,
                     transform,
                     cfg.enemyLayer,
-                    collisionRadius
+                    collisionRadius,
+                    inheritedVel
                 );
             }
             else

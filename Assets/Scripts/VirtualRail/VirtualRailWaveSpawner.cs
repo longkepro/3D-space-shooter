@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace VirtualRail
@@ -38,6 +38,7 @@ namespace VirtualRail
 
         private readonly List<EnemyMovement> _pool = new List<EnemyMovement>();
         private readonly List<VirtualFormationAnchor> _formationPool = new List<VirtualFormationAnchor>();
+        private Transform _poolRoot;
         private float _nextWaveTime = 0f;
         private bool _isSpawning = false;
         private bool _isInitialized = false;
@@ -61,6 +62,15 @@ namespace VirtualRail
             InitializePool();
         }
 
+        private void Start()
+        {
+            if (anchor == null) anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
+            if (!_isSpawning && anchor != null && anchor.CurrentSpeed > 0.5f)
+            {
+                StartSpawning();
+            }
+        }
+
         private void OnEnable()
         {
             GameEventManager.OnStartGame += StartSpawning;
@@ -78,6 +88,23 @@ namespace VirtualRail
             if (_isInitialized) return;
 
             if (anchor == null) anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
+
+            // Khởi tạo gốc Pool quái vật độc lập trong World Space (0 GC Alloc, không bị kéo dạt theo tàu mẹ)
+            if (_poolRoot == null)
+            {
+                GameObject existingRoot = GameObject.Find("[VirtualRail_EnemyPool]");
+                if (existingRoot != null)
+                {
+                    _poolRoot = existingRoot.transform;
+                }
+                else
+                {
+                    GameObject rootObj = new GameObject("[VirtualRail_EnemyPool]");
+                    _poolRoot = rootObj.transform;
+                    _poolRoot.position = Vector3.zero;
+                    _poolRoot.rotation = Quaternion.identity;
+                }
+            }
 
             // Tự động tìm nạp các prefab Enemy nếu chưa gán
             if (enemyPrefabs == null || enemyPrefabs.Length == 0)
@@ -101,7 +128,7 @@ namespace VirtualRail
                     if (enemyPrefabs[p] == null) continue;
                     for (int i = 0; i < poolSizePerType; i++)
                     {
-                        GameObject enemyObj = Instantiate(enemyPrefabs[p], transform);
+                        GameObject enemyObj = Instantiate(enemyPrefabs[p], _poolRoot);
                         enemyObj.name = enemyPrefabs[p].name + "_Pooled_" + i;
                         enemyObj.SetActive(false);
 
@@ -124,11 +151,11 @@ namespace VirtualRail
                 }
             }
 
-            // Khởi tạo sẵn 2 Formation Anchors (0 GC Alloc)
+            // Khởi tạo sẵn 2 Formation Anchors trong World Space (0 GC Alloc)
             for (int f = 0; f < 2; f++)
             {
                 GameObject fObj = new GameObject($"[VirtualFormationAnchor_{f}]");
-                fObj.transform.SetParent(transform, false);
+                fObj.transform.SetParent(_poolRoot, false);
                 VirtualFormationAnchor fa = fObj.AddComponent<VirtualFormationAnchor>();
                 fObj.SetActive(false);
                 _formationPool.Add(fa);
@@ -139,6 +166,7 @@ namespace VirtualRail
 
         public void StartSpawning()
         {
+            if (_isSpawning) return;
             _isSpawning = true;
             _nextWaveTime = Time.time + 1.5f; // Đợi 1.5s sau khi vào game rồi bắt đầu đợt 1
         }
@@ -262,7 +290,8 @@ namespace VirtualRail
                 ? VirtualFormationAnchor.FormationType.WedgeV
                 : VirtualFormationAnchor.FormationType.EchelonLine;
 
-            Vector3 startPos = anchor.transform.position + anchor.ForwardTangent * leadDist + anchor.transform.up * 4f;
+            float formDist = (cfg != null) ? cfg.formationSpawnDistance : 110f;
+            Vector3 startPos = anchor.transform.position + anchor.ForwardTangent * formDist + anchor.transform.up * 4f;
             float assemblyTime = (cfg != null) ? cfg.formationAssemblyTime : 1.2f;
 
             availableAnchor.InitializeFormation(fType, anchor, startPos, enemies, assemblyTime);
@@ -381,6 +410,17 @@ namespace VirtualRail
                 {
                     _formationPool[i].Recycle();
                 }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            RecycleAll();
+            if (_poolRoot != null)
+            {
+                Destroy(_poolRoot.gameObject);
+                _poolRoot = null;
             }
         }
     }

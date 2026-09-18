@@ -31,7 +31,17 @@ namespace VirtualRail
         [Tooltip("Kích thước tâm ngắm gần (pixels)")]
         public float nearReticleSize = 28f;
 
-        [Header("2c. Micro-Aim Alignment (Khí động học ngước mũi theo tâm)")]
+        [Header("2c. Gimbaled Turret Weapons (Ụ súng xoay cơ học & Khóa tâm động)")]
+        [Tooltip("Bật cơ chế ụ súng xoay 2 bậc tự do: Nòng súng tự động xoay đuổi theo con trỏ chuột trong nón hỏa lực")]
+        public bool enableGimbalWeapon = true;
+        [Tooltip("Vận tốc xoay góc của ụ súng (độ/giây - chuẩn 220 độ/giây)")]
+        public float gimbalTrackingSpeed = 220f;
+        [Tooltip("Góc quay tối đa của ụ súng so với mũi tàu (độ - chuẩn 35 độ)")]
+        public float maxGimbalAngle = 35f;
+        [Tooltip("Bán kính pixel màn hình để xác định 2 tâm đã khóa khớp nhau (chuẩn 12 pixels)")]
+        public float gimbalLockThreshold = 12f;
+
+        [Header("2d. Micro-Aim Alignment (Khí động học ngước mũi theo tâm)")]
         [Tooltip("Bật ngước/liếc mũi tàu theo góc ngắm. Giúp nòng súng luôn thẳng trục với tâm ngắm và tâm gần lồng khớp vào tâm xa")]
         public bool enableMicroAimAlignment = true;
         [Range(0.1f, 1.0f)]
@@ -222,7 +232,7 @@ namespace VirtualRail
         [Tooltip("Cự ly sinh thiên thạch phía trước tàu (m)")]
         public float asteroidSpawnDistance = 250f;
         [Tooltip("Khoảng cách bước Z giữa các cụm thiên thạch (m)")]
-        public float asteroidZInterval = 18f;
+        public float asteroidZInterval = 50f;
         [Tooltip("Kích thước bộ đệm Object Pool thiên thạch")]
         public int asteroidPoolSize = 32;
         [Tooltip("Bật thuật toán quy hoạch làn bay an toàn đảm bảo (Guaranteed Safe Corridor Trench)")]
@@ -267,6 +277,10 @@ namespace VirtualRail
         [Header("16. Formation Choreography & Panic Scatter (TDD v1.0.0 Phần III)")]
         [Tooltip("Bật biên đạo phi đội hình bay chữ V/Hàng ngang/Xoắn ốc")]
         public bool enableFormations = true;
+        [Tooltip("Cự ly xuất hiện ban đầu của phi đội hình bay phía trước tàu (mét) - Chuẩn Star Fox 64: 100m - 120m")]
+        public float formationSpawnDistance = 110f;
+        [Tooltip("Vận tốc tiếp cận tương đối của tàu người chơi với đội hình (m/s) - Tàu đuổi kịp đội hình dần để tác chiến")]
+        public float formationClosingSpeed = 35f;
         [Tooltip("Thời gian ráp nối tự do bằng đường cong Cubic Bézier 3D (giây)")]
         public float formationAssemblyTime = 1.2f;
         [Tooltip("Bật cơ chế phân rã hoảng loạn Panic Scatter khi mất tàu chỉ huy")]

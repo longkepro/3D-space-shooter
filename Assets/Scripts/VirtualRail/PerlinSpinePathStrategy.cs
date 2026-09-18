@@ -49,13 +49,15 @@ namespace VirtualRail
             float candX = Random.Range(-halfW, halfW);
             float candY = Random.Range(minY, maxY);
 
-            // 2. Kiểm tra khoảng cách tới tim luồng an toàn
+            // 2. Kiểm tra khoảng cách tới tim luồng an toàn (cộng thêm biên bán kính bao thiên thạch 2.5m)
             Vector2 diff = new Vector2(candX - safeCenter.x, candY - safeCenter.y);
             float distSq = diff.sqrMagnitude;
-            float clearRadiusSq = clearRadius * clearRadius;
+            const float ASTEROID_RADIUS_MARGIN = 2.5f;
+            float totalClearDist = clearRadius + ASTEROID_RADIUS_MARGIN;
+            float totalClearDistSq = totalClearDist * totalClearDist;
 
-            // 3. Nếu rơi vào vùng cấm an toàn -> Đẩy dạt ra ngoài bán kính an toàn
-            if (distSq < clearRadiusSq)
+            // 3. Nếu rơi vào vùng cấm an toàn -> Đẩy dạt ra ngoài bán kính an toàn đảm bảo
+            if (distSq < totalClearDistSq)
             {
                 float dist = Mathf.Sqrt(distSq);
                 Vector2 dir;
@@ -68,8 +70,8 @@ namespace VirtualRail
                     dir = (Random.value > 0.5f) ? Vector2.right : Vector2.left;
                 }
 
-                candX = safeCenter.x + dir.x * (clearRadius + 0.6f);
-                candY = safeCenter.y + dir.y * (clearRadius + 0.6f);
+                candX = safeCenter.x + dir.x * totalClearDist;
+                candY = safeCenter.y + dir.y * totalClearDist;
 
                 // Kẹp trong giới hạn biên hành lang
                 candX = Mathf.Clamp(candX, -halfW, halfW);
@@ -77,10 +79,10 @@ namespace VirtualRail
 
                 // Trong trường hợp kẹp biên đẩy ngược vào trong luồng an toàn, đổi sang hướng đối diện
                 float postDistSq = (new Vector2(candX, candY) - safeCenter).sqrMagnitude;
-                if (postDistSq < clearRadiusSq)
+                if (postDistSq < totalClearDistSq)
                 {
-                    candX = safeCenter.x - dir.x * (clearRadius + 0.6f);
-                    candY = safeCenter.y - dir.y * (clearRadius + 0.6f);
+                    candX = safeCenter.x - dir.x * totalClearDist;
+                    candY = safeCenter.y - dir.y * totalClearDist;
                     candX = Mathf.Clamp(candX, -halfW, halfW);
                     candY = Mathf.Clamp(candY, minY, maxY);
                 }

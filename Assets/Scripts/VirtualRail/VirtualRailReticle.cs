@@ -298,10 +298,19 @@ namespace VirtualRail
 
                     Vector3 nearWorldPos;
                     float targetDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
-                    if (ship != null)
+                    VirtualRailWeapon weapon = (ship != null) ? ship.GetComponent<VirtualRailWeapon>() : null;
+
+                    if (cfg.enableGimbalWeapon && weapon != null)
+                    {
+                        Vector3 origin = (ship != null) ? ship.transform.position : transform.position;
+                        nearWorldPos = origin + weapon.CurrentGimbalDir * targetDist;
+                        nearCrosshairUI.localEulerAngles = Vector3.zero;
+                    }
+                    else if (ship != null)
                     {
                         Transform meshT = (ship.VisualMesh != null) ? ship.VisualMesh : ship.transform;
                         nearWorldPos = ship.transform.position + meshT.forward * targetDist;
+                        nearCrosshairUI.localEulerAngles = new Vector3(0, 0, meshT.localEulerAngles.z);
                     }
                     else if (anchor != null)
                     {

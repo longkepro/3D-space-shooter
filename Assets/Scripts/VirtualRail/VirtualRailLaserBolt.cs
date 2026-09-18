@@ -121,29 +121,32 @@ namespace VirtualRail
         private void Update()
         {
             float dt = Time.deltaTime;
-            float moveDist = _speed * dt;
-            Vector3 nextPos = _currentPos + _direction * moveDist;
+            Vector3 velocity = _direction * _speed + _inheritedVelocity;
+            Vector3 displacement = velocity * dt;
+            float stepDist = displacement.magnitude;
+            Vector3 moveDir = stepDist > 0.0001f ? (displacement / stepDist) : _direction;
+            Vector3 nextPos = _currentPos + displacement;
 
             // Continuous Collision Detection (SphereCast với bán kính hành lang _collisionRadius phủ kín khoảng hở)
             RaycastHit hit;
-            if (Physics.SphereCast(_currentPos, _collisionRadius, _direction, out hit, moveDist, _hitMask, QueryTriggerInteraction.Ignore))
+            if (Physics.SphereCast(_currentPos, _collisionRadius, moveDir, out hit, stepDist, _hitMask, QueryTriggerInteraction.Ignore))
             {
                 // Bỏ qua nếu va chạm trúng chính tàu người chơi
                 bool isSelf = _source != null && (hit.transform == _source || hit.transform.IsChildOf(_source) || hit.transform.root == _source.root || hit.transform.CompareTag("Player"));
                 if (!isSelf)
                 {
                     _currentPos = hit.point;
-                    UpdatePositions(_direction);
+                    UpdatePositions(moveDir);
                     OnHit(hit);
                     return;
                 }
             }
 
             _currentPos = nextPos;
-            _distanceTraveled += moveDist;
+            _distanceTraveled += stepDist;
             _lifetime -= dt;
 
-            UpdatePositions(_direction);
+            UpdatePositions(moveDir);
 
             // Tự động thu hồi khi hết thời gian sống hoặc bay vượt quá tầm bắn
             if (_lifetime <= 0f || _distanceTraveled >= 600f)

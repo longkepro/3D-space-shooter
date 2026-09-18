@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace VirtualRail
@@ -66,6 +66,9 @@ namespace VirtualRail
             // Đặt vị trí xuất phát
             transform.position = trajectory.spawnPosition;
             transform.rotation = trajectory.spawnRotation;
+
+            // Tắt EnemyMovement để tránh cộng dồn vận tốc hoặc xung đột chuyển động
+            if (_movement != null) _movement.enabled = false;
 
             // Bắt đầu từ pha 1: Telegraph
             EnterPhase(LifecyclePhase.Telegraph);
@@ -177,6 +180,7 @@ namespace VirtualRail
 
             if (_movement != null)
             {
+                _movement.enabled = true;
                 _movement.Recycle();
             }
             else

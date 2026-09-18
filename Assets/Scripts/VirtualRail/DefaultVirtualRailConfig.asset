@@ -22,6 +22,10 @@ MonoBehaviour:
   nearReticleDistance: 35
   farReticleSize: 56
   nearReticleSize: 28
+  enableGimbalWeapon: 1
+  gimbalTrackingSpeed: 220
+  maxGimbalAngle: 35
+  gimbalLockThreshold: 12
   enableMicroAimAlignment: 1
   microAimWeight: 1
   maxMicroAimPitch: 15
@@ -102,7 +106,7 @@ MonoBehaviour:
   useOptimizedVFXPool: 1
   useRailAsteroidSpawner: 1
   asteroidSpawnDistance: 250
-  asteroidZInterval: 18
+  asteroidZInterval: 50
   asteroidPoolSize: 32
   enableSafeCorridorPath: 1
   safeCorridorRadius: 5.5
@@ -122,6 +126,8 @@ MonoBehaviour:
   actionDuration: 2.5
   exitDuration: 1
   enableFormations: 1
+  formationSpawnDistance: 110
+  formationClosingSpeed: 35
   formationAssemblyTime: 1.2
   enablePanicScatter: 1
   formationIntervalWaves: 3
