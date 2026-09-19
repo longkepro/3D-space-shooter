@@ -132,7 +132,32 @@ namespace VirtualRail
 
             // 1. Tịnh tiến dọc theo đường ray với vận tốc tiếp cận tương đối (Closing Velocity)
             float railSpeed = _railAnchor.CurrentSpeed;
-            float closingSpeed = (_railAnchor.config != null) ? _railAnchor.config.formationClosingSpeed : 35f;
+            bool useSync = _railAnchor.config == null || _railAnchor.config.enableEnemyRailSync;
+
+            float closingSpeed = 0f;
+            if (useSync)
+            {
+                Vector3 toFormation = transform.position - _railAnchor.transform.position;
+                float distToPlayer = Vector3.Dot(toFormation, _railAnchor.ForwardTangent);
+                float targetHoldDist = (_railAnchor.config != null) ? _railAnchor.config.formationHoldDistance : 65f;
+                float maxClosingSpeed = (_railAnchor.config != null) ? _railAnchor.config.formationClosingSpeed : 25f;
+
+                if (distToPlayer > targetHoldDist)
+                {
+                    // Giảm tốc mượt mà khi tiến sát cự ly ghìm
+                    closingSpeed = Mathf.Min(maxClosingSpeed, (distToPlayer - targetHoldDist) * 1.5f);
+                }
+                else
+                {
+                    // Đã đạt cự ly ghìm giao chiến: khóa đồng tốc hoàn toàn với ray (closingSpeed = 0)
+                    closingSpeed = 0f;
+                }
+            }
+            else
+            {
+                closingSpeed = (_railAnchor.config != null) ? _railAnchor.config.formationClosingSpeed : 35f;
+            }
+
             float actualSpeed = Mathf.Max(20f, railSpeed - closingSpeed);
             transform.position += _railAnchor.ForwardTangent * (actualSpeed * Time.deltaTime);
 

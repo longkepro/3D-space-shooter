@@ -616,6 +616,40 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/35. Enemies: Rail Speed Synchronization & Engagement Hold Distance (ON)")]
+    public static void EnableEnemyRailSyncAndHold()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableEnemyRailSync = true;
+            config.enemyHoldDistance = 60f;
+            config.enemyClosingSpeed = 20f;
+            config.formationHoldDistance = 65f;
+            config.formationClosingSpeed = 25f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT ĐỒNG BỘ VẬN TỐC RAY & CỰ LY GHÌM GIAO CHIẾN (ON):</b></color> Kẻ địch và Đội hình bay tiếp cận êm ái (20m/s), ghìm cố định ở 60m-65m trước mũi tàu để tạo cửa sổ tác chiến vàng!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/36. Enemies: Undo to Unsynchronized Fast Approach (OFF - Legacy)")]
+    public static void DisableEnemyRailSyncAndHold()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableEnemyRailSync = false;
+            config.enemyHoldDistance = 0f;
+            config.enemyClosingSpeed = 140f;
+            config.formationHoldDistance = 0f;
+            config.formationClosingSpeed = 35f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ VẬN TỐC TIẾP CẬN CŨ (OFF):</b></color> Tắt cự ly ghìm và đồng bộ ray, kẻ địch lao tự do như phiên bản cũ.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

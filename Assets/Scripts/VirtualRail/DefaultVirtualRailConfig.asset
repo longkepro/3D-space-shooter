@@ -127,7 +127,11 @@ MonoBehaviour:
   exitDuration: 1
   enableFormations: 1
   formationSpawnDistance: 110
-  formationClosingSpeed: 35
+  formationClosingSpeed: 25
   formationAssemblyTime: 1.2
   enablePanicScatter: 1
   formationIntervalWaves: 3
+  enableEnemyRailSync: 1
+  enemyHoldDistance: 60
+  enemyClosingSpeed: 20
+  formationHoldDistance: 65

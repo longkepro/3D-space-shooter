@@ -134,6 +134,19 @@ namespace VirtualRail
                 case LifecyclePhase.Approach:
                     // Di chuyển lao vào hành lang bay
                     transform.position += _trajectory.approachVelocity * Time.deltaTime;
+
+                    // Kiểm tra cự ly ghìm giao chiến: nếu đã tiếp cận cự ly ghìm, chuyển ngay sang Action
+                    if (_anchor != null && (_anchor.config == null || _anchor.config.enableEnemyRailSync))
+                    {
+                        float distZ = Vector3.Dot(transform.position - _anchor.transform.position, _anchor.ForwardTangent);
+                        float holdDist = (_anchor.config != null) ? _anchor.config.enemyHoldDistance : 60f;
+                        if (distZ <= holdDist && _trajectory.vectorType == SpatialVectorType.FrontalHeadOn)
+                        {
+                            EnterPhase(LifecyclePhase.Action);
+                            break;
+                        }
+                    }
+
                     if (_phaseTimer >= _approachDuration)
                     {
                         EnterPhase(LifecyclePhase.Action);

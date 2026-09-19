@@ -74,7 +74,50 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
 
     private void Move()
     {
-        transform.position += transform.forward * _movementSpeed * Time.deltaTime;
+        var anchor = VirtualRail.VirtualRailAnchor.Instance;
+        bool useSync = anchor != null && anchor.CurrentSpeed > 0.1f && (anchor.config == null || anchor.config.enableEnemyRailSync);
+
+        if (useSync)
+        {
+            Vector3 railFwd = anchor.ForwardTangent;
+            Vector3 toEnemy = transform.position - anchor.transform.position;
+            float distAlongRail = Vector3.Dot(toEnemy, railFwd);
+
+            float holdDist = (anchor.config != null) ? anchor.config.enemyHoldDistance : 60f;
+            float targetClosingSpeed = (anchor.config != null) ? anchor.config.enemyClosingSpeed : 20f;
+            float railSpeed = anchor.CurrentSpeed;
+
+            float closingSpeed = 0f;
+            if (distAlongRail > holdDist)
+            {
+                // Giảm tốc mượt mà khi tiến gần cự ly ghìm
+                closingSpeed = Mathf.Min(targetClosingSpeed, (distAlongRail - holdDist) * 1.5f);
+            }
+            else if (distAlongRail > 0f)
+            {
+                // Khóa đồng tốc với ray khi ở trong cự ly ghìm phía trước mũi tàu (closingSpeed = 0)
+                closingSpeed = 0f;
+            }
+            else
+            {
+                // Đã bị vượt qua phía sau: giữ vận tốc để người chơi bỏ lại phía sau và despawn
+                closingSpeed = targetClosingSpeed;
+            }
+
+            float forwardSpeed = railSpeed - closingSpeed;
+            Vector3 forwardDelta = railFwd * (forwardSpeed * Time.deltaTime);
+
+            // Bóc tách vận tốc lái né ngang (lateral steering) vuông góc với ray (0 GC Alloc)
+            Vector3 steerVelocity = transform.forward * _movementSpeed;
+            Vector3 lateralVelocity = steerVelocity - railFwd * Vector3.Dot(steerVelocity, railFwd);
+            Vector3 lateralDelta = lateralVelocity * Time.deltaTime;
+
+            transform.position += forwardDelta + lateralDelta;
+        }
+        else
+        {
+            transform.position += transform.forward * _movementSpeed * Time.deltaTime;
+        }
     }
 
     private void Pathfinding()

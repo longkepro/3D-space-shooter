@@ -288,6 +288,16 @@ namespace VirtualRail
         [Tooltip("Tần suất xuất hiện đợt đội hình (cứ sau mỗi X đợt quái)")]
         public int formationIntervalWaves = 3;
 
+        [Header("17. Enemy Velocity Sync & Engagement Distance (Option 1)")]
+        [Tooltip("Bật cơ chế đồng bộ vận tốc ray và cự ly ghìm giao chiến cho kẻ địch (Star Fox 64 Arcade Pacing)")]
+        public bool enableEnemyRailSync = true;
+        [Tooltip("Cự ly ghìm giao chiến phía trước tàu người chơi (mét - chuẩn 55m - 65m). Khi đạt cự ly này, kẻ địch khóa đồng tốc với ray để tạo cửa sổ tác chiến")]
+        public float enemyHoldDistance = 60f;
+        [Tooltip("Vận tốc tiếp cận tương đối của kẻ địch khi ở xa (m/s - chuẩn 18m/s - 25m/s). Kẻ địch bay tới mượt mà thay vì lao thẳng vào tàu")]
+        public float enemyClosingSpeed = 20f;
+        [Tooltip("Cự ly ghìm đội hình bay phía trước tàu người chơi (mét - chuẩn 60m - 70m)")]
+        public float formationHoldDistance = 65f;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

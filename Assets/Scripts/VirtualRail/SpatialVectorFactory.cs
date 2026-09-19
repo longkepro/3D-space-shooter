@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace VirtualRail
 {
@@ -87,6 +87,10 @@ namespace VirtualRail
             Vector3 railRight = anchor.transform.right;
             Vector3 railUp = anchor.transform.up;
 
+            bool enableSync = (anchor.config == null || anchor.config.enableEnemyRailSync);
+            float holdDist = (anchor.config != null) ? anchor.config.enemyHoldDistance : 60f;
+            float closingSpeed = (anchor.config != null) ? anchor.config.enemyClosingSpeed : 20f;
+
             // Frustum dimensions at standard lead distance
             float safeLead = Mathf.Max(leadZ, 60f);
             float hHalf = safeLead * Mathf.Tan(fovRad);
@@ -97,22 +101,35 @@ namespace VirtualRail
             {
                 case SpatialVectorType.FrontalHeadOn:
                 {
-                    // Xuất phát từ mặt phẳng cắt xa Z ≈ +300m đến +350m
-                    float zDist = 320f;
+                    // Xuất phát từ mặt phẳng cắt xa Z ≈ +220m đến +260m
+                    float zDist = 240f;
                     float hZ = zDist * Mathf.Tan(fovRad);
                     float wZ = hZ * aspect;
-                    float offsetX = Random.Range(-wZ * 0.65f, wZ * 0.65f);
-                    float offsetY = Random.Range(-hZ * 0.45f, hZ * 0.55f);
+                    float offsetX = Random.Range(-wZ * 0.55f, wZ * 0.55f);
+                    float offsetY = Random.Range(-hZ * 0.35f, hZ * 0.45f);
 
                     data.spawnPosition = railPos + railFwd * zDist + railRight * offsetX + railUp * offsetY;
                     data.spawnRotation = Quaternion.LookRotation(-railFwd);
-                    // Lao thẳng đối đầu
-                    data.approachVelocity = -railFwd * (railSpeed + 25f);
-                    data.approachDuration = 1.4f;
-                    data.actionOffset = new Vector3(offsetX * 0.5f, offsetY * 0.5f, 90f);
-                    data.actionDuration = 2.5f;
-                    // Thoát ly: Peel-off rẽ cánh 90 độ
-                    data.exitVelocity = (railRight * Mathf.Sign(offsetX) + railUp * 0.3f - railFwd * 0.5f).normalized * 45f;
+
+                    if (enableSync)
+                    {
+                        // Đồng bộ vận tốc: Bay tiến về phía trước với vận tốc nhẹ hơn ray (V_rail - closingSpeed)
+                        data.approachVelocity = railFwd * (railSpeed - closingSpeed);
+                        data.approachDuration = Mathf.Max(1.0f, (zDist - holdDist) / Mathf.Max(closingSpeed, 5f));
+                        data.actionOffset = new Vector3(offsetX * 0.5f, offsetY * 0.5f, holdDist);
+                        data.actionDuration = 3.5f;
+                        // Thoát ly: Peel-off rẽ cánh 90 độ và bứt tốc vượt khỏi màn hình
+                        data.exitVelocity = (railRight * Mathf.Sign(offsetX) * 40f + railUp * 12f + railFwd * (railSpeed + 25f));
+                    }
+                    else
+                    {
+                        // Lao thẳng đối đầu cũ (Legacy)
+                        data.approachVelocity = -railFwd * (railSpeed + 25f);
+                        data.approachDuration = 1.4f;
+                        data.actionOffset = new Vector3(offsetX * 0.5f, offsetY * 0.5f, 90f);
+                        data.actionDuration = 2.5f;
+                        data.exitVelocity = (railRight * Mathf.Sign(offsetX) + railUp * 0.3f - railFwd * 0.5f).normalized * 45f;
+                    }
                     break;
                 }
 
@@ -126,7 +143,7 @@ namespace VirtualRail
                     data.spawnRotation = Quaternion.LookRotation(railFwd);
                     // Vượt mặt với tốc độ cao hơn tàu người chơi (V_rail + 35 m/s)
                     data.approachVelocity = railFwd * (railSpeed + 35f);
-                    data.approachDuration = 1.2f;
+                    data.approachDuration = 2.0f;
                     // Giữ cự ly ghìm phía trước mũi tàu (25m - 40m)
                     data.actionOffset = new Vector3(offsetX, offsetY, 35f);
                     data.actionDuration = 3.0f;
@@ -189,7 +206,7 @@ namespace VirtualRail
                     data.actionOffset = new Vector3(offsetX, -2f, zOffset);
                     data.actionDuration = 2.0f;
                     // Ngóc mũi bay vút lên bầu trời
-                    data.exitVelocity = (railUp * 1.8f + railFwd * 0.5f).normalized * 55f;
+                    data.exitVelocity = (railUp * 1.8f + railFwd * 0.5f).normalized * 55f + (enableSync ? railFwd * railSpeed : Vector3.zero);
                     break;
                 }
 
@@ -219,11 +236,11 @@ namespace VirtualRail
                     float offsetX = (Random.value > 0.5f ? 1f : -1f) * (wHalf * 0.7f);
                     data.spawnPosition = railPos + railFwd * (safeLead * 0.5f) + railRight * offsetX + railUp * 4f;
                     data.spawnRotation = Quaternion.LookRotation(-railFwd);
-                    data.approachVelocity = railFwd * (railSpeed * 0.3f);
+                    data.approachVelocity = railFwd * (enableSync ? (railSpeed - closingSpeed) : (railSpeed * 0.3f));
                     data.approachDuration = 0.8f;
                     data.actionOffset = new Vector3(offsetX * 0.6f, 4f, safeLead * 0.4f);
                     data.actionDuration = 2.2f;
-                    data.exitVelocity = (railRight * Mathf.Sign(offsetX) * 35f);
+                    data.exitVelocity = (railRight * Mathf.Sign(offsetX) * 35f + (enableSync ? railFwd * (railSpeed + 20f) : Vector3.zero));
                     break;
                 }
 
@@ -233,11 +250,11 @@ namespace VirtualRail
                     float dir = Random.value > 0.5f ? 1f : -1f;
                     data.spawnPosition = railPos + railFwd * (safeLead * 0.6f) + railRight * (dir * (wHalf + 10f)) + railUp * 12f;
                     data.spawnRotation = Quaternion.Euler(0, 0, dir * 45f);
-                    data.approachVelocity = (-railRight * dir * 28f - railUp * 8f);
+                    data.approachVelocity = (-railRight * dir * 28f - railUp * 8f) + (enableSync ? railFwd * (railSpeed - 15f) : Vector3.zero);
                     data.approachDuration = 1.3f;
                     data.actionOffset = new Vector3(0f, 2f, safeLead * 0.4f);
                     data.actionDuration = 2.0f;
-                    data.exitVelocity = -railUp * 25f;
+                    data.exitVelocity = -railUp * 25f + (enableSync ? railFwd * railSpeed : Vector3.zero);
                     break;
                 }
 
@@ -247,11 +264,11 @@ namespace VirtualRail
                     float spawnX = Random.Range(-8f, 8f);
                     data.spawnPosition = railPos + railFwd * (safeLead * 0.7f) + railRight * spawnX - railUp * 10f;
                     data.spawnRotation = Quaternion.LookRotation(railFwd * 0.5f + railUp * 0.8f);
-                    data.approachVelocity = (railUp * 22f + railFwd * (railSpeed * 0.8f));
+                    data.approachVelocity = (railUp * 22f + railFwd * (enableSync ? (railSpeed - closingSpeed) : (railSpeed * 0.8f)));
                     data.approachDuration = 1.2f;
                     data.actionOffset = new Vector3(spawnX, 4f, safeLead * 0.5f);
                     data.actionDuration = 2.5f;
-                    data.exitVelocity = (railRight * 30f + railFwd * railSpeed);
+                    data.exitVelocity = (railRight * 30f + railFwd * (enableSync ? (railSpeed + 20f) : railSpeed));
                     break;
                 }
 
@@ -261,11 +278,11 @@ namespace VirtualRail
                     Vector3 randDir = Random.onUnitSphere;
                     data.spawnPosition = railPos + railFwd * (safeLead * 0.5f) + randDir * 3f;
                     data.spawnRotation = Random.rotation;
-                    data.approachVelocity = randDir * 20f + railFwd * (railSpeed * 0.5f);
+                    data.approachVelocity = randDir * 20f + railFwd * (enableSync ? (railSpeed - 15f) : (railSpeed * 0.5f));
                     data.approachDuration = 0.8f;
                     data.actionOffset = randDir * 8f + new Vector3(0, 0, safeLead * 0.4f);
                     data.actionDuration = 1.8f;
-                    data.exitVelocity = randDir * 35f;
+                    data.exitVelocity = randDir * 35f + (enableSync ? railFwd * railSpeed : Vector3.zero);
                     break;
                 }
 
@@ -279,13 +296,13 @@ namespace VirtualRail
 
                     data.spawnPosition = railPos + railFwd * zDist + railRight * offsetX + railUp * offsetY;
                     data.spawnRotation = Quaternion.LookRotation(-railFwd);
-                    // Dịch chuyển tức thời tới cự ly chiến đấu
-                    data.approachVelocity = Vector3.zero;
+                    // Dịch chuyển tức thời tới cự ly chiến đấu, giữ cự ly trong pha warp
+                    data.approachVelocity = enableSync ? railFwd * railSpeed : Vector3.zero;
                     data.approachDuration = 0.5f; // Hiện hiệu ứng warp
                     data.actionOffset = new Vector3(offsetX, offsetY, zDist);
                     data.actionDuration = 3.0f;
                     // Thoát ly: Bẻ ngoặt 90 độ văng ra ngoài
-                    data.exitVelocity = (railRight * Mathf.Sign(offsetX) * 45f + railFwd * 10f);
+                    data.exitVelocity = (railRight * Mathf.Sign(offsetX) * 45f + railFwd * (enableSync ? (railSpeed + 25f) : 10f));
                     break;
                 }
             }
