@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class UndoRocketTrail
 {
-    [MenuItem("Tools/Undo Rocket Trail")]
+    [MenuItem("Tools/Legacy/Undo Rocket Trail")]
     public static void DoUndo()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -42,3 +42,4 @@ public class UndoRocketTrail
         Debug.Log("Rocket Trails removed and original Thruster restored!");
     }
 }
+

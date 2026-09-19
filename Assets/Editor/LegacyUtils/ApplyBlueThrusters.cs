@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class ApplyBlueThrusters
 {
-    [MenuItem("Tools/Apply Blue Thrusters")]
+    [MenuItem("Tools/Legacy/Apply Blue Thrusters")]
     public static void DoApply()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -58,3 +58,4 @@ public class ApplyBlueThrusters
         Debug.Log("Blue Thrusters applied successfully!");
     }
 }
+

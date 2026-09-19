@@ -22,8 +22,13 @@ namespace VirtualRail
         // Ụ súng xoay cơ học (Gimbaled Turrets - 0 GC Alloc)
         private Vector3 _currentGimbalDir = Vector3.forward;
         private bool _gimbalInitialized = false;
+        private bool _isGimbalClamped = false;
+        private float _gimbalDeviationAngle = 0f;
+        private Camera _cachedCam;
 
         public Vector3 CurrentGimbalDir => _currentGimbalDir;
+        public bool IsGimbalClamped => _isGimbalClamped;
+        public float GimbalDeviationAngle => _gimbalDeviationAngle;
 
         // Bộ đệm RaycastHit dùng chung 0 GC Alloc cho Dynamic Depth Convergence
         private static readonly RaycastHit[] _depthScanHits = new RaycastHit[16];
@@ -43,6 +48,7 @@ namespace VirtualRail
             if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
             if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
             if (inputReader == null && anchor != null) inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
+            if (_cachedCam == null) _cachedCam = Camera.main;
         }
 
         private void Update()
@@ -97,6 +103,9 @@ namespace VirtualRail
             // Khống chế trong hình nón hỏa lực tối đa (maxGimbalAngle)
             float maxAngle = Mathf.Clamp(cfg.maxGimbalAngle, 5f, 85f);
             float angle = Vector3.Angle(shipFwd, desiredDir);
+            _gimbalDeviationAngle = angle;
+            _isGimbalClamped = (angle > maxAngle);
+
             Vector3 clampedTargetDir = desiredDir;
             if (angle > maxAngle)
             {
@@ -126,10 +135,14 @@ namespace VirtualRail
             Vector3 aimWorld = reticle.WorldPosition;
             var cfg = anchor.config;
 
+            float closestDist = float.MaxValue;
+            Vector3 dynamicTarget = aimWorld;
+            bool foundTarget = false;
+
             // Giai đoạn 1: Dynamic Depth Convergence (Hội tụ độ sâu động theo mục tiêu)
             if (cfg.enableDynamicDepthConvergence)
             {
-                Camera cam = Camera.main;
+                Camera cam = _cachedCam != null ? _cachedCam : Camera.main;
                 Vector3 camPos = cam != null ? cam.transform.position : transform.position;
                 Vector3 rayDir = (aimWorld - camPos).normalized;
 
@@ -149,10 +162,6 @@ namespace VirtualRail
                     cfg.enemyLayer,
                     QueryTriggerInteraction.Ignore
                 );
-
-                float closestDist = float.MaxValue;
-                Vector3 dynamicTarget = aimWorld;
-                bool foundTarget = false;
 
                 for (int i = 0; i < hitCount; i++)
                 {
@@ -195,24 +204,26 @@ namespace VirtualRail
                 // Fallback nếu prefab chưa có Laser component: Bắn từ 2 cánh tàu
                 Vector3 leftWing = transform.position - transform.right * 1.5f;
                 Vector3 rightWing = transform.position + transform.right * 1.5f;
-                FireSingleMuzzle(leftWing, null, aimWorld, cfg);
-                FireSingleMuzzle(rightWing, null, aimWorld, cfg);
+                FireSingleMuzzle(leftWing, null, aimWorld, cfg, foundTarget, closestDist);
+                FireSingleMuzzle(rightWing, null, aimWorld, cfg, foundTarget, closestDist);
                 return;
             }
 
             foreach (var muzzle in muzzles)
             {
                 if (muzzle == null) continue;
-                FireSingleMuzzle(muzzle.transform.position, muzzle, aimWorld, cfg);
+                FireSingleMuzzle(muzzle.transform.position, muzzle, aimWorld, cfg, foundTarget, closestDist);
             }
         }
 
-        private void FireSingleMuzzle(Vector3 muzzlePos, Laser muzzle, Vector3 aimWorld, VirtualRailConfig cfg)
+        private void FireSingleMuzzle(Vector3 muzzlePos, Laser muzzle, Vector3 aimWorld, VirtualRailConfig cfg, bool foundTarget = false, float dynamicDist = 150f)
         {
             Vector3 targetAim = aimWorld;
             if (cfg != null && cfg.enableGimbalWeapon)
             {
-                float convDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
+                float convDist = (foundTarget && dynamicDist < cfg.convergenceDistance && dynamicDist > 5f)
+                    ? dynamicDist
+                    : ((cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f);
                 Vector3 origin = (ship != null) ? ship.transform.position : transform.position;
                 targetAim = origin + _currentGimbalDir * convDist;
             }

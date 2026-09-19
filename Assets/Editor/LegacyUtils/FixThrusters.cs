@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class FixThrusters
 {
-    [MenuItem("Tools/Fix and Recolor Thrusters (Blue)")]
+    [MenuItem("Tools/Legacy/Fix and Recolor Thrusters (Blue)")]
     public static void DoFix()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -66,3 +66,4 @@ public class FixThrusters
         Debug.Log("Sci-fi Blue Jet Thrusters applied successfully!");
     }
 }
+

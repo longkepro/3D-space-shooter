@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class SetupFillLight
 {
-    [MenuItem("Tools/Setup Fill Light (Solution 2)")]
+    [MenuItem("Tools/Legacy/Setup Fill Light (Solution 2)")]
     public static void DoSetup()
     {
         // Find existing Sun Light
@@ -54,3 +54,4 @@ public class SetupFillLight
         Debug.Log("Fill Light (Solution 2) successfully added!");
     }
 }
+

@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class FixAllPinkParticles
 {
-    [MenuItem("Tools/Fix ALL Pink Particles (Whole Pack)")]
+    [MenuItem("Tools/Legacy/Fix ALL Pink Particles (Whole Pack)")]
     public static void DoFixAll()
     {
         string folderPath = "Assets/UnityTechnologies";
@@ -42,3 +42,4 @@ public class FixAllPinkParticles
         Debug.Log($"Scanned {matGuids.Length} materials. Fixed {fixedCount} materials in Unity Particle Pack!");
     }
 }
+

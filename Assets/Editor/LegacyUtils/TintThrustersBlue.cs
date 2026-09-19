@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class TintThrustersBlue
 {
-    [MenuItem("Tools/Tint 3 Thrusters Blue")]
+    [MenuItem("Tools/Legacy/Tint 3 Thrusters Blue")]
     public static void DoTint()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -73,3 +73,4 @@ public class TintThrustersBlue
         Debug.Log($"Successfully tinted {count} thrusters to Blue!");
     }
 }
+

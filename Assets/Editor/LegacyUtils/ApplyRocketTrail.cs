@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class ApplyRocketTrail
 {
-    [MenuItem("Tools/Apply Blue Rocket Trails")]
+    [MenuItem("Tools/Legacy/Apply Blue Rocket Trails")]
     public static void DoApply()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -76,3 +76,4 @@ public class ApplyRocketTrail
         Debug.Log("Blue Rocket Trails applied successfully!");
     }
 }
+

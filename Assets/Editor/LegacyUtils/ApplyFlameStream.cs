@@ -7,7 +7,7 @@ public class ApplyFlameStream
     private const string PrefY = "ThrusterBackup_Y";
     private const string PrefZ = "ThrusterBackup_Z";
 
-    [MenuItem("Tools/1. Apply FlameStream (Safe)")]
+    [MenuItem("Tools/Legacy/1. Apply FlameStream (Safe)")]
     public static void DoApply()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -77,7 +77,7 @@ public class ApplyFlameStream
         Debug.Log("FlameStream applied successfully! Old coordinates saved to memory.");
     }
 
-    [MenuItem("Tools/2. Restore Old Thruster")]
+    [MenuItem("Tools/Legacy/2. Restore Old Thruster")]
     public static void DoRestore()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -120,3 +120,4 @@ public class ApplyFlameStream
         Debug.Log("Restored Old Thruster with exact saved coordinates!");
     }
 }
+

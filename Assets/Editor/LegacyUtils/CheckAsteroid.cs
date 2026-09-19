@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class CheckAsteroid
 {
-    [MenuItem("Tools/Check Asteroid")]
+    [MenuItem("Tools/Legacy/Check Asteroid")]
     public static void DoCheck()
     {
         string path = "Assets/Prefabs/Asteroid (1).prefab";
@@ -22,3 +22,4 @@ public class CheckAsteroid
         }
     }
 }
+

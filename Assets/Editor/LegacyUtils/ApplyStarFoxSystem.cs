@@ -4,7 +4,7 @@ using UnityEditor;
 
 public class ApplyStarFoxSystem
 {
-    [MenuItem("Tools/Star Fox/1. Apply Modular System (Safe)")]
+    [MenuItem("Tools/Legacy/Star Fox/1. Apply Modular System (Safe)")]
     public static void DoApply()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -62,7 +62,7 @@ public class ApplyStarFoxSystem
         Debug.Log("Star Fox Classic Modular System Applied Successfully!");
     }
 
-    [MenuItem("Tools/Star Fox/2. Restore Original System")]
+    [MenuItem("Tools/Legacy/Star Fox/2. Restore Original System")]
     public static void DoRestore()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -90,3 +90,4 @@ public class ApplyStarFoxSystem
         Debug.Log("Original System Restored!");
     }
 }
+

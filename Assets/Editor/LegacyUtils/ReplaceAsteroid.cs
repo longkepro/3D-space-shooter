@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class ReplaceAsteroid
 {
-    [MenuItem("Tools/Replace Asteroid (Lava Blue)")]
+    [MenuItem("Tools/Legacy/Replace Asteroid (Lava Blue)")]
     public static void DoReplace()
     {
         string asteroidPrefabPath = "Assets/Prefabs/Asteroid (1).prefab";
@@ -49,3 +49,4 @@ public class ReplaceAsteroid
         Debug.Log("Replaced Asteroid with Lava Blue Asteroid from FreeSciFi successfully!");
     }
 }
+

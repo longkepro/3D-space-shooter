@@ -1,10 +1,7 @@
-using TMPro;
 using UnityEngine;
 
 public class EnemyAttack : MonoBehaviour
 {
-
-
     [SerializeField] private Laser[] _lasers;
 
     private Transform _target;
@@ -22,17 +19,9 @@ public class EnemyAttack : MonoBehaviour
 
     private bool TargetInfront()
     {
-        Vector3 directionToTarget = transform.position - _target.position;
-        float angle = Vector3.Angle(transform.forward, directionToTarget);
-        if (Mathf.Abs(angle) > 90 && Mathf.Abs(angle) < 270)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-
+        if (_target == null) return false;
+        Vector3 toTarget = _target.position - transform.position;
+        return Vector3.Dot(transform.forward, toTarget) > 0f;
     }
 
     private bool HaveRaycastLineOfSight()

@@ -30,8 +30,8 @@ MonoBehaviour:
   microAimWeight: 1
   maxMicroAimPitch: 15
   maxMicroAimYaw: 18
-  enableDepthResponsiveReticle: 0
-  enableDistanceTelemetry: 0
+  enableDepthResponsiveReticle: 1
+  enableDistanceTelemetry: 1
   minReticleScale: 0.7
   maxReticleScale: 1.4
   reticleScaleLerpSpeed: 12

@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class UndoAsteroid
 {
-    [MenuItem("Tools/Undo Asteroid")]
+    [MenuItem("Tools/Legacy/Undo Asteroid")]
     public static void DoUndo()
     {
         string asteroidPrefabPath = "Assets/Prefabs/Asteroid (1).prefab";
@@ -50,3 +50,4 @@ public class UndoAsteroid
         PrefabUtility.UnloadPrefabContents(contents);
     }
 }
+

@@ -18,8 +18,14 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
     private bool _isBlowingUp = false;
     private float _nextAvoidanceTime = 0f;
     private Vector3 _cachedAvoidanceOffset = Vector3.zero;
+    private Explosion _cachedExplosion;
 
     public Action<EnemyMovement> OnRecycle;
+
+    private void Awake()
+    {
+        _cachedExplosion = GetComponent<Explosion>();
+    }
 
     private void OnEnable()
     {
@@ -164,7 +170,7 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
         {
             _isBlowingUp = true;
             GameEventManager.IncrementScore(_points);
-            var explosion = transform.GetComponent<Explosion>();
+            var explosion = _cachedExplosion != null ? _cachedExplosion : GetComponent<Explosion>();
             if (explosion != null)
             {
                 explosion.BlowUp();

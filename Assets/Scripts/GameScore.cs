@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class GameScore : MonoBehaviour

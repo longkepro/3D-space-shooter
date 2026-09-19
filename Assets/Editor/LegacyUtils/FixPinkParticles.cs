@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class FixPinkParticles
 {
-    [MenuItem("Tools/Fix Pink Particles (Rocket Trail)")]
+    [MenuItem("Tools/Legacy/Fix Pink Particles (Rocket Trail)")]
     public static void DoFix()
     {
         string vfxPath = "Assets/UnityTechnologies/ParticlePack/EffectExamples/Smoke & Steam Effects/Prefabs/RocketTrail.prefab";
@@ -50,3 +50,4 @@ public class FixPinkParticles
         Debug.Log($"Fixed {fixedCount} materials to remove pink errors!");
     }
 }
+

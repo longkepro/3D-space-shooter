@@ -3,7 +3,7 @@ using UnityEditor;
 
 public class UndoThrusters
 {
-    [MenuItem("Tools/Undo Thruster Changes")]
+    [MenuItem("Tools/Legacy/Undo Thruster Changes")]
     public static void DoUndo()
     {
         string shipPrefabPath = "Assets/Prefabs/Player Ship (1).prefab";
@@ -42,3 +42,4 @@ public class UndoThrusters
         Debug.Log("Thruster changes undone! Restored to original Main Thruster.");
     }
 }
+

@@ -44,6 +44,7 @@ namespace VirtualRail
         private bool _isInitialized = false;
         private int _vectorCycleIndex = 0;
         private int _waveCounter = 0;
+        private Camera _mainCam;
 
         private static readonly SpatialVectorType[] ACTIVE_SPATIAL_VECTORS = new SpatialVectorType[]
         {
@@ -65,6 +66,7 @@ namespace VirtualRail
         private void Start()
         {
             if (anchor == null) anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
+            if (_mainCam == null) _mainCam = Camera.main;
             if (!_isSpawning && anchor != null && anchor.CurrentSpeed > 0.5f)
             {
                 StartSpawning();
@@ -245,7 +247,7 @@ namespace VirtualRail
                 }
             }
 
-            Camera mainCam = Camera.main;
+            Camera mainCam = _mainCam != null ? _mainCam : Camera.main;
             int countInWave = Random.Range(2, 4);
 
             for (int i = 0; i < countInWave; i++)
@@ -358,7 +360,7 @@ namespace VirtualRail
         /// </summary>
         public void TriggerClusterFracture(Vector3 explosionCenter)
         {
-            Camera mainCam = Camera.main;
+            Camera mainCam = _mainCam != null ? _mainCam : Camera.main;
             int fragmentCount = Random.Range(3, 5);
 
             for (int i = 0; i < fragmentCount; i++)

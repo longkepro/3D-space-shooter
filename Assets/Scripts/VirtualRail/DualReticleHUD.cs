@@ -197,13 +197,17 @@ namespace VirtualRail
 
             // B. Distance Telemetry HUD & Border Glow (0 GC Alloc)
             Color activeColor;
-            if (targetDistance < 50f)
+            if (weapon != null && weapon.IsGimbalClamped)
+            {
+                activeColor = mediumBorderColor;  // Vàng hổ phách: Cảnh báo nòng súng kịch biên góc quay 35°
+            }
+            else if (targetDistance < 50f)
             {
                 activeColor = warningBorderColor; // Đỏ báo động: Mục tiêu/thiên thạch sát mặt (< 50m)
             }
             else if (targetDistance < 100f)
             {
-                activeColor = mediumBorderColor;  // Vàng hổ phách: Cự ly giao tranh trung bình (50m - 100m)
+                activeColor = lockedNearColor;    // Vàng sáng rực: Khóa mục tiêu cự ly gần - trung bình (chuẩn Star Fox / Sin & Punishment)
             }
             else if (hasTarget)
             {
