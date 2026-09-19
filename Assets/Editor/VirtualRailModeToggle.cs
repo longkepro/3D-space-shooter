@@ -858,6 +858,15 @@ public class VirtualRailModeToggle
         ship.inputReader = inputReader;
         ship.shipVisualMesh = shipVisual != null ? shipVisual.transform : shipContainer.transform;
 
+        // Vỏ bọc lướt cận kề (Outer Graze Box R = 1.8m - TDD v2.0.0 Phần III.2)
+        GameObject grazeObj = new GameObject("[Graze Trigger]");
+        grazeObj.transform.SetParent(shipContainer.transform, false);
+        grazeObj.transform.localPosition = Vector3.zero;
+        grazeObj.transform.localRotation = Quaternion.identity;
+        VirtualRailGrazeTrigger grazeTrigger = grazeObj.AddComponent<VirtualRailGrazeTrigger>();
+        grazeTrigger.Initialize(ship);
+        ship.grazeTrigger = grazeTrigger;
+
         VirtualRailWeapon weapon = shipContainer.AddComponent<VirtualRailWeapon>();
         weapon.anchor = anchor;
         weapon.reticle = reticle;

@@ -1,16 +1,17 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace VirtualRail
 {
     /// <summary>
-    /// Th?c th? d?n c?a k? d?ch (Plasma Orb / Dart).
-    /// Tu�n th? TDD v1.0.0 Ph?n I:
-    /// - Qu?n l� v?n t?c tuong d?i V_closing = ||V_bullet - V_player||.
-    /// - �?ng b? h�a v?i tr?c ti?n du?ng ray (Local Track Synchronization).
-    /// - Hitbox dung th? b?t d?i x?ng (30% - 35% k�ch thu?c th? gi�c).
-    /// - Thu?t to�n b� tr? c? ly (Distance Scale Compensation).
-    /// - Tuong t�c ph?n x? khi ngu?i choi th?c hi?n Barrel Roll Deflection (b? l?ch 90 d?).
-    /// - T? d?ng thu h?i qua Object Pool (0 GC Alloc).
+    /// Thực thể đạn của kẻ địch (Plasma Orb / Dart).
+    /// Tuân thủ TDD v1.0.0 & TDD v2.0.0:
+    /// - Quản lý vận tốc tương đối V_closing = ||V_bullet - V_player||.
+    /// - Đồng bộ hóa với trục tiến đường ray (Local Track Synchronization).
+    /// - Hitbox dung thứ bất đối xứng (30% - 35% kích thước thị giác).
+    /// - Thuật toán bù trừ cự ly (Distance Scale Compensation).
+    /// - Tương tác phản xạ khi người chơi thực hiện Barrel Roll Deflection (bẻ lệch 90 độ).
+    /// - Hỗ trợ cờ HasGrazed cho cơ chế Graze / Near-Miss (TDD v2.0.0 Phần III.2).
+    /// - Tự động thu hồi qua Object Pool (0 GC Alloc).
     /// </summary>
     [DisallowMultipleComponent]
     public class EnemyProjectile : MonoBehaviour, IPoolableEntity
@@ -19,12 +20,18 @@ namespace VirtualRail
         public float damage = 1f;
         public float maxLifetime = 5.0f;
         public float visualBaseRadius = 1.2f;
-        public float hitboxRadius = 0.45f; // ~35% c?a visual radius
+        public float hitboxRadius = 0.45f; // ~35% của visual radius
 
         [Header("Visual Components")]
         public Transform visualTransform;
         public TrailRenderer trailRenderer;
         public SphereCollider sphereCollider;
+
+        /// <summary>
+        /// Cờ đánh dấu viên đạn đã kích hoạt Graze với thân tàu người chơi hay chưa (TDD v2.0.0 Phần III.2).
+        /// Reset mỗi khi viên đạn được tái sinh từ Pool.
+        /// </summary>
+        public bool HasGrazed { get; set; }
 
         private Vector3 _velocity;
         private float _spawnTime;
@@ -66,6 +73,7 @@ namespace VirtualRail
 
             transform.position = startPosition;
             _isDeflected = false;
+            HasGrazed = false;
             _spawnTime = Time.time;
 
             if (sphereCollider != null)
@@ -74,7 +82,7 @@ namespace VirtualRail
                 sphereCollider.radius = hitboxRadius;
             }
 
-            // �?ng b? h�a v?i tr?c du?ng ray:
+            // Đồng bộ hóa với trục đường ray:
             // V_bullet_world = V_rail_tangent * V_rail + V_bullet_local
             Vector3 railVelocity = (_anchor != null) ? _anchor.ForwardTangent * _anchor.CurrentSpeed : Vector3.zero;
             Vector3 localVelocity = direction.normalized * speed;
@@ -98,7 +106,7 @@ namespace VirtualRail
             float dt = Time.deltaTime;
             transform.position += _velocity * dt;
 
-            // B� tr? c? ly cho k�ch thu?c th? gi�c (Distance Scale Compensation):
+            // Bù trừ cự ly cho kích thước thị giác (Distance Scale Compensation):
             // Scale_visual = Clamp(1.0 + (Distance / D_ref) * K_scale, 1.0, 3.5)
             if (visualTransform != null && _playerTransform != null)
             {
@@ -107,7 +115,7 @@ namespace VirtualRail
                 visualTransform.localScale = Vector3.one * (visualBaseRadius * scale);
             }
 
-            // Ki?m tra v�ng d?i ho?c tr�i qu� xa v? sau lung t�u
+            // Kiểm tra vòng đời hoặc trôi quá xa về sau lưng tàu
             if (Time.time >= _spawnTime + maxLifetime)
             {
                 Recycle();
@@ -125,19 +133,25 @@ namespace VirtualRail
         {
             if (_isDeflected) return;
 
-            // Ki?m tra va ch?m v?i T�u ngu?i choi
+            // 1. Nếu chạm vào vỏ bọc GrazeTrigger (R = 1.8m), KHÔNG gây sát thương, để GrazeTrigger xử lý tính điểm
+            if (other.GetComponent<VirtualRailGrazeTrigger>() != null)
+            {
+                return;
+            }
+
+            // 2. Kiểm tra va chạm với Tàu người chơi (Inner Hurtbox)
             var ship = other.GetComponentInParent<VirtualRailShip>();
             if (ship != null)
             {
                 if (ship.IsDeflecting)
                 {
                     // ==================== BARREL ROLL DEFLECTION ====================
-                    // B? ngo?t vector hu?ng bay vang ra ngo�i 90 d?, mi?n nhi?m s�t thuong ho�n to�n!
+                    // Bẻ ngoặt vector hướng bay văng ra ngoài 90 độ, miễn nhiễm sát thương hoàn toàn!
                     Deflect(ship.transform.position);
                     return;
                 }
 
-                // G�y s�t thuong n?u kh�ng ? tr?ng th�i l?n c�nh ph?n x?
+                // Gây sát thương nếu không ở trạng thái lộn cánh phản xạ
                 var shield = ship.GetComponentInChildren<Shield>();
                 if (shield == null) shield = other.GetComponentInChildren<Shield>();
                 if (shield != null)
@@ -149,7 +163,7 @@ namespace VirtualRail
                 return;
             }
 
-            // N?u ch?m bom ho?c khi�n nang lu?ng kh�c
+            // Nếu chạm bom hoặc khiên năng lượng khác
             if (other.CompareTag("Player"))
             {
                 var shield = other.GetComponent<Shield>();
@@ -162,13 +176,13 @@ namespace VirtualRail
         }
 
         /// <summary>
-        /// B? l?ch d?n 90 d? vang ra ngo�i khi ngu?i choi th?c hi?n Barrel Roll Deflection.
+        /// Bẻ lệch đạn 90 độ văng ra ngoài khi người chơi thực hiện Barrel Roll Deflection.
         /// </summary>
         public void Deflect(Vector3 shipPosition)
         {
             _isDeflected = true;
 
-            // B? hu?ng vu�ng g�c 90 d? vang ra xa th�n t�u
+            // Bẻ hướng vuông góc 90 độ văng ra xa thân tàu
             Vector3 awayDir = (transform.position - shipPosition).normalized;
             Vector3 deflectDir = Vector3.Cross(_velocity.normalized, Vector3.up);
             if (Vector3.Dot(deflectDir, awayDir) < 0f) deflectDir = -deflectDir;
@@ -179,21 +193,16 @@ namespace VirtualRail
 
             if (sphereCollider != null)
             {
-                sphereCollider.enabled = false; // �?n d� b? h?t vang, kh�ng g�y s�t thuong n?a
+                sphereCollider.enabled = false; // Đạn đã bị hất văng, không gây sát thương nữa
             }
 
-            // T? thu h?i sau 0.8s khi d� vang ra ngo�i
+            // Tự thu hồi sau 0.8s khi đã văng ra ngoài
             CancelInvoke(nameof(Recycle));
             Invoke(nameof(Recycle), 0.8f);
         }
 
         public void DestroyByBomb()
         {
-            var vfxPool = VirtualRailVFXPool.Instance;
-            if (vfxPool != null)
-            {
-                // C� th? sinh hi?u ?ng tia l?a nh? n?u c?n
-            }
             Recycle();
         }
 

@@ -14,6 +14,7 @@ namespace VirtualRail
         public VirtualRailReticle reticle;
         public VirtualRailInputReader inputReader;
         public Transform shipVisualMesh;
+        public VirtualRailGrazeTrigger grazeTrigger;
         private Camera mainCamera;
 
         [Header("Runtime State")]
@@ -81,6 +82,21 @@ namespace VirtualRail
                 Transform rootTransform = (anchor != null) ? anchor.transform : transform;
                 inputReader = rootTransform.gameObject.AddComponent<VirtualRailInputReader>();
                 if (anchor != null) inputReader.config = anchor.config;
+            }
+
+            // Tự động kiểm tra hoặc khởi tạo Vỏ bọc Lướt Cận Kề (Outer Graze Box R = 1.8m)
+            if (grazeTrigger == null)
+            {
+                grazeTrigger = GetComponentInChildren<VirtualRailGrazeTrigger>();
+                if (grazeTrigger == null)
+                {
+                    GameObject grazeObj = new GameObject("[Graze Trigger]");
+                    grazeObj.transform.SetParent(transform, false);
+                    grazeObj.transform.localPosition = Vector3.zero;
+                    grazeObj.transform.localRotation = Quaternion.identity;
+                    grazeTrigger = grazeObj.AddComponent<VirtualRailGrazeTrigger>();
+                    grazeTrigger.Initialize(this);
+                }
             }
         }
 

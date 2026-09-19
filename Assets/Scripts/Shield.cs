@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class Shield : MonoBehaviour
 {
@@ -35,6 +35,7 @@ public class Shield : MonoBehaviour
             _currentHealth = 0;
         }
         GameEventManager.UpdateHealthBar(Mathf.RoundToInt(_currentHealth / (float)_maxHealth * 100));
+        VirtualRail.ComboScoringEngine.Instance?.ResetMultiplierOnDamage();
         if (_currentHealth < 1)
         {
             GetComponent<Explosion>().BlowUp();

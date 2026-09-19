@@ -170,6 +170,7 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
         {
             _isBlowingUp = true;
             GameEventManager.IncrementScore(_points);
+            VirtualRail.ComboScoringEngine.Instance?.RegisterSingleKill(_points);
             var explosion = _cachedExplosion != null ? _cachedExplosion : GetComponent<Explosion>();
             if (explosion != null)
             {

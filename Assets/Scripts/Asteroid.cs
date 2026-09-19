@@ -12,6 +12,11 @@ public class Asteroid : MonoBehaviour, VirtualRail.IPoolableEntity
     public static float destructionDelay = 1f;
     public Action<Asteroid> OnRecycle;
 
+    /// <summary>
+    /// Cờ chống kích hoạt Graze lặp lại khi lướt qua tàu (TDD v2.0.0 Phần III.2).
+    /// </summary>
+    public bool HasGrazed { get; set; } = false;
+
     private void Start()
     {
         ResetScale();
@@ -19,6 +24,7 @@ public class Asteroid : MonoBehaviour, VirtualRail.IPoolableEntity
 
     public void ResetScale()
     {
+        HasGrazed = false;
         transform.localScale = GetRandomVector3(_minScale, _maxScale);
     }
 
@@ -33,6 +39,7 @@ public class Asteroid : MonoBehaviour, VirtualRail.IPoolableEntity
 
     public void Recycle()
     {
+        HasGrazed = false;
         gameObject.SetActive(false);
         OnRecycle?.Invoke(this);
     }

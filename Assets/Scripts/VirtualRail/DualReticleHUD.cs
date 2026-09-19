@@ -23,6 +23,12 @@ namespace VirtualRail
         public Image nearCrosshairImage;
         public Text telemetryText;
 
+        [Header("Multiplier & Graze HUD (TDD v2.0.0 Phần III)")]
+        public RectTransform multiplierBadgeRoot;
+        public Text multiplierBadgeText;
+        public Image multiplierDecayFill;
+        public Text grazePopupText;
+
         // 0 GC String Cache: Bảng chuỗi cự ly tĩnh từ 0m đến 350m để triệt tiêu hoàn toàn Heap Allocation trong LateUpdate
         private static readonly string[] DIST_STRINGS = PrecomputeDistanceStrings();
 
@@ -54,9 +60,30 @@ namespace VirtualRail
         private bool isMouseHovering = false;
         private float currentScale = 1.0f;
         private int lastDistInt = -1;
+        private int _lastMultiplierIndex = -1;
+        private float _grazeFlashTimer = 0f;
 
         public bool IsMouseHovering => isMouseHovering;
         public float CurrentScale => currentScale;
+
+        private void OnEnable()
+        {
+            ComboScoringEngine.OnGrazeTriggered += HandleGrazeTriggered;
+        }
+
+        private void OnDisable()
+        {
+            ComboScoringEngine.OnGrazeTriggered -= HandleGrazeTriggered;
+        }
+
+        private void HandleGrazeTriggered(Vector3 worldPos, int points)
+        {
+            _grazeFlashTimer = 0.65f;
+            if (grazePopupText != null)
+            {
+                grazePopupText.gameObject.SetActive(true);
+            }
+        }
 
         private void Start()
         {
@@ -126,6 +153,9 @@ namespace VirtualRail
 
             // 4. Cập nhật trạng thái chuột chạm tâm ngắm (Hover-to-fire - Chỉ dùng khi KHÔNG dùng Mouse Aim)
             UpdateMouseHoverState(cfg);
+
+            // 5. Cập nhật Telemetry Hệ số nhân Combo & Lướt cận kề Graze (0 GC Alloc)
+            UpdateMultiplierAndGrazeHUD();
         }
 
         /// <summary>
@@ -357,6 +387,55 @@ namespace VirtualRail
             }
         }
 
+        /// <summary>
+        /// Cập nhật hệ thống hiển thị Multiplier Badge và thanh Multiplier Decay (TDD v2.0.0 Phần III).
+        /// Hoàn toàn 0 GC Allocation trong LateUpdate.
+        /// </summary>
+        private void UpdateMultiplierAndGrazeHUD()
+        {
+            var engine = ComboScoringEngine.Instance;
+            if (engine == null) return;
+
+            int multIndex = engine.MultiplierIndex;
+            if (multIndex != _lastMultiplierIndex)
+            {
+                _lastMultiplierIndex = multIndex;
+                if (multiplierBadgeText != null && multIndex >= 0 && multIndex < ComboScoringEngine.MULTIPLIER_TEXTS.Length)
+                {
+                    multiplierBadgeText.text = ComboScoringEngine.MULTIPLIER_TEXTS[multIndex];
+                    multiplierBadgeText.color = ComboScoringEngine.MULTIPLIER_COLORS[multIndex];
+                }
+            }
+
+            if (multiplierDecayFill != null)
+            {
+                float ratio = engine.DecayRatio;
+                multiplierDecayFill.fillAmount = ratio;
+                if (multIndex >= 0 && multIndex < ComboScoringEngine.MULTIPLIER_COLORS.Length)
+                {
+                    multiplierDecayFill.color = ComboScoringEngine.MULTIPLIER_COLORS[multIndex];
+                }
+                multiplierDecayFill.gameObject.SetActive(ratio > 0f);
+            }
+
+            if (_grazeFlashTimer > 0f)
+            {
+                _grazeFlashTimer -= Time.deltaTime;
+                if (grazePopupText != null)
+                {
+                    float alpha = Mathf.Clamp01(_grazeFlashTimer / 0.65f);
+                    Color col = grazePopupText.color;
+                    col.a = alpha;
+                    grazePopupText.color = col;
+
+                    if (_grazeFlashTimer <= 0f)
+                    {
+                        grazePopupText.gameObject.SetActive(false);
+                    }
+                }
+            }
+        }
+
         private void EnsureCrosshairStyling(VirtualRailConfig cfg)
         {
             float farSize = cfg != null && cfg.farReticleSize > 10f ? cfg.farReticleSize : 56f;
@@ -435,6 +514,139 @@ namespace VirtualRail
                 if (nearCrosshairImage == null) nearCrosshairImage = nearCrosshairUI.GetComponent<Image>();
                 CacheNearTickImages();
             }
+
+            // Tự động kiểm tra hoặc sinh Multiplier Badge & Decay Gauge UI
+            EnsureMultiplierBadgeHUD();
+        }
+
+        private void EnsureMultiplierBadgeHUD()
+        {
+            if (multiplierBadgeRoot != null) return;
+
+            Transform existingBadge = transform.Find("MultiplierBadge");
+            if (existingBadge != null)
+            {
+                multiplierBadgeRoot = existingBadge.GetComponent<RectTransform>();
+                multiplierBadgeText = existingBadge.Find("MultiplierValue")?.GetComponent<Text>();
+                multiplierDecayFill = existingBadge.Find("DecayTrack/DecayFill")?.GetComponent<Image>();
+                grazePopupText = existingBadge.Find("GrazePopupBanner")?.GetComponent<Text>();
+                return;
+            }
+
+            Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // 1. Badge Root Panel (Góc trên bên trái, dưới thanh máu/điểm)
+            GameObject badgeObj = new GameObject("MultiplierBadge");
+            badgeObj.transform.SetParent(transform, false);
+            RectTransform rt = badgeObj.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.anchoredPosition = new Vector2(25f, -80f);
+            rt.sizeDelta = new Vector2(130f, 52f);
+
+            Image bgImg = badgeObj.AddComponent<Image>();
+            bgImg.color = new Color(0.04f, 0.08f, 0.12f, 0.82f);
+            bgImg.raycastTarget = false;
+
+            Outline badgeOutline = badgeObj.AddComponent<Outline>();
+            badgeOutline.effectColor = new Color(0.15f, 0.6f, 0.9f, 0.5f);
+            badgeOutline.effectDistance = new Vector2(1f, -1f);
+            multiplierBadgeRoot = rt;
+
+            // 2. Sub-Label ("COMBO MULTIPLIER")
+            GameObject labelObj = new GameObject("ComboLabel");
+            labelObj.transform.SetParent(badgeObj.transform, false);
+            RectTransform labelRt = labelObj.AddComponent<RectTransform>();
+            labelRt.anchorMin = new Vector2(0f, 1f);
+            labelRt.anchorMax = new Vector2(1f, 1f);
+            labelRt.pivot = new Vector2(0.5f, 1f);
+            labelRt.anchoredPosition = new Vector2(0f, -4f);
+            labelRt.sizeDelta = new Vector2(120f, 14f);
+            Text lbl = labelObj.AddComponent<Text>();
+            lbl.font = defaultFont;
+            lbl.fontSize = 10;
+            lbl.fontStyle = FontStyle.Bold;
+            lbl.alignment = TextAnchor.MiddleCenter;
+            lbl.color = new Color(0.6f, 0.8f, 0.9f, 0.8f);
+            lbl.text = "COMBO MULTIPLIER";
+            lbl.raycastTarget = false;
+
+            // 3. Multiplier Value Text
+            GameObject valObj = new GameObject("MultiplierValue");
+            valObj.transform.SetParent(badgeObj.transform, false);
+            RectTransform valRt = valObj.AddComponent<RectTransform>();
+            valRt.anchorMin = new Vector2(0f, 0.5f);
+            valRt.anchorMax = new Vector2(1f, 0.5f);
+            valRt.pivot = new Vector2(0.5f, 0.5f);
+            valRt.anchoredPosition = new Vector2(0f, 2f);
+            valRt.sizeDelta = new Vector2(120f, 26f);
+            multiplierBadgeText = valObj.AddComponent<Text>();
+            multiplierBadgeText.font = defaultFont;
+            multiplierBadgeText.fontSize = 22;
+            multiplierBadgeText.fontStyle = FontStyle.Bold;
+            multiplierBadgeText.alignment = TextAnchor.MiddleCenter;
+            multiplierBadgeText.color = ComboScoringEngine.MULTIPLIER_COLORS[0];
+            multiplierBadgeText.text = ComboScoringEngine.MULTIPLIER_TEXTS[0];
+            multiplierBadgeText.raycastTarget = false;
+
+            Outline valOutline = valObj.AddComponent<Outline>();
+            valOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+            valOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            // 4. Decay Bar Track
+            GameObject trackObj = new GameObject("DecayTrack");
+            trackObj.transform.SetParent(badgeObj.transform, false);
+            RectTransform trackRt = trackObj.AddComponent<RectTransform>();
+            trackRt.anchorMin = new Vector2(0.5f, 0f);
+            trackRt.anchorMax = new Vector2(0.5f, 0f);
+            trackRt.pivot = new Vector2(0.5f, 0f);
+            trackRt.anchoredPosition = new Vector2(0f, 5f);
+            trackRt.sizeDelta = new Vector2(116f, 5f);
+            Image trackImg = trackObj.AddComponent<Image>();
+            trackImg.color = new Color(0.1f, 0.15f, 0.22f, 0.85f);
+            trackImg.raycastTarget = false;
+
+            // 5. Decay Bar Fill
+            GameObject fillObj = new GameObject("DecayFill");
+            fillObj.transform.SetParent(trackObj.transform, false);
+            RectTransform fillRt = fillObj.AddComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.sizeDelta = Vector2.zero;
+            fillRt.offsetMin = Vector2.zero;
+            fillRt.offsetMax = Vector2.zero;
+            multiplierDecayFill = fillObj.AddComponent<Image>();
+            multiplierDecayFill.type = Image.Type.Filled;
+            multiplierDecayFill.fillMethod = Image.FillMethod.Horizontal;
+            multiplierDecayFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            multiplierDecayFill.color = ComboScoringEngine.MULTIPLIER_COLORS[0];
+            multiplierDecayFill.fillAmount = 0f;
+            multiplierDecayFill.raycastTarget = false;
+
+            // 6. Graze Banner Popup
+            GameObject grazeObj = new GameObject("GrazePopupBanner");
+            grazeObj.transform.SetParent(badgeObj.transform, false);
+            RectTransform grazeRt = grazeObj.AddComponent<RectTransform>();
+            grazeRt.anchorMin = new Vector2(0.5f, 1f);
+            grazeRt.anchorMax = new Vector2(0.5f, 1f);
+            grazeRt.pivot = new Vector2(0.5f, 0f);
+            grazeRt.anchoredPosition = new Vector2(0f, 4f);
+            grazeRt.sizeDelta = new Vector2(140f, 20f);
+            grazePopupText = grazeObj.AddComponent<Text>();
+            grazePopupText.font = defaultFont;
+            grazePopupText.fontSize = 13;
+            grazePopupText.fontStyle = FontStyle.Bold;
+            grazePopupText.alignment = TextAnchor.MiddleCenter;
+            grazePopupText.color = new Color(0.2f, 1f, 0.85f, 1.0f);
+            grazePopupText.text = "GRAZE +500!";
+            grazePopupText.raycastTarget = false;
+
+            Outline gOutline = grazeObj.AddComponent<Outline>();
+            gOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
+            gOutline.effectDistance = new Vector2(1f, -1f);
+            grazeObj.SetActive(false);
         }
 
         private void CacheBorderImages()
