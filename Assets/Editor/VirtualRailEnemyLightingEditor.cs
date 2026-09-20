@@ -8,6 +8,36 @@ public static class VirtualRailEnemyLightingEditor
     private const string GameScenePath = "Assets/Scenes/Game.unity";
     private const string FrontFillLightName = "Enemy Front Fill Light";
     private const string LegacyFillLightName = "Fill Space Light";
+    private const string ArcadeOutlineShaderName = "VirtualRail/ArcadeHullOutlineStandard";
+    private const string StandardShaderName = "Standard";
+    private const string OriginalThrusterGuid = "090a69de2d30791479ce0e552e8b8fa7";
+    private const string PurpleThrusterGuid = "8dcbc56eeb8b40c28293ffc3795eacef";
+    private const string ThrustersMaterialPath = "Assets/HiRezSpaceshipsCreatorFree/Materials/Engines/Thrusters/Thrusters1.mat";
+
+    private static readonly string[] EnemyPrefabsWithThrusters = new string[]
+    {
+        "Assets/Prefabs/Enemy (0).prefab",
+        "Assets/Prefabs/Enemy (1).prefab"
+    };
+
+    private static readonly string[] HiRezMaterials = new string[]
+    {
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Grey/MainBody2.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Red/MainBody2.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Grey/MainBody13.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Red/MainBody13.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Grey/Wing2.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Red/Wing2.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Grey/Wing6.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Red/Wing6.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Weapons/BigLauncher.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Weapons/Blaster.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Cockpits/Grey/Cockpit3Grey.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Cockpits/Red/Cockpit3Red.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Engines/Grey/Engine1.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Engines/Red/Engine1.mat",
+        "Assets/HiRezSpaceshipsCreatorFree/Materials/Engines/Thrusters/Thrusters1.mat"
+    };
 
     [MenuItem("Tools/Virtual Rail/43. Setup Enemy Front Fill Light (Option 1 - ON)")]
     public static void SetupFrontFillLightOnly()
@@ -21,7 +51,7 @@ public static class VirtualRailEnemyLightingEditor
         ConfigureAmbientLighting(true);
 
         SaveActiveScene();
-        Debug.Log("<color=green>[Virtual Rail]</color> Đã bật: Enemy Front Fill Light (Intensity 1.25, góc chiếu đối diện kẻ địch) và nâng sáng Ambient!");
+        Debug.Log("<color=green>[Virtual Rail]</color> Đã bật: Enemy Front Fill Light (Intensity 0.55, góc chiếu đối diện kẻ địch) và nâng sáng Ambient!");
     }
 
     [MenuItem("Tools/Virtual Rail/44. Undo Enemy Front Fill Light (Option 1 - OFF)")]
@@ -36,22 +66,124 @@ public static class VirtualRailEnemyLightingEditor
         Debug.Log("<color=yellow>[Virtual Rail]</color> Đã hoàn nguyên Front Fill Light và Ambient Light về trạng thái ban đầu.");
     }
 
-    [MenuItem("Tools/Virtual Rail/45. Setup Enemy Material Emission (Option 3 - ON)")]
-    public static void SetupEnemyMaterialsEmissionOnly()
+    [MenuItem("Tools/Virtual Rail/47. Setup Enemy Arcade Outline (Direction 2 - ON)")]
+    public static void SetupEnemyArcadeOutline()
     {
-        ConfigureEnemyMaterialsEmission(true);
+        Shader outlineShader = Shader.Find(ArcadeOutlineShaderName);
+        if (outlineShader == null)
+        {
+            Debug.LogError($"[Virtual Rail] Không tìm thấy Shader: {ArcadeOutlineShaderName}!");
+            return;
+        }
+
+        Color neonPurple = new Color(0.85f, 0.20f, 1.20f, 1.0f);
+        float outlineWidth = 0.0035f; // Viền sắc nét 2px cố định màn hình (Screen-Space), không nở khối model
+
+        ApplyShaderToMaterials(HiRezMaterials, outlineShader, neonPurple, outlineWidth, true);
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("<color=green>[Virtual Rail]</color> Đã bật hiệu ứng phát quang Emission cho các vật liệu kẻ địch.");
+        Debug.Log("<color=green>[Virtual Rail]</color> ĐÃ BẬT THÀNH CÔNG: Viền Arcade Silhouette Outline màu tím Neon 2px cho toàn bộ module tàu kẻ địch!");
     }
 
-    [MenuItem("Tools/Virtual Rail/46. Undo Enemy Material Emission (Option 3 - OFF)")]
-    public static void UndoEnemyMaterialsEmissionOnly()
+    [MenuItem("Tools/Virtual Rail/48. Undo Enemy Arcade Outline (Direction 2 - OFF)")]
+    public static void UndoEnemyArcadeOutline()
     {
-        ConfigureEnemyMaterialsEmission(false);
+        Shader standardShader = Shader.Find(StandardShaderName);
+        if (standardShader == null)
+        {
+            Debug.LogError($"[Virtual Rail] Không tìm thấy Standard Shader!");
+            return;
+        }
+
+        ApplyShaderToMaterials(HiRezMaterials, standardShader, Color.clear, 0f, false);
+
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("<color=yellow>[Virtual Rail]</color> Đã tắt hiệu ứng phát quang Emission trên các vật liệu kẻ địch.");
+        Debug.Log("<color=yellow>[Virtual Rail]</color> ĐÃ HOÀN NGUYÊN 100%: Tắt viền Arcade Outline, trả toàn bộ vật liệu tàu địch về Standard Shader gốc.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/49. Apply Purple Thrusters to Enemies (ON)")]
+    public static void ApplyPurpleThrustersToEnemies()
+    {
+        // 1. Kích hoạt phát quang tím cho miệng xả Thrusters1.mat
+        Material thrusterMat = AssetDatabase.LoadAssetAtPath<Material>(ThrustersMaterialPath);
+        if (thrusterMat != null)
+        {
+            thrusterMat.EnableKeyword("_EMISSION");
+            thrusterMat.SetColor("_EmissionColor", new Color(0.85f, 0.20f, 1.20f, 1.0f));
+            EditorUtility.SetDirty(thrusterMat);
+        }
+
+        // 2. Chuyển đổi GUID của Thruster trong Prefab kẻ địch sang Enemy_Thruster_Purple
+        SwapThrusterGuidInEnemyPrefabs(OriginalThrusterGuid, PurpleThrusterGuid);
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=green>[Virtual Rail]</color> ĐÃ BẬT THÀNH CÔNG: Động cơ và vệt lửa tím Neon cho tàu kẻ địch!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/50. Undo Purple Thrusters (OFF - Restore Orange)")]
+    public static void UndoPurpleThrusters()
+    {
+        // 1. Tắt phát quang miệng xả Thrusters1.mat
+        Material thrusterMat = AssetDatabase.LoadAssetAtPath<Material>(ThrustersMaterialPath);
+        if (thrusterMat != null)
+        {
+            thrusterMat.DisableKeyword("_EMISSION");
+            thrusterMat.SetColor("_EmissionColor", Color.black);
+            EditorUtility.SetDirty(thrusterMat);
+        }
+
+        // 2. Hoàn nguyên GUID của Thruster trong Prefab kẻ địch về Thruster gốc (màu Cam)
+        SwapThrusterGuidInEnemyPrefabs(PurpleThrusterGuid, OriginalThrusterGuid);
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=yellow>[Virtual Rail]</color> ĐÃ HOÀN NGUYÊN 100%: Trả động cơ tàu kẻ địch về màu Cam gốc.");
+    }
+
+    private static void SwapThrusterGuidInEnemyPrefabs(string oldGuid, string newGuid)
+    {
+        foreach (string prefabPath in EnemyPrefabsWithThrusters)
+        {
+            if (!File.Exists(prefabPath)) continue;
+            string text = File.ReadAllText(prefabPath);
+            if (text.Contains(oldGuid))
+            {
+                text = text.Replace(oldGuid, newGuid);
+                File.WriteAllText(prefabPath, text);
+            }
+        }
+    }
+
+    private static void ApplyShaderToMaterials(string[] paths, Shader targetShader, Color outlineColor, float outlineWidth, bool enableOutline)
+    {
+        foreach (string path in paths)
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null) continue;
+
+            // Xóa emission cho vỏ tàu (trừ vật liệu ống xả Thrusters1)
+            if (!path.Contains("Thrusters1"))
+            {
+                mat.DisableKeyword("_EMISSION");
+                mat.SetTexture("_EmissionMap", null);
+                mat.SetColor("_EmissionColor", Color.black);
+            }
+
+            // Đổi Shader
+            mat.shader = targetShader;
+
+            if (enableOutline)
+            {
+                mat.SetColor("_OutlineColor", outlineColor);
+                mat.SetFloat("_OutlineWidth", outlineWidth);
+                mat.SetFloat("_OutlineZBias", 0.0f);
+            }
+
+            EditorUtility.SetDirty(mat);
+        }
     }
 
     private static void EnsureGameSceneOpen()
@@ -140,107 +272,5 @@ public static class VirtualRailEnemyLightingEditor
             RenderSettings.ambientGroundColor = new Color(0.047f, 0.043f, 0.035f);
             RenderSettings.ambientIntensity = 1.0f;
         }
-    }
-
-    private static void ConfigureEnemyMaterialsEmission(bool enableEmission)
-    {
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Red/MainBody2.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/MainBodies/MainBody2/Masks/MainBody2_Mask1.png",
-            new Color(2.0f, 0.3f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Grey/MainBody2.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/MainBodies/MainBody2/Masks/MainBody2_Mask1.png",
-            new Color(1.8f, 0.9f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Red/MainBody13.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/MainBodies/MainBody13/Masks/MainBody13_Mask1.png",
-            new Color(2.0f, 0.3f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Grey/MainBody13.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/MainBodies/MainBody13/Masks/MainBody13_Mask1.png",
-            new Color(1.8f, 0.9f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Red/Wing2.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Wings/Wing2/Masks/Wing2_Mask1.png",
-            new Color(2.0f, 0.3f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Grey/Wing2.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Wings/Wing2/Masks/Wing2_Mask1.png",
-            new Color(1.8f, 0.9f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Red/Wing6.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Wings/Wing6/Masks/Wing6_Mask1.png",
-            new Color(2.0f, 0.3f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Grey/Wing6.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Wings/Wing6/Masks/Wing6_Mask1.png",
-            new Color(1.8f, 0.9f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Weapons/BigLauncher.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Weapons/BigLauncher/Masks/BigLauncher_Mask1.png",
-            new Color(2.0f, 0.3f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Weapons/Blaster.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Weapons/Blaster/Masks/Blaster_Mask1.png",
-            new Color(2.0f, 0.3f, 0.15f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Cockpits/Red/Cockpit3Red.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Cockpits/Cockpit3/Cockpit3_Emission.png",
-            new Color(2.0f, 0.2f, 0.2f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Cockpits/Grey/Cockpit3Grey.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Cockpits/Cockpit3/Cockpit3_Emission.png",
-            new Color(0.2f, 1.5f, 2.0f), enableEmission);
-
-        SetupHiRezMaterial("Assets/HiRezSpaceshipsCreatorFree/Materials/Engines/Thrusters/Thrusters1.mat",
-            "Assets/HiRezSpaceshipsCreatorFree/Textures/Engines/Thrusters/Thrusters_Emission1.png",
-            new Color(2.5f, 1.0f, 0.2f), enableEmission);
-
-        SetupStarSparrowMaterial("Assets/StarSparrow/Materials/StarSparrow_Red.mat",
-            new Color(2.0f, 0.3f, 0.15f), enableEmission);
-
-        SetupStarSparrowMaterial("Assets/StarSparrow/Materials/StarSparrow_Black.mat",
-            new Color(2.0f, 0.2f, 0.1f), enableEmission);
-    }
-
-    private static void SetupHiRezMaterial(string matPath, string maskTexPath, Color glowColor, bool enable)
-    {
-        Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-        if (mat == null) return;
-
-        if (enable)
-        {
-            mat.EnableKeyword("_EMISSION");
-            Texture2D maskTex = AssetDatabase.LoadAssetAtPath<Texture2D>(maskTexPath);
-            if (maskTex != null)
-            {
-                mat.SetTexture("_EmissionMap", maskTex);
-            }
-            mat.SetColor("_EmissionColor", glowColor);
-        }
-        else
-        {
-            mat.DisableKeyword("_EMISSION");
-            mat.SetTexture("_EmissionMap", null);
-            mat.SetColor("_EmissionColor", Color.black);
-        }
-        EditorUtility.SetDirty(mat);
-    }
-
-    private static void SetupStarSparrowMaterial(string matPath, Color glowColor, bool enable)
-    {
-        Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
-        if (mat == null) return;
-
-        if (enable)
-        {
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", glowColor);
-        }
-        else
-        {
-            mat.SetColor("_EmissionColor", Color.white);
-        }
-        EditorUtility.SetDirty(mat);
     }
 }

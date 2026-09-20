@@ -9,7 +9,6 @@ using VirtualRail;
 /// - VirtualRail_Enemy_StarSparrow6.prefab (Interceptor)
 /// Tuân thủ quy tắc 3 tầng an toàn: Giữ nguyên vẹn 100% prefab gốc của dự án.
 /// </summary>
-[InitializeOnLoad]
 public static class StarSparrowEnemyBuilder
 {
     public const string PREFAB_SS1_PATH = "Assets/Prefabs/VirtualRail_Enemy_StarSparrow1.prefab";
@@ -19,19 +18,6 @@ public static class StarSparrowEnemyBuilder
     public const string SOURCE_SS1_PATH = "Assets/StarSparrow/Prefabs/Examples/StarSparrow1.prefab";
     public const string SOURCE_SS4_PATH = "Assets/StarSparrow/Prefabs/Examples/StarSparrow4.prefab";
     public const string SOURCE_SS6_PATH = "Assets/StarSparrow/Prefabs/Examples/StarSparrow6.prefab";
-
-    static StarSparrowEnemyBuilder()
-    {
-        EditorApplication.delayCall += () =>
-        {
-            if (!System.IO.File.Exists(PREFAB_SS1_PATH) ||
-                !System.IO.File.Exists(PREFAB_SS4_PATH) ||
-                !System.IO.File.Exists(PREFAB_SS6_PATH))
-            {
-                BuildAllStarSparrowPrefabs();
-            }
-        };
-    }
 
     [MenuItem("Tools/Virtual Rail/Build StarSparrow Enemy Prefabs")]
     public static void BuildAllStarSparrowPrefabs()
