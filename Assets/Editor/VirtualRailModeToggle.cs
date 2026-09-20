@@ -650,6 +650,38 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/37. Archetypes & Hazards: Enable Modular Enemies & Obstacles (ON)")]
+    public static void EnableModularEnemiesAndObstacles()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableModularEnemies = true;
+            config.enableDestructibleAsteroids = true;
+            config.indestructibleAsteroidChance = 0.25f;
+            config.enableCollectibleRings = true;
+            config.ringSpawnRate = 0.35f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT MODULE HÓA KẺ ĐỊCH & VẬT CẢN (ON):</b></color> 4 Archetypes (Scout, Flanker, Interceptor, SquadLeader), Thiên thạch có máu vs Bất hoại, Vòng thu thập năng lượng nâng cấp súng!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/38. Archetypes & Hazards: Undo to Legacy 1-Hit & Simple Asteroids (OFF)")]
+    public static void DisableModularEnemiesAndObstacles()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableModularEnemies = false;
+            config.enableDestructibleAsteroids = false;
+            config.enableCollectibleRings = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ KẺ ĐỊCH 1-HIT CŨ:</b></color> Tắt phân loại Archetype, tắt máu thiên thạch, tắt vòng nâng cấp.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

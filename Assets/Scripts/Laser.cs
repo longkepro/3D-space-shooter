@@ -39,20 +39,41 @@ public class Laser : MonoBehaviour
             Debug.Log("Raycast Hit: " + hit.transform.name);
             SpawnExplostion(hit.point, hit.transform);
 
-            var pickup = hit.transform.GetComponentInParent<Pickup>();
-            if (pickup != null)
+            var ring = hit.transform.GetComponentInParent<VirtualRail.CollectibleRing>();
+            if (ring != null)
             {
-                pickup.Collect();
+                ring.Collect();
             }
             else
             {
-                var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
-                if (enemy != null)
+                var pickup = hit.transform.GetComponentInParent<Pickup>();
+                if (pickup != null)
                 {
-                    enemy.BlowUp();
+                    pickup.Collect();
+                }
+                else
+                {
+                    var enemyHealth = hit.transform.GetComponentInParent<VirtualRail.EnemyHealth>();
+                    if (enemyHealth != null)
+                    {
+                        enemyHealth.TakeDamage(20, hit.point, laserDirection);
+                    }
+                    else
+                    {
+                        var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
+                        if (enemy != null)
+                        {
+                            enemy.BlowUp();
+                        }
+                    }
+
+                    var asteroid = hit.transform.GetComponentInParent<Asteroid>();
+                    if (asteroid != null)
+                    {
+                        asteroid.TakeDamage(20, hit.point);
+                    }
                 }
             }
-
 
             return hit.point;
         }

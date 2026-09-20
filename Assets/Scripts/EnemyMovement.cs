@@ -14,17 +14,27 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
     [Tooltip("Khoảng thời gian giữa các lần quét tia né vật cản (giây) - giảm tải CPU Physics")]
     [SerializeField] private float _avoidanceInterval = 0.1f;
 
+    [Header("Archetype Integration")]
+    [SerializeField] private VirtualRail.EnemyData _archetypeData;
+
     private Transform _target;
     private bool _isBlowingUp = false;
     private float _nextAvoidanceTime = 0f;
     private Vector3 _cachedAvoidanceOffset = Vector3.zero;
     private Explosion _cachedExplosion;
+    private VirtualRail.EnemyHealth _health;
+    private bool _isFlankerStrafing = false;
+    private float _flankerStrafeDir = 1f;
 
     public Action<EnemyMovement> OnRecycle;
+
+    public VirtualRail.EnemyHealth Health => _health;
+    public VirtualRail.EnemyData ArchetypeData => _archetypeData;
 
     private void Awake()
     {
         _cachedExplosion = GetComponent<Explosion>();
+        _health = GetComponent<VirtualRail.EnemyHealth>();
     }
 
     private void OnEnable()
@@ -40,6 +50,39 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
         GameEventManager.OnPlayerDestroyed -= TargetMainCamera;
     }
 
+    public void ApplyArchetype(VirtualRail.EnemyData data)
+    {
+        _archetypeData = data;
+        if (data == null) return;
+
+        _movementSpeed = data.movementSpeed;
+        _turnSpeed = data.turnSpeed;
+        _points = data.scoreValue;
+
+        if (_health == null) _health = GetComponent<VirtualRail.EnemyHealth>();
+        if (_health != null)
+        {
+            _health.ApplyData(data);
+        }
+
+        var attack = GetComponent<EnemyAttack>();
+        if (attack != null)
+        {
+            attack.ApplyData(data);
+        }
+
+        // Cấu hình hành vi tạt sườn Flanker Strafing
+        if (data.archetype == VirtualRail.EnemyArchetype.Flanker && data.flankerTactic == VirtualRail.FlankerTactic.StrafingRun)
+        {
+            _isFlankerStrafing = true;
+            _flankerStrafeDir = (transform.position.x < 0f) ? 1f : -1f;
+        }
+        else
+        {
+            _isFlankerStrafing = false;
+        }
+    }
+
     public void SetTarget(Transform target)
     {
         _target = target;
@@ -50,13 +93,31 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
         _isBlowingUp = false;
         _cachedAvoidanceOffset = Vector3.zero;
         _nextAvoidanceTime = 0f;
+        _isFlankerStrafing = false;
+        if (_health != null)
+        {
+            _health.ResetState();
+        }
+    }
+
+    public bool TakeDamage(int damage, Vector3 hitPoint, Vector3 hitDirection)
+    {
+        if (_health != null)
+        {
+            return _health.TakeDamage(damage, hitPoint, hitDirection);
+        }
+        BlowUp();
+        return true;
     }
 
     private void Update()
     {
         if (!TargetPlayer()) return;
 
-        Pathfinding();
+        if (!_isFlankerStrafing)
+        {
+            Pathfinding();
+        }
         Move();
     }
 
@@ -75,6 +136,20 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
     private void Move()
     {
         var anchor = VirtualRail.VirtualRailAnchor.Instance;
+
+        // Dạng 1: Tạt sườn quấy rối (Strafing Run) - lao ngang cắt mặt người chơi ở tốc độ cao
+        if (_isFlankerStrafing)
+        {
+            Vector3 strafeRight = (anchor != null) ? anchor.transform.right : transform.right;
+            Vector3 railTangent = (anchor != null) ? anchor.ForwardTangent : Vector3.forward;
+            Vector3 strafeVelocity = strafeRight * (_flankerStrafeDir * _movementSpeed * 1.4f) + railTangent * (_movementSpeed * 0.3f);
+
+            transform.position += strafeVelocity * Time.deltaTime;
+            Quaternion targetRot = Quaternion.LookRotation(strafeVelocity);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 8f * Time.deltaTime);
+            return;
+        }
+
         bool useSync = anchor != null && anchor.CurrentSpeed > 0.1f && (anchor.config == null || anchor.config.enableEnemyRailSync);
 
         if (useSync)

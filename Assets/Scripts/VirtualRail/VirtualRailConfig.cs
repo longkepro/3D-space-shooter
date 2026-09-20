@@ -298,6 +298,18 @@ namespace VirtualRail
         [Tooltip("Cự ly ghìm đội hình bay phía trước tàu người chơi (mét - chuẩn 60m - 70m)")]
         public float formationHoldDistance = 65f;
 
+        [Header("18. Enemy & Obstacle Modularization (TDD v1.0.0 Phần I & II)")]
+        [Tooltip("Bật phân loại kẻ địch chuyên sâu (Scout, Flanker, Interceptor, SquadLeader)")]
+        public bool enableModularEnemies = true;
+        [Tooltip("Bật phân loại thiên thạch có máu (Destructible) vs bất hoại (Indestructible)")]
+        public bool enableDestructibleAsteroids = true;
+        [Tooltip("Tỉ lệ xuất hiện thiên thạch bất hoại Monolith (0.0 - 1.0)")]
+        [Range(0f, 1f)] public float indestructibleAsteroidChance = 0.25f;
+        [Tooltip("Bật xuất hiện Vòng Năng Lượng / Vật phẩm thu thập (Collectible Rings)")]
+        public bool enableCollectibleRings = true;
+        [Tooltip("Xác suất rơi/sinh Vòng năng lượng dọc luồng bay (0.0 - 1.0)")]
+        [Range(0f, 1f)] public float ringSpawnRate = 0.35f;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

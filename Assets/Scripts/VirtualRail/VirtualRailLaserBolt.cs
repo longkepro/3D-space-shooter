@@ -23,6 +23,7 @@ namespace VirtualRail
         private LayerMask _hitMask;
         private float _collisionRadius = 1.0f;
         private Vector3 _inheritedVelocity;
+        private int _damage = 20;
 
         private Color _cachedColor;
         private float _cachedWidth = -1f;
@@ -91,7 +92,7 @@ namespace VirtualRail
             }
         }
 
-        public void Spawn(Vector3 startPos, Vector3 dir, float speed, float length, float maxLife, Transform source, LayerMask hitMask, float collisionRadius = 1.0f, Vector3 inheritedVelocity = default)
+        public void Spawn(Vector3 startPos, Vector3 dir, float speed, float length, float maxLife, Transform source, LayerMask hitMask, float collisionRadius = 1.0f, Vector3 inheritedVelocity = default, int damage = 20)
         {
             _currentPos = startPos;
             _direction = dir.sqrMagnitude > 0.001f ? dir.normalized : Vector3.forward;
@@ -103,6 +104,7 @@ namespace VirtualRail
             _hitMask = hitMask;
             _collisionRadius = collisionRadius > 0.05f ? collisionRadius : 1.0f;
             _inheritedVelocity = inheritedVelocity;
+            _damage = damage;
 
             if (_lineRenderer == null) _lineRenderer = GetComponent<LineRenderer>();
             _lineRenderer.SetPosition(0, startPos);
@@ -172,16 +174,37 @@ namespace VirtualRail
 
         private void OnHit(RaycastHit hit)
         {
-            // Xử lý sát thương kẻ địch (tìm cả ở đối tượng trúng và đối tượng cha)
-            var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
-            if (enemy != null)
+            // 1. Thu thập vòng năng lượng / vật phẩm
+            var ring = hit.transform.GetComponentInParent<CollectibleRing>();
+            if (ring != null)
             {
-                enemy.BlowUp();
+                ring.Collect();
             }
             else if (hit.transform.CompareTag("Pickup"))
             {
                 var pickup = hit.transform.GetComponentInParent<Pickup>();
                 if (pickup != null) pickup.Collect();
+            }
+            else
+            {
+                // 2. Xử lý sát thương kẻ địch (ưu tiên EnemyHealth)
+                var enemyHealth = hit.transform.GetComponentInParent<EnemyHealth>();
+                if (enemyHealth != null)
+                {
+                    enemyHealth.TakeDamage(_damage, hit.point, _direction);
+                }
+                else
+                {
+                    var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
+                    if (enemy != null) enemy.BlowUp();
+                }
+
+                // 3. Xử lý sát thương thiên thạch
+                var asteroid = hit.transform.GetComponentInParent<Asteroid>();
+                if (asteroid != null)
+                {
+                    asteroid.TakeDamage(_damage, hit.point);
+                }
             }
 
             // Kích nổ / đẩy thiên thạch và vật thể vật lý

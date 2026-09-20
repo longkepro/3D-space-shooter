@@ -135,3 +135,8 @@ MonoBehaviour:
   enemyHoldDistance: 60
   enemyClosingSpeed: 20
   formationHoldDistance: 65
+  enableModularEnemies: 1
+  enableDestructibleAsteroids: 1
+  indestructibleAsteroidChance: 0.25
+  enableCollectibleRings: 1
+  ringSpawnRate: 0.35

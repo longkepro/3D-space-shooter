@@ -117,11 +117,31 @@ namespace VirtualRail
                 for (int i = 0; i < colliders.Length; i++)
                 {
                     if (colliders[i] == null) continue;
+
+                    var eh = colliders[i].GetComponentInParent<EnemyHealth>();
+                    if (eh != null && !eh.IsDead)
+                    {
+                        bool isDirect = (colliders[i].transform == lockedTarget || colliders[i].transform.IsChildOf(lockedTarget));
+                        int dmg = isDirect ? 100 : 50;
+                        if (eh.TakeDamage(dmg, eh.transform.position, (eh.transform.position - transform.position).normalized))
+                        {
+                            killCount++;
+                        }
+                        continue;
+                    }
+
                     var em = colliders[i].GetComponentInParent<EnemyMovement>();
                     if (em != null && em.gameObject.activeSelf)
                     {
                         em.BlowUp();
                         killCount++;
+                        continue;
+                    }
+
+                    var ast = colliders[i].GetComponentInParent<Asteroid>();
+                    if (ast != null && ast.gameObject.activeSelf)
+                    {
+                        ast.TakeDamage(100, ast.transform.position);
                     }
                 }
                 if (killCount > 0 && ComboScoringEngine.Instance != null)

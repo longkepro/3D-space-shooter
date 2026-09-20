@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace VirtualRail
@@ -86,6 +86,13 @@ namespace VirtualRail
             {
                 if (colliders[i] == null) continue;
 
+                var enemyHealth = colliders[i].GetComponentInParent<EnemyHealth>();
+                if (enemyHealth != null && !enemyHealth.IsDead)
+                {
+                    enemyHealth.TakeDamage(999, enemyHealth.transform.position, (enemyHealth.transform.position - centerPos).normalized);
+                    continue;
+                }
+
                 var enemy = colliders[i].GetComponentInParent<EnemyMovement>();
                 if (enemy != null && enemy.gameObject.activeSelf)
                 {
@@ -96,9 +103,11 @@ namespace VirtualRail
                 var asteroid = colliders[i].GetComponentInParent<Asteroid>();
                 if (asteroid != null && asteroid.gameObject.activeSelf)
                 {
-                    var exp = asteroid.GetComponent<Explosion>();
-                    if (exp != null) exp.BlowUp();
-                    else asteroid.Recycle();
+                    // Chỉ phá hủy nếu là Destructible; nếu Indestructible, không bị nổ tan
+                    if (asteroid.HazardType == AsteroidHazardType.Destructible)
+                    {
+                        asteroid.TakeDamage(999, asteroid.transform.position);
+                    }
                 }
             }
 

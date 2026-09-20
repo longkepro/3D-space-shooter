@@ -7,11 +7,40 @@ public class EnemyAttack : MonoBehaviour
     private Transform _target;
     private Vector3 _hitPosition;
 
+    [Header("Projectile Fire (TDD v1.0.0 Phần I.3)")]
+    [SerializeField] private bool _usePhysicalProjectiles = true;
+    [SerializeField] private float _fireCooldown = 1.2f;
+    [SerializeField] private int _burstCount = 1;
+    [SerializeField] private float _burstInterval = 0.15f;
+    [SerializeField] private float _bulletSpeedOverride = 0f;
+
+    private float _nextFireTime = 0f;
+    private int _burstRemaining = 0;
+    private float _nextBurstTime = 0f;
+
+    public void ApplyData(VirtualRail.EnemyData data)
+    {
+        if (data == null) return;
+        _fireCooldown = data.fireCooldown;
+        _burstCount = Mathf.Max(1, data.burstCount);
+        _burstInterval = Mathf.Max(0.05f, data.burstInterval);
+        _bulletSpeedOverride = data.projectileSpeed;
+        _burstRemaining = 0;
+    }
+
     private void Update()
     {
         if (!TargetPlayer()) return;
 
-        if (TargetInfront() && HaveRaycastLineOfSight())
+        // Xử lý các phát bắn liên tiếp trong chuỗi Burst Fire (0 GC Alloc)
+        if (_burstRemaining > 0 && Time.time >= _nextBurstTime)
+        {
+            ExecuteDischarge();
+            _burstRemaining--;
+            _nextBurstTime = Time.time + _burstInterval;
+        }
+
+        if (_burstRemaining <= 0 && TargetInfront() && HaveRaycastLineOfSight())
         {
             FireLaser();
         }
@@ -29,6 +58,7 @@ public class EnemyAttack : MonoBehaviour
         Vector3 attackDirection = _target.position - transform.position;
         foreach (var laser in _lasers)
         {
+            if (laser == null) continue;
             if (Physics.Raycast(laser.transform.position, attackDirection, out RaycastHit hit, laser.Distance))
             {
                 if (hit.transform.CompareTag("Player"))
@@ -38,18 +68,28 @@ public class EnemyAttack : MonoBehaviour
                     return true;
                 }
             }
-
         }
         return false;
     }
 
-    [Header("Projectile Fire (TDD v1.0.0 Phần I.3)")]
-    [SerializeField] private bool _usePhysicalProjectiles = true;
-    [SerializeField] private float _fireCooldown = 1.2f;
-    private float _nextFireTime = 0f;
-
     private void FireLaser()
     {
+        if (Time.time < _nextFireTime) return;
+        _nextFireTime = Time.time + _fireCooldown;
+
+        // Bắn phát đầu tiên và lên lịch các phát tiếp theo trong loạt burst
+        ExecuteDischarge();
+        if (_burstCount > 1)
+        {
+            _burstRemaining = _burstCount - 1;
+            _nextBurstTime = Time.time + _burstInterval;
+        }
+    }
+
+    private void ExecuteDischarge()
+    {
+        if (_target == null) return;
+
         bool usePhysical = _usePhysicalProjectiles;
         if (VirtualRail.VirtualRailAnchor.Instance != null && VirtualRail.VirtualRailAnchor.Instance.config != null)
         {
@@ -58,17 +98,12 @@ public class EnemyAttack : MonoBehaviour
 
         if (usePhysical && VirtualRail.EnemyProjectilePool.Instance != null)
         {
-            if (Time.time < _nextFireTime) return;
-            _nextFireTime = Time.time + _fireCooldown;
-
             Vector3 toPlayer = _target.position - transform.position;
-            // Nếu người chơi đang bay tới đối đầu theo trục Z
             bool isHeadOn = toPlayer.z < 0f;
 
-            // Toán học vận tốc tương đối TDD:
-            // - Head-on: V_bullet = 20 m/s (V_closing = 60 m/s, Reaction Window 1.5s)
-            // - Rear-chaser: V_bullet = 75 m/s (bắt kịp tàu người chơi)
-            float bulletSpeed = isHeadOn ? 20f : 75f;
+            float bulletSpeed = (_bulletSpeedOverride > 5f)
+                ? _bulletSpeedOverride
+                : (isHeadOn ? 20f : 75f);
 
             foreach (var laser in _lasers)
             {

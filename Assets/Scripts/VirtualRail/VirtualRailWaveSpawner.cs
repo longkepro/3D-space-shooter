@@ -140,7 +140,17 @@ namespace VirtualRail
                             _pool.Add(movement);
                         }
 
-                        // Gắn sẵn FSM và Wingman để 0 GC Alloc lúc runtime
+                        // Gắn sẵn EnemyHealth, FSM và Wingman để 0 GC Alloc lúc runtime
+                        var health = enemyObj.GetComponent<EnemyHealth>();
+                        if (health == null) health = enemyObj.AddComponent<EnemyHealth>();
+
+                        EnemyArchetype archType = EnemyArchetype.Scout;
+                        if (p == 1) archType = EnemyArchetype.Flanker;
+                        else if (p == 2) archType = EnemyArchetype.Interceptor;
+
+                        var preset = EnemyData.CreateDefaultPreset(archType);
+                        if (movement != null) movement.ApplyArchetype(preset);
+
                         if (enemyObj.GetComponent<EnemyLifecycleFSM>() == null)
                         {
                             enemyObj.AddComponent<EnemyLifecycleFSM>();
@@ -151,6 +161,13 @@ namespace VirtualRail
                         }
                     }
                 }
+            }
+
+            // Khởi tạo CollectiblePool nếu chưa có trong scene
+            if (VirtualRailCollectiblePool.Instance == null)
+            {
+                GameObject colPoolObj = new GameObject("[VirtualRail_CollectiblePool]");
+                colPoolObj.AddComponent<VirtualRailCollectiblePool>();
             }
 
             // Khởi tạo sẵn 2 Formation Anchors trong World Space (0 GC Alloc)
@@ -295,6 +312,26 @@ namespace VirtualRail
             float formDist = (cfg != null) ? cfg.formationSpawnDistance : 110f;
             Vector3 startPos = anchor.transform.position + anchor.ForwardTangent * formDist + anchor.transform.up * 4f;
             float assemblyTime = (cfg != null) ? cfg.formationAssemblyTime : 1.2f;
+
+            if (cfg != null && cfg.enableModularEnemies)
+            {
+                // Slot 0 là Tàu Chỉ Huy SquadLeader (Máu dày, đạn chùm 3 viên, scale 1.35x)
+                enemies[0].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.SquadLeader));
+                enemies[0].transform.localScale = Vector3.one * 1.35f;
+
+                for (int k = 1; k < enemies.Count; k++)
+                {
+                    enemies[k].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.Flanker));
+                    enemies[k].transform.localScale = Vector3.one;
+                }
+            }
+            else
+            {
+                for (int k = 0; k < enemies.Count; k++)
+                {
+                    enemies[k].transform.localScale = Vector3.one;
+                }
+            }
 
             availableAnchor.InitializeFormation(fType, anchor, startPos, enemies, assemblyTime);
             return true;

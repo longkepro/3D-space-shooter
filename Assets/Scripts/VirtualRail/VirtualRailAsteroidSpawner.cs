@@ -203,10 +203,35 @@ namespace VirtualRail
                 spawnPos = new Vector3(x, y, targetZ);
             }
 
+            if (cfg != null && cfg.enableDestructibleAsteroids)
+            {
+                AsteroidHazardType hazard = (Random.value < cfg.indestructibleAsteroidChance)
+                    ? AsteroidHazardType.Indestructible
+                    : AsteroidHazardType.Destructible;
+                ast.SetHazardType(hazard);
+            }
+            else
+            {
+                ast.SetHazardType(AsteroidHazardType.Destructible);
+            }
+
             ast.transform.position = spawnPos;
             ast.transform.rotation = Random.rotation;
             ast.ResetScale();
             ast.gameObject.SetActive(true);
+
+            // Sinh Vòng năng lượng / Vật phẩm thu thập dọc luồng an toàn (0 GC Alloc)
+            if (cfg != null && cfg.enableCollectibleRings && VirtualRailCollectiblePool.Instance != null)
+            {
+                if (Random.value <= cfg.ringSpawnRate)
+                {
+                    Vector2 safeCenter = _pathStrategy.SampleSafeCenter(targetZ, cfg);
+                    Vector3 ringPos = new Vector3(safeCenter.x, safeCenter.y, targetZ);
+                    float roll = Random.value;
+                    RingType rType = roll < 0.65f ? RingType.SilverRing : (roll < 0.90f ? RingType.GoldRing : RingType.BombSupply);
+                    VirtualRailCollectiblePool.Instance.SpawnRing(rType, ringPos);
+                }
+            }
         }
 
         private Asteroid GetAvailableAsteroid()

@@ -58,6 +58,18 @@ namespace VirtualRail
             {
                 if (colliders[i] == null) continue;
 
+                var eh = colliders[i].GetComponentInParent<EnemyHealth>();
+                if (eh != null && !eh.IsDead)
+                {
+                    bool isDirect = (target != null && (colliders[i].transform == target || colliders[i].transform.IsChildOf(target)));
+                    int dmg = isDirect ? 100 : 50;
+                    if (eh.TakeDamage(dmg, eh.transform.position, transform.forward))
+                    {
+                        killCount++;
+                    }
+                    continue;
+                }
+
                 var enemy = colliders[i].GetComponentInParent<EnemyMovement>();
                 if (enemy != null && enemy.gameObject.activeSelf)
                 {
@@ -69,9 +81,7 @@ namespace VirtualRail
                 var asteroid = colliders[i].GetComponentInParent<Asteroid>();
                 if (asteroid != null && asteroid.gameObject.activeSelf)
                 {
-                    var exp = asteroid.GetComponent<Explosion>();
-                    if (exp != null) exp.BlowUp();
-                    else asteroid.Recycle();
+                    asteroid.TakeDamage(100, impactPoint);
                 }
             }
 

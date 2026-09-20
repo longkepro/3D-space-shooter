@@ -43,4 +43,9 @@ public class Shield : MonoBehaviour
         }
     }
 
+    public void Heal(int healAmount)
+    {
+        _currentHealth = Mathf.Min(_maxHealth, _currentHealth + healAmount);
+        GameEventManager.UpdateHealthBar(Mathf.RoundToInt(_currentHealth / (float)_maxHealth * 100));
+    }
 }

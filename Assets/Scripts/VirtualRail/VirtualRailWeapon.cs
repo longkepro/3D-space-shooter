@@ -6,14 +6,30 @@ namespace VirtualRail
     /// Cơ chế Hội tụ Đạn đạo 3D (3D Convergence) & Phễu từ tính (Bullet Magnetism).
     /// Đạn bắn từ mọi nòng súng luôn hội tụ xuyên qua đúng tâm của khung ngắm 3D ở cự ly Z_conv.
     /// </summary>
+    public enum LaserUpgradeLevel
+    {
+        Single = 1, // Laser đơn tiêu chuẩn (20 DMG, Cyan/Lam)
+        Twin = 2,   // Laser kép nâng cấp (30 DMG/bolt, Vàng kim)
+        Hyper = 3   // Hyper Laser tối thượng (45 DMG/bolt, Ngọc lục bảo)
+    }
+
     [DisallowMultipleComponent]
     public class VirtualRailWeapon : MonoBehaviour
     {
+        public static VirtualRailWeapon Instance { get; private set; }
+
         public VirtualRailAnchor anchor;
         public VirtualRailReticle reticle;
         public VirtualRailShip ship;
         public VirtualRailInputReader inputReader;
         public Laser[] muzzles;
+
+        [Header("Weapon Upgrade System")]
+        [SerializeField] private LaserUpgradeLevel _laserLevel = LaserUpgradeLevel.Single;
+        [SerializeField] private int _goldRingsCollected = 0;
+
+        public LaserUpgradeLevel CurrentLaserLevel => _laserLevel;
+        public int GoldRingsCollected => _goldRingsCollected;
 
         [Header("Weapon Timing")]
         public float fireRate = 0.15f;
@@ -35,10 +51,46 @@ namespace VirtualRail
 
         private void Awake()
         {
+            if (Instance == null) Instance = this;
             if (muzzles == null || muzzles.Length == 0)
             {
                 muzzles = GetComponentsInChildren<Laser>();
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+
+        public void CollectGoldRing()
+        {
+            _goldRingsCollected++;
+            if (_goldRingsCollected >= 3)
+            {
+                _goldRingsCollected = 0;
+                UpgradeLaser();
+            }
+        }
+
+        public void UpgradeLaser()
+        {
+            if (_laserLevel == LaserUpgradeLevel.Single)
+            {
+                _laserLevel = LaserUpgradeLevel.Twin;
+                Debug.Log("<color=yellow><b>[WEAPON UPGRADE]</b></color> Nâng cấp thành TWIN LASER! Hỏa lực gia tăng!");
+            }
+            else if (_laserLevel == LaserUpgradeLevel.Twin)
+            {
+                _laserLevel = LaserUpgradeLevel.Hyper;
+                Debug.Log("<color=green><b>[WEAPON UPGRADE]</b></color> Nâng cấp tối thượng HYPER LASER! Hỏa lực cực đại!");
+            }
+        }
+
+        public void DowngradeLaser()
+        {
+            if (_laserLevel == LaserUpgradeLevel.Hyper) _laserLevel = LaserUpgradeLevel.Twin;
+            else if (_laserLevel == LaserUpgradeLevel.Twin) _laserLevel = LaserUpgradeLevel.Single;
         }
 
         private void Start()
@@ -263,6 +315,23 @@ namespace VirtualRail
                 }
             }
 
+            int boltDamage = 20;
+            Color boltColor = cfg.laserColor;
+            float boltWidth = cfg.laserBoltWidth;
+
+            if (_laserLevel == LaserUpgradeLevel.Twin)
+            {
+                boltDamage = 30;
+                boltColor = new Color(1.0f, 0.82f, 0.15f); // Vàng rực Twin Laser
+                boltWidth = cfg.laserBoltWidth * 1.25f;
+            }
+            else if (_laserLevel == LaserUpgradeLevel.Hyper)
+            {
+                boltDamage = 45;
+                boltColor = new Color(0.2f, 1.0f, 0.45f); // Xanh lục ngọc Hyper Laser
+                boltWidth = cfg.laserBoltWidth * 1.5f;
+            }
+
             if (cfg.useSegmentedLaser)
             {
                 float collisionRadius = cfg.laserBoltCollisionRadius > 0.05f ? cfg.laserBoltCollisionRadius : 1.0f;
@@ -283,13 +352,14 @@ namespace VirtualRail
                     cfg.laserBoltSpeed,
                     cfg.laserBoltLength,
                     cfg.laserBoltLifetime,
-                    cfg.laserColor,
-                    cfg.laserBoltWidth,
+                    boltColor,
+                    boltWidth,
                     cfg.laserBoltMaterial,
                     transform,
                     cfg.enemyLayer,
                     collisionRadius,
-                    inheritedVel
+                    inheritedVel,
+                    boltDamage
                 );
             }
             else
@@ -297,23 +367,50 @@ namespace VirtualRail
                 // Fallback (Layer 2 Undo): Cơ chế tia tức thời cũ (Instant Hitscan Beam)
                 if (hitTarget != null)
                 {
-                    var enemy = hitTarget.GetComponentInParent<EnemyMovement>();
-                    if (enemy != null) enemy.BlowUp();
+                    var enemyHealth = hitTarget.GetComponentInParent<EnemyHealth>();
+                    if (enemyHealth != null)
+                    {
+                        enemyHealth.TakeDamage(boltDamage, hitTarget.position, fireDirection);
+                    }
+                    else
+                    {
+                        var enemy = hitTarget.GetComponentInParent<EnemyMovement>();
+                        if (enemy != null) enemy.BlowUp();
+                    }
+
+                    var asteroid = hitTarget.GetComponentInParent<Asteroid>();
+                    if (asteroid != null) asteroid.TakeDamage(boltDamage, hitTarget.position);
                 }
                 else if (Physics.Raycast(muzzlePos, fireDirection, out hit, cfg.convergenceDistance * 2f))
                 {
                     targetPoint = hit.point;
                     hitTarget = hit.transform;
 
-                    var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
-                    if (enemy != null)
+                    var ring = hit.transform.GetComponentInParent<CollectibleRing>();
+                    if (ring != null)
                     {
-                        enemy.BlowUp();
+                        ring.Collect();
                     }
                     else if (hit.transform.CompareTag("Pickup"))
                     {
                         var pickup = hit.transform.GetComponentInParent<Pickup>();
                         if (pickup != null) pickup.Collect();
+                    }
+                    else
+                    {
+                        var enemyHealth = hit.transform.GetComponentInParent<EnemyHealth>();
+                        if (enemyHealth != null)
+                        {
+                            enemyHealth.TakeDamage(boltDamage, hit.point, fireDirection);
+                        }
+                        else
+                        {
+                            var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
+                            if (enemy != null) enemy.BlowUp();
+                        }
+
+                        var asteroid = hit.transform.GetComponentInParent<Asteroid>();
+                        if (asteroid != null) asteroid.TakeDamage(boltDamage, hit.point);
                     }
                 }
                 else
