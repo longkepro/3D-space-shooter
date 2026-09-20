@@ -141,3 +141,4 @@ MonoBehaviour:
   indestructibleAsteroidChance: 0.25
   enableCollectibleRings: 1
   ringSpawnRate: 0.35
+  useStarSparrowFleet: 1

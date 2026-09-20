@@ -312,6 +312,10 @@ namespace VirtualRail
         [Tooltip("Xác suất rơi/sinh Vòng năng lượng dọc luồng bay (0.0 - 1.0)")]
         [Range(0f, 1f)] public float ringSpawnRate = 0.35f;
 
+        [Header("19. Fleet Visual Models (StarSparrow Integration)")]
+        [Tooltip("Bật sử dụng đội hình chiến hạm StarSparrow (StarSparrow1, StarSparrow4, StarSparrow6) thay cho model nguyên mẫu")]
+        public bool useStarSparrowFleet = true;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

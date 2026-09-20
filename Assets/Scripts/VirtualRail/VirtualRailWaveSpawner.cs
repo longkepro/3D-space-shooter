@@ -108,8 +108,33 @@ namespace VirtualRail
                 }
             }
 
-            // Tự động tìm nạp các prefab Enemy nếu chưa gán
-            if (enemyPrefabs == null || enemyPrefabs.Length == 0)
+            var cfg = anchor != null ? anchor.config : null;
+            bool useStarSparrow = cfg != null ? cfg.useStarSparrowFleet : true;
+
+            // Tự động tìm nạp các prefab Enemy theo cấu hình (StarSparrow Fleet vs Legacy)
+            if (useStarSparrow)
+            {
+#if UNITY_EDITOR
+                var ss1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/VirtualRail_Enemy_StarSparrow1.prefab");
+                if (ss1 == null) ss1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/StarSparrow/Prefabs/Examples/StarSparrow1.prefab");
+
+                var ss4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/VirtualRail_Enemy_StarSparrow4.prefab");
+                if (ss4 == null) ss4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/StarSparrow/Prefabs/Examples/StarSparrow4.prefab");
+
+                var ss6 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/VirtualRail_Enemy_StarSparrow6.prefab");
+                if (ss6 == null) ss6 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/StarSparrow/Prefabs/Examples/StarSparrow6.prefab");
+
+                var list = new List<GameObject>();
+                if (ss1 != null) list.Add(ss1);
+                if (ss4 != null) list.Add(ss4);
+                if (ss6 != null) list.Add(ss6);
+                if (list.Count > 0)
+                {
+                    enemyPrefabs = list.ToArray();
+                }
+#endif
+            }
+            else
             {
 #if UNITY_EDITOR
                 var e0 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (0).prefab");
@@ -132,17 +157,34 @@ namespace VirtualRail
                     {
                         GameObject enemyObj = Instantiate(enemyPrefabs[p], _poolRoot);
                         enemyObj.name = enemyPrefabs[p].name + "_Pooled_" + i;
+                        enemyObj.tag = "Enemy";
                         enemyObj.SetActive(false);
 
-                        var movement = enemyObj.GetComponent<EnemyMovement>();
-                        if (movement != null)
+                        // Đảm bảo toàn bộ collider con có Tag Enemy để dò trúng đạn và Bullet Magnetism
+                        var colliders = enemyObj.GetComponentsInChildren<Collider>(true);
+                        for (int c = 0; c < colliders.Length; c++)
                         {
-                            _pool.Add(movement);
+                            colliders[c].gameObject.tag = "Enemy";
                         }
+                        if (colliders.Length == 0)
+                        {
+                            var box = enemyObj.AddComponent<BoxCollider>();
+                            box.size = new Vector3(4f, 1.5f, 6f);
+                        }
+
+                        var movement = enemyObj.GetComponent<EnemyMovement>();
+                        if (movement == null) movement = enemyObj.AddComponent<EnemyMovement>();
+                        _pool.Add(movement);
 
                         // Gắn sẵn EnemyHealth, FSM và Wingman để 0 GC Alloc lúc runtime
                         var health = enemyObj.GetComponent<EnemyHealth>();
                         if (health == null) health = enemyObj.AddComponent<EnemyHealth>();
+
+                        var explosion = enemyObj.GetComponent<Explosion>();
+                        if (explosion == null) explosion = enemyObj.AddComponent<Explosion>();
+
+                        var attack = enemyObj.GetComponent<EnemyAttack>();
+                        if (attack == null) attack = enemyObj.AddComponent<EnemyAttack>();
 
                         EnemyArchetype archType = EnemyArchetype.Scout;
                         if (p == 1) archType = EnemyArchetype.Flanker;
