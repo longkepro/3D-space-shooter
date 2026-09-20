@@ -36,6 +36,8 @@ namespace VirtualRail
 
         public FormationType Type => _formationType;
         public bool IsActive => gameObject.activeSelf;
+        public bool HasActiveLeader => _leader != null && !_isLeaderKilled && _leader.gameObject.activeSelf;
+        public FormationWingman Leader => _leader;
 
         public static Vector3[] GetSlotOffsets(FormationType type)
         {

@@ -15,6 +15,16 @@ namespace VirtualRail
         [SerializeField] private int _currentHealth;
         [SerializeField] private bool _isDead = false;
 
+        [Header("Formation Shield Mechanics")]
+        [SerializeField] private bool _isShieldActive = false;
+        private GameObject _shieldVisualObj;
+        private Renderer _shieldRenderer;
+        private MaterialPropertyBlock _shieldPropBlock;
+        private float _shieldFlashTimer = 0f;
+        private bool _isShieldFlashing = false;
+        private static readonly Color _shieldNormalColor = new Color(0.1f, 0.75f, 1.0f, 0.65f); // Xanh cyan neon
+        private static readonly Color _shieldHitColor = new Color(1.0f, 1.0f, 1.0f, 0.95f);    // Trắng chớp sáng khi dội đạn
+
         private Renderer[] _renderers;
         private MaterialPropertyBlock _propBlock;
         private static readonly int _colorPropId = Shader.PropertyToID("_Color");
@@ -30,6 +40,7 @@ namespace VirtualRail
         public int CurrentHealth => _currentHealth;
         public int MaxHealth => _data != null ? _data.maxHealth : 20;
         public bool IsDead => _isDead;
+        public bool IsShieldActive => _isShieldActive;
 
         public event Action<EnemyHealth> OnDied;
         public event Action<int, Vector3, bool> OnDamaged; // (damageDealt, hitPoint, isWeakSpot)
@@ -38,6 +49,7 @@ namespace VirtualRail
         {
             _renderers = GetComponentsInChildren<Renderer>();
             _propBlock = new MaterialPropertyBlock();
+            _shieldPropBlock = new MaterialPropertyBlock();
             _movement = GetComponent<EnemyMovement>();
             _wingman = GetComponent<FormationWingman>();
 
@@ -66,6 +78,68 @@ namespace VirtualRail
             _isDead = false;
         }
 
+        public void SetShieldActive(bool active)
+        {
+            _isShieldActive = active;
+            if (active)
+            {
+                EnsureShieldVisual();
+                if (_shieldVisualObj != null)
+                {
+                    _shieldVisualObj.SetActive(true);
+                    ResetShieldColor();
+                }
+                Debug.Log($"<color=cyan><b>[SHIELD ONLINE]</b></color> Lá chắn của {name} đã KÍCH HOẠT (Liên kết Tàu Chỉ Huy)!");
+            }
+            else
+            {
+                if (_shieldVisualObj != null)
+                {
+                    _shieldVisualObj.SetActive(false);
+                }
+                _isShieldFlashing = false;
+            }
+        }
+
+        private void EnsureShieldVisual()
+        {
+            if (_shieldVisualObj != null) return;
+
+            Transform existing = transform.Find("[Shield_Barrier]");
+            if (existing != null)
+            {
+                _shieldVisualObj = existing.gameObject;
+                _shieldRenderer = _shieldVisualObj.GetComponent<Renderer>();
+                return;
+            }
+
+            _shieldVisualObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            _shieldVisualObj.name = "[Shield_Barrier]";
+            _shieldVisualObj.transform.SetParent(transform, false);
+            _shieldVisualObj.transform.localPosition = Vector3.zero;
+            _shieldVisualObj.transform.localRotation = Quaternion.identity;
+            _shieldVisualObj.transform.localScale = new Vector3(2.6f, 2.6f, 2.6f);
+
+            var col = _shieldVisualObj.GetComponent<Collider>();
+            if (col != null) Destroy(col);
+
+            _shieldRenderer = _shieldVisualObj.GetComponent<Renderer>();
+            if (_shieldRenderer != null)
+            {
+#if UNITY_EDITOR
+                Material shieldMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Light/CFX4_AuraBubble ADD.mat");
+                if (shieldMat != null)
+                {
+                    _shieldRenderer.sharedMaterial = shieldMat;
+                }
+#endif
+                _shieldRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _shieldRenderer.receiveShadows = false;
+            }
+
+            _shieldVisualObj.SetActive(false);
+        }
+
         private void Update()
         {
             if (_isFlashing)
@@ -77,6 +151,34 @@ namespace VirtualRail
                     ResetColor();
                 }
             }
+
+            if (_isShieldFlashing)
+            {
+                _shieldFlashTimer -= Time.deltaTime;
+                if (_shieldFlashTimer <= 0f)
+                {
+                    _isShieldFlashing = false;
+                    ResetShieldColor();
+                }
+            }
+        }
+
+        private void TriggerShieldFlash()
+        {
+            if (_shieldRenderer == null) return;
+            _isShieldFlashing = true;
+            _shieldFlashTimer = FLASH_DURATION;
+            _shieldRenderer.GetPropertyBlock(_shieldPropBlock);
+            _shieldPropBlock.SetColor(_colorPropId, _shieldHitColor);
+            _shieldRenderer.SetPropertyBlock(_shieldPropBlock);
+        }
+
+        private void ResetShieldColor()
+        {
+            if (_shieldRenderer == null) return;
+            _shieldRenderer.GetPropertyBlock(_shieldPropBlock);
+            _shieldPropBlock.SetColor(_colorPropId, _shieldNormalColor);
+            _shieldRenderer.SetPropertyBlock(_shieldPropBlock);
         }
 
         /// <summary>
@@ -89,6 +191,14 @@ namespace VirtualRail
         public bool TakeDamage(int rawDamage, Vector3 hitPoint, Vector3 hitDirection)
         {
             if (_isDead) return true;
+
+            // 1. Kiểm tra lá chắn năng lượng liên kết Chỉ Huy
+            if (_isShieldActive)
+            {
+                TriggerShieldFlash();
+                Debug.Log($"<color=cyan><b>[SHIELD DEFLECT]</b></color> Lá chắn của {name} đã cản phá 100% đạn laser! Hãy tiêu diệt Tàu Chỉ Huy!");
+                return false;
+            }
 
             int finalDamage = rawDamage;
             bool isWeakSpot = false;
@@ -155,6 +265,7 @@ namespace VirtualRail
             if (_isDead) return;
             _isDead = true;
 
+            SetShieldActive(false);
             ResetColor();
 
             OnDied?.Invoke(this);
@@ -174,6 +285,7 @@ namespace VirtualRail
         {
             _isDead = false;
             _isFlashing = false;
+            SetShieldActive(false);
             ResetColor();
             if (_data != null)
             {

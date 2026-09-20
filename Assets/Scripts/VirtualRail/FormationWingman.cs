@@ -41,6 +41,7 @@ namespace VirtualRail
 
         private EnemyMovement _movement;
         private Collider _collider;
+        private EnemyHealth _health;
 
         public int SlotIndex => _slotIndex;
         public bool IsLeader => _isLeader;
@@ -50,6 +51,7 @@ namespace VirtualRail
         {
             _movement = GetComponent<EnemyMovement>();
             _collider = GetComponentInChildren<Collider>();
+            _health = GetComponent<EnemyHealth>();
         }
 
         public void InitializeSlot(
@@ -68,6 +70,9 @@ namespace VirtualRail
             _assemblyDuration = Mathf.Max(assemblyTime, 0.5f);
             _assemblyTimer = 0f;
             _state = WingmanState.Assembling;
+
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null) _health.SetShieldActive(false); // Pha Assembling khiên luôn tắt
 
             transform.position = _spawnPos;
 
@@ -128,6 +133,27 @@ namespace VirtualRail
             if (u >= 1.0f)
             {
                 _state = WingmanState.LockedInSlot;
+                OnEnteredFormationSlot();
+            }
+        }
+
+        private void OnEnteredFormationSlot()
+        {
+            // Kiểm tra và kích hoạt lá chắn bảo vệ nếu là Tàu Lá Chắn (ShieldBearer)
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null && _health.Data != null && _health.Data.hasFormationShield)
+            {
+                // Bắt buộc đội hình phải có Tàu Chỉ Huy còn sống
+                bool hasLeader = _formationAnchor != null && _formationAnchor.HasActiveLeader;
+                if (hasLeader)
+                {
+                    _health.SetShieldActive(true);
+                }
+                else
+                {
+                    _health.SetShieldActive(false);
+                    Debug.Log($"[Formation] Tàu lá chắn Slot {_slotIndex} không bật khiên do đội hình không có Chỉ Huy!");
+                }
             }
         }
 
@@ -165,6 +191,13 @@ namespace VirtualRail
             _state = WingmanState.PanicScatter;
             _panicTimer = 0f;
 
+            // Dập tắt lá chắn ngay lập tức khi Tàu Chỉ Huy bị tiêu diệt
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null)
+            {
+                _health.SetShieldActive(false);
+            }
+
             // Toán học Vector Ly tâm Thoát ly (TDD Phần III.3):
             // V_panic = Normalize(P_ship.xy - P_anchor.xy) * V_boost + Forward_rail * V_rail
             Vector2 shipXY = new Vector2(transform.position.x, transform.position.y);
@@ -177,7 +210,7 @@ namespace VirtualRail
             _panicVelocity = centrifugal3D + railForward * (railSpeed + 15f);
             _panicRollDir = centrifugal2D.x >= 0 ? 1f : -1f;
 
-            Debug.Log($"<color=orange><b>[PANIC SCATTER]</b></color> Tàu cánh Slot {_slotIndex} hoảng loạn bẻ lái dạt biên thoát ly!");
+            Debug.Log($"<color=orange><b>[PANIC SCATTER]</b></color> Tàu cánh Slot {_slotIndex} mất khiên và hoảng loạn bẻ lái dạt biên thoát ly!");
         }
 
         private static Vector3 EvaluateCubicBezier(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
@@ -205,6 +238,12 @@ namespace VirtualRail
 
         public void Recycle()
         {
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null)
+            {
+                _health.SetShieldActive(false);
+            }
+
             if (_movement != null)
             {
                 _movement.enabled = true;

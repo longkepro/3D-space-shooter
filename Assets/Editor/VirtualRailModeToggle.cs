@@ -682,6 +682,32 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/39. Shieldbearer: Enable Command-Linked Formation Shield (ON)")]
+    public static void EnableShieldBearerAndFormationShield()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableShieldBearerEnemies = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT TÀU LÁ CHẮN SHIELDBEARER & KHIÊN LIÊN KẾT CHỈ HUY (ON):</b></color> Tàu lá chắn tự động kích hoạt bong bóng năng lượng bất hoại khi vào đội hình; Khiên lập tức nổ/vỡ nếu tàu Chỉ huy bị tiêu diệt!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/40. Shieldbearer: Disable (OFF - Legacy)")]
+    public static void DisableShieldBearerAndFormationShield()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableShieldBearerEnemies = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT TÀU LÁ CHẮN SHIELDBEARER (OFF - LEGACY):</b></color> Đội hình bay sử dụng hoàn toàn tàu Flanker tiêu chuẩn, không kích hoạt khiên năng lượng.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

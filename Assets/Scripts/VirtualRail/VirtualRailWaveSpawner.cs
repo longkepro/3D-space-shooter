@@ -279,6 +279,13 @@ namespace VirtualRail
                 SpatialTrajectoryData trajectory = SpatialVectorFactory.GenerateTrajectory(vectorType, anchor, mainCam, leadDist);
 
                 availableEnemy.ResetState();
+                availableEnemy.transform.localScale = Vector3.one;
+                if (availableEnemy.ArchetypeData != null && 
+                    (availableEnemy.ArchetypeData.archetype == EnemyArchetype.SquadLeader || 
+                     availableEnemy.ArchetypeData.archetype == EnemyArchetype.ShieldBearer))
+                {
+                    availableEnemy.ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.Scout));
+                }
                 availableEnemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
 
                 if (useFSM)
@@ -319,10 +326,21 @@ namespace VirtualRail
                 enemies[0].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.SquadLeader));
                 enemies[0].transform.localScale = Vector3.one * 1.35f;
 
+                bool useShieldBearers = cfg.enableShieldBearerEnemies && enemies.Count >= 3;
+
                 for (int k = 1; k < enemies.Count; k++)
                 {
-                    enemies[k].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.Flanker));
-                    enemies[k].transform.localScale = Vector3.one;
+                    // Slot 1 & 2 đóng vai trò tiền tiêu / bảo vệ cánh: Gán ShieldBearer nếu được bật
+                    if (useShieldBearers && (k == 1 || k == 2))
+                    {
+                        enemies[k].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.ShieldBearer));
+                        enemies[k].transform.localScale = Vector3.one;
+                    }
+                    else
+                    {
+                        enemies[k].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.Flanker));
+                        enemies[k].transform.localScale = Vector3.one;
+                    }
                 }
             }
             else

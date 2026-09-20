@@ -8,7 +8,8 @@ namespace VirtualRail
         Scout = 0,        // 1 hit, bay lướt, đạn đơn/không bắn, luyện ngắm & farm combo
         Flanker = 1,      // 2 hits, tạt sườn cắt ngang hoặc nhập đội hình, đạn kép
         Interceptor = 2,  // 2 hits từ trước / 1 hit điểm yếu sau đuôi, đạn Dart tốc độ cao
-        SquadLeader = 3   // 4 hits / 1 Charge Shot, chỉ huy đội hình, chết kích hoạt Panic Scatter
+        SquadLeader = 3,  // 4 hits / 1 Charge Shot, chỉ huy đội hình, chết kích hoạt Panic Scatter
+        ShieldBearer = 4  // 2 hits khi mất khiên, bật lá chắn năng lượng bảo vệ khi vào đội hình có Chỉ Huy
     }
 
     public enum FlankerTactic
@@ -51,6 +52,10 @@ namespace VirtualRail
         public bool hasRearWeakSpot = false;
         [Tooltip("Hệ số nhân sát thương khi bắn trúng điểm yếu (chuẩn 200%)")]
         public float weakSpotMultiplier = 2.0f;
+
+        [Header("Shield Mechanics")]
+        [Tooltip("Có khả năng bật lá chắn bảo vệ khi gia nhập đội hình có Chỉ Huy không")]
+        public bool hasFormationShield = false;
 
         [Header("Flanker Specific")]
         public FlankerTactic flankerTactic = FlankerTactic.StrafingRun;
@@ -120,6 +125,20 @@ namespace VirtualRail
                     data.burstCount = 3; // Bắn chùm 3 viên
                     data.burstInterval = 0.2f;
                     data.hasRearWeakSpot = false;
+                    break;
+
+                case EnemyArchetype.ShieldBearer:
+                    data.displayName = "Shield Escort (Defense Variant)";
+                    data.maxHealth = 40; // 2 hits nếu mất khiên
+                    data.scoreValue = 350;
+                    data.threatCost = 30;
+                    data.movementSpeed = 22f;
+                    data.turnSpeed = 0.8f;
+                    data.fireCooldown = 1.4f;
+                    data.projectileSpeed = 25f;
+                    data.burstCount = 1;
+                    data.hasRearWeakSpot = false;
+                    data.hasFormationShield = true;
                     break;
             }
 

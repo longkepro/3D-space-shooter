@@ -301,6 +301,8 @@ namespace VirtualRail
         [Header("18. Enemy & Obstacle Modularization (TDD v1.0.0 Phần I & II)")]
         [Tooltip("Bật phân loại kẻ địch chuyên sâu (Scout, Flanker, Interceptor, SquadLeader)")]
         public bool enableModularEnemies = true;
+        [Tooltip("Bật tàu lá chắn Shieldbearer trong đội hình bay (bật khiên hộ thể khi có chỉ huy)")]
+        public bool enableShieldBearerEnemies = true;
         [Tooltip("Bật phân loại thiên thạch có máu (Destructible) vs bất hoại (Indestructible)")]
         public bool enableDestructibleAsteroids = true;
         [Tooltip("Tỉ lệ xuất hiện thiên thạch bất hoại Monolith (0.0 - 1.0)")]
