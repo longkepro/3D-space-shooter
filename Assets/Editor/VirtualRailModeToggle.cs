@@ -708,40 +708,18 @@ public class VirtualRailModeToggle
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/41. Visuals: Enable StarSparrow Fleet Models (ON)")]
+    [MenuItem("Tools/Virtual Rail/41. Visuals: Migrate StarSparrow Models to Enemy 0-2 (ON)")]
     public static void EnableStarSparrowFleetModels()
     {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useStarSparrowFleet = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-
-            // Tự động kiểm tra và build 3 prefab nếu chưa tồn tại
-            if (!System.IO.File.Exists(StarSparrowEnemyBuilder.PREFAB_SS1_PATH) ||
-                !System.IO.File.Exists(StarSparrowEnemyBuilder.PREFAB_SS4_PATH) ||
-                !System.IO.File.Exists(StarSparrowEnemyBuilder.PREFAB_SS6_PATH))
-            {
-                StarSparrowEnemyBuilder.BuildAllStarSparrowPrefabs();
-            }
-
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT ĐỘI TÀU STARSPARROW (ON):</b></color> StarSparrow1 (Scout/Flanker), StarSparrow4 (SquadLeader giáp nặng), StarSparrow6 (Interceptor tiêm kích siêu thanh)!");
-        }
+        VirtualRailEnemyPrefabBuilder.MigrateStarSparrowToEnemies();
     }
 
-    [MenuItem("Tools/Virtual Rail/42. Visuals: Undo to Legacy Models (OFF - Legacy)")]
+    [MenuItem("Tools/Virtual Rail/42. Visuals: Restore Legacy Enemy Models (OFF - Legacy)")]
     public static void DisableStarSparrowFleetModels()
     {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useStarSparrowFleet = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ MODEL KẺ ĐỊCH NGUYÊN MẪU CŨ (OFF - LEGACY):</b></color> Hệ thống sử dụng các prefab Enemy (0), Enemy (1), Enemy (2) ban đầu.");
-        }
+        VirtualRailEnemyPrefabBuilder.RestoreLegacyEnemies();
     }
+
 
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {

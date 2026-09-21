@@ -109,51 +109,28 @@ namespace VirtualRail
             }
 
             var cfg = anchor != null ? anchor.config : null;
-            bool useStarSparrow = cfg != null ? cfg.useStarSparrowFleet : true;
 
-            // Tự động tìm nạp các prefab Enemy theo cấu hình (StarSparrow Fleet vs Legacy)
-            if (useStarSparrow)
-            {
+            // Tự động tìm nạp trọn bộ 5 Prefab Enemy chuẩn hóa (StarSparrow + Squad Leader + Shield Bearer)
 #if UNITY_EDITOR
-                var ss1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/VirtualRail_Enemy_StarSparrow1.prefab");
-                if (ss1 == null) ss1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/StarSparrow/Prefabs/Examples/StarSparrow1.prefab");
+            var e0 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (0).prefab");
+            var e1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (1).prefab");
+            var e2 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (2).prefab");
+            var e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (3) - Squad Leader.prefab");
+            if (e3 == null) e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (3).prefab");
+            var e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (4) - Shield Bearer.prefab");
+            if (e4 == null) e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (4).prefab");
 
-                var ss4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/VirtualRail_Enemy_StarSparrow4.prefab");
-                if (ss4 == null) ss4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/StarSparrow/Prefabs/Examples/StarSparrow4.prefab");
-
-                var ss6 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/VirtualRail_Enemy_StarSparrow6.prefab");
-                if (ss6 == null) ss6 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/StarSparrow/Prefabs/Examples/StarSparrow6.prefab");
-
-                var list = new List<GameObject>();
-                if (ss1 != null) list.Add(ss1);
-                if (ss4 != null) list.Add(ss4);
-                if (ss6 != null) list.Add(ss6);
-                if (list.Count > 0)
-                {
-                    enemyPrefabs = list.ToArray();
-                }
-#endif
-            }
-            else
+            var list = new List<GameObject>();
+            if (e0 != null) list.Add(e0);
+            if (e1 != null) list.Add(e1);
+            if (e2 != null) list.Add(e2);
+            if (e3 != null) list.Add(e3);
+            if (e4 != null) list.Add(e4);
+            if (list.Count > 0)
             {
-#if UNITY_EDITOR
-                var e0 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (0).prefab");
-                var e1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (1).prefab");
-                var e2 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (2).prefab");
-                var e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (3) - Squad Leader.prefab");
-                if (e3 == null) e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (3).prefab");
-                var e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (4) - Shield Bearer.prefab");
-                if (e4 == null) e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (4).prefab");
-
-                var list = new List<GameObject>();
-                if (e0 != null) list.Add(e0);
-                if (e1 != null) list.Add(e1);
-                if (e2 != null) list.Add(e2);
-                if (e3 != null) list.Add(e3);
-                if (e4 != null) list.Add(e4);
                 enemyPrefabs = list.ToArray();
-#endif
             }
+#endif
 
             if (enemyPrefabs != null)
             {
