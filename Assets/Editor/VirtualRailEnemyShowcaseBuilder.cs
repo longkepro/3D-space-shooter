@@ -9,31 +9,14 @@ using VirtualRail;
 /// Tuân thủ quy tắc 3 tầng bảo lưu:
 /// - Tầng 1: Git checkpoint branch backup/enemy-showcase-gallery.
 /// - Tầng 2: Sao lưu an toàn Scenes/Test.unity sang Assets/Scenes/Backup_Scenes/.
-/// - Tầng 3: Menu Item 1-click đối xứng [55] Setup & Open Gallery và [56] Undo Restore.
+/// - Tầng 3: Menu Item 1-click đối xứng [55] Setup Gallery, [56] Undo Restore và [57] Return to Game.
 /// </summary>
 public static class VirtualRailEnemyShowcaseBuilder
 {
     private const string SCENE_TEST_PATH = "Assets/Scenes/Test.unity";
+    private const string SCENE_GAME_PATH = "Assets/Scenes/Game.unity";
     private const string SCENE_BACKUP_PATH = "Assets/Scenes/Backup_Scenes/Test.unity.backup";
     private const string SKYBOX_MAT_PATH = "Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1_starsonly.mat";
-
-    private static readonly string[] PREFAB_PATHS = new string[]
-    {
-        "Assets/Prefabs/Enemy (0) - Scout.prefab",
-        "Assets/Prefabs/Enemy (1) - Flanker.prefab",
-        "Assets/Prefabs/Enemy (2) - Interceptor.prefab",
-        "Assets/Prefabs/Enemy (3) - Squad Leader.prefab",
-        "Assets/Prefabs/Enemy (4) - Shield Bearer.prefab"
-    };
-
-    private static readonly Vector3[] DISPLAY_POSITIONS = new Vector3[]
-    {
-        new Vector3(-14f, 0f, 0f),
-        new Vector3(-7f, 0f, 0f),
-        new Vector3(0f, 0f, 0f),
-        new Vector3(7f, 0f, 0f),
-        new Vector3(14f, 0f, 0f)
-    };
 
     [MenuItem("Tools/Virtual Rail/55. Open Enemy Showcase Gallery (ON)")]
     public static void OpenAndSetupShowcaseGallery()
@@ -50,7 +33,7 @@ public static class VirtualRailEnemyShowcaseBuilder
             AssetDatabase.Refresh();
         }
 
-        // 2. Mở Scene Test.unity
+        // 2. Mở Scene Test.unity và thiết lập
         if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
         {
             var scene = EditorSceneManager.OpenScene(SCENE_TEST_PATH, OpenSceneMode.Single);
@@ -78,23 +61,29 @@ public static class VirtualRailEnemyShowcaseBuilder
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/57. Return to Main Game Scene (Game.unity)")]
+    public static void ReturnToGameScene()
+    {
+        if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+        {
+            EditorSceneManager.OpenScene(SCENE_GAME_PATH, OpenSceneMode.Single);
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ QUAY LẠI SCENE GAME CHÍNH: ASSETS/SCENES/GAME.UNITY!</b></color>");
+        }
+    }
+
     public static void BuildShowcaseInActiveScene()
     {
-        // 1. Dọn dẹp các đối tượng showcase cũ nếu có
-        GameObject oldGallery = GameObject.Find("[Enemy_Showcase_Gallery]");
-        if (oldGallery != null)
+        // 1. Dọn dẹp triệt để các GameObject cũ để chống trùng lặp và chồng đè model
+        var allRoots = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects();
+        foreach (var root in allRoots)
         {
-            Object.DestroyImmediate(oldGallery);
+            if (root.name.StartsWith("[Showcase_") || root.name.StartsWith("[Enemy_Showcase_Gallery]") || root.name.StartsWith("[Target_Hologram"))
+            {
+                Object.DestroyImmediate(root);
+            }
         }
 
-        // Xóa các tàu hiển thị cũ trong scene
-        for (int i = 0; i < 5; i++)
-        {
-            GameObject oldShip = GameObject.Find($"[Showcase_Ship_{i}]");
-            if (oldShip != null) Object.DestroyImmediate(oldShip);
-        }
-
-        // 2. Tạo đối tượng quản lý Gallery
+        // 2. Tạo đối tượng quản lý Gallery duy nhất
         GameObject galleryObj = new GameObject("[Enemy_Showcase_Gallery]");
         galleryObj.AddComponent<EnemyShowcaseGallery>();
 
@@ -106,9 +95,10 @@ public static class VirtualRailEnemyShowcaseBuilder
             mainCam = camObj.AddComponent<Camera>();
             camObj.tag = "MainCamera";
         }
-        mainCam.transform.position = new Vector3(0f, 2f, -8f);
-        mainCam.transform.rotation = Quaternion.Euler(15f, 0f, 0f);
-        mainCam.clearFlags = CameraClearFlags.Skybox;
+        mainCam.transform.position = new Vector3(0f, 1.5f, -7.5f);
+        mainCam.transform.rotation = Quaternion.Euler(12f, 0f, 0f);
+        mainCam.clearFlags = CameraClearFlags.SolidColor;
+        mainCam.backgroundColor = new Color(0.015f, 0.018f, 0.035f, 1f);
 
         // Cấu hình Skybox vũ trụ
         Material skyboxMat = AssetDatabase.LoadAssetAtPath<Material>(SKYBOX_MAT_PATH);
@@ -125,9 +115,9 @@ public static class VirtualRailEnemyShowcaseBuilder
             mainLight = lightObj.AddComponent<Light>();
             mainLight.type = LightType.Directional;
         }
-        mainLight.transform.rotation = Quaternion.Euler(45f, -30f, 0f);
-        mainLight.color = new Color(0.95f, 0.95f, 1f);
-        mainLight.intensity = 1.3f;
+        mainLight.transform.rotation = Quaternion.Euler(40f, -35f, 0f);
+        mainLight.color = new Color(0.98f, 0.98f, 1f);
+        mainLight.intensity = 1.35f;
         mainLight.shadows = LightShadows.Soft;
 
         // Tạo Fill Light xanh tím chiếu từ dưới lên tạo không khí sci-fi
@@ -143,46 +133,6 @@ public static class VirtualRailEnemyShowcaseBuilder
         fillLight.color = new Color(0.35f, 0.2f, 0.6f);
         fillLight.intensity = 0.5f;
         fillLight.shadows = LightShadows.None;
-
-        // 5. Đặt sẵn 5 tàu ngay trong Edit Mode để xem được luôn trong Scene View mà không cần Play
-        for (int i = 0; i < 5; i++)
-        {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PREFAB_PATHS[i]);
-            if (prefab == null) continue;
-
-            GameObject ship = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            ship.name = $"[Showcase_Ship_{i}]";
-            ship.transform.position = DISPLAY_POSITIONS[i];
-            ship.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // Hướng mũi về phía camera
-
-            // Vô hiệu hóa logic di chuyển để tàu đứng yên trưng bày
-            var movement = ship.GetComponent<EnemyMovement>();
-            if (movement != null) movement.enabled = false;
-
-            var attack = ship.GetComponent<EnemyAttack>();
-            if (attack != null) attack.enabled = false;
-
-            var rb = ship.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = true;
-                rb.useGravity = false;
-            }
-
-            // Kích hoạt vệt đuôi động cơ tím
-            var trails = ship.GetComponentsInChildren<TrailRenderer>(true);
-            foreach (var t in trails)
-            {
-                t.emitting = true;
-            }
-
-            // Kích hoạt lồng khiên cho Shield Bearer
-            if (i == 4)
-            {
-                Transform shield = ship.transform.Find("Shield") ?? ship.transform.Find("[Shield]");
-                if (shield != null) shield.gameObject.SetActive(true);
-            }
-        }
 
         EditorUtility.SetDirty(galleryObj);
     }
