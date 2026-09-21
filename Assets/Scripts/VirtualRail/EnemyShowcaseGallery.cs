@@ -500,22 +500,42 @@ namespace VirtualRail
             GameObject currentShip = _ships[_selectedIndex];
             if (currentShip == null) return;
 
-            Laser[] lasers = currentShip.GetComponentsInChildren<Laser>(true);
-            if (lasers != null && lasers.Length > 0)
+            Vector3 targetPos = (_targetDummyTrans != null) ? _targetDummyTrans.position : (currentShip.transform.position + currentShip.transform.forward * 30f);
+
+            // 1. Tìm nòng súng sạch VirtualRailMuzzle
+            VirtualRailMuzzle[] muzzles = currentShip.GetComponentsInChildren<VirtualRailMuzzle>(true);
+            if (muzzles != null && muzzles.Length > 0)
             {
-                Vector3 targetPos = (_targetDummyTrans != null) ? _targetDummyTrans.position : (currentShip.transform.position + currentShip.transform.forward * 30f);
-
-                for (int i = 0; i < lasers.Length; i++)
+                for (int i = 0; i < muzzles.Length; i++)
                 {
-                    if (lasers[i] != null)
-                    {
-                        lasers[i].FireLaser(targetPos, (_targetDummyTrans != null ? _targetDummyTrans : null));
+                    if (muzzles[i] == null) continue;
+                    Vector3 muzzlePos = muzzles[i].Position;
+                    Vector3 dir = (targetPos - muzzlePos).normalized;
 
-                        // Đồng thời sinh viên đạn vật lý màu đỏ bay về phía bia
+                    if (EnemyProjectilePool.Instance != null)
+                    {
+                        EnemyProjectilePool.Instance.SpawnProjectile(muzzlePos, dir, 55f, false);
+                    }
+                    muzzles[i].PlayFireEffects();
+                }
+            }
+            else
+            {
+                // 2. Fallback tìm nòng súng Laser (chỉ mượn vị trí, triệt tiêu LineRenderer, KHÔNG bắn hitscan)
+                Laser[] lasers = currentShip.GetComponentsInChildren<Laser>(true);
+                if (lasers != null && lasers.Length > 0)
+                {
+                    for (int i = 0; i < lasers.Length; i++)
+                    {
+                        if (lasers[i] == null) continue;
+                        var lr = lasers[i].GetComponent<LineRenderer>();
+                        if (lr != null) lr.enabled = false;
+
+                        Vector3 muzzlePos = lasers[i].transform.position;
+                        Vector3 dir = (targetPos - muzzlePos).normalized;
+
                         if (EnemyProjectilePool.Instance != null)
                         {
-                            Vector3 muzzlePos = lasers[i].transform.position;
-                            Vector3 dir = (targetPos - muzzlePos).normalized;
                             EnemyProjectilePool.Instance.SpawnProjectile(muzzlePos, dir, 55f, false);
                         }
                     }

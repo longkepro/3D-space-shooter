@@ -389,31 +389,19 @@ public static class VirtualRailEnemyFixer
             existing = parent.Find(legacyName);
         }
 
-        GameObject laserPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LASER_PREFAB_PATH);
-
         if (existing != null)
         {
-            Laser laser = existing.GetComponent<Laser>();
-            if (laser == null && laserPrefab != null)
-            {
-                // Thêm các component từ Laser Prefab
-                LineRenderer lr = existing.GetComponent<LineRenderer>();
-                if (lr == null)
-                {
-                    LineRenderer prefabLr = laserPrefab.GetComponent<LineRenderer>();
-                    if (prefabLr != null)
-                    {
-                        lr = existing.gameObject.AddComponent<LineRenderer>();
-                        EditorUtility.CopySerialized(prefabLr, lr);
-                    }
-                }
-                laser = existing.gameObject.AddComponent<Laser>();
-            }
-            else if (laser == null)
-            {
-                laser = existing.gameObject.AddComponent<Laser>();
-            }
+            // Đảm bảo có component VirtualRailMuzzle sạch
+            var muzz = existing.GetComponent<VirtualRail.VirtualRailMuzzle>();
+            if (muzz == null) muzz = existing.gameObject.AddComponent<VirtualRail.VirtualRailMuzzle>();
 
+            // Vô hiệu hóa LineRenderer và Light cũ nếu có
+            LineRenderer lr = existing.GetComponent<LineRenderer>();
+            if (lr != null) lr.enabled = false;
+            Light lt = existing.GetComponent<Light>();
+            if (lt != null) lt.enabled = false;
+
+            Laser laser = existing.GetComponent<Laser>();
             existing.localPosition = localPos;
             existing.localRotation = Quaternion.identity;
             existing.name = name;
@@ -422,24 +410,14 @@ public static class VirtualRailEnemyFixer
         }
         else
         {
-            if (laserPrefab != null)
-            {
-                GameObject muzzle = (GameObject)PrefabUtility.InstantiatePrefab(laserPrefab, parent);
-                muzzle.name = name;
-                muzzle.tag = "Laser";
-                muzzle.transform.localPosition = localPos;
-                muzzle.transform.localRotation = Quaternion.identity;
-                return muzzle.GetComponent<Laser>();
-            }
-            else
-            {
-                GameObject muzzle = new GameObject(name);
-                muzzle.tag = "Laser";
-                muzzle.transform.SetParent(parent, false);
-                muzzle.transform.localPosition = localPos;
-                Laser laser = muzzle.AddComponent<Laser>();
-                return laser;
-            }
+            GameObject muzzle = new GameObject(name);
+            muzzle.tag = "Laser";
+            muzzle.transform.SetParent(parent, false);
+            muzzle.transform.localPosition = localPos;
+            muzzle.transform.localRotation = Quaternion.identity;
+            muzzle.AddComponent<VirtualRail.VirtualRailMuzzle>();
+            Laser laser = muzzle.AddComponent<Laser>();
+            return laser;
         }
     }
 
@@ -465,14 +443,26 @@ public static class VirtualRailEnemyFixer
     private static void WireLasers(EnemyAttack attack, Laser left, Laser right)
     {
         SerializedObject so = new SerializedObject(attack);
+
+        SerializedProperty muzzlesProp = so.FindProperty("_muzzles");
+        if (muzzlesProp != null)
+        {
+            muzzlesProp.arraySize = 2;
+            var ml = left != null ? left.GetComponent<VirtualRail.VirtualRailMuzzle>() : null;
+            var mr = right != null ? right.GetComponent<VirtualRail.VirtualRailMuzzle>() : null;
+            if (ml != null) muzzlesProp.GetArrayElementAtIndex(0).objectReferenceValue = ml;
+            if (mr != null) muzzlesProp.GetArrayElementAtIndex(1).objectReferenceValue = mr;
+        }
+
         SerializedProperty lasersProp = so.FindProperty("_lasers");
         if (lasersProp != null)
         {
             lasersProp.arraySize = 2;
             lasersProp.GetArrayElementAtIndex(0).objectReferenceValue = left;
             lasersProp.GetArrayElementAtIndex(1).objectReferenceValue = right;
-            so.ApplyModifiedPropertiesWithoutUndo();
         }
+
+        so.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static void TagAllCollidersAsEnemy(GameObject root)

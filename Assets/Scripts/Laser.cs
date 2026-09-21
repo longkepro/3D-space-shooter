@@ -28,7 +28,7 @@ public class Laser : MonoBehaviour
 
     private void Update()
     {
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * _laserDistance, Color.yellow);
+        // Đã triệt tiêu Debug.DrawRay màu vàng để tránh ô nhiễm thị giác và tối ưu hiệu năng
     }
 
     private Vector3 CastRay()
@@ -107,12 +107,10 @@ public class Laser : MonoBehaviour
             {
                 SpawnExplostion(targetPosition, target);
             }
-            _laserBeam.SetPosition(0, transform.position);
-            _laserBeam.SetPosition(1, targetPosition);
-            _laserBeam.enabled = true;
-            _laserLight.enabled = true;
+            // Đã vô hiệu hóa LineRenderer và Light: Hệ thống chuyển sang thuần đạn vật lý (Star Fox 64 spec)
+            if (_laserBeam != null) _laserBeam.enabled = false;
+            if (_laserLight != null) _laserLight.enabled = false;
             _canFire = false;
-            Invoke("TurnOffLaser", _laserDuration);
             Invoke("CanFire", _fireDelay);
         }
     }

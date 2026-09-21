@@ -390,25 +390,13 @@ public static class VirtualRailEnemyPrefabBuilder
 
     private static GameObject CreateLaserMuzzle(Transform parent, string name, Vector3 localPos)
     {
-        GameObject laserPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LASER_PREFAB_PATH);
-        if (laserPrefab != null)
-        {
-            GameObject muzzle = (GameObject)PrefabUtility.InstantiatePrefab(laserPrefab, parent);
-            muzzle.name = name;
-            muzzle.tag = "Laser";
-            muzzle.transform.localPosition = localPos;
-            muzzle.transform.localRotation = Quaternion.identity;
-            return muzzle;
-        }
-        else
-        {
-            GameObject muzzle = new GameObject(name);
-            muzzle.tag = "Laser";
-            muzzle.transform.SetParent(parent, false);
-            muzzle.transform.localPosition = localPos;
-            muzzle.AddComponent<Laser>();
-            return muzzle;
-        }
+        GameObject muzzle = new GameObject(name);
+        muzzle.tag = "Laser";
+        muzzle.transform.SetParent(parent, false);
+        muzzle.transform.localPosition = localPos;
+        muzzle.transform.localRotation = Quaternion.identity;
+        muzzle.AddComponent<VirtualRail.VirtualRailMuzzle>();
+        return muzzle;
     }
 
     private static void AttachPurpleThrusters(Transform parent, params Vector3[] localPositions)
@@ -428,16 +416,28 @@ public static class VirtualRailEnemyPrefabBuilder
     private static void WireUpLaserAttack(EnemyAttack attack, GameObject muzzleL, GameObject muzzleR)
     {
         SerializedObject attackSo = new SerializedObject(attack);
+
+        SerializedProperty muzzlesProp = attackSo.FindProperty("_muzzles");
+        if (muzzlesProp != null)
+        {
+            muzzlesProp.arraySize = 2;
+            var muzzL = muzzleL != null ? muzzleL.GetComponent<VirtualRail.VirtualRailMuzzle>() : null;
+            var muzzR = muzzleR != null ? muzzleR.GetComponent<VirtualRail.VirtualRailMuzzle>() : null;
+            if (muzzL != null) muzzlesProp.GetArrayElementAtIndex(0).objectReferenceValue = muzzL;
+            if (muzzR != null) muzzlesProp.GetArrayElementAtIndex(1).objectReferenceValue = muzzR;
+        }
+
         SerializedProperty lasersProp = attackSo.FindProperty("_lasers");
         if (lasersProp != null)
         {
             lasersProp.arraySize = 2;
-            Laser laserL = muzzleL.GetComponent<Laser>();
-            Laser laserR = muzzleR.GetComponent<Laser>();
+            Laser laserL = muzzleL != null ? muzzleL.GetComponent<Laser>() : null;
+            Laser laserR = muzzleR != null ? muzzleR.GetComponent<Laser>() : null;
             if (laserL != null) lasersProp.GetArrayElementAtIndex(0).objectReferenceValue = laserL;
             if (laserR != null) lasersProp.GetArrayElementAtIndex(1).objectReferenceValue = laserR;
-            attackSo.ApplyModifiedPropertiesWithoutUndo();
         }
+
+        attackSo.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static void ConfigureExplosion(Explosion explosion)

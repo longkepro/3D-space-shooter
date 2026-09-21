@@ -3,6 +3,7 @@ using UnityEngine;
 public class EnemyAttack : MonoBehaviour
 {
     [SerializeField] private Laser[] _lasers;
+    [SerializeField] private VirtualRail.VirtualRailMuzzle[] _muzzles;
 
     private Transform _target;
     private Vector3 _hitPosition;
@@ -17,6 +18,23 @@ public class EnemyAttack : MonoBehaviour
     private float _nextFireTime = 0f;
     private int _burstRemaining = 0;
     private float _nextBurstTime = 0f;
+
+    private void Awake()
+    {
+        EnsureMuzzles();
+    }
+
+    private void EnsureMuzzles()
+    {
+        if (_muzzles == null || _muzzles.Length == 0)
+        {
+            _muzzles = GetComponentsInChildren<VirtualRail.VirtualRailMuzzle>(true);
+        }
+        if ((_muzzles == null || _muzzles.Length == 0) && (_lasers == null || _lasers.Length == 0))
+        {
+            _lasers = GetComponentsInChildren<Laser>(true);
+        }
+    }
 
     public void ApplyData(VirtualRail.EnemyData data)
     {
@@ -42,7 +60,7 @@ public class EnemyAttack : MonoBehaviour
 
         if (_burstRemaining <= 0 && TargetInfront() && HaveRaycastLineOfSight())
         {
-            FireLaser();
+            FireWeapons();
         }
     }
 
@@ -56,23 +74,46 @@ public class EnemyAttack : MonoBehaviour
     private bool HaveRaycastLineOfSight()
     {
         Vector3 attackDirection = _target.position - transform.position;
-        foreach (var laser in _lasers)
+        float maxRange = 300f;
+
+        if (_muzzles != null && _muzzles.Length > 0)
         {
-            if (laser == null) continue;
-            if (Physics.Raycast(laser.transform.position, attackDirection, out RaycastHit hit, laser.Distance))
+            for (int i = 0; i < _muzzles.Length; i++)
             {
-                if (hit.transform.CompareTag("Player"))
+                if (_muzzles[i] == null) continue;
+                Vector3 origin = _muzzles[i].Position;
+                if (Physics.Raycast(origin, attackDirection, out RaycastHit hit, maxRange))
                 {
-                    Debug.DrawRay(laser.transform.position, attackDirection, Color.green);
-                    _hitPosition = hit.transform.position;
-                    return true;
+                    if (hit.transform.CompareTag("Player"))
+                    {
+                        _hitPosition = hit.transform.position;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        if (_lasers != null)
+        {
+            for (int i = 0; i < _lasers.Length; i++)
+            {
+                if (_lasers[i] == null) continue;
+                Vector3 origin = _lasers[i].transform.position;
+                if (Physics.Raycast(origin, attackDirection, out RaycastHit hit, maxRange))
+                {
+                    if (hit.transform.CompareTag("Player"))
+                    {
+                        _hitPosition = hit.transform.position;
+                        return true;
+                    }
                 }
             }
         }
         return false;
     }
 
-    private void FireLaser()
+    private void FireWeapons()
     {
         if (Time.time < _nextFireTime) return;
         _nextFireTime = Time.time + _fireCooldown;
@@ -89,35 +130,38 @@ public class EnemyAttack : MonoBehaviour
     private void ExecuteDischarge()
     {
         if (_target == null) return;
+        if (VirtualRail.EnemyProjectilePool.Instance == null) return;
 
-        bool usePhysical = _usePhysicalProjectiles;
-        if (VirtualRail.VirtualRailAnchor.Instance != null && VirtualRail.VirtualRailAnchor.Instance.config != null)
+        Vector3 toPlayer = _target.position - transform.position;
+        bool isHeadOn = toPlayer.z < 0f;
+
+        float bulletSpeed = (_bulletSpeedOverride > 5f)
+            ? _bulletSpeedOverride
+            : (isHeadOn ? 20f : 75f);
+
+        // 1. Ưu tiên bắn từ VirtualRailMuzzle nếu có
+        if (_muzzles != null && _muzzles.Length > 0)
         {
-            usePhysical = _usePhysicalProjectiles && VirtualRail.VirtualRailAnchor.Instance.config.usePhysicalEnemyProjectiles;
-        }
-
-        if (usePhysical && VirtualRail.EnemyProjectilePool.Instance != null)
-        {
-            Vector3 toPlayer = _target.position - transform.position;
-            bool isHeadOn = toPlayer.z < 0f;
-
-            float bulletSpeed = (_bulletSpeedOverride > 5f)
-                ? _bulletSpeedOverride
-                : (isHeadOn ? 20f : 75f);
-
-            foreach (var laser in _lasers)
+            for (int i = 0; i < _muzzles.Length; i++)
             {
-                if (laser == null) continue;
-                Vector3 muzzlePos = laser.transform.position;
+                if (_muzzles[i] == null) continue;
+                Vector3 muzzlePos = _muzzles[i].Position;
                 Vector3 fireDir = (_target.position - muzzlePos).normalized;
                 VirtualRail.EnemyProjectilePool.Instance.SpawnProjectile(muzzlePos, fireDir, bulletSpeed, isHeadOn);
+                _muzzles[i].PlayFireEffects();
             }
+            return;
         }
-        else
+
+        // 2. Fallback lấy vị trí từ _lasers (chỉ mượn transform.position, tuyệt đối KHÔNG gọi FireLaser)
+        if (_lasers != null)
         {
-            foreach (var laser in _lasers)
+            for (int i = 0; i < _lasers.Length; i++)
             {
-                if (laser != null) laser.FireLaser(_hitPosition, _target);
+                if (_lasers[i] == null) continue;
+                Vector3 muzzlePos = _lasers[i].transform.position;
+                Vector3 fireDir = (_target.position - muzzlePos).normalized;
+                VirtualRail.EnemyProjectilePool.Instance.SpawnProjectile(muzzlePos, fireDir, bulletSpeed, isHeadOn);
             }
         }
     }

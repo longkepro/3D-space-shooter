@@ -23,6 +23,7 @@ namespace VirtualRail
         public VirtualRailShip ship;
         public VirtualRailInputReader inputReader;
         public Laser[] muzzles;
+        public VirtualRailMuzzle[] cleanMuzzles;
 
         [Header("Weapon Upgrade System")]
         [SerializeField] private LaserUpgradeLevel _laserLevel = LaserUpgradeLevel.Single;
@@ -52,9 +53,18 @@ namespace VirtualRail
         private void Awake()
         {
             if (Instance == null) Instance = this;
-            if (muzzles == null || muzzles.Length == 0)
+            EnsureMuzzles();
+        }
+
+        private void EnsureMuzzles()
+        {
+            if (cleanMuzzles == null || cleanMuzzles.Length == 0)
             {
-                muzzles = GetComponentsInChildren<Laser>();
+                cleanMuzzles = GetComponentsInChildren<VirtualRailMuzzle>(true);
+            }
+            if ((cleanMuzzles == null || cleanMuzzles.Length == 0) && (muzzles == null || muzzles.Length == 0))
+            {
+                muzzles = GetComponentsInChildren<Laser>(true);
             }
         }
 
@@ -246,6 +256,19 @@ namespace VirtualRail
                 }
             }
 
+            // 1. Ưu tiên bắn từ nòng súng sạch VirtualRailMuzzle
+            if (cleanMuzzles != null && cleanMuzzles.Length > 0)
+            {
+                for (int i = 0; i < cleanMuzzles.Length; i++)
+                {
+                    if (cleanMuzzles[i] == null) continue;
+                    FireSingleMuzzle(cleanMuzzles[i].Position, null, aimWorld, cfg, foundTarget, closestDist);
+                    cleanMuzzles[i].PlayFireEffects();
+                }
+                return;
+            }
+
+            // 2. Fallback duyệt nòng súng Laser (chỉ lấy vị trí, không bắn hitscan)
             if (muzzles == null || muzzles.Length == 0)
             {
                 muzzles = GetComponentsInChildren<Laser>();
@@ -253,7 +276,7 @@ namespace VirtualRail
 
             if (muzzles == null || muzzles.Length == 0)
             {
-                // Fallback nếu prefab chưa có Laser component: Bắn từ 2 cánh tàu
+                // Fallback nếu prefab chưa có nòng súng: Bắn từ 2 cánh tàu
                 Vector3 leftWing = transform.position - transform.right * 1.5f;
                 Vector3 rightWing = transform.position + transform.right * 1.5f;
                 FireSingleMuzzle(leftWing, null, aimWorld, cfg, foundTarget, closestDist);
@@ -332,7 +355,7 @@ namespace VirtualRail
                 boltWidth = cfg.laserBoltWidth * 1.5f;
             }
 
-            if (cfg.useSegmentedLaser)
+            if (VirtualRailLaserPool.Instance != null)
             {
                 float collisionRadius = cfg.laserBoltCollisionRadius > 0.05f ? cfg.laserBoltCollisionRadius : 1.0f;
                 Vector3 inheritedVel = Vector3.zero;
@@ -345,7 +368,7 @@ namespace VirtualRail
                     inheritedVel += ship.CurrentLateralVelocityWorld * cfg.lateralVelocityWeight;
                 }
 
-                // Hướng 1: Bắn đoạn đạn laser độc lập (Segmented Laser Bolt với Hành lang hỏa lực 3D thẳng tắp)
+                // Bắn đoạn đạn laser độc lập (Segmented Laser Bolt - Chuẩn Star Fox 64, 0 GC Alloc)
                 VirtualRailLaserPool.Instance.FireBolt(
                     muzzlePos,
                     fireDirection,
@@ -361,67 +384,6 @@ namespace VirtualRail
                     inheritedVel,
                     boltDamage
                 );
-            }
-            else
-            {
-                // Fallback (Layer 2 Undo): Cơ chế tia tức thời cũ (Instant Hitscan Beam)
-                if (hitTarget != null)
-                {
-                    var enemyHealth = hitTarget.GetComponentInParent<EnemyHealth>();
-                    if (enemyHealth != null)
-                    {
-                        enemyHealth.TakeDamage(boltDamage, hitTarget.position, fireDirection);
-                    }
-                    else
-                    {
-                        var enemy = hitTarget.GetComponentInParent<EnemyMovement>();
-                        if (enemy != null) enemy.BlowUp();
-                    }
-
-                    var asteroid = hitTarget.GetComponentInParent<Asteroid>();
-                    if (asteroid != null) asteroid.TakeDamage(boltDamage, hitTarget.position);
-                }
-                else if (Physics.Raycast(muzzlePos, fireDirection, out hit, cfg.convergenceDistance * 2f))
-                {
-                    targetPoint = hit.point;
-                    hitTarget = hit.transform;
-
-                    var ring = hit.transform.GetComponentInParent<CollectibleRing>();
-                    if (ring != null)
-                    {
-                        ring.Collect();
-                    }
-                    else if (hit.transform.CompareTag("Pickup"))
-                    {
-                        var pickup = hit.transform.GetComponentInParent<Pickup>();
-                        if (pickup != null) pickup.Collect();
-                    }
-                    else
-                    {
-                        var enemyHealth = hit.transform.GetComponentInParent<EnemyHealth>();
-                        if (enemyHealth != null)
-                        {
-                            enemyHealth.TakeDamage(boltDamage, hit.point, fireDirection);
-                        }
-                        else
-                        {
-                            var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
-                            if (enemy != null) enemy.BlowUp();
-                        }
-
-                        var asteroid = hit.transform.GetComponentInParent<Asteroid>();
-                        if (asteroid != null) asteroid.TakeDamage(boltDamage, hit.point);
-                    }
-                }
-                else
-                {
-                    targetPoint = muzzlePos + fireDirection * (cfg.convergenceDistance * 1.5f);
-                }
-
-                if (muzzle != null)
-                {
-                    muzzle.FireLaser(targetPoint, hitTarget);
-                }
             }
         }
     }
