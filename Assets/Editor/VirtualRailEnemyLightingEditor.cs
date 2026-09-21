@@ -16,6 +16,8 @@ public static class VirtualRailEnemyLightingEditor
 
     private static readonly string[] EnemyPrefabsWithThrusters = new string[]
     {
+        "Assets/Prefabs/Enemy (0) - Scout.prefab",
+        "Assets/Prefabs/Enemy (1) - Flanker.prefab",
         "Assets/Prefabs/Enemy (0).prefab",
         "Assets/Prefabs/Enemy (1).prefab"
     };

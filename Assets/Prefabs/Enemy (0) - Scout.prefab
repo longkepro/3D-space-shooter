@@ -96,7 +96,7 @@ GameObject:
   - component: {fileID: 4062420230586055687}
   - component: {fileID: 5746694186873656301}
   m_Layer: 0
-  m_Name: Enemy (0)
+  m_Name: Enemy (0) - Scout
   m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

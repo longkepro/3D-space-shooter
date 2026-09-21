@@ -19,9 +19,9 @@ using VirtualRail;
 [InitializeOnLoad]
 public static class VirtualRailEnemyPrefabBuilder
 {
-    public const string PREFAB_ENEMY_0_PATH = "Assets/Prefabs/Enemy (0).prefab";
-    public const string PREFAB_ENEMY_1_PATH = "Assets/Prefabs/Enemy (1).prefab";
-    public const string PREFAB_ENEMY_2_PATH = "Assets/Prefabs/Enemy (2).prefab";
+    public const string PREFAB_ENEMY_0_PATH = "Assets/Prefabs/Enemy (0) - Scout.prefab";
+    public const string PREFAB_ENEMY_1_PATH = "Assets/Prefabs/Enemy (1) - Flanker.prefab";
+    public const string PREFAB_ENEMY_2_PATH = "Assets/Prefabs/Enemy (2) - Interceptor.prefab";
     public const string PREFAB_SQUAD_LEADER_PATH = "Assets/Prefabs/Enemy (3) - Squad Leader.prefab";
     public const string PREFAB_SHIELD_BEARER_PATH = "Assets/Prefabs/Enemy (4) - Shield Bearer.prefab";
 
@@ -164,7 +164,7 @@ public static class VirtualRailEnemyPrefabBuilder
         return BuildStarSparrowEnemy(
             SOURCE_SS1_PATH,
             PREFAB_ENEMY_0_PATH,
-            "Enemy (0)",
+            "Enemy (0) - Scout",
             EnemyArchetype.Scout,
             new Vector3(-1.6f, 0f, 0.5f),
             new Vector3(1.6f, 0f, 0.5f),
@@ -178,7 +178,7 @@ public static class VirtualRailEnemyPrefabBuilder
         return BuildStarSparrowEnemy(
             SOURCE_SS4_PATH,
             PREFAB_ENEMY_1_PATH,
-            "Enemy (1)",
+            "Enemy (1) - Flanker",
             EnemyArchetype.Flanker,
             new Vector3(-2.0f, 0f, 1.0f),
             new Vector3(2.0f, 0f, 1.0f),
@@ -193,7 +193,7 @@ public static class VirtualRailEnemyPrefabBuilder
         return BuildStarSparrowEnemy(
             SOURCE_SS6_PATH,
             PREFAB_ENEMY_2_PATH,
-            "Enemy (2)",
+            "Enemy (2) - Interceptor",
             EnemyArchetype.Interceptor,
             new Vector3(-1.2f, 0f, 0.8f),
             new Vector3(1.2f, 0f, 0.8f),
