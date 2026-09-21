@@ -62,7 +62,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 7.5, y: 2.5, z: 7}
+  m_Size: {x: 4.8, y: 1.8, z: 5}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &100004
 MonoBehaviour:
@@ -197,7 +197,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1.35, y: 1.35, z: 1.35}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8194054850266443447}
@@ -462,7 +462,7 @@ PrefabInstance:
     - target: {fileID: 495093381807159511, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -3.2
+      value: -2.25
       objectReference: {fileID: 0}
     - target: {fileID: 495093381807159511, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
         type: 3}
@@ -1745,7 +1745,7 @@ PrefabInstance:
     - target: {fileID: 495093381807159511, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -3.2
+      value: -2.25
       objectReference: {fileID: 0}
     - target: {fileID: 495093381807159511, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
         type: 3}
