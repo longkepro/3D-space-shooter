@@ -27,6 +27,8 @@ namespace VirtualRail
             public string thrusterInfo;
             public string hitboxInfo;
             public string specialAbility;
+            public float idealCameraDistance;
+            public float focusYOffset;
         }
 
         private static readonly ShipSpec[] SHIP_SPECS = new ShipSpec[]
@@ -41,7 +43,9 @@ namespace VirtualRail
                 weaponInfo = "2 Khẩu Blaster mạn cánh (Laser chuẩn hóa)",
                 thrusterInfo = "1 Luồng ion tím tại Z = -2.10 (khớp tâm ống xả)",
                 hitboxInfo = "BoxCollider (4.4 x 1.6 x 4.8) - Vừa khít thân",
-                specialAbility = "Lao bổ nhào cự ly gần, cơ động cao nhất đội hình trinh sát"
+                specialAbility = "Lao bổ nhào cự ly gần, cơ động cao nhất đội hình trinh sát",
+                idealCameraDistance = 7.5f,
+                focusYOffset = 0.35f
             },
             new ShipSpec
             {
@@ -53,7 +57,9 @@ namespace VirtualRail
                 weaponInfo = "2 Pháo Blaster mạn sườn (Laser chuẩn hóa)",
                 thrusterInfo = "1 Ống xả trung tâm tại Z = -2.40 (khớp tâm ống xả)",
                 hitboxInfo = "BoxCollider (4.0 x 1.6 x 5.0) - Vừa khít thân",
-                specialAbility = "Bay vòng tạt sườn trái/phải bắn chặn đón đầu đường bay"
+                specialAbility = "Bay vòng tạt sườn trái/phải bắn chặn đón đầu đường bay",
+                idealCameraDistance = 8.0f,
+                focusYOffset = 0.35f
             },
             new ShipSpec
             {
@@ -65,7 +71,9 @@ namespace VirtualRail
                 weaponInfo = "2 Khẩu Laser cánh siêu thanh (Laser chuẩn hóa)",
                 thrusterInfo = "1 Động cơ phản lực tăng áp tại Z = -2.50",
                 hitboxInfo = "BoxCollider (4.2 x 1.6 x 4.8) - Vừa khít thân",
-                specialAbility = "Điểm yếu đuôi tàu x200% DMG, bay tốc độ cao né đạn"
+                specialAbility = "Điểm yếu đuôi tàu x200% DMG, bay tốc độ cao né đạn",
+                idealCameraDistance = 8.5f,
+                focusYOffset = 0.35f
             },
             new ShipSpec
             {
@@ -77,7 +85,9 @@ namespace VirtualRail
                 weaponInfo = "Pháo hạng nặng Big_Launcher (Bắn loạt Burst 3 viên)",
                 thrusterInfo = "2 Động cơ tím song song tại X = ±0.95, Z = -2.25",
                 hitboxInfo = "BoxCollider (4.8 x 1.8 x 5.0) - Đã xóa Hitbox ma cũ (7.5x7.0)",
-                specialAbility = "Dáng vóc 1.35x uy nghiêm, dẫn đầu đội hình Wedge V. Bị diệt gây Panic Scatter"
+                specialAbility = "Dáng vóc 1.35x uy nghiêm, dẫn đầu đội hình Wedge V. Bị diệt gây Panic Scatter",
+                idealCameraDistance = 13.5f, // Lùi xa 13.5m giúp chiến hạm khổng lồ vừa vặn cân đối trong khung nhìn
+                focusYOffset = 0.60f
             },
             new ShipSpec
             {
@@ -89,7 +99,9 @@ namespace VirtualRail
                 weaponInfo = "2 Súng xung điện tần số cao (Laser chuẩn hóa)",
                 thrusterInfo = "1 Động cơ phản lực tím tại Z = -2.40",
                 hitboxInfo = "BoxCollider (4.8 x 1.8 x 5.2) - Bao bọc trọn vẹn sải cánh kitbash",
-                specialAbility = "Lồng khiên năng lượng AuraBubble xoay tròn miễn nhiễm đạn thường"
+                specialAbility = "Lồng khiên năng lượng AuraBubble xoay tròn miễn nhiễm đạn thường",
+                idealCameraDistance = 9.5f, // Đủ rộng để thấy trọn lồng khiên AuraBubble
+                focusYOffset = 0.40f
             }
         };
 
@@ -118,7 +130,9 @@ namespace VirtualRail
         private bool _isOverview = false;
         private bool _autoRotate = false; // Tắt mặc định để người dùng tự xoay khi muốn
         private float _rotationSpeed = 25f;
-        private float _cameraDistance = 7.5f;
+        private float _cameraDistance = 8.5f;
+        private float _targetCameraDistance = 8.5f;
+        private float _cameraDistanceVelocity = 0f;
         private float _orbitYaw = 180f; // Nhìn trực diện mũi tàu
         private float _orbitPitch = 12f;
         private Vector3 _currentCameraVelocity;
@@ -394,11 +408,11 @@ namespace VirtualRail
                 _orbitPitch = Mathf.Clamp(_orbitPitch - Input.GetAxis("Mouse Y") * 3f, -40f, 75f);
             }
 
-            // Cuộn chuột zoom
+            // Cuộn chuột zoom (mở rộng biên độ từ 3.5m đến 25m linh hoạt)
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.01f)
             {
-                _cameraDistance = Mathf.Clamp(_cameraDistance - scroll * 5f, 3.5f, 15f);
+                _targetCameraDistance = Mathf.Clamp(_targetCameraDistance - scroll * 6f, 3.5f, 25f);
             }
         }
 
@@ -429,6 +443,12 @@ namespace VirtualRail
             {
                 _targetDummy.SetActive(true);
                 _targetDummy.transform.position = new Vector3(0f, 0.2f, 28f);
+            }
+
+            // Tự động nhận diện cự ly tối ưu theo hình dáng và kích cỡ của từng tàu
+            if (_selectedIndex >= 0 && _selectedIndex < SHIP_SPECS.Length)
+            {
+                _targetCameraDistance = SHIP_SPECS[_selectedIndex].idealCameraDistance;
             }
 
             _orbitYaw = 180f;
@@ -551,13 +571,20 @@ namespace VirtualRail
 
             if (_isOverview)
             {
-                _targetCameraPos = new Vector3(0f, 10f, -50f);
+                _targetCameraPos = new Vector3(0f, 12f, -55f);
                 _galleryCam.transform.position = Vector3.SmoothDamp(_galleryCam.transform.position, _targetCameraPos, ref _currentCameraVelocity, 0.25f);
                 _galleryCam.transform.LookAt(new Vector3(0f, 1f, 0f));
             }
             else
             {
-                Vector3 focusPoint = Vector3.up * 0.4f;
+                // Nội suy khoảng cách zoom mượt mà đến cự ly chuẩn của từng tàu (0 GC Alloc)
+                _cameraDistance = Mathf.SmoothDamp(_cameraDistance, _targetCameraDistance, ref _cameraDistanceVelocity, 0.15f);
+
+                float yOffset = (_selectedIndex >= 0 && _selectedIndex < SHIP_SPECS.Length)
+                    ? SHIP_SPECS[_selectedIndex].focusYOffset
+                    : 0.4f;
+                Vector3 focusPoint = Vector3.up * yOffset;
+
                 Quaternion orbitRot = Quaternion.Euler(_orbitPitch, _orbitYaw, 0f);
                 Vector3 offset = orbitRot * new Vector3(0f, 0f, -_cameraDistance);
                 _targetCameraPos = focusPoint + offset;

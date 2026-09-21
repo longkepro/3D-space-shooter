@@ -114,6 +114,7 @@ MonoBehaviour:
   _lasers:
   - {fileID: 300004}
   - {fileID: 300014}
+  _muzzles: []
   _usePhysicalProjectiles: 1
   _fireCooldown: 1.4
   _burstCount: 1
