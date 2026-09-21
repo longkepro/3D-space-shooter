@@ -140,10 +140,17 @@ namespace VirtualRail
                 var e0 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (0).prefab");
                 var e1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (1).prefab");
                 var e2 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (2).prefab");
+                var e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (3) - Squad Leader.prefab");
+                if (e3 == null) e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (3).prefab");
+                var e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (4) - Shield Bearer.prefab");
+                if (e4 == null) e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (4).prefab");
+
                 var list = new List<GameObject>();
                 if (e0 != null) list.Add(e0);
                 if (e1 != null) list.Add(e1);
                 if (e2 != null) list.Add(e2);
+                if (e3 != null) list.Add(e3);
+                if (e4 != null) list.Add(e4);
                 enemyPrefabs = list.ToArray();
 #endif
             }
@@ -189,9 +196,12 @@ namespace VirtualRail
                         EnemyArchetype archType = EnemyArchetype.Scout;
                         if (p == 1) archType = EnemyArchetype.Flanker;
                         else if (p == 2) archType = EnemyArchetype.Interceptor;
+                        else if (p == 3) archType = EnemyArchetype.SquadLeader;
+                        else if (p == 4) archType = EnemyArchetype.ShieldBearer;
 
                         var preset = EnemyData.CreateDefaultPreset(archType);
                         if (movement != null) movement.ApplyArchetype(preset);
+                        if (health != null) health.ApplyData(preset);
 
                         if (enemyObj.GetComponent<EnemyLifecycleFSM>() == null)
                         {
@@ -311,7 +321,7 @@ namespace VirtualRail
 
             for (int i = 0; i < countInWave; i++)
             {
-                EnemyMovement availableEnemy = GetAvailableEnemy();
+                EnemyMovement availableEnemy = GetAvailableStandardEnemy();
                 if (availableEnemy == null) break;
 
                 // Chọn vector tiếp theo theo chu kỳ phân bổ đa hướng 10 Vector
@@ -322,12 +332,6 @@ namespace VirtualRail
 
                 availableEnemy.ResetState();
                 availableEnemy.transform.localScale = Vector3.one;
-                if (availableEnemy.ArchetypeData != null && 
-                    (availableEnemy.ArchetypeData.archetype == EnemyArchetype.SquadLeader || 
-                     availableEnemy.ArchetypeData.archetype == EnemyArchetype.ShieldBearer))
-                {
-                    availableEnemy.ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.Scout));
-                }
                 availableEnemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
 
                 if (useFSM)
@@ -351,7 +355,40 @@ namespace VirtualRail
             VirtualFormationAnchor availableAnchor = GetAvailableFormationAnchor();
             if (availableAnchor == null) return false;
 
-            List<EnemyMovement> enemies = GetAvailableEnemies(5);
+            List<EnemyMovement> enemies = new List<EnemyMovement>(5);
+
+            if (cfg != null && cfg.enableModularEnemies)
+            {
+                // 1. Tìm đúng Squad Leader (Enemy 3) cho vị trí chỉ huy Slot 0
+                EnemyMovement leader = GetAvailableEnemyByArchetype(EnemyArchetype.SquadLeader);
+                if (leader == null) leader = GetAvailableEnemy();
+                if (leader != null) enemies.Add(leader);
+
+                // 2. Tìm 2 Shield Bearer (Enemy 4) cho vị trí hộ vệ Slot 1 & 2
+                bool useShieldBearers = cfg.enableShieldBearerEnemies;
+                for (int s = 0; s < 2; s++)
+                {
+                    EnemyMovement shield = useShieldBearers ? GetAvailableEnemyByArchetype(EnemyArchetype.ShieldBearer) : null;
+                    if (shield == null) shield = GetAvailableEnemyByArchetype(EnemyArchetype.Flanker);
+                    if (shield == null) shield = GetAvailableEnemy();
+                    if (shield != null && !enemies.Contains(shield)) enemies.Add(shield);
+                }
+
+                // 3. Rút Flanker / Scout cho các vị trí còn lại
+                while (enemies.Count < 5)
+                {
+                    EnemyMovement wing = GetAvailableEnemyByArchetype(EnemyArchetype.Flanker);
+                    if (wing == null) wing = GetAvailableEnemyByArchetype(EnemyArchetype.Scout);
+                    if (wing == null) wing = GetAvailableEnemy();
+                    if (wing == null || enemies.Contains(wing)) break;
+                    enemies.Add(wing);
+                }
+            }
+            else
+            {
+                enemies = GetAvailableEnemies(5);
+            }
+
             if (enemies.Count < 3) return false;
 
             VirtualFormationAnchor.FormationType fType = (enemies.Count >= 5)
@@ -364,25 +401,36 @@ namespace VirtualRail
 
             if (cfg != null && cfg.enableModularEnemies)
             {
-                // Slot 0 là Tàu Chỉ Huy SquadLeader (Máu dày, đạn chùm 3 viên, scale 1.35x)
-                enemies[0].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.SquadLeader));
-                enemies[0].transform.localScale = Vector3.one * 1.35f;
+                // Nếu tàu chỉ huy chưa mang archetype SquadLeader thì gán chỉ số
+                if (enemies[0].ArchetypeData == null || enemies[0].ArchetypeData.archetype != EnemyArchetype.SquadLeader)
+                {
+                    enemies[0].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.SquadLeader));
+                    enemies[0].transform.localScale = Vector3.one * 1.35f;
+                }
+                else
+                {
+                    enemies[0].transform.localScale = Vector3.one;
+                }
 
                 bool useShieldBearers = cfg.enableShieldBearerEnemies && enemies.Count >= 3;
 
                 for (int k = 1; k < enemies.Count; k++)
                 {
-                    // Slot 1 & 2 đóng vai trò tiền tiêu / bảo vệ cánh: Gán ShieldBearer nếu được bật
                     if (useShieldBearers && (k == 1 || k == 2))
                     {
-                        enemies[k].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.ShieldBearer));
-                        enemies[k].transform.localScale = Vector3.one;
+                        if (enemies[k].ArchetypeData == null || enemies[k].ArchetypeData.archetype != EnemyArchetype.ShieldBearer)
+                        {
+                            enemies[k].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.ShieldBearer));
+                        }
                     }
                     else
                     {
-                        enemies[k].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.Flanker));
-                        enemies[k].transform.localScale = Vector3.one;
+                        if (enemies[k].ArchetypeData == null || (enemies[k].ArchetypeData.archetype != EnemyArchetype.Flanker && enemies[k].ArchetypeData.archetype != EnemyArchetype.Scout))
+                        {
+                            enemies[k].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.Flanker));
+                        }
                     }
+                    enemies[k].transform.localScale = Vector3.one;
                 }
             }
             else
@@ -407,6 +455,39 @@ namespace VirtualRail
                 }
             }
             return null;
+        }
+
+        private EnemyMovement GetAvailableEnemyByArchetype(EnemyArchetype archetype)
+        {
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                if (_pool[i] != null && !_pool[i].gameObject.activeSelf)
+                {
+                    if (_pool[i].ArchetypeData != null && _pool[i].ArchetypeData.archetype == archetype)
+                    {
+                        return _pool[i];
+                    }
+                }
+            }
+            return null;
+        }
+
+        private EnemyMovement GetAvailableStandardEnemy()
+        {
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                if (_pool[i] != null && !_pool[i].gameObject.activeSelf)
+                {
+                    if (_pool[i].ArchetypeData != null &&
+                        (_pool[i].ArchetypeData.archetype == EnemyArchetype.Scout ||
+                         _pool[i].ArchetypeData.archetype == EnemyArchetype.Flanker ||
+                         _pool[i].ArchetypeData.archetype == EnemyArchetype.Interceptor))
+                    {
+                        return _pool[i];
+                    }
+                }
+            }
+            return GetAvailableEnemy();
         }
 
         private List<EnemyMovement> GetAvailableEnemies(int count)
