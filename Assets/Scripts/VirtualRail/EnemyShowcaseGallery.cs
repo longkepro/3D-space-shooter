@@ -143,6 +143,9 @@ namespace VirtualRail
         private float _fireInterval = 0.35f;
         private float _nextFireTime = 0f;
 
+        [Header("Booster Demo System")]
+        private bool _isBoosterActive = true; // Bật mặc định dải booster tím rực rỡ
+
         [Header("GUI Styling Cache")]
         private GUIStyle _headerStyle;
         private GUIStyle _cardStyle;
@@ -256,6 +259,12 @@ namespace VirtualRail
 
                 // Cấu hình luồng lửa phản lực tím tĩnh
                 SetupThrusterPlumes(ship);
+
+                // Cấu hình bộ điều phối dải booster tím
+                var booster = ship.GetComponent<EnemyBoosterTrail>();
+                if (booster == null) booster = ship.AddComponent<EnemyBoosterTrail>();
+                booster.CacheComponents();
+                booster.SetOverrideBoost(_isBoosterActive);
 
                 // Kích hoạt lồng khiên cho Shield Bearer
                 if (i == 4)
@@ -389,6 +398,13 @@ namespace VirtualRail
                 _isFiringEnabled = !_isFiringEnabled;
             }
 
+            // Phím B: Bật/Tắt Booster tím bứt tốc
+            if (Input.GetKeyDown(KeyCode.B))
+            {
+                _isBoosterActive = !_isBoosterActive;
+                ApplyBoosterStateToShips();
+            }
+
             // Phím V: Bật/Tắt chế độ Toàn cảnh
             if (Input.GetKeyDown(KeyCode.V))
             {
@@ -476,6 +492,19 @@ namespace VirtualRail
             }
         }
 
+        private void ApplyBoosterStateToShips()
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                if (_ships[i] == null) continue;
+                var booster = _ships[i].GetComponent<EnemyBoosterTrail>();
+                if (booster != null)
+                {
+                    booster.SetOverrideBoost(_isBoosterActive);
+                }
+            }
+        }
+
         private void UpdateVisuals()
         {
             // 1. Tự động xoay 360 độ nếu được bật
@@ -501,13 +530,16 @@ namespace VirtualRail
                 _shieldTransform.Rotate(Vector3.up, 60f * Time.deltaTime, Space.Self);
             }
 
-            // 3. Hiệu ứng phụt lửa nhấp nháy sống động cho đuôi động cơ
+            // 3. Hiệu ứng phụt lửa nhấp nháy sống động cho đuôi động cơ (mở rộng mạnh khi bật Booster tím)
             float flicker = Mathf.PingPong(Time.time * 15f, 0.35f);
+            float plumeLength = _isBoosterActive ? (5.5f + flicker * 2f) : (1.5f + flicker);
+            float plumeWidth = _isBoosterActive ? 0.75f : 0.45f;
             for (int p = 0; p < _plumeLines.Count; p++)
             {
                 if (_plumeLines[p] != null && _plumeLines[p].gameObject.activeInHierarchy)
                 {
-                    _plumeLines[p].SetPosition(1, new Vector3(0f, 0f, -(1.5f + flicker)));
+                    _plumeLines[p].SetPosition(1, new Vector3(0f, 0f, -plumeLength));
+                    _plumeLines[p].startWidth = plumeWidth;
                 }
             }
         }
@@ -639,6 +671,15 @@ namespace VirtualRail
                 _isFiringEnabled = !_isFiringEnabled;
             }
 
+            // Nút Bật/Tắt Dải Booster Tím
+            GUIStyle boosterStyle = _isBoosterActive ? _btnActiveStyle : _btnInactiveStyle;
+            string boosterText = _isBoosterActive ? "🚀 BOOSTER TÍM: [BẬT]" : "⚪ BOOSTER TÍM: [TẮT]";
+            if (GUI.Button(new Rect(btnX + 5 * (btnW + 6) + 320, btnY, 175, btnH), boosterText, boosterStyle))
+            {
+                _isBoosterActive = !_isBoosterActive;
+                ApplyBoosterStateToShips();
+            }
+
             // 3. Bảng thông số kỹ thuật bên trái
             if (!_isOverview && _selectedIndex >= 0 && _selectedIndex < 5)
             {
@@ -666,7 +707,7 @@ namespace VirtualRail
             float bottomY = Screen.height - 38;
             GUI.Box(new Rect(10, bottomY, Screen.width - 20, 30), GUIContent.none, _cardStyle);
             GUI.Label(new Rect(20, bottomY + 4, Screen.width - 40, 22),
-                "Phím: [1-5] Chọn tàu  |  [F] Bật/Tắt bắn đạn  |  [Space] Xoay 360°  |  [Giữ Chuột Phải] Quay góc nhìn  |  [Cuộn chuột] Zoom  |  [V] Dàn hàng toàn cảnh",
+                "Phím: [1-5] Chọn tàu  |  [F] Bắn đạn  |  [B] Booster tím  |  [Space] Xoay 360°  |  [Chuột Phải] Quay góc nhìn  |  [Cuộn chuột] Zoom  |  [V] Dàn hàng toàn cảnh",
                 _shortcutStyle);
         }
 

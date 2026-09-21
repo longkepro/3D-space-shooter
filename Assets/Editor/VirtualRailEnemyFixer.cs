@@ -147,6 +147,9 @@ public static class VirtualRailEnemyFixer
             // 5. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
 
+            // 6. Gắn bộ điều phối dải booster tím
+            EnsureBoosterTrail(root);
+
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_0);
         }
         finally
@@ -186,6 +189,9 @@ public static class VirtualRailEnemyFixer
             // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
 
+            // 5. Gắn bộ điều phối dải booster tím
+            EnsureBoosterTrail(root);
+
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_1);
         }
         finally
@@ -224,6 +230,9 @@ public static class VirtualRailEnemyFixer
 
             // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
+
+            // 5. Gắn bộ điều phối dải booster tím
+            EnsureBoosterTrail(root);
 
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_2);
         }
@@ -280,6 +289,9 @@ public static class VirtualRailEnemyFixer
             // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
 
+            // 5. Gắn bộ điều phối dải booster tím
+            EnsureBoosterTrail(root);
+
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_3);
         }
         finally
@@ -305,6 +317,9 @@ public static class VirtualRailEnemyFixer
 
             // 2. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
+
+            // 3. Gắn bộ điều phối dải booster tím
+            EnsureBoosterTrail(root);
 
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_4);
         }
@@ -473,5 +488,12 @@ public static class VirtualRailEnemyFixer
         {
             colliders[i].gameObject.tag = "Enemy";
         }
+    }
+
+    private static void EnsureBoosterTrail(GameObject root)
+    {
+        var booster = root.GetComponent<VirtualRail.EnemyBoosterTrail>();
+        if (booster == null) booster = root.AddComponent<VirtualRail.EnemyBoosterTrail>();
+        booster.CacheComponents();
     }
 }

@@ -241,6 +241,7 @@ public static class VirtualRailEnemyPrefabBuilder
         Explosion explosion = root.AddComponent<Explosion>();
         root.AddComponent<EnemyLifecycleFSM>();
         root.AddComponent<FormationWingman>();
+        root.AddComponent<VirtualRail.EnemyBoosterTrail>();
 
         var preset = EnemyData.CreateDefaultPreset(EnemyArchetype.SquadLeader);
         movement.ApplyArchetype(preset);
@@ -312,6 +313,7 @@ public static class VirtualRailEnemyPrefabBuilder
         Explosion explosion = root.AddComponent<Explosion>();
         root.AddComponent<EnemyLifecycleFSM>();
         root.AddComponent<FormationWingman>();
+        root.AddComponent<VirtualRail.EnemyBoosterTrail>();
 
         var preset = EnemyData.CreateDefaultPreset(EnemyArchetype.ShieldBearer);
         movement.ApplyArchetype(preset);
@@ -375,6 +377,7 @@ public static class VirtualRailEnemyPrefabBuilder
         Explosion explosion = root.AddComponent<Explosion>();
         root.AddComponent<EnemyLifecycleFSM>();
         root.AddComponent<FormationWingman>();
+        root.AddComponent<VirtualRail.EnemyBoosterTrail>();
 
         var preset = EnemyData.CreateDefaultPreset(archetype);
         movement.ApplyArchetype(preset);

@@ -30,6 +30,7 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
 
     public VirtualRail.EnemyHealth Health => _health;
     public VirtualRail.EnemyData ArchetypeData => _archetypeData;
+    public bool IsFlankerStrafing => _isFlankerStrafing;
 
     private void Awake()
     {
