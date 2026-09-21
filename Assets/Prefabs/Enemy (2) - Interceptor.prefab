@@ -253,6 +253,7 @@ GameObject:
   - component: {fileID: 3087439890357732469}
   - component: {fileID: 2181924913627160934}
   - component: {fileID: 2164877019957296347}
+  - component: {fileID: 1149005247345440315}
   m_Layer: 0
   m_Name: Enemy (2) - Interceptor
   m_TagString: Enemy
@@ -410,6 +411,25 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 4.2, y: 1.6, z: 4.8}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1149005247345440315
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2643655055928243881}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c7571a26e548bc459827f8e1bae6492, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _boostTrailTime: 0.55
+  _cruiseTrailTime: 0.05
+  _boostWidthMultiplier: 1.1
+  _cruiseWidthMultiplier: 0.4
+  _boostLightIntensity: 3.5
+  _cruiseLightIntensity: 1.2
+  _transitionSpeed: 4
 --- !u!1 &3397562234973850683
 GameObject:
   m_ObjectHideFlags: 0
@@ -1045,6 +1065,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Enemy_Thruster_Purple
+      objectReference: {fileID: 0}
+    - target: {fileID: 495093381807159510, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
+        type: 3}
+      propertyPath: m_Time
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 495093381807159510, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
+        type: 3}
+      propertyPath: m_Parameters.widthMultiplier
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 495093381807159511, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
         type: 3}

@@ -288,11 +288,24 @@ namespace VirtualRail
 
         private void SetupThrusterPlumes(GameObject ship)
         {
-            // Bật đèn tím rực rỡ và gắn vệt tia plasma tĩnh cho mỗi ống xả
+            // Thu thập tất cả ống xả (hỗ trợ cả Thruster component hoặc TrailRenderer mà người dùng tự thêm tay)
+            var thrusterList = new List<Transform>();
             var thrusters = ship.GetComponentsInChildren<Thruster>(true);
             foreach (var th in thrusters)
             {
-                var light = th.GetComponent<Light>();
+                if (th != null && !thrusterList.Contains(th.transform))
+                    thrusterList.Add(th.transform);
+            }
+            var trails = ship.GetComponentsInChildren<TrailRenderer>(true);
+            foreach (var tr in trails)
+            {
+                if (tr != null && !thrusterList.Contains(tr.transform))
+                    thrusterList.Add(tr.transform);
+            }
+
+            foreach (var thTrans in thrusterList)
+            {
+                var light = thTrans.GetComponent<Light>();
                 if (light != null)
                 {
                     light.enabled = true;
@@ -303,7 +316,7 @@ namespace VirtualRail
 
                 // Tạo vệt lửa plasma hình nón phun ra từ ống xả (hiển thị khi đứng yên)
                 GameObject plumeObj = new GameObject("[Plasma_Plume]");
-                plumeObj.transform.SetParent(th.transform, false);
+                plumeObj.transform.SetParent(thTrans, false);
                 plumeObj.transform.localPosition = Vector3.zero;
                 plumeObj.transform.localRotation = Quaternion.identity;
 
@@ -332,7 +345,7 @@ namespace VirtualRail
                 lr.colorGradient = grad;
 
                 // Tận dụng material có sẵn của Laser / CFX
-                var existingRend = th.GetComponent<TrailRenderer>();
+                var existingRend = thTrans.GetComponent<TrailRenderer>();
                 if (existingRend != null && existingRend.sharedMaterial != null)
                 {
                     lr.sharedMaterial = existingRend.sharedMaterial;

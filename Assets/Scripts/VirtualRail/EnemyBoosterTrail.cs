@@ -146,5 +146,24 @@ namespace VirtualRail
                 }
             }
         }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmosSelected()
+        {
+            // Hiển thị Gizmo hỗ trợ căn chỉnh miệng ống xả bằng tay trong Scene view
+            var trails = _trails ?? GetComponentsInChildren<TrailRenderer>(true);
+            if (trails != null && trails.Length > 0)
+            {
+                Gizmos.color = new Color(0.85f, 0.2f, 1f, 0.9f);
+                for (int i = 0; i < trails.Length; i++)
+                {
+                    if (trails[i] == null) continue;
+                    Vector3 pos = trails[i].transform.position;
+                    Gizmos.DrawWireSphere(pos, 0.25f);
+                    Gizmos.DrawRay(pos, -trails[i].transform.forward * 2.0f);
+                }
+            }
+        }
+#endif
     }
 }

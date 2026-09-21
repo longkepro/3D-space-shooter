@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 100007}
   - component: {fileID: 100008}
   - component: {fileID: 100009}
+  - component: {fileID: 3582496127829511843}
   m_Layer: 0
   m_Name: Enemy (3) - Squad Leader
   m_TagString: Enemy
@@ -172,6 +173,25 @@ MonoBehaviour:
   _slotIndex: 0
   _isLeader: 0
   _state: 0
+--- !u!114 &3582496127829511843
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c7571a26e548bc459827f8e1bae6492, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _boostTrailTime: 0.55
+  _cruiseTrailTime: 0.05
+  _boostWidthMultiplier: 1.1
+  _cruiseWidthMultiplier: 0.4
+  _boostLightIntensity: 3.5
+  _cruiseLightIntensity: 1.2
+  _transitionSpeed: 4
 --- !u!1 &6154693293693320798
 GameObject:
   m_ObjectHideFlags: 0
@@ -463,6 +483,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Enemy_Thruster_Purple_0
+      objectReference: {fileID: 0}
+    - target: {fileID: 495093381807159510, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
+        type: 3}
+      propertyPath: m_Time
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 495093381807159510, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
+        type: 3}
+      propertyPath: m_Parameters.widthMultiplier
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 495093381807159511, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
         type: 3}
@@ -1829,6 +1859,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Enemy_Thruster_Purple_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 495093381807159510, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
+        type: 3}
+      propertyPath: m_Time
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 495093381807159510, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
+        type: 3}
+      propertyPath: m_Parameters.widthMultiplier
+      value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 495093381807159511, guid: 8dcbc56eeb8b40c28293ffc3795eacef,
         type: 3}

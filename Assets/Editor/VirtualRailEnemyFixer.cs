@@ -42,10 +42,8 @@ public static class VirtualRailEnemyFixer
 
     static VirtualRailEnemyFixer()
     {
-        EditorApplication.delayCall += () =>
-        {
-            FixAllEnemyPrefabs();
-        };
+        // Đã tắt tự động chạy ngầm khi compile để bảo vệ 100% tọa độ do người dùng đặt tay trên Prefab!
+        // Chỉ chạy khi người dùng chủ động click menu: Tools > Virtual Rail > 53. Auto-Calibrate...
     }
 
     [MenuItem("Tools/Virtual Rail/53. Auto-Calibrate and Fix All Enemy Prefabs (ACTIVE)")]
@@ -265,26 +263,9 @@ public static class VirtualRailEnemyFixer
             box.size = new Vector3(4.8f, 1.8f, 5.0f);
             box.center = Vector3.zero;
 
-            // 3. Sửa vị trí 2 động cơ tím: kéo từ Z = -3.2 (trôi nổi ngoài không gian) về Z = -2.25 (khớp đuôi ống xả)
-            Transform thruster0 = root.transform.Find("Enemy_Thruster_Purple_0");
-            if (thruster0 != null)
-            {
-                thruster0.localPosition = new Vector3(-0.95f, 0.2f, -2.25f);
-            }
-            else
-            {
-                EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_0", new Vector3(-0.95f, 0.2f, -2.25f));
-            }
-
-            Transform thruster1 = root.transform.Find("Enemy_Thruster_Purple_1");
-            if (thruster1 != null)
-            {
-                thruster1.localPosition = new Vector3(0.95f, 0.2f, -2.25f);
-            }
-            else
-            {
-                EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_1", new Vector3(0.95f, 0.2f, -2.25f));
-            }
+            // 3. Đảm bảo 2 động cơ tím (Bảo vệ tọa độ đặt tay của người dùng nếu đã có)
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_0", new Vector3(-0.95f, 0.2f, -2.25f));
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_1", new Vector3(0.95f, 0.2f, -2.25f));
 
             // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
@@ -315,10 +296,13 @@ public static class VirtualRailEnemyFixer
             box.size = new Vector3(4.8f, 1.8f, 5.2f);
             box.center = Vector3.zero;
 
-            // 2. Gắn Tag Enemy cho mọi collider con
+            // 2. Đảm bảo ống xả tím (Bảo vệ tọa độ đặt tay nếu đã có)
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, 0.1f, -2.4f));
+
+            // 3. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
 
-            // 3. Gắn bộ điều phối dải booster tím
+            // 4. Gắn bộ điều phối dải booster tím
             EnsureBoosterTrail(root);
 
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_4);
@@ -417,8 +401,7 @@ public static class VirtualRailEnemyFixer
             if (lt != null) lt.enabled = false;
 
             Laser laser = existing.GetComponent<Laser>();
-            existing.localPosition = localPos;
-            existing.localRotation = Quaternion.identity;
+            // BẢO VỆ TỌA ĐỘ ĐẶT TAY CỦA NGƯỜI DÙNG: Tuyệt đối không ghi đè localPosition/localRotation
             existing.name = name;
             existing.tag = "Laser";
             return laser;
@@ -441,7 +424,9 @@ public static class VirtualRailEnemyFixer
         Transform existing = parent.Find(name);
         if (existing != null)
         {
-            existing.localPosition = localPos;
+            // BẢO VỆ TỌA ĐỘ ĐẶT TAY CỦA NGƯỜI DÙNG: Tuyệt đối không ghi đè localPosition/localRotation
+            var th = existing.GetComponent<Thruster>();
+            if (th == null) existing.gameObject.AddComponent<Thruster>();
             return;
         }
 

@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 100007}
   - component: {fileID: 100008}
   - component: {fileID: 100009}
+  - component: {fileID: 3525762391732758222}
   m_Layer: 0
   m_Name: Enemy (4) - Shield Bearer
   m_TagString: Enemy
@@ -172,6 +173,25 @@ MonoBehaviour:
   _slotIndex: 1
   _isLeader: 0
   _state: 0
+--- !u!114 &3525762391732758222
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c7571a26e548bc459827f8e1bae6492, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _boostTrailTime: 0.55
+  _cruiseTrailTime: 0.05
+  _boostWidthMultiplier: 1.1
+  _cruiseWidthMultiplier: 0.4
+  _boostLightIntensity: 3.5
+  _cruiseLightIntensity: 1.2
+  _transitionSpeed: 4
 --- !u!1 &300001
 GameObject:
   m_ObjectHideFlags: 0
@@ -736,11 +756,11 @@ TrailRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Time: 0.1
+  m_Time: 0.05
   m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
-    widthMultiplier: 1
+    widthMultiplier: 0.4
     widthCurve:
       serializedVersion: 2
       m_Curve:
