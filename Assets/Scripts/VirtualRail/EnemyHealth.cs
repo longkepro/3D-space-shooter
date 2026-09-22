@@ -28,6 +28,7 @@ namespace VirtualRail
         private Renderer[] _renderers;
         private MaterialPropertyBlock _propBlock;
         private static readonly int _colorPropId = Shader.PropertyToID("_Color");
+        private static readonly int _hitFlashPropId = Shader.PropertyToID("_HitFlash");
         private float _flashTimer = 0f;
         private const float FLASH_DURATION = 0.08f;
         private Color _originalColor = Color.white;
@@ -113,29 +114,33 @@ namespace VirtualRail
                 return;
             }
 
-            _shieldVisualObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            _shieldVisualObj.name = "[Shield_Barrier]";
+            _shieldVisualObj = new GameObject("[Shield_Barrier]");
             _shieldVisualObj.transform.SetParent(transform, false);
-            _shieldVisualObj.transform.localPosition = Vector3.zero;
+            _shieldVisualObj.transform.localPosition = new Vector3(0f, 0.25f, 3.10f);
             _shieldVisualObj.transform.localRotation = Quaternion.identity;
-            _shieldVisualObj.transform.localScale = new Vector3(2.6f, 2.6f, 2.6f);
+            _shieldVisualObj.transform.localScale = new Vector3(5.6f, 3.2f, 1.0f);
 
-            var col = _shieldVisualObj.GetComponent<Collider>();
-            if (col != null) Destroy(col);
+            var mf = _shieldVisualObj.AddComponent<MeshFilter>();
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            mf.sharedMesh = quad.GetComponent<MeshFilter>().sharedMesh;
+            Destroy(quad);
 
-            _shieldRenderer = _shieldVisualObj.GetComponent<Renderer>();
-            if (_shieldRenderer != null)
-            {
+            var mr = _shieldVisualObj.AddComponent<MeshRenderer>();
+            _shieldRenderer = mr;
 #if UNITY_EDITOR
-                Material shieldMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Light/CFX4_AuraBubble ADD.mat");
-                if (shieldMat != null)
-                {
-                    _shieldRenderer.sharedMaterial = shieldMat;
-                }
-#endif
-                _shieldRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                _shieldRenderer.receiveShadows = false;
+            Material shieldMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexShield_ElectricCyan.mat");
+            if (shieldMat != null)
+            {
+                _shieldRenderer.sharedMaterial = shieldMat;
             }
+#endif
+            _shieldRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _shieldRenderer.receiveShadows = false;
+
+            var box = _shieldVisualObj.AddComponent<BoxCollider>();
+            box.size = new Vector3(1.0f, 1.0f, 0.2f);
+            box.center = Vector3.zero;
+            _shieldVisualObj.tag = "Enemy";
 
             _shieldVisualObj.SetActive(false);
         }
@@ -160,6 +165,13 @@ namespace VirtualRail
                     _isShieldFlashing = false;
                     ResetShieldColor();
                 }
+                else if (_shieldRenderer != null)
+                {
+                    float flashRatio = _shieldFlashTimer / FLASH_DURATION;
+                    _shieldRenderer.GetPropertyBlock(_shieldPropBlock);
+                    _shieldPropBlock.SetFloat(_hitFlashPropId, flashRatio);
+                    _shieldRenderer.SetPropertyBlock(_shieldPropBlock);
+                }
             }
         }
 
@@ -170,6 +182,7 @@ namespace VirtualRail
             _shieldFlashTimer = FLASH_DURATION;
             _shieldRenderer.GetPropertyBlock(_shieldPropBlock);
             _shieldPropBlock.SetColor(_colorPropId, _shieldHitColor);
+            _shieldPropBlock.SetFloat(_hitFlashPropId, 1.0f);
             _shieldRenderer.SetPropertyBlock(_shieldPropBlock);
         }
 
@@ -178,6 +191,7 @@ namespace VirtualRail
             if (_shieldRenderer == null) return;
             _shieldRenderer.GetPropertyBlock(_shieldPropBlock);
             _shieldPropBlock.SetColor(_colorPropId, _shieldNormalColor);
+            _shieldPropBlock.SetFloat(_hitFlashPropId, 0.0f);
             _shieldRenderer.SetPropertyBlock(_shieldPropBlock);
         }
 

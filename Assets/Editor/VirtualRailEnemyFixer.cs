@@ -29,6 +29,9 @@ public static class VirtualRailEnemyFixer
 
     private const string LASER_PREFAB_PATH = "Assets/Prefabs/Laser.prefab";
     private const string PURPLE_THRUSTER_PATH = "Assets/Prefabs/Enemy_Thruster_Purple.prefab";
+    private const string HEX_SHIELD_MAT_PATH = "Assets/Materials/HexShield_ElectricCyan.mat";
+    private const string HEX_TEXTURE_PATH = "Assets/UnityTechnologies/ParticlePack/EffectExamples/Misc Effects/Textures/HexagonPattern_Opt.tif";
+    private const string HEX_SHADER_NAME = "VirtualRail/HexShieldBarrier";
 
     // HiRez Grey Materials
     private const string HIREZ_COCKPIT_INT = "Assets/HiRezSpaceshipsCreatorFree/Materials/Cockpits/Grey/Cockpit3Grey_interior.mat";
@@ -148,6 +151,33 @@ public static class VirtualRailEnemyFixer
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) 5 PREFAB KẺ ĐỊCH VỀ NGUYÊN BẢN TRƯỚC CÂN CHỈNH!</b></color>");
+    }
+
+    [MenuItem("Tools/Virtual Rail/58. Apply Enemy 4 Hex Shield Barrier (ACTIVE)")]
+    public static void ApplyEnemy4HexShieldBarrier()
+    {
+        BackupPrefabs();
+        FixEnemy4ShieldBearer();
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ TỰ ĐỘNG THIẾT LẬP TẤM KHIÊN LƯỚI LỤC GIÁC (HEX SHIELD) CHO ENEMY (4) SHIELD BEARER!</b></color>");
+    }
+
+    [MenuItem("Tools/Virtual Rail/59. Undo Enemy 4 Hex Shield Barrier (OFF - Legacy)")]
+    public static void UndoEnemy4HexShieldBarrier()
+    {
+        string backupFile = Path.Combine(BACKUP_DIR, Path.GetFileName(PREFAB_4));
+        if (File.Exists(backupFile))
+        {
+            File.Copy(backupFile, PREFAB_4, true);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) ENEMY (4) SHIELD BEARER VỀ TRẠNG THÁI GỐC!</b></color>");
+        }
+        else
+        {
+            Debug.LogWarning("[VirtualRail] Không tìm thấy file sao lưu của Enemy 4 tại: " + backupFile);
+        }
     }
 
     private static void BackupPrefabs()
@@ -378,10 +408,13 @@ public static class VirtualRailEnemyFixer
             EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_L", new Vector3(-3.227f, 0.811f, -5.395f));
             EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_R", new Vector3(3.227f, 0.811f, -5.395f));
 
-            // 3. Gắn Tag Enemy cho mọi collider con
+            // 3. Thiết lập Tấm Khiên Lưới Lục Giác phía trước mũi tàu (Hex Shield Barrier)
+            EnsureHexShieldBarrier(root);
+
+            // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
 
-            // 4. Gắn bộ điều phối dải booster tím
+            // 5. Gắn bộ điều phối dải booster tím
             EnsureBoosterTrail(root);
 
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_4);
@@ -583,5 +616,96 @@ public static class VirtualRailEnemyFixer
         so.ApplyModifiedPropertiesWithoutUndo();
 
         booster.CacheComponents();
+    }
+
+    private static void EnsureHexShieldBarrier(GameObject root)
+    {
+        Material shieldMat = EnsureHexShieldMaterial();
+
+        Transform barrierTrans = root.transform.Find("[Shield_Barrier]");
+        GameObject barrierObj = null;
+
+        if (barrierTrans != null)
+        {
+            barrierObj = barrierTrans.gameObject;
+        }
+        else
+        {
+            barrierObj = new GameObject("[Shield_Barrier]");
+            barrierObj.transform.SetParent(root.transform, false);
+        }
+
+        barrierObj.name = "[Shield_Barrier]";
+        // Đặt phía trước mũi tàu tại Z = +3.10
+        barrierObj.transform.localPosition = new Vector3(0f, 0.25f, 3.10f);
+        barrierObj.transform.localRotation = Quaternion.identity;
+        barrierObj.transform.localScale = new Vector3(5.6f, 3.2f, 1.0f);
+
+        MeshFilter mf = barrierObj.GetComponent<MeshFilter>();
+        if (mf == null) mf = barrierObj.AddComponent<MeshFilter>();
+        GameObject tempQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        mf.sharedMesh = tempQuad.GetComponent<MeshFilter>().sharedMesh;
+        Object.DestroyImmediate(tempQuad);
+
+        MeshRenderer mr = barrierObj.GetComponent<MeshRenderer>();
+        if (mr == null) mr = barrierObj.AddComponent<MeshRenderer>();
+        if (shieldMat != null) mr.sharedMaterial = shieldMat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows = false;
+
+        // BoxCollider mỏng trên bề mặt tấm khiên đón đầu đạn laser người chơi (1.0 * 5.6, 1.0 * 3.2, 0.2 * 1.0)
+        BoxCollider shieldCol = barrierObj.GetComponent<BoxCollider>();
+        if (shieldCol == null) shieldCol = barrierObj.AddComponent<BoxCollider>();
+        shieldCol.size = new Vector3(1.0f, 1.0f, 0.2f);
+        shieldCol.center = Vector3.zero;
+        shieldCol.isTrigger = false;
+        barrierObj.tag = "Enemy";
+
+        EnemyHealth eh = root.GetComponent<EnemyHealth>();
+        if (eh != null)
+        {
+            SerializedObject so = new SerializedObject(eh);
+            SerializedProperty activeProp = so.FindProperty("_isShieldActive");
+            if (activeProp != null) activeProp.boolValue = true;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+    }
+
+    public static Material EnsureHexShieldMaterial()
+    {
+        Material mat = AssetDatabase.LoadAssetAtPath<Material>(HEX_SHIELD_MAT_PATH);
+        if (mat == null)
+        {
+            Shader shader = Shader.Find(HEX_SHADER_NAME);
+            if (shader == null)
+            {
+                Debug.LogError("[VirtualRail] Không tìm thấy shader: " + HEX_SHADER_NAME);
+                return null;
+            }
+
+            mat = new Material(shader);
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(HEX_TEXTURE_PATH);
+            if (tex != null)
+            {
+                mat.SetTexture("_MainTex", tex);
+            }
+            mat.SetColor("_BaseColor", new Color(0.05f, 0.45f, 0.85f, 0.35f));
+            mat.SetColor("_EdgeColor", new Color(0.25f, 0.95f, 1.0f, 1.0f));
+            mat.SetColor("_HitColor", new Color(1.5f, 1.5f, 1.5f, 1.0f));
+            mat.SetVector("_Tiling", new Vector4(7.0f, 4.0f, 0f, 0f));
+            mat.SetFloat("_PulseSpeed", 2.0f);
+            mat.SetFloat("_PulseFreq", 4.0f);
+            mat.SetFloat("_PerimeterFade", 1.4f);
+            mat.SetFloat("_RimPower", 1.8f);
+            mat.SetFloat("_RimGlow", 0.5f);
+
+            if (!Directory.Exists("Assets/Materials"))
+            {
+                Directory.CreateDirectory("Assets/Materials");
+            }
+            AssetDatabase.CreateAsset(mat, HEX_SHIELD_MAT_PATH);
+            AssetDatabase.SaveAssets();
+        }
+        return mat;
     }
 }

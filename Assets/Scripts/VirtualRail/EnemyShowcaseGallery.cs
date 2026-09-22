@@ -99,9 +99,9 @@ namespace VirtualRail
                 weaponInfo = "2 Súng xung điện tần số cao (Laser chuẩn hóa)",
                 thrusterInfo = "2 Động cơ phản lực tím tại mạn cánh mở rộng X = ±3.23, Y = 0.81, Z = -5.40",
                 hitboxInfo = "BoxCollider (4.8 x 1.8 x 5.2) - Bao bọc trọn vẹn sải cánh kitbash",
-                specialAbility = "Lồng khiên năng lượng AuraBubble xoay tròn miễn nhiễm đạn thường",
-                idealCameraDistance = 9.5f, // Đủ rộng để thấy trọn lồng khiên AuraBubble
-                focusYOffset = 0.40f
+                specialAbility = "Tấm khiên lưới lục giác năng lượng chắn trước mũi tàu cản phá 100% đạn laser",
+                idealCameraDistance = 8.5f,
+                focusYOffset = 0.35f
             }
         };
 
@@ -537,10 +537,12 @@ namespace VirtualRail
                 }
             }
 
-            // 2. Xoay tròn lồng khiên năng lượng AuraBubble
+            // 2. Dao động nhịp thở nhẹ cho tấm khiên lưới lục giác phía trước mũi tàu
             if (_shieldTransform != null && _shieldTransform.gameObject.activeInHierarchy)
             {
-                _shieldTransform.Rotate(Vector3.up, 60f * Time.deltaTime, Space.Self);
+                float shieldBob = Mathf.Sin(Time.time * 2.5f) * 0.04f;
+                _shieldTransform.localPosition = new Vector3(0f, 0.25f + shieldBob, 3.10f);
+                _shieldTransform.localRotation = Quaternion.identity;
             }
 
             // 3. Hiệu ứng phụt lửa nhấp nháy sống động cho đuôi động cơ (mở rộng mạnh khi bật Booster tím)
