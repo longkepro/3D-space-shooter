@@ -48,7 +48,39 @@ public static class VirtualRailEnemyFixer
         };
     }
 
-    [MenuItem("Tools/Virtual Rail/53. Auto-Calibrate and Fix All Enemy Prefabs (ACTIVE)")]
+    [MenuItem("Tools/Virtual Rail/57. Diagnose Enemy 2 and 3 Nozzles (DEBUG)")]
+    public static void DiagnoseEnemy2And3Nozzles()
+    {
+        string[] prefabs = { PREFAB_2, PREFAB_3 };
+        foreach (var p in prefabs)
+        {
+            if (!File.Exists(p)) continue;
+            GameObject root = PrefabUtility.LoadPrefabContents(p);
+            if (root == null) continue;
+            try
+            {
+                Debug.Log($"<color=cyan><b>=== DIAGNOSE MESHES IN {Path.GetFileName(p)} ===</b></color>");
+                MeshFilter[] mfs = root.GetComponentsInChildren<MeshFilter>(true);
+                foreach (var mf in mfs)
+                {
+                    if (mf == null || mf.sharedMesh == null) continue;
+                    Vector3 localPos = root.transform.InverseTransformPoint(mf.transform.position);
+                    Vector3 lossyScale = mf.transform.lossyScale;
+                    Bounds b = mf.sharedMesh.bounds;
+                    Vector3 minWorld = root.transform.InverseTransformPoint(mf.transform.TransformPoint(b.min));
+                    Vector3 maxWorld = root.transform.InverseTransformPoint(mf.transform.TransformPoint(b.max));
+                    Vector3 centerWorld = root.transform.InverseTransformPoint(mf.transform.TransformPoint(b.center));
+                    Debug.Log($"[DIAG_MESH] File: '{Path.GetFileName(p)}', GO: '{mf.gameObject.name}', Mesh: '{mf.sharedMesh.name}', Pos: {localPos.ToString("F3")}, Scale: {lossyScale.ToString("F2")}, BoundsZ: [{minWorld.z:F2} to {maxWorld.z:F2}], Center: {centerWorld.ToString("F3")}");
+                }
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/53. Apply All Enemy Fixes & Calibrations (ACTIVE)")]
     public static void FixAllEnemyPrefabs()
     {
         // 1. Sao lưu 5 prefab trước khi sửa đổi (Tuân thủ Điều 3 Tầng 2)
@@ -259,14 +291,14 @@ public static class VirtualRailEnemyFixer
                 WireLasers(attack, leftLaser, rightLaser);
             }
 
-            // 3. Gắn vệt đuôi động cơ tím khớp ống xả trung tâm dưới bụng
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, -1.655f, -1.440f), true);
+            // 3. Gắn vệt đuôi động cơ tím khớp ống xả to trung tâm giữa 6 cánh
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, -0.500f, -2.850f), true, 0.75f);
 
             // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
 
-            // 5. Gắn bộ điều phối dải booster tím
-            EnsureBoosterTrail(root);
+            // 5. Gắn bộ điều phối dải booster tím với thông số cho ống xả to
+            EnsureBoosterTrail(root, 0.75f, 1.5f);
 
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_2);
         }
@@ -299,15 +331,20 @@ public static class VirtualRailEnemyFixer
             box.size = new Vector3(4.8f, 1.8f, 5.0f);
             box.center = Vector3.zero;
 
-            // 3. Đảm bảo 2 động cơ tím cắm khít 2 ống xả cánh nghiêng 40 độ
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_0", new Vector3(-2.215f, -3.218f, -2.977f), true);
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_1", new Vector3(2.215f, -3.218f, -2.977f), true);
+            // 3. Gỡ bỏ 2 thruster cũ ở ống xả nhỏ dưới cánh nếu có
+            Transform old0 = root.transform.Find("Enemy_Thruster_Purple_0");
+            if (old0 != null) Object.DestroyImmediate(old0.gameObject);
+            Transform old1 = root.transform.Find("Enemy_Thruster_Purple_1");
+            if (old1 != null) Object.DestroyImmediate(old1.gameObject);
 
-            // 4. Gắn Tag Enemy cho mọi collider con
+            // 4. Gắn động cơ tím khổng lồ vào ống xả to chính trên lưng tàu
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, 1.250f, -10.800f), true, 1.0f);
+
+            // 5. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
 
-            // 5. Gắn bộ điều phối dải booster tím
-            EnsureBoosterTrail(root);
+            // 6. Gắn bộ điều phối dải booster tím với thông số cho động cơ khổng lồ
+            EnsureBoosterTrail(root, 1.0f, 2.0f);
 
             PrefabUtility.SaveAsPrefabAsset(root, PREFAB_3);
         }
@@ -461,27 +498,40 @@ public static class VirtualRailEnemyFixer
         }
     }
 
-    private static void EnsurePurpleThruster(Transform parent, string name, Vector3 localPos, bool forceReposition = false)
+    private static void EnsurePurpleThruster(Transform parent, string name, Vector3 localPos, bool forceReposition = false, float widthMultiplier = -1f)
     {
         Transform existing = parent.Find(name);
+        GameObject thrusterGO = null;
         if (existing != null)
         {
+            thrusterGO = existing.gameObject;
             if (forceReposition)
             {
                 existing.localPosition = localPos;
             }
             var th = existing.GetComponent<Thruster>();
             if (th == null) existing.gameObject.AddComponent<Thruster>();
-            return;
+        }
+        else
+        {
+            GameObject thrusterPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PURPLE_THRUSTER_PATH);
+            if (thrusterPrefab != null)
+            {
+                thrusterGO = (GameObject)PrefabUtility.InstantiatePrefab(thrusterPrefab, parent);
+                thrusterGO.name = name;
+                thrusterGO.transform.localPosition = localPos;
+                thrusterGO.transform.localRotation = Quaternion.identity;
+            }
         }
 
-        GameObject thrusterPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PURPLE_THRUSTER_PATH);
-        if (thrusterPrefab != null)
+        if (thrusterGO != null && widthMultiplier > 0f)
         {
-            GameObject thruster = (GameObject)PrefabUtility.InstantiatePrefab(thrusterPrefab, parent);
-            thruster.name = name;
-            thruster.transform.localPosition = localPos;
-            thruster.transform.localRotation = Quaternion.identity;
+            TrailRenderer tr = thrusterGO.GetComponent<TrailRenderer>();
+            if (tr != null)
+            {
+                tr.widthMultiplier = widthMultiplier;
+                EditorUtility.SetDirty(tr);
+            }
         }
     }
 
@@ -520,10 +570,18 @@ public static class VirtualRailEnemyFixer
         }
     }
 
-    private static void EnsureBoosterTrail(GameObject root)
+    private static void EnsureBoosterTrail(GameObject root, float cruiseWidth = 0.4f, float boostWidth = 1.1f)
     {
         var booster = root.GetComponent<VirtualRail.EnemyBoosterTrail>();
         if (booster == null) booster = root.AddComponent<VirtualRail.EnemyBoosterTrail>();
+
+        SerializedObject so = new SerializedObject(booster);
+        SerializedProperty cruiseProp = so.FindProperty("_cruiseWidthMultiplier");
+        SerializedProperty boostProp = so.FindProperty("_boostWidthMultiplier");
+        if (cruiseProp != null) cruiseProp.floatValue = cruiseWidth;
+        if (boostProp != null) boostProp.floatValue = boostWidth;
+        so.ApplyModifiedPropertiesWithoutUndo();
+
         booster.CacheComponents();
     }
 }
