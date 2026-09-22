@@ -30,7 +30,6 @@ public static class VirtualRailEnemyFixer
     private const string LASER_PREFAB_PATH = "Assets/Prefabs/Laser.prefab";
     private const string PURPLE_THRUSTER_PATH = "Assets/Prefabs/Enemy_Thruster_Purple.prefab";
     private const string HEX_SHIELD_MAT_PATH = "Assets/Materials/HexShield_ElectricCyan.mat";
-    private const string HEX_TEXTURE_PATH = "Assets/UnityTechnologies/ParticlePack/EffectExamples/Misc Effects/Textures/HexagonPattern_Opt.tif";
     private const string HEX_SHADER_NAME = "VirtualRail/HexShieldBarrier";
 
     // HiRez Grey Materials
@@ -662,9 +661,14 @@ public static class VirtualRailEnemyFixer
         barrierObj.tag = "Enemy";
 
         EnemyHealth eh = root.GetComponent<EnemyHealth>();
+        VirtualRailHexShield hexShield = barrierObj.GetComponent<VirtualRailHexShield>();
+        if (hexShield == null) hexShield = barrierObj.AddComponent<VirtualRailHexShield>();
+
         if (eh != null)
         {
             SerializedObject so = new SerializedObject(eh);
+            SerializedProperty shieldProp = so.FindProperty("_hexShield");
+            if (shieldProp != null) shieldProp.objectReferenceValue = hexShield;
             SerializedProperty activeProp = so.FindProperty("_isShieldActive");
             if (activeProp != null) activeProp.boolValue = true;
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -684,20 +688,18 @@ public static class VirtualRailEnemyFixer
             }
 
             mat = new Material(shader);
-            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(HEX_TEXTURE_PATH);
-            if (tex != null)
-            {
-                mat.SetTexture("_MainTex", tex);
-            }
-            mat.SetColor("_BaseColor", new Color(0.05f, 0.45f, 0.85f, 0.35f));
-            mat.SetColor("_EdgeColor", new Color(0.25f, 0.95f, 1.0f, 1.0f));
-            mat.SetColor("_HitColor", new Color(1.5f, 1.5f, 1.5f, 1.0f));
-            mat.SetVector("_Tiling", new Vector4(7.0f, 4.0f, 0f, 0f));
+            mat.SetFloat("_HexRadius", 0.55f);
+            mat.SetFloat("_LineWidth", 0.045f);
+            mat.SetVector("_Dimensions", new Vector4(5.6f, 3.2f, 0f, 0f));
+            mat.SetColor("_BaseColor", new Color(0.05f, 0.45f, 0.85f, 0.45f));
+            mat.SetColor("_EdgeColor", new Color(0.35f, 1.25f, 1.50f, 1.0f));
+            mat.SetColor("_HitColor", new Color(2.0f, 2.0f, 2.0f, 1.0f));
             mat.SetFloat("_PulseSpeed", 2.0f);
-            mat.SetFloat("_PulseFreq", 4.0f);
-            mat.SetFloat("_PerimeterFade", 1.4f);
+            mat.SetFloat("_PulseFreq", 3.0f);
+            mat.SetFloat("_PerimeterFade", 1.6f);
             mat.SetFloat("_RimPower", 1.8f);
-            mat.SetFloat("_RimGlow", 0.5f);
+            mat.SetFloat("_RimGlow", 0.65f);
+            mat.SetFloat("_FarBoost", 1.0f);
 
             if (!Directory.Exists("Assets/Materials"))
             {

@@ -101,6 +101,7 @@ MonoBehaviour:
   _currentHealth: 40
   _isDead: 0
   _isShieldActive: 1
+  _hexShield: {fileID: 500006}
 --- !u!114 &100006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1145,6 +1146,7 @@ GameObject:
   - component: {fileID: 500003}
   - component: {fileID: 500004}
   - component: {fileID: 500005}
+  - component: {fileID: 500006}
   m_Layer: 0
   m_Name: '[Shield_Barrier]'
   m_TagString: Enemy
@@ -1194,7 +1196,7 @@ MeshRenderer:
   m_RayTraceProcedural: 0
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
+  m_SmallMeshCulling: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1241,6 +1243,23 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 0.2}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &500006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 500001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1945f3c9e824b42b683ef9170362c81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _isActive: 1
+  _shieldRenderer: {fileID: 500004}
+  _shieldCollider: {fileID: 500005}
+  _flashDuration: 0.08
+  _normalHitColor: {r: 2, g: 2, b: 2, a: 1}
 --- !u!1 &9047507338163487977
 GameObject:
   m_ObjectHideFlags: 0

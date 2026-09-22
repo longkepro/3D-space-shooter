@@ -1,0 +1,123 @@
+using UnityEngine;
+
+namespace VirtualRail
+{
+    /// <summary>
+    /// Component module hóa quản lý Tấm Khiên Năng Lượng Lưới Lục Giác (Procedural Hex Shield Barrier).
+    /// Chuyên trách:
+    /// 1. Vòng đời kích hoạt / tắt / quá tải vỡ khiên.
+    /// 2. Điều phối phản hồi thị giác chớp sáng trúng đạn (_HitFlash) bằng MaterialPropertyBlock.
+    /// 3. Tuyệt đối 0 GC Allocation trong vòng lặp Update().
+    /// 4. Đảm bảo hiển thị trường lực cự ly xa, không bị Small Mesh Culling ẩn mất.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public class VirtualRailHexShield : MonoBehaviour
+    {
+        [Header("State")]
+        [SerializeField] private bool _isActive = true;
+
+        [Header("References")]
+        [SerializeField] private Renderer _shieldRenderer;
+        [SerializeField] private Collider _shieldCollider;
+
+        [Header("Visual Feedback Settings")]
+        [SerializeField] private float _flashDuration = 0.08f;
+        [SerializeField] private Color _normalHitColor = new Color(2.0f, 2.0f, 2.0f, 1.0f);
+
+        private MaterialPropertyBlock _propBlock;
+        private static readonly int _hitFlashPropId = Shader.PropertyToID("_HitFlash");
+        private static readonly int _hitColorPropId = Shader.PropertyToID("_HitColor");
+
+        private float _flashTimer = 0f;
+        private bool _isFlashing = false;
+
+        public bool IsActive => _isActive;
+        public Collider ShieldCollider => _shieldCollider;
+
+        private void Awake()
+        {
+            if (_shieldRenderer == null)
+            {
+                _shieldRenderer = GetComponent<Renderer>();
+            }
+            if (_shieldCollider == null)
+            {
+                _shieldCollider = GetComponent<Collider>();
+            }
+
+            // Tắt culling động để đảm bảo tấm khiên không bị engine ẩn đi khi ở xa
+            if (_shieldRenderer != null)
+            {
+                _shieldRenderer.allowOcclusionWhenDynamic = false;
+                _shieldRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                _shieldRenderer.receiveShadows = false;
+            }
+
+            _propBlock = new MaterialPropertyBlock();
+            ApplyActiveState();
+        }
+
+        private void Update()
+        {
+            if (!_isFlashing) return;
+
+            _flashTimer -= Time.deltaTime;
+            if (_flashTimer <= 0f)
+            {
+                _isFlashing = false;
+                ResetFlash();
+            }
+            else if (_shieldRenderer != null)
+            {
+                float ratio = _flashTimer / _flashDuration;
+                _shieldRenderer.GetPropertyBlock(_propBlock);
+                _propBlock.SetFloat(_hitFlashPropId, ratio);
+                _shieldRenderer.SetPropertyBlock(_propBlock);
+            }
+        }
+
+        public void SetShieldActive(bool active)
+        {
+            _isActive = active;
+            ApplyActiveState();
+        }
+
+        private void ApplyActiveState()
+        {
+            if (_shieldCollider != null)
+            {
+                _shieldCollider.enabled = _isActive;
+            }
+            if (_shieldRenderer != null)
+            {
+                _shieldRenderer.enabled = _isActive;
+            }
+            if (!_isActive)
+            {
+                _isFlashing = false;
+            }
+        }
+
+        public void TriggerHitFlash()
+        {
+            if (!_isActive || _shieldRenderer == null) return;
+
+            _isFlashing = true;
+            _flashTimer = _flashDuration;
+
+            _shieldRenderer.GetPropertyBlock(_propBlock);
+            _propBlock.SetFloat(_hitFlashPropId, 1.0f);
+            _propBlock.SetColor(_hitColorPropId, _normalHitColor);
+            _shieldRenderer.SetPropertyBlock(_propBlock);
+        }
+
+        private void ResetFlash()
+        {
+            if (_shieldRenderer == null) return;
+
+            _shieldRenderer.GetPropertyBlock(_propBlock);
+            _propBlock.SetFloat(_hitFlashPropId, 0.0f);
+            _shieldRenderer.SetPropertyBlock(_propBlock);
+        }
+    }
+}

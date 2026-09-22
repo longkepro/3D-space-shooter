@@ -17,6 +17,7 @@ namespace VirtualRail
 
         [Header("Formation Shield Mechanics")]
         [SerializeField] private bool _isShieldActive = false;
+        [SerializeField] private VirtualRailHexShield _hexShield;
         private GameObject _shieldVisualObj;
         private Renderer _shieldRenderer;
         private MaterialPropertyBlock _shieldPropBlock;
@@ -53,6 +54,7 @@ namespace VirtualRail
             _shieldPropBlock = new MaterialPropertyBlock();
             _movement = GetComponent<EnemyMovement>();
             _wingman = GetComponent<FormationWingman>();
+            if (_hexShield == null) _hexShield = GetComponentInChildren<VirtualRailHexShield>(true);
 
             if (_renderers != null && _renderers.Length > 0 && _renderers[0].sharedMaterial != null)
             {
@@ -82,7 +84,13 @@ namespace VirtualRail
         public void SetShieldActive(bool active)
         {
             _isShieldActive = active;
-            if (active)
+            if (_hexShield == null) _hexShield = GetComponentInChildren<VirtualRailHexShield>(true);
+
+            if (_hexShield != null)
+            {
+                _hexShield.SetShieldActive(active);
+            }
+            else if (active)
             {
                 EnsureShieldVisual();
                 if (_shieldVisualObj != null)
@@ -90,7 +98,6 @@ namespace VirtualRail
                     _shieldVisualObj.SetActive(true);
                     ResetShieldColor();
                 }
-                Debug.Log($"<color=cyan><b>[SHIELD ONLINE]</b></color> Lá chắn của {name} đã KÍCH HOẠT (Liên kết Tàu Chỉ Huy)!");
             }
             else
             {
@@ -100,10 +107,16 @@ namespace VirtualRail
                 }
                 _isShieldFlashing = false;
             }
+
+            if (active)
+            {
+                Debug.Log($"<color=cyan><b>[SHIELD ONLINE]</b></color> Lá chắn của {name} đã KÍCH HOẠT (Liên kết Tàu Chỉ Huy)!");
+            }
         }
 
         private void EnsureShieldVisual()
         {
+            if (_hexShield != null) return;
             if (_shieldVisualObj != null) return;
 
             Transform existing = transform.Find("[Shield_Barrier]");
@@ -111,6 +124,8 @@ namespace VirtualRail
             {
                 _shieldVisualObj = existing.gameObject;
                 _shieldRenderer = _shieldVisualObj.GetComponent<Renderer>();
+                _hexShield = _shieldVisualObj.GetComponent<VirtualRailHexShield>();
+                if (_hexShield == null) _hexShield = _shieldVisualObj.AddComponent<VirtualRailHexShield>();
                 return;
             }
 
@@ -142,6 +157,7 @@ namespace VirtualRail
             box.center = Vector3.zero;
             _shieldVisualObj.tag = "Enemy";
 
+            _hexShield = _shieldVisualObj.AddComponent<VirtualRailHexShield>();
             _shieldVisualObj.SetActive(false);
         }
 
@@ -177,6 +193,12 @@ namespace VirtualRail
 
         private void TriggerShieldFlash()
         {
+            if (_hexShield != null)
+            {
+                _hexShield.TriggerHitFlash();
+                return;
+            }
+
             if (_shieldRenderer == null) return;
             _isShieldFlashing = true;
             _shieldFlashTimer = FLASH_DURATION;
