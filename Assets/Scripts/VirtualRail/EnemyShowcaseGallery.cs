@@ -269,15 +269,18 @@ namespace VirtualRail
                 // Kích hoạt lồng khiên cho Shield Bearer
                 if (i == 4)
                 {
-                    Transform[] allChildren = ship.GetComponentsInChildren<Transform>(true);
-                    foreach (var child in allChildren)
+                    Transform barrier = ship.transform.Find("[Shield_Barrier]");
+                    if (barrier == null)
                     {
-                        if (child.name.Contains("Shield_Barrier") || child.name.Contains("Shield"))
-                        {
-                            child.gameObject.SetActive(true);
-                            _shieldTransform = child;
-                            break;
-                        }
+                        var hexShield = ship.GetComponentInChildren<VirtualRailHexShield>(true);
+                        if (hexShield != null) barrier = hexShield.transform;
+                    }
+                    if (barrier != null)
+                    {
+                        barrier.gameObject.SetActive(true);
+                        _shieldTransform = barrier;
+                        var hex = barrier.GetComponent<VirtualRailHexShield>();
+                        if (hex != null) hex.SetShieldActive(true);
                     }
                 }
 
@@ -460,6 +463,13 @@ namespace VirtualRail
                     _ships[i].transform.position = Vector3.zero;
                     _ships[i].transform.rotation = Quaternion.Euler(0f, 180f, 0f); // Đối diện camera
                     _ships[i].SetActive(true);
+
+                    if (i == 4 && _shieldTransform != null)
+                    {
+                        _shieldTransform.gameObject.SetActive(true);
+                        var hex = _shieldTransform.GetComponent<VirtualRailHexShield>();
+                        if (hex != null) hex.SetShieldActive(true);
+                    }
                 }
                 else
                 {

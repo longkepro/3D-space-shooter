@@ -36,7 +36,7 @@ Shader "VirtualRail/HexShieldBarrier"
         Pass
         {
             Name "HEX_SHIELD_FORWARD"
-            Blend SrcAlpha One
+            Blend One One
             ZWrite Off
             Cull Off
 
@@ -96,8 +96,9 @@ Shader "VirtualRail/HexShieldBarrier"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                // 1. Metric coordinates centered on the shield panel (in meters)
-                float2 posMeters = (i.uv - 0.5) * _Dimensions.xy;
+                // 1. Metric coordinates centered on the shield panel (in meters) with robust fallback
+                float2 dims = (_Dimensions.x > 0.1 && _Dimensions.y > 0.1) ? _Dimensions.xy : float2(5.6, 3.2);
+                float2 posMeters = (i.uv - 0.5) * dims;
 
                 // 2. Regular hexagon grid tiling basis
                 float radius = max(_HexRadius, 0.1);
@@ -120,48 +121,45 @@ Shader "VirtualRail/HexShieldBarrier"
                 float dHex = HexDist(gv);
                 float edgeDistMeters = (0.5 - dHex) * radius;
 
-                // 3. Screen-space adaptive line width with fwidth anti-aliasing
-                float aaWidth = max(fwidth(edgeDistMeters) * 1.25, 0.002);
-                float effLineWidth = max(_LineWidth, aaWidth * 0.85); // Never thinner than ~1 pixel on screen
-                float edgeLine = 1.0 - smoothstep(effLineWidth - aaWidth, effLineWidth + aaWidth, edgeDistMeters);
+                // 3. Screen-space adaptive line width with continuous derivative anti-aliasing
+                float pixelMeters = max(abs(ddx(posMeters.x)) + abs(ddy(posMeters.x)), 0.002);
+                float effLineWidth = max(_LineWidth, pixelMeters * 1.1);
+                float aa = pixelMeters * 1.25;
+                float edgeLine = 1.0 - smoothstep(effLineWidth - aa, effLineWidth + aa, edgeDistMeters);
 
                 // 4. Perimeter Masking (Superellipse soft fade)
                 float2 centered = (i.uv - 0.5) * 2.0;
                 float dist = pow(abs(centered.x), 2.6) + pow(abs(centered.y), 2.6);
                 float perimeter = saturate((1.0 - dist) * _PerimeterFade);
 
-                // 5. Distance-adaptive macro field boost (increases field visibility at long ranges)
+                // 5. Distance-adaptive macro field boost (guarantees bold silhouette at extreme range)
                 float camDist = length(_WorldSpaceCameraPos - i.worldPos);
                 float farFactor = saturate((camDist - 12.0) / 40.0) * _FarBoost; // 0 at <=12m, 1 at >=52m
 
-                // 6. Cell interior glow & energy pulse
+                // 6. Cell interior glow & energy pulse (guaranteed minimum glow floor)
                 float scan = sin(_Time.y * _PulseSpeed + i.uv.y * _PulseFreq) * 0.5 + 0.5;
-                float cellGlow = (1.0 - edgeLine * 0.7) * (0.4 + 0.6 * scan);
+                float cellGlow = 0.25 + 0.75 * scan;
 
                 // 7. Fresnel Rim Glow
                 float rim = 1.0 - saturate(abs(dot(normalize(i.worldNormal), i.viewDir)));
                 rim = pow(rim, _RimPower) * _RimGlow;
 
-                // 8. Color synthesis with macro field floor
-                // At distance, macroField guarantees the shield silhouette is boldly readable
-                float macroField = (1.0 - saturate(dist)) * 0.65 * farFactor;
-                fixed3 finalColor = _BaseColor.rgb * (cellGlow + macroField) 
-                                  + _EdgeColor.rgb * edgeLine * 1.8 
+                // 8. Color synthesis with macro field floor (Pure Additive Blend One One)
+                float macroField = (1.0 - saturate(dist)) * 0.70 * farFactor;
+                fixed3 finalColor = _BaseColor.rgb * (cellGlow * 0.40 + macroField) 
+                                  + _EdgeColor.rgb * edgeLine * 2.0 
                                   + _EdgeColor.rgb * rim;
-
-                float finalAlpha = (_BaseColor.a * (cellGlow + macroField) 
-                                  + edgeLine * 0.95 
-                                  + rim * 0.5) * perimeter;
 
                 // 9. Hit Flash Blend
                 if (_HitFlash > 0.001)
                 {
-                    finalColor = lerp(finalColor, _HitColor.rgb * 1.5, _HitFlash);
-                    finalAlpha = lerp(finalAlpha, perimeter * 1.1, _HitFlash * 0.85);
+                    finalColor = lerp(finalColor, _HitColor.rgb * 2.5, _HitFlash);
                 }
 
-                // 10. Correct output for Blend SrcAlpha One: do NOT multiply finalColor by finalAlpha
-                return fixed4(finalColor, saturate(finalAlpha));
+                // 10. Multiplied by perimeter for smooth fade into empty space
+                finalColor *= perimeter;
+
+                return fixed4(finalColor, 1.0);
             }
             ENDCG
         }

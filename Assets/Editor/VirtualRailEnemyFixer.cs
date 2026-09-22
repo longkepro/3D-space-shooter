@@ -664,6 +664,18 @@ public static class VirtualRailEnemyFixer
         VirtualRailHexShield hexShield = barrierObj.GetComponent<VirtualRailHexShield>();
         if (hexShield == null) hexShield = barrierObj.AddComponent<VirtualRailHexShield>();
 
+        if (hexShield != null)
+        {
+            SerializedObject hexSO = new SerializedObject(hexShield);
+            SerializedProperty rProp = hexSO.FindProperty("_shieldRenderer");
+            if (rProp != null) rProp.objectReferenceValue = mr;
+            SerializedProperty cProp = hexSO.FindProperty("_shieldCollider");
+            if (cProp != null) cProp.objectReferenceValue = shieldCol;
+            SerializedProperty aProp = hexSO.FindProperty("_isActive");
+            if (aProp != null) aProp.boolValue = true;
+            hexSO.ApplyModifiedPropertiesWithoutUndo();
+        }
+
         if (eh != null)
         {
             SerializedObject so = new SerializedObject(eh);
@@ -678,36 +690,42 @@ public static class VirtualRailEnemyFixer
     public static Material EnsureHexShieldMaterial()
     {
         Material mat = AssetDatabase.LoadAssetAtPath<Material>(HEX_SHIELD_MAT_PATH);
+        Shader shader = Shader.Find(HEX_SHADER_NAME);
+        if (shader == null)
+        {
+            Debug.LogError("[VirtualRail] Không tìm thấy shader: " + HEX_SHADER_NAME);
+            return mat;
+        }
+
         if (mat == null)
         {
-            Shader shader = Shader.Find(HEX_SHADER_NAME);
-            if (shader == null)
-            {
-                Debug.LogError("[VirtualRail] Không tìm thấy shader: " + HEX_SHADER_NAME);
-                return null;
-            }
-
             mat = new Material(shader);
-            mat.SetFloat("_HexRadius", 0.55f);
-            mat.SetFloat("_LineWidth", 0.045f);
-            mat.SetVector("_Dimensions", new Vector4(5.6f, 3.2f, 0f, 0f));
-            mat.SetColor("_BaseColor", new Color(0.05f, 0.45f, 0.85f, 0.45f));
-            mat.SetColor("_EdgeColor", new Color(0.35f, 1.25f, 1.50f, 1.0f));
-            mat.SetColor("_HitColor", new Color(2.0f, 2.0f, 2.0f, 1.0f));
-            mat.SetFloat("_PulseSpeed", 2.0f);
-            mat.SetFloat("_PulseFreq", 3.0f);
-            mat.SetFloat("_PerimeterFade", 1.6f);
-            mat.SetFloat("_RimPower", 1.8f);
-            mat.SetFloat("_RimGlow", 0.65f);
-            mat.SetFloat("_FarBoost", 1.0f);
-
             if (!Directory.Exists("Assets/Materials"))
             {
                 Directory.CreateDirectory("Assets/Materials");
             }
             AssetDatabase.CreateAsset(mat, HEX_SHIELD_MAT_PATH);
-            AssetDatabase.SaveAssets();
         }
+        else
+        {
+            mat.shader = shader;
+        }
+
+        mat.SetFloat("_HexRadius", 0.55f);
+        mat.SetFloat("_LineWidth", 0.045f);
+        mat.SetVector("_Dimensions", new Vector4(5.6f, 3.2f, 0f, 0f));
+        mat.SetColor("_BaseColor", new Color(0.05f, 0.45f, 0.85f, 0.45f));
+        mat.SetColor("_EdgeColor", new Color(0.35f, 1.25f, 1.50f, 1.0f));
+        mat.SetColor("_HitColor", new Color(2.0f, 2.0f, 2.0f, 1.0f));
+        mat.SetFloat("_PulseSpeed", 2.0f);
+        mat.SetFloat("_PulseFreq", 3.0f);
+        mat.SetFloat("_PerimeterFade", 1.6f);
+        mat.SetFloat("_RimPower", 1.8f);
+        mat.SetFloat("_RimGlow", 0.65f);
+        mat.SetFloat("_FarBoost", 1.0f);
+
+        EditorUtility.SetDirty(mat);
+        AssetDatabase.SaveAssets();
         return mat;
     }
 }

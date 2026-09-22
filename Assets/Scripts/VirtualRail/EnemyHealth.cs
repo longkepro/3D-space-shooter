@@ -55,6 +55,10 @@ namespace VirtualRail
             _movement = GetComponent<EnemyMovement>();
             _wingman = GetComponent<FormationWingman>();
             if (_hexShield == null) _hexShield = GetComponentInChildren<VirtualRailHexShield>(true);
+            if (_hexShield != null)
+            {
+                _hexShield.SetShieldActive(_isShieldActive);
+            }
 
             if (_renderers != null && _renderers.Length > 0 && _renderers[0].sharedMaterial != null)
             {
