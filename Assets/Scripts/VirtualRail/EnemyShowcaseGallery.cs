@@ -119,6 +119,8 @@ namespace VirtualRail
         private readonly GameObject[] _ships = new GameObject[5];
         private readonly List<LineRenderer> _plumeLines = new List<LineRenderer>();
         private Transform _shieldTransform;
+        private Vector3 _initialShieldLocalPos;
+        private Quaternion _initialShieldLocalRot;
 
         [Header("Target Dummy for Weapons Test")]
         private GameObject _targetDummy;
@@ -279,6 +281,8 @@ namespace VirtualRail
                     {
                         barrier.gameObject.SetActive(true);
                         _shieldTransform = barrier;
+                        _initialShieldLocalPos = barrier.localPosition;
+                        _initialShieldLocalRot = barrier.localRotation;
                         var hex = barrier.GetComponent<VirtualRailHexShield>();
                         if (hex != null) hex.SetShieldActive(true);
                     }
@@ -547,12 +551,12 @@ namespace VirtualRail
                 }
             }
 
-            // 2. Dao động nhịp thở nhẹ cho tấm khiên lưới lục giác phía trước mũi tàu
+            // 2. Dao động nhịp thở nhẹ cho tấm khiên lưới lục giác phía trước mũi tàu (dựa trên tọa độ gốc của Prefab)
             if (_shieldTransform != null && _shieldTransform.gameObject.activeInHierarchy)
             {
                 float shieldBob = Mathf.Sin(Time.time * 2.5f) * 0.04f;
-                _shieldTransform.localPosition = new Vector3(0f, 0.25f + shieldBob, 3.10f);
-                _shieldTransform.localRotation = Quaternion.identity;
+                _shieldTransform.localPosition = _initialShieldLocalPos + new Vector3(0f, shieldBob, 0f);
+                _shieldTransform.localRotation = _initialShieldLocalRot;
             }
 
             // 3. Hiệu ứng phụt lửa nhấp nháy sống động cho đuôi động cơ (mở rộng mạnh khi bật Booster tím)

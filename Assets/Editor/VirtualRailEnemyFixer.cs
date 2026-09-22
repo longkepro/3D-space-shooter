@@ -15,8 +15,8 @@ using VirtualRail;
 /// 8. Đổi màu sơn Enemy (0) từ Đỏ sang Xám quân sự HiRez để không trùng màu tàu Người chơi.
 /// 9. Gắn Tag "Enemy" cho 100% Collider con để cơ chế đạn đạo bắt trúng mục tiêu.
 /// 10. Tuân thủ Điều 3: Cung cấp cặp MenuItem 1-click [53] Apply (ON) và [54] Undo (OFF - Legacy).
+/// (Chỉ kích hoạt khi người dùng chủ động chọn MenuItem, tuyệt đối không tự động chạy ngầm khi reload).
 /// </summary>
-[InitializeOnLoad]
 public static class VirtualRailEnemyFixer
 {
     private const string PREFAB_0 = "Assets/Prefabs/Enemy (0) - Scout.prefab";
@@ -41,14 +41,6 @@ public static class VirtualRailEnemyFixer
     private const string HIREZ_BODY2 = "Assets/HiRezSpaceshipsCreatorFree/Materials/MainBodies/Grey/MainBody2.mat";
     private const string HIREZ_WING2 = "Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Grey/Wing2.mat";
     private const string HIREZ_WING6 = "Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Grey/Wing6.mat";
-
-    static VirtualRailEnemyFixer()
-    {
-        EditorApplication.delayCall += () =>
-        {
-            FixAllEnemyPrefabs();
-        };
-    }
 
     [MenuItem("Tools/Virtual Rail/57. Diagnose Enemy 2 and 3 Nozzles (DEBUG)")]
     public static void DiagnoseEnemy2And3Nozzles()
