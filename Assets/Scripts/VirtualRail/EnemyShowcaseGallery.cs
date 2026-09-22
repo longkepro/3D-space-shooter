@@ -41,7 +41,7 @@ namespace VirtualRail
                 materialName = "Xám Quân Sự Chống Nhận Diện (Custom Grey Coat)",
                 health = 20,
                 weaponInfo = "2 Khẩu Blaster mạn cánh (Laser chuẩn hóa)",
-                thrusterInfo = "1 Luồng ion tím tại Z = -2.10 (khớp tâm ống xả)",
+                thrusterInfo = "2 Động cơ phản lực ion tím đối xứng (Twin Thrusters)",
                 hitboxInfo = "BoxCollider (4.4 x 1.6 x 4.8) - Vừa khít thân",
                 specialAbility = "Lao bổ nhào cự ly gần, cơ động cao nhất đội hình trinh sát",
                 idealCameraDistance = 7.5f,

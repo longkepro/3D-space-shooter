@@ -42,8 +42,10 @@ public static class VirtualRailEnemyFixer
 
     static VirtualRailEnemyFixer()
     {
-        // Đã tắt tự động chạy ngầm khi compile để bảo vệ 100% tọa độ do người dùng đặt tay trên Prefab!
-        // Chỉ chạy khi người dùng chủ động click menu: Tools > Virtual Rail > 53. Auto-Calibrate...
+        EditorApplication.delayCall += () =>
+        {
+            MirrorScoutThrusters();
+        };
     }
 
     [MenuItem("Tools/Virtual Rail/53. Auto-Calibrate and Fix All Enemy Prefabs (ACTIVE)")]
@@ -62,6 +64,33 @@ public static class VirtualRailEnemyFixer
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
         Debug.Log("<color=green><b>[VirtualRail] ĐÃ TỰ ĐỘNG CÂN CHỈNH VÀ SỬA XONG TOÀN BỘ 5 KẺ ĐỊCH!</b></color>");
+    }
+
+    [MenuItem("Tools/Virtual Rail/55. Mirror Left Thruster to Right on Scout (ACTIVE)")]
+    public static void MirrorScoutThrusters()
+    {
+        if (!File.Exists(PREFAB_0)) return;
+        GameObject root = PrefabUtility.LoadPrefabContents(PREFAB_0);
+        if (root == null) return;
+        try
+        {
+            Transform left = root.transform.Find("Enemy_Thruster_Purple");
+            Transform right = root.transform.Find("Enemy_Thruster_Purple_R");
+            if (left != null && right == null)
+            {
+                Vector3 rightPos = new Vector3(-left.localPosition.x, left.localPosition.y, left.localPosition.z);
+                EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_R", rightPos);
+                EnsureBoosterTrail(root);
+                PrefabUtility.SaveAsPrefabAsset(root, PREFAB_0);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log("<color=green><b>[VirtualRail] ĐÃ TỰ ĐỘNG TẠO ỐNG XẢ PHẢI ĐỐI XỨNG CHO TÀU SCOUT!</b></color>");
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
     }
 
     [MenuItem("Tools/Virtual Rail/54. Undo Enemy Prefab Calibration (OFF - Legacy)")]
@@ -139,8 +168,9 @@ public static class VirtualRailEnemyFixer
                 WireLasers(attack, leftLaser, rightLaser);
             }
 
-            // 4. Gắn vệt đuôi động cơ tím khớp ống xả
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, 0.05f, -2.1f));
+            // 4. Gắn vệt đuôi động cơ tím khớp ống xả (hỗ trợ cặp động cơ đối xứng cho Scout)
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(-1.654987f, -1.46573f, -1.835085f));
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_R", new Vector3(1.654987f, -1.46573f, -1.835085f));
 
             // 5. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
