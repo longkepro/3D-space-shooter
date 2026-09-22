@@ -44,7 +44,7 @@ public static class VirtualRailEnemyFixer
     {
         EditorApplication.delayCall += () =>
         {
-            MirrorScoutThrusters();
+            FixAllEnemyPrefabs();
         };
     }
 
@@ -211,8 +211,14 @@ public static class VirtualRailEnemyFixer
                 WireLasers(attack, leftLaser, rightLaser);
             }
 
-            // 3. Gắn vệt đuôi động cơ tím khớp ống xả
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, 0.1f, -2.4f));
+            // 3. Gắn vệt đuôi động cơ tím khớp 2 ống xả đuôi đối xứng
+            Transform oldSingle = root.transform.Find("Enemy_Thruster_Purple");
+            if (oldSingle != null && Mathf.Abs(oldSingle.localPosition.x) < 0.2f)
+            {
+                Object.DestroyImmediate(oldSingle.gameObject);
+            }
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_L", new Vector3(-1.080f, -1.210f, -4.240f));
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_R", new Vector3(1.080f, -1.210f, -4.240f));
 
             // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
@@ -253,8 +259,8 @@ public static class VirtualRailEnemyFixer
                 WireLasers(attack, leftLaser, rightLaser);
             }
 
-            // 3. Gắn vệt đuôi động cơ tím khớp ống xả
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, 0.1f, -2.5f));
+            // 3. Gắn vệt đuôi động cơ tím khớp ống xả trung tâm dưới bụng
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, -1.655f, -1.440f), true);
 
             // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
@@ -293,9 +299,9 @@ public static class VirtualRailEnemyFixer
             box.size = new Vector3(4.8f, 1.8f, 5.0f);
             box.center = Vector3.zero;
 
-            // 3. Đảm bảo 2 động cơ tím (Bảo vệ tọa độ đặt tay của người dùng nếu đã có)
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_0", new Vector3(-0.95f, 0.2f, -2.25f));
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_1", new Vector3(0.95f, 0.2f, -2.25f));
+            // 3. Đảm bảo 2 động cơ tím cắm khít 2 ống xả cánh nghiêng 40 độ
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_0", new Vector3(-2.215f, -3.218f, -2.977f), true);
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_1", new Vector3(2.215f, -3.218f, -2.977f), true);
 
             // 4. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
@@ -326,8 +332,14 @@ public static class VirtualRailEnemyFixer
             box.size = new Vector3(4.8f, 1.8f, 5.2f);
             box.center = Vector3.zero;
 
-            // 2. Đảm bảo ống xả tím (Bảo vệ tọa độ đặt tay nếu đã có)
-            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple", new Vector3(0f, 0.1f, -2.4f));
+            // 2. Gắn cặp động cơ tím cắm khít 2 ống xả cánh vươn rộng nghiêng 34 độ
+            Transform oldSingle = root.transform.Find("Enemy_Thruster_Purple");
+            if (oldSingle != null && Mathf.Abs(oldSingle.localPosition.x) < 0.2f)
+            {
+                Object.DestroyImmediate(oldSingle.gameObject);
+            }
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_L", new Vector3(-3.227f, 0.811f, -5.395f));
+            EnsurePurpleThruster(root.transform, "Enemy_Thruster_Purple_R", new Vector3(3.227f, 0.811f, -5.395f));
 
             // 3. Gắn Tag Enemy cho mọi collider con
             TagAllCollidersAsEnemy(root);
@@ -449,12 +461,15 @@ public static class VirtualRailEnemyFixer
         }
     }
 
-    private static void EnsurePurpleThruster(Transform parent, string name, Vector3 localPos)
+    private static void EnsurePurpleThruster(Transform parent, string name, Vector3 localPos, bool forceReposition = false)
     {
         Transform existing = parent.Find(name);
         if (existing != null)
         {
-            // BẢO VỆ TỌA ĐỘ ĐẶT TAY CỦA NGƯỜI DÙNG: Tuyệt đối không ghi đè localPosition/localRotation
+            if (forceReposition)
+            {
+                existing.localPosition = localPos;
+            }
             var th = existing.GetComponent<Thruster>();
             if (th == null) existing.gameObject.AddComponent<Thruster>();
             return;
