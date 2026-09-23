@@ -316,6 +316,22 @@ namespace VirtualRail
         [Tooltip("Bật sử dụng đội hình chiến hạm StarSparrow (StarSparrow1, StarSparrow4, StarSparrow6) thay cho model nguyên mẫu")]
         public bool useStarSparrowFleet = true;
 
+        [Header("20. Space Dust / Motion Parallax (Bụi Sao Không Gian)")]
+        [Tooltip("Bật hệ thống bụi sao không gian (Space Dust). Tạo các hạt bụi sao lướt qua thân tàu mang lại cảm giác vận tốc và chiều sâu 3D trên nền Skybox tĩnh")]
+        public bool enableSpaceDust = true;
+        [Tooltip("Số lượng hạt bụi sao tối đa trong khung nhìn")]
+        public int dustParticleCount = 220;
+        [Tooltip("Kích thước tối thiểu của hạt bụi sao")]
+        public float minDustSize = 0.10f;
+        [Tooltip("Kích thước tối đa của hạt bụi sao")]
+        public float maxDustSize = 0.28f;
+        [Tooltip("Độ rộng trường bụi sao (m)")]
+        public float dustFieldWidth = 50f;
+        [Tooltip("Độ cao trường bụi sao (m)")]
+        public float dustFieldHeight = 30f;
+        [Tooltip("Độ sâu trường bụi sao (m)")]
+        public float dustFieldDepth = 90f;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

@@ -142,3 +142,10 @@ MonoBehaviour:
   enableCollectibleRings: 1
   ringSpawnRate: 0.35
   useStarSparrowFleet: 0
+  enableSpaceDust: 1
+  dustParticleCount: 220
+  minDustSize: 0.1
+  maxDustSize: 0.28
+  dustFieldWidth: 50
+  dustFieldHeight: 30
+  dustFieldDepth: 90

@@ -720,6 +720,44 @@ public class VirtualRailModeToggle
         VirtualRailEnemyPrefabBuilder.RestoreLegacyEnemies();
     }
 
+    [MenuItem("Tools/Virtual Rail/43. Visuals: Enable Space Dust & Motion Parallax (ON)")]
+    public static void EnableSpaceDustMotionParallax()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableSpaceDust = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT BỤI SAO KHÔNG GIAN (SPACE DUST MOTION PARALLAX - ON):</b></color> Các hạt bụi sao lướt qua thân tàu giải quyết triệt để cảm giác tàu đứng im trên Skybox tĩnh!");
+        }
+
+        var dust = Object.FindAnyObjectByType<VirtualRailSpaceDust>(FindObjectsInactive.Include);
+        if (dust != null)
+        {
+            dust.SetDustActive(true);
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/44. Visuals: Disable Space Dust (OFF - Static Space)")]
+    public static void DisableSpaceDustMotionParallax()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableSpaceDust = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT BỤI SAO KHÔNG GIAN (OFF):</b></color> Quay về không gian chân không tĩnh.");
+        }
+
+        var dust = Object.FindAnyObjectByType<VirtualRailSpaceDust>(FindObjectsInactive.Include);
+        if (dust != null)
+        {
+            dust.SetDustActive(false);
+        }
+    }
+
 
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
@@ -744,6 +782,16 @@ public class VirtualRailModeToggle
         camRigObj.transform.localPosition = new Vector3(0, config.cameraHeight, -config.cameraDistance);
         VirtualRailCameraRig camRig = camRigObj.AddComponent<VirtualRailCameraRig>();
         camRig.anchor = anchor;
+
+        // 1b. Space Dust (Bụi sao không gian giải quyết triệt để cảm giác tàu đứng im trên Skybox tĩnh)
+        GameObject dustObj = new GameObject("[Space Dust]");
+        dustObj.transform.SetParent(camRigObj.transform, false);
+        dustObj.transform.localPosition = Vector3.zero;
+        dustObj.transform.localRotation = Quaternion.identity;
+        VirtualRailSpaceDust spaceDust = dustObj.AddComponent<VirtualRailSpaceDust>();
+        spaceDust.anchor = anchor;
+        spaceDust.config = config;
+        spaceDust.InitializeSystem();
 
         // 2. Reticle Anchor
         GameObject reticleObj = new GameObject("[Reticle Anchor]");

@@ -38,6 +38,22 @@ namespace VirtualRail
                     targetCamera.fieldOfView = anchor.config.cameraFOV;
                 }
             }
+
+            // Khởi tạo Bụi Sao Không Gian (Space Dust Motion Parallax) nếu chưa có
+            if (anchor != null && anchor.config != null && anchor.config.enableSpaceDust)
+            {
+                var existingDust = GetComponentInChildren<VirtualRailSpaceDust>();
+                if (existingDust == null)
+                {
+                    GameObject dustObj = new GameObject("[Space Dust]");
+                    dustObj.transform.SetParent(transform, false);
+                    dustObj.transform.localPosition = Vector3.zero;
+                    dustObj.transform.localRotation = Quaternion.identity;
+                    var dust = dustObj.AddComponent<VirtualRailSpaceDust>();
+                    dust.anchor = anchor;
+                    dust.config = anchor.config;
+                }
+            }
         }
 
         private void LateUpdate()
