@@ -11,6 +11,7 @@ namespace VirtualRail
     /// 3. Tự động khớp theo Camera Frustum (FOV và Aspect Ratio).
     /// 4. 0 GC Allocation trong toàn bộ vòng lặp LateUpdate.
     /// </summary>
+    [ExecuteAlways]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class VirtualRailHorizonBackdrop : MonoBehaviour
@@ -45,23 +46,13 @@ namespace VirtualRail
 
         private void Start()
         {
-            if (targetCamera == null)
-            {
-                targetCamera = GetComponentInParent<Camera>();
-                if (targetCamera == null) targetCamera = Camera.main;
-            }
-
-            if (targetCamera != null)
-            {
-                _camTransform = targetCamera.transform;
-            }
-
+            Initialize();
+            FindTargetCamera();
             UpdateFrustumFit(true);
         }
 
         public void Initialize()
         {
-            if (_isInitialized) return;
             if (_mf == null) _mf = GetComponent<MeshFilter>();
             if (_mr == null) _mr = GetComponent<MeshRenderer>();
 
@@ -82,31 +73,17 @@ namespace VirtualRail
                 _mr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
             }
 
-            // 2. Tạo Quad Mesh chuẩn 2 tam giác (1x1 đơn vị)
+            // 2. Gán Quad Mesh chuẩn Primitive của Unity Engine
             if (_mf != null && _mf.sharedMesh == null)
             {
-                Mesh mesh = new Mesh();
-                mesh.name = "HorizonBackdropQuad";
-                mesh.vertices = new Vector3[]
-                {
-                    new Vector3(-0.5f, -0.5f, 0f),
-                    new Vector3( 0.5f, -0.5f, 0f),
-                    new Vector3(-0.5f,  0.5f, 0f),
-                    new Vector3( 0.5f,  0.5f, 0f)
-                };
-                mesh.uv = new Vector2[]
-                {
-                    new Vector2(0f, 0f),
-                    new Vector2(1f, 0f),
-                    new Vector2(0f, 1f),
-                    new Vector2(1f, 1f)
-                };
-                mesh.triangles = new int[] { 0, 2, 1, 2, 3, 1 };
-                mesh.RecalculateNormals();
-                mesh.RecalculateBounds();
-                _mf.sharedMesh = mesh;
+                GameObject tempQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                _mf.sharedMesh = tempQuad.GetComponent<MeshFilter>().sharedMesh;
+                if (Application.isPlaying) Destroy(tempQuad);
+                else DestroyImmediate(tempQuad);
             }
 
+            // Khởi tạo kích thước ban đầu ngay khi Bake Prefab
+            UpdateFrustumFit(true);
             _isInitialized = true;
         }
 
@@ -114,20 +91,40 @@ namespace VirtualRail
         {
             if (targetCamera == null)
             {
-                targetCamera = Camera.main;
-                if (targetCamera == null) return;
-                _camTransform = targetCamera.transform;
+                FindTargetCamera();
             }
 
             UpdateFrustumFit(false);
         }
 
+        private void FindTargetCamera()
+        {
+            if (targetCamera != null)
+            {
+                _camTransform = targetCamera.transform;
+                return;
+            }
+
+            targetCamera = GetComponentInParent<Camera>();
+            if (targetCamera == null) targetCamera = Camera.main;
+
+#if UNITY_EDITOR
+            if (targetCamera == null && !Application.isPlaying && UnityEditor.SceneView.lastActiveSceneView != null)
+            {
+                targetCamera = UnityEditor.SceneView.lastActiveSceneView.camera;
+            }
+#endif
+
+            if (targetCamera != null)
+            {
+                _camTransform = targetCamera.transform;
+            }
+        }
+
         private void UpdateFrustumFit(bool force)
         {
-            if (targetCamera == null) return;
-
-            float currentFOV = targetCamera.fieldOfView;
-            float currentAspect = targetCamera.aspect;
+            float currentFOV = (targetCamera != null) ? targetCamera.fieldOfView : 40f;
+            float currentAspect = (targetCamera != null && targetCamera.aspect > 0.01f) ? targetCamera.aspect : (16f / 9f);
 
             // Chỉ cập nhật lại Scale khi FOV hoặc Aspect Ratio thay đổi để triệt tiêu overhead
             if (force || Mathf.Abs(currentFOV - _lastFOV) > 0.01f || Mathf.Abs(currentAspect - _lastAspect) > 0.005f)
@@ -143,9 +140,16 @@ namespace VirtualRail
             }
 
             // Neo màn chiếu thẳng tắp trước mặt Camera
-            Vector3 baseLocalPos = new Vector3(0f, 0f, distanceZ);
-            transform.localPosition = baseLocalPos;
-            transform.localRotation = Quaternion.identity;
+            if (_camTransform != null && transform.parent != _camTransform && (transform.parent == null || transform.parent != _camTransform.parent))
+            {
+                transform.position = _camTransform.position + _camTransform.forward * distanceZ;
+                transform.rotation = _camTransform.rotation;
+            }
+            else
+            {
+                transform.localPosition = new Vector3(0f, 0f, distanceZ);
+                transform.localRotation = Quaternion.identity;
+            }
         }
 
         public void SetBackdropActive(bool active)

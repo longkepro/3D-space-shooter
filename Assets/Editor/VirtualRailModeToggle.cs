@@ -15,10 +15,12 @@ public class VirtualRailModeToggle
     private const string COSMIC_EARTH_MATERIAL_PATH = "Assets/Materials/Skybox_Image1_CosmicEarth.mat";
     private const string ORIGINAL_SKYBOX_MATERIAL_PATH = "Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1.mat";
     private const string SKYBOX_INIT_KEY = "VirtualRail_Skybox_Image1_Initialized";
+    private const string BACKDROP_BAKED_KEY = "VirtualRail_Backdrop_Baked_v4";
 
     static VirtualRailModeToggle()
     {
         EditorApplication.delayCall += InitializeSkyboxOnce;
+        EditorApplication.delayCall += InitializeBackdropPrefabOnce;
     }
 
     private static void InitializeSkyboxOnce()
@@ -28,6 +30,27 @@ public class VirtualRailModeToggle
             SessionState.SetBool(SKYBOX_INIT_KEY, true);
             ApplyCosmicEarthSkybox();
         }
+    }
+
+    private static void InitializeBackdropPrefabOnce()
+    {
+        if (!SessionState.GetBool(BACKDROP_BAKED_KEY, false))
+        {
+            SessionState.SetBool(BACKDROP_BAKED_KEY, true);
+            RebuildPlayerRigPrefab();
+        }
+    }
+
+    public static void RebuildPlayerRigPrefab()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config == null) return;
+
+        GameObject railRig = BuildVirtualRailRig(config);
+        PrefabUtility.SaveAsPrefabAsset(railRig, VIRTUAL_RAIL_PREFAB);
+        Object.DestroyImmediate(railRig);
+        AssetDatabase.SaveAssets();
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ TỰ ĐỘNG BAKE LẠI PREFAB VirtualRail_PlayerRig:</b></color> [Horizon Backdrop] đã được lưu trực tiếp vào cây phân cấp của Prefab!");
     }
 
     [MenuItem("Tools/Virtual Rail/1. Switch to Virtual Rail Mode (ACTIVE)")]
@@ -891,6 +914,8 @@ public class VirtualRailModeToggle
             AssetDatabase.SaveAssets();
             Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT MÀN CHIẾU CHÂN TRỜI 1:1 (FRONT-FACING HORIZON BACKDROP - ON):</b></color> Vòm Trái Đất & Mặt Trăng sắc nét 100% từng pixel, luôn khóa chuẩn trước mũi tàu theo đúng hướng bay!");
         }
+
+        RebuildPlayerRigPrefab();
 
         var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         foreach (var bd in backdrops)

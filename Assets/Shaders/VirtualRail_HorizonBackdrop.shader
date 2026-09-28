@@ -11,8 +11,8 @@ Shader "VirtualRail/HorizonBackdrop"
     {
         Tags 
         { 
-            "Queue" = "Background" 
-            "RenderType" = "Background" 
+            "Queue" = "Geometry+501" 
+            "RenderType" = "Opaque" 
             "IgnoreProjector" = "True"
             "PreviewType" = "Plane"
         }

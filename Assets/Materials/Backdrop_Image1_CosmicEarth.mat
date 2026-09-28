@@ -16,10 +16,10 @@ Material:
   m_LightmapFlags: 5
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 1000
+  m_CustomRenderQueue: 2501
   stringTagMap:
-    Queue: Background
-    RenderType: Background
+    Queue: Geometry+501
+    RenderType: Opaque
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
