@@ -16,7 +16,6 @@ using VirtualRail;
 /// - Tầng 2: Sao lưu an toàn Enemy (0)-(2) cũ vào Assets/Prefabs/Backup_Legacy_Enemies/.
 /// - Tầng 3: Menu Item 1-click [41] Apply (ON) và [42] Undo Restore (OFF - Legacy).
 /// </summary>
-[InitializeOnLoad]
 public static class VirtualRailEnemyPrefabBuilder
 {
     public const string PREFAB_ENEMY_0_PATH = "Assets/Prefabs/Enemy (0) - Scout.prefab";
@@ -41,25 +40,6 @@ public static class VirtualRailEnemyPrefabBuilder
     public const string SHIELD_MAT_PATH = "Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Light/CFX4_AuraBubble ADD.mat";
     public const string LASER_PREFAB_PATH = "Assets/Prefabs/Laser.prefab";
     public const string BLOWUP_VFX_PATH = "Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX4 Magic Hit.prefab";
-
-    static VirtualRailEnemyPrefabBuilder()
-    {
-        EditorApplication.delayCall += () =>
-        {
-            if (!File.Exists(PREFAB_SQUAD_LEADER_PATH) || !File.Exists(PREFAB_SHIELD_BEARER_PATH))
-            {
-                BuildSquadLeaderPrefab();
-                BuildShieldBearerPrefab();
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-            }
-
-            if (File.Exists(VIRTUAL_SS1_PATH) || File.Exists(VIRTUAL_SS4_PATH) || File.Exists(VIRTUAL_SS6_PATH))
-            {
-                MigrateStarSparrowToEnemies();
-            }
-        };
-    }
 
     public static void MigrateStarSparrowToEnemies()
     {

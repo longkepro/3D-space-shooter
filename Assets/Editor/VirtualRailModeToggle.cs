@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -156,654 +156,117 @@ public class VirtualRailModeToggle
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/3. Controls: Direction A (Free-Roam Velocity - No Auto-Centering)")]
-    public static void EnableDirectionA()
+    // =========================================================================
+    // HORIZON BACKDROP CONTROLS (Man chieu chan troi do net cao khoa truoc mui tau)
+    // =========================================================================
+
+    [MenuItem("Tools/Virtual Rail/3. Backdrop: Switch to Refined Horizon v2 (Fixed AI Flaws - ON)")]
+    public static void EnableRefinedHorizonV2()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
-            config.useDirectAnalogMapping = false;
-            config.reticleSpeedX = 140f;
-            config.reticleSpeedY = 85f;
+            config.enableHorizonBackdrop = true;
+            config.backdropDistanceZ = 850f;
+            config.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth_v2.mat");
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HƯỚNG A (FREE-ROAM VELOCITY):</b></color> Nhả phím tàu và tâm ngắm đứng yên tại chỗ, không bao giờ bị kéo về trung tâm!");
+            Debug.Log("<color=green><b>[VirtualRail] DA CHUYEN SANG MAN CHIEU CHAN TROI TINH CHINH V2:</b></color> Da khac phuc 5 loi AI: Mat trang co dia chat ho va cham chuan, may cuon xoay Coriolis, quang hoc thau kinh tu nhien, triet tieu vien halo!");
+        }
+
+        RebuildPlayerRigPrefab();
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            if (config != null && config.backdropMaterial != null) bd.backdropMaterial = config.backdropMaterial;
+            bd.Initialize();
+            bd.SetBackdropActive(true);
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/4. Controls: Undo to Direct Analog (Auto-Centering)")]
-    public static void DisableDirectionA()
+    [MenuItem("Tools/Virtual Rail/4. Backdrop: Undo to v1 Horizon (OFF - Revert to v1)")]
+    public static void RevertToHorizonV1()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
-            config.useDirectAnalogMapping = true;
+            config.enableHorizonBackdrop = true;
+            config.backdropDistanceZ = 850f;
+            config.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ DIRECT ANALOG:</b></color> Nhả phím tự động kéo về giữa.");
+            Debug.Log("<color=yellow><b>[VirtualRail] DA HOAN NGUYEN (UNDO) VE MAN CHIEU V1 BAN DAU:</b></color> Su dung Backdrop_Image1_CosmicEarth.mat.");
+        }
+
+        RebuildPlayerRigPrefab();
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            if (config != null && config.backdropMaterial != null) bd.backdropMaterial = config.backdropMaterial;
+            bd.Initialize();
+            bd.SetBackdropActive(true);
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/5. Camera: Direction 3 (Telephoto Lens ON: FOV 40, Dist 35)")]
-    public static void EnableTelephotoDirection3()
+    [MenuItem("Tools/Virtual Rail/5. Backdrop: Toggle Horizon Backdrop (ON/OFF)")]
+    public static void ToggleHorizonBackdrop()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
-            config.cameraFOV = 40f;
-            config.cameraDistance = 35f;
-            config.cameraHeight = 8.0f;
-            config.fixedCameraPitch = 5.0f;
+            config.enableHorizonBackdrop = !config.enableHorizonBackdrop;
             EditorUtility.SetDirty(config);
             AssetDatabase.SaveAssets();
+            Debug.Log($"<color=cyan><b>[VirtualRail] TRANG THAI HORIZON BACKDROP:</b></color> {(config.enableHorizonBackdrop ? "BAT (ON)" : "TAT (OFF)")}");
+        }
 
-            Camera cam = Camera.main;
-            if (cam != null)
-            {
-                cam.fieldOfView = 40f;
-                EditorUtility.SetDirty(cam);
-            }
+        RebuildPlayerRigPrefab();
 
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HƯỚNG 3 (TELEPHOTO LENS):</b></color> FOV = 40, Distance = 35m, Height = 8m. Giảm mạnh thị sai mép màn hình, giữ camera hoàn toàn bất động!");
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            if (config != null && config.backdropMaterial != null) bd.backdropMaterial = config.backdropMaterial;
+            bd.Initialize();
+            bd.SetBackdropActive(config != null && config.enableHorizonBackdrop);
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/6. Camera: Undo Direction 3 (Classic Wide Lens: FOV 60, Dist 22)")]
-    public static void DisableTelephotoDirection3()
+    // =========================================================================
+    // CONFIG INSPECTOR SHORTCUT
+    // =========================================================================
+
+    [MenuItem("Tools/Virtual Rail/6. Select Virtual Rail Config (Inspector)")]
+    public static void SelectConfigInInspector()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
         if (config != null)
         {
-            config.cameraFOV = 60f;
-            config.cameraDistance = 22f;
-            config.cameraHeight = 5.5f;
-            config.fixedCameraPitch = 5.0f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-
-            Camera cam = Camera.main;
-            if (cam != null)
-            {
-                cam.fieldOfView = 60f;
-                EditorUtility.SetDirty(cam);
-            }
-
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) HƯỚNG 3:</b></color> Trở về ống kính góc rộng ban đầu: FOV = 60, Distance = 22m, Height = 5.5m.");
+            Selection.activeObject = config;
+            EditorGUIUtility.PingObject(config);
+            Debug.Log("<color=green><b>[VirtualRail] DA CHON CONFIG TRONG INSPECTOR:</b></color> Ban co the tinh chinh toan bo thong so gameplay (FOV, toc do, dan, corridor, khien...) truc quan!");
         }
-    }
-
-    [MenuItem("Tools/Virtual Rail/7. Controls: Independent (Ship: Keys, Reticle: Mouse + Auto-Fire)")]
-    public static void EnableIndependentControls()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
+        else
         {
-            config.enableIndependentControls = true;
-            config.enableMouseAim = true;
-            config.autoFireOnAimMove = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT ĐIỀU KHIỂN ĐỘC LẬP & TỰ ĐỘNG BẮN:</b></color> Tàu bay bằng phím (WASD/Arrows), Tâm ngắm trỏ chuột (Mouse), và tự động xả đạn khi rê chuột!");
+            Debug.LogWarning("[VirtualRail] Khong tim thay config tai: " + CONFIG_PATH);
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/8. Controls: Undo to Coupled (Ship follows Reticle, Manual Fire)")]
-    public static void DisableIndependentControls()
+    // =========================================================================
+    // MAINTENANCE & UTILITIES
+    // =========================================================================
+
+    [MenuItem("Tools/Virtual Rail/Maintenance/Re-bake Player Rig Prefab")]
+    public static void MenuRebakeRigPrefab()
     {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableIndependentControls = false;
-            config.enableMouseAim = false;
-            config.autoFireOnAimMove = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ ĐIỀU KHIỂN LIÊN KẾT CŨ:</b></color> Tàu bám theo tâm ngắm bằng phím bấm, chỉ bắn khi bấm Space/Click.");
-        }
+        RebuildPlayerRigPrefab();
+        Debug.Log("<color=green><b>[VirtualRail] DA RE-BAKE THANH CONG PREFAB:</b></color> Assets/Prefabs/VirtualRail_PlayerRig.prefab.");
     }
 
-    [MenuItem("Tools/Virtual Rail/9. Mobile: Show Touch Joysticks (ON)")]
-    public static void EnableForceShowMobileUI()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableMobileUI = true;
-            config.forceShowMobileUI = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT GIAO DIỆN MOBILE UI:</b></color> 2 cần gạt ảo (Trái & Phải) đang hiển thị. Trong lúc chơi có thể bấm F1 để ẩn/hiện nhanh!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/10. Mobile: Hide Touch Joysticks (OFF)")]
-    public static void DisableForceShowMobileUI()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.forceShowMobileUI = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ ẨN GIAO DIỆN MOBILE UI:</b></color> Cần gạt ảo đã được ẩn tạm thời. Muốn bật lại chỉ cần chọn Menu 9 hoặc bấm F1 khi đang chơi!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/11. Weapons: Direction 1 (Segmented Laser Bolts ON)")]
-    public static void EnableSegmentedLaserBolts()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useSegmentedLaser = true;
-            config.laserBoltLength = 8.5f;
-            config.laserBoltWidth = 0.85f;
-            config.laserBoltSpeed = 220f;
-            config.laserColor = new Color(0.1f, 1f, 0.85f, 1f);
-
-            var neonMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/LaserBolt_BrightNeon.mat");
-            if (neonMat != null)
-            {
-                config.laserBoltMaterial = neonMat;
-            }
-            else
-            {
-                config.laserBoltMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Stretched/CFX_RayRounded.mat");
-            }
-
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HƯỚNG 1 (SEGMENTED LASER BOLTS):</b></color> Đạn laser to rõ (0.85m), dài (8.5m), phát sáng Neon rực rỡ và có Point Light chiếu sáng!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/12. Weapons: Undo to Instant Raycast Beam (OFF)")]
-    public static void DisableSegmentedLaserBolts()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useSegmentedLaser = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ TIA LASER TỨC THỜI:</b></color> Tia laser kéo dài từ nòng súng tới mục tiêu.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/13. Spawner: Rail Wave Spawner (ON - Ahead of Player)")]
-    public static void EnableRailWaveSpawner()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useRailWaveSpawner = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT RAIL WAVE SPAWNER:</b></color> Quái vật sinh ra phía trước đón đầu người chơi (220m), tái sử dụng qua Object Pool 0 GC!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/14. Spawner: Undo to Legacy Static Spawner (OFF)")]
-    public static void DisableRailWaveSpawner()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useRailWaveSpawner = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ ENEMY SPAWNER CŨ:</b></color> Tắt bộ điều phối đợt sóng đường ray.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/15. Asteroids: Streaming Rail Asteroids (ON - Ahead of Player)")]
-    public static void EnableStreamingAsteroids()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useRailAsteroidSpawner = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT STREAMING ASTEROIDS:</b></color> Thiên thạch liên tục sinh ra đón đầu phía trước mũi tàu (250m), thu hồi sau lưng (0 GC Alloc)!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/16. Asteroids: Undo to Legacy Static Asteroids (OFF)")]
-    public static void DisableStreamingAsteroids()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useRailAsteroidSpawner = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ THIÊN THẠCH TĨNH:</b></color> Tắt bộ điều phối thiên thạch đón đầu đường ray.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/17. Kinematics: Golden Ratio Motion (ON - 50% X, 35% Y, Adaptive Lag)")]
-    public static void EnableGoldenRatioMotion()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useGoldenRatioMotion = true;
-            config.forwardSpeed = 40f;
-            config.boostMultiplier = 1.5f;
-            config.goldenRatioX = 0.50f;
-            config.goldenRatioY = 0.35f;
-            config.maxSafeDriftDistance = 2.5f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT ĐỘNG HỌC TỶ LỆ VÀNG:</b></color> Vx:Vy:Vz = 0.50:0.35:1.00, Transit Time ~0.7s, Tự động siết trôi dạt S_drift <= 2.5m!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/18. Kinematics: Undo to Legacy Fixed Speeds (OFF)")]
-    public static void DisableGoldenRatioMotion()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useGoldenRatioMotion = false;
-            config.forwardSpeed = 28f;
-            config.boostMultiplier = 1.6f;
-            config.shipSpeedX = 140f;
-            config.shipSpeedY = 85f;
-            config.smoothDampLag = 0.1f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ VẬN TỐC CỐ ĐỊNH CŨ:</b></color> Dùng shipSpeedX = 140, shipSpeedY = 85, lag = 0.1s.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/19. Combat: Active Counter-Play & Plasma Projectiles (ON)")]
-    public static void EnableCombatCounterPlay()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableBarrelRollDeflection = true;
-            config.enableSmartBomb = true;
-            config.usePhysicalEnemyProjectiles = true;
-            config.chargeShotSplashRadius = 10f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT COMBAT & ACTIVE COUNTER-PLAY (TDD PHẦN I):</b></color> Barrel Roll hất đạn 90°, Smart Bomb quét sạch màn hình, Đạn Plasma vật lý V_closing, Charge Shot nổ lan Combo!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/20. Combat: Undo to Legacy Hitscan Attack (OFF)")]
-    public static void DisableCombatCounterPlay()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableBarrelRollDeflection = false;
-            config.enableSmartBomb = false;
-            config.usePhysicalEnemyProjectiles = false;
-            config.chargeShotSplashRadius = 0f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ COMBAT CŨ:</b></color> Tắt Barrel Roll hất đạn, Tắt Smart Bomb, Quay lại Laser Hitscan truyền thống.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/21. Spatial Vectors: 10 Spawn Trajectories & 4-Phase FSM (ON)")]
-    public static void EnableSpatialVectors()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useSpatialVectors = true;
-            config.enable4PhaseLifecycle = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT 10 VECTOR KHÔNG GIAN & FSM 4 PHA (TDD PHẦN II):</b></color> Trực diện, Đột kích sau lưng, Cắt ngang sườn, Bổ nhào trần mây, Trồi đáy sâu, Warp-in, FSM Telegraph -> Approach -> Action -> Exit!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/22. Spatial Vectors: Undo to Legacy Static Spawn (OFF)")]
-    public static void DisableSpatialVectors()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useSpatialVectors = false;
-            config.enable4PhaseLifecycle = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ SINH QUÁI TĨNH CŨ:</b></color> Tắt 10 Vector không gian, tắt FSM 4 pha, quay lại vị trí tĩnh phía trước.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/23. Formations: Bézier Assembly & Panic Scatter (ON)")]
-    public static void EnableFormationChoreography()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableFormations = true;
-            config.enablePanicScatter = true;
-            config.formationAssemblyTime = 1.2f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT BIÊN ĐẠO ĐỘI HÌNH & PANIC SCATTER (TDD PHẦN III):</b></color> Đội hình chữ V ráp nối Bézier 3D 1.2s, Đánh đổi Rủi ro/Phần thưởng Combo, Bắn hạ chỉ huy kích hoạt Panic Scatter!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/24. Formations: Undo to Solitary Spawning (OFF)")]
-    public static void DisableFormationChoreography()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableFormations = false;
-            config.enablePanicScatter = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ SINH QUÁI ĐƠN LẺ:</b></color> Tắt bay đội hình chữ V, tắt Panic Scatter.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/25. Mouse Aim: Hover-to-Fire on Reticle (ON)")]
-    public static void EnableMouseHoverFire()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableMouseHoverFire = true;
-            config.reticleMouseTouchRadius = 45f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HOVER-TO-FIRE (HƯỚNG 1):</b></color> Chuột chạm/nằm trong vùng tâm ngắm sẽ luôn tự động xả đạn liên tục!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/26. Mouse Aim: Undo to Manual Click Fire (OFF)")]
-    public static void DisableMouseHoverFire()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableMouseHoverFire = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ BẮN THỦ CÔNG:</b></color> Tắt Hover-to-Fire, quay lại bấm chuột trái/Space để bắn.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/27. Asteroids: Guaranteed Safe Corridor Trench (ON)")]
-    public static void EnableSafeCorridorPath()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableSafeCorridorPath = true;
-            config.safeCorridorRadius = 5.5f;
-            config.safePathWiggleFrequency = 0.012f;
-            config.safePathWiggleAmplitudeX = 12f;
-            config.safePathWiggleAmplitudeY = 4.5f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT LÀN BAY AN TOÀN ĐẢM BẢO (PERLIN SAFE SPINE):</b></color> Thuật toán Perlin Noise tạo luồng hẻm núi an toàn R=5.5m xuyên qua biển thiên thạch, 100% không bị tường chắn bất khả thi!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/28. Asteroids: Undo to Pure Random Spawn (OFF)")]
-    public static void DisableSafeCorridorPath()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableSafeCorridorPath = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ NGẪU NHIÊN THUẦN TÚY:</b></color> Tắt luồng an toàn, quay lại rải thiên thạch Random.Range cũ.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/29. Aiming: Pure 3D Convergence to Reticle (ON - Star Fox 64 Arcade)")]
-    public static void EnablePureConvergenceAiming()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableBulletMagnetism = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT BẮN HỘI TỤ THUẦN TÚY (PURE 3D CONVERGENCE - STAR FOX 64 ARCADE):</b></color> Đạn từ mọi nòng luôn bay thẳng xuyên tâm ngắm reticle ở cự ly Z_conv, 100% không bị thiên thạch hay vật cản ven đường bẻ lệch!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/30. Aiming: Bullet Magnetism Assist (ON - Filtered Enemy Only)")]
-    public static void EnableFilteredBulletMagnetism()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableBulletMagnetism = true;
-            config.magnetismRadius = 1.2f;
-            config.magnetismMaxAngle = 6.0f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ BẬT PHỄU TỪ TÍNH CÓ KIỂM SOÁT (BULLET MAGNETISM ASSIST):</b></color> Chỉ nắn hướng đạn tối đa 6 độ về trọng tâm kẻ địch (Enemy), hoàn toàn bỏ qua thiên thạch.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/31. Aiming: Dynamic Depth Convergence (ON - Star Fox 64)")]
-    public static void EnableDynamicDepthConvergence()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableDynamicDepthConvergence = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HỘI TỤ ĐỘ SÂU ĐỘNG (DYNAMIC DEPTH CONVERGENCE - STAR FOX 64):</b></color> Tia ngắm tự động đo độ sâu mục tiêu, chụm 2 nòng súng chính xác vào kẻ địch ở mọi cự ly (20m - 250m)!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/32. Aiming: Fixed Depth Convergence 150m (OFF - Legacy)")]
-    public static void DisableDynamicDepthConvergence()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableDynamicDepthConvergence = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ QUAY VỀ HỘI TỤ CỐ ĐỊNH 150M (FIXED DEPTH CONVERGENCE - LEGACY):</b></color> Đạn luôn chụm ở cự ly cố định 150m.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/33. Aiming: Gimbaled Turrets & Dual Reticle Alignment (ON)")]
-    public static void EnableGimbaledTurretsAndDualReticle()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableDualReticle = true;
-            config.enableGimbalWeapon = true;
-            config.gimbalTrackingSpeed = 220f;
-            config.maxGimbalAngle = 35f;
-            config.gimbalLockThreshold = 12f;
-            config.laserBoltCollisionRadius = 1.0f;
-            config.enableLateralVelocityInheritance = false; // Triệt tiêu văng đạn xiên
-            config.enableMicroAimAlignment = true;
-            config.enableDepthResponsiveReticle = false;
-            config.enableDynamicDepthConvergence = true; // Bật để triệt tiêu góc thị sai 4m khi bắn cự ly ngắn
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT Ụ SÚNG XOAY CƠ HỌC & TÂM KÉP KHÓA MỤC TIÊU (GIMBALED TURRETS & DUAL RETICLE ALIGNMENT):</b></color> Nòng súng xoay cơ học 220°/s đuổi theo chuột trong nón 35°, Tâm Trong chỉ đúng hướng súng bắn, Khóa cứng mục tiêu khi 2 tâm khớp nhau!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/34. Aiming: Undo to Fixed Muzzles & Legacy Aim (OFF - Legacy)")]
-    public static void DisableGimbaledTurretsAndDualReticle()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableDualReticle = false;
-            config.enableGimbalWeapon = false;
-            config.laserBoltCollisionRadius = 0.35f;
-            config.enableLateralVelocityInheritance = false;
-            config.enableDepthResponsiveReticle = false;
-            config.enableDynamicDepthConvergence = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ NÒNG SÚNG CỐ ĐỊNH & TÂM ĐƠN CŨ:</b></color> Tắt ụ xoay cơ học, tắt tâm gần, quay lại nòng súng cố định.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/35. Enemies: Rail Speed Synchronization & Engagement Hold Distance (ON)")]
-    public static void EnableEnemyRailSyncAndHold()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableEnemyRailSync = true;
-            config.enemyHoldDistance = 60f;
-            config.enemyClosingSpeed = 20f;
-            config.formationHoldDistance = 65f;
-            config.formationClosingSpeed = 25f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT ĐỒNG BỘ VẬN TỐC RAY & CỰ LY GHÌM GIAO CHIẾN (ON):</b></color> Kẻ địch và Đội hình bay tiếp cận êm ái (20m/s), ghìm cố định ở 60m-65m trước mũi tàu để tạo cửa sổ tác chiến vàng!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/36. Enemies: Undo to Unsynchronized Fast Approach (OFF - Legacy)")]
-    public static void DisableEnemyRailSyncAndHold()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableEnemyRailSync = false;
-            config.enemyHoldDistance = 0f;
-            config.enemyClosingSpeed = 140f;
-            config.formationHoldDistance = 0f;
-            config.formationClosingSpeed = 35f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ VẬN TỐC TIẾP CẬN CŨ (OFF):</b></color> Tắt cự ly ghìm và đồng bộ ray, kẻ địch lao tự do như phiên bản cũ.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/37. Archetypes & Hazards: Enable Modular Enemies & Obstacles (ON)")]
-    public static void EnableModularEnemiesAndObstacles()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableModularEnemies = true;
-            config.enableDestructibleAsteroids = true;
-            config.indestructibleAsteroidChance = 0.25f;
-            config.enableCollectibleRings = true;
-            config.ringSpawnRate = 0.35f;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT MODULE HÓA KẺ ĐỊCH & VẬT CẢN (ON):</b></color> 4 Archetypes (Scout, Flanker, Interceptor, SquadLeader), Thiên thạch có máu vs Bất hoại, Vòng thu thập năng lượng nâng cấp súng!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/38. Archetypes & Hazards: Undo to Legacy 1-Hit & Simple Asteroids (OFF)")]
-    public static void DisableModularEnemiesAndObstacles()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableModularEnemies = false;
-            config.enableDestructibleAsteroids = false;
-            config.enableCollectibleRings = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ KẺ ĐỊCH 1-HIT CŨ:</b></color> Tắt phân loại Archetype, tắt máu thiên thạch, tắt vòng nâng cấp.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/39. Shieldbearer: Enable Command-Linked Formation Shield (ON)")]
-    public static void EnableShieldBearerAndFormationShield()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableShieldBearerEnemies = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT TÀU LÁ CHẮN SHIELDBEARER & KHIÊN LIÊN KẾT CHỈ HUY (ON):</b></color> Tàu lá chắn tự động kích hoạt bong bóng năng lượng bất hoại khi vào đội hình; Khiên lập tức nổ/vỡ nếu tàu Chỉ huy bị tiêu diệt!");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/40. Shieldbearer: Disable (OFF - Legacy)")]
-    public static void DisableShieldBearerAndFormationShield()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableShieldBearerEnemies = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT TÀU LÁ CHẮN SHIELDBEARER (OFF - LEGACY):</b></color> Đội hình bay sử dụng hoàn toàn tàu Flanker tiêu chuẩn, không kích hoạt khiên năng lượng.");
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/41. Visuals: Migrate StarSparrow Models to Enemy 0-2 (ON)")]
-    public static void EnableStarSparrowFleetModels()
-    {
-        VirtualRailEnemyPrefabBuilder.MigrateStarSparrowToEnemies();
-    }
-
-    [MenuItem("Tools/Virtual Rail/42. Visuals: Restore Legacy Enemy Models (OFF - Legacy)")]
-    public static void DisableStarSparrowFleetModels()
-    {
-        VirtualRailEnemyPrefabBuilder.RestoreLegacyEnemies();
-    }
-
-    [MenuItem("Tools/Virtual Rail/43. Visuals: Enable Space Dust & Motion Parallax (ON)")]
-    public static void EnableSpaceDustMotionParallax()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableSpaceDust = true;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT BỤI SAO KHÔNG GIAN (SPACE DUST MOTION PARALLAX - ON):</b></color> Các hạt bụi sao lướt qua thân tàu giải quyết triệt để cảm giác tàu đứng im trên Skybox tĩnh!");
-        }
-
-        var dust = Object.FindAnyObjectByType<VirtualRailSpaceDust>(FindObjectsInactive.Include);
-        if (dust != null)
-        {
-            dust.SetDustActive(true);
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/44. Visuals: Disable Space Dust (OFF - Static Space)")]
-    public static void DisableSpaceDustMotionParallax()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableSpaceDust = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT BỤI SAO KHÔNG GIAN (OFF):</b></color> Quay về không gian chân không tĩnh.");
-        }
-
-        var dust = Object.FindAnyObjectByType<VirtualRailSpaceDust>(FindObjectsInactive.Include);
-        if (dust != null)
-        {
-            dust.SetDustActive(false);
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/45. Skybox: Apply Cosmic Earth Skybox (Image 1 - ON)")]
+    [MenuItem("Tools/Virtual Rail/Maintenance/Apply Cosmic Earth Skybox")]
     public static void ApplyCosmicEarthSkybox()
     {
-        // 1. Đảm bảo Texture Importer chuẩn cho Panoramic Skybox
         TextureImporter importer = AssetImporter.GetAtPath(COSMIC_EARTH_TEXTURE_PATH) as TextureImporter;
         if (importer != null)
         {
@@ -829,12 +292,11 @@ public class VirtualRailModeToggle
             }
         }
 
-        // 2. Tải hoặc khởi tạo Material mới (Không bao giờ ghi đè skybox cũ - Điều 3 Tầng 2)
         Material skyboxMat = AssetDatabase.LoadAssetAtPath<Material>(COSMIC_EARTH_MATERIAL_PATH);
         Shader panoramicShader = Shader.Find("Skybox/Panoramic");
         if (panoramicShader == null)
         {
-            Debug.LogError("[VirtualRail] Không tìm thấy Shader 'Skybox/Panoramic' của Unity!");
+            Debug.LogError("[VirtualRail] Khong tim thay Shader 'Skybox/Panoramic' cua Unity!");
             return;
         }
 
@@ -856,34 +318,33 @@ public class VirtualRailModeToggle
         skyboxMat.SetFloat("_Exposure", 1.25f);
         skyboxMat.SetFloat("_Rotation", 270f);
         skyboxMat.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, 0.5f));
-        skyboxMat.SetFloat("_Mapping", 0); // 0 = Latitude Longitude Layout
-        skyboxMat.SetFloat("_ImageType", 0); // 0 = 360 degrees
+        skyboxMat.SetFloat("_Mapping", 0);
+        skyboxMat.SetFloat("_ImageType", 0);
         skyboxMat.SetFloat("_MirrorOnBack", 0);
         EditorUtility.SetDirty(skyboxMat);
         AssetDatabase.SaveAssets();
 
-        // 3. Áp dụng vào RenderSettings trong Scene hiện tại
         RenderSettings.skybox = skyboxMat;
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = new Color(0.18f, 0.24f, 0.32f);      // Hắt sáng lam ngọc từ vòm Trái Đất phía trên
-        RenderSettings.ambientEquatorColor = new Color(0.08f, 0.10f, 0.14f);  // Sắc độ xanh vũ trụ trung gian
-        RenderSettings.ambientGroundColor = new Color(0.02f, 0.02f, 0.03f);   // Đáy vũ trụ tối
+        RenderSettings.ambientSkyColor = new Color(0.18f, 0.24f, 0.32f);
+        RenderSettings.ambientEquatorColor = new Color(0.08f, 0.10f, 0.14f);
+        RenderSettings.ambientGroundColor = new Color(0.02f, 0.02f, 0.03f);
         RenderSettings.ambientIntensity = 1.1f;
 
         DynamicGI.UpdateEnvironment();
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
 
-        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT SKYBOX ẢNH 1 (COSMIC EARTH HORIZON):</b></color> Vòm Trái Đất khí quyển neon uốn cong phía trên trần, mặt trăng và tinh vân vũ trụ!");
+        Debug.Log("<color=green><b>[VirtualRail] DA KICH HOAT SKYBOX ANH 1 (COSMIC EARTH HORIZON):</b></color> Vom Trai Dat neon uon cong phia tren!");
     }
 
-    [MenuItem("Tools/Virtual Rail/46. Skybox: Restore Original Skybox (OFF - Legacy)")]
+    [MenuItem("Tools/Virtual Rail/Maintenance/Restore Original Skybox (Legacy)")]
     public static void RestoreOriginalSkybox()
     {
         Material originalMat = AssetDatabase.LoadAssetAtPath<Material>(ORIGINAL_SKYBOX_MATERIAL_PATH);
         if (originalMat == null)
         {
-            Debug.LogError("[VirtualRail] Không tìm thấy skyboxv1.mat gốc!");
+            Debug.LogError("[VirtualRail] Khong tim thay skyboxv1.mat goc!");
             return;
         }
 
@@ -898,99 +359,7 @@ public class VirtualRailModeToggle
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
 
-        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ SKYBOX GỐC:</b></color> skyboxv1.mat đã được gán lại vào RenderSettings.");
-    }
-
-    [MenuItem("Tools/Virtual Rail/47. Backdrop: Enable Cosmic Earth Horizon (Image 1 - ON)")]
-    public static void EnableHorizonBackdrop()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableHorizonBackdrop = true;
-            config.backdropDistanceZ = 850f;
-            config.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT MÀN CHIẾU CHÂN TRỜI 1:1 (FRONT-FACING HORIZON BACKDROP - ON):</b></color> Vòm Trái Đất & Mặt Trăng sắc nét 100% từng pixel, luôn khóa chuẩn trước mũi tàu theo đúng hướng bay!");
-        }
-
-        RebuildPlayerRigPrefab();
-
-        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (var bd in backdrops)
-        {
-            bd.SetBackdropActive(true);
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/48. Backdrop: Disable Horizon Backdrop (OFF - Skybox Only)")]
-    public static void DisableHorizonBackdrop()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableHorizonBackdrop = false;
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT MÀN CHIẾU CHÂN TRỜI (OFF):</b></color> Quay về sử dụng nền Skybox thông thường.");
-        }
-
-        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (var bd in backdrops)
-        {
-            bd.SetBackdropActive(false);
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/49. Backdrop: Switch to Refined Horizon v2 (Fixed AI Flaws - ON)")]
-    public static void EnableRefinedHorizonV2()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableHorizonBackdrop = true;
-            config.backdropDistanceZ = 850f;
-            config.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth_v2.mat");
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=green><b>[VirtualRail] ĐÃ CHUYỂN SANG MÀN CHIẾU CHÂN TRỜI TINH CHỈNH V2:</b></color> Đã khắc phục 5 lỗi AI: Mặt trăng có địa chất hố va chạm chuẩn, mây cuộn xoáy Coriolis, quang học thấu kính tự nhiên, triệt tiêu viền halo!");
-        }
-
-        RebuildPlayerRigPrefab();
-
-        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (var bd in backdrops)
-        {
-            if (config != null && config.backdropMaterial != null) bd.backdropMaterial = config.backdropMaterial;
-            bd.Initialize();
-            bd.SetBackdropActive(true);
-        }
-    }
-
-    [MenuItem("Tools/Virtual Rail/50. Backdrop: Undo to v1 Horizon (OFF - Revert to v1)")]
-    public static void RevertToHorizonV1()
-    {
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.enableHorizonBackdrop = true;
-            config.backdropDistanceZ = 850f;
-            config.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ MÀN CHIẾU V1 BAN ĐẦU:</b></color> Sử dụng Backdrop_Image1_CosmicEarth.mat.");
-        }
-
-        RebuildPlayerRigPrefab();
-
-        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        foreach (var bd in backdrops)
-        {
-            if (config != null && config.backdropMaterial != null) bd.backdropMaterial = config.backdropMaterial;
-            bd.Initialize();
-            bd.SetBackdropActive(true);
-        }
+        Debug.Log("<color=yellow><b>[VirtualRail] DA HOAN NGUYEN (UNDO) VE SKYBOX GOC:</b></color> skyboxv1.mat da duoc gan lai vao RenderSettings.");
     }
 
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
@@ -1034,7 +403,7 @@ public class VirtualRailModeToggle
         backdropObj.transform.localRotation = Quaternion.identity;
         VirtualRailHorizonBackdrop backdrop = backdropObj.AddComponent<VirtualRailHorizonBackdrop>();
         backdrop.distanceZ = config.backdropDistanceZ;
-        backdrop.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
+        backdrop.backdropMaterial = (config.backdropMaterial != null) ? config.backdropMaterial : AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth_v2.mat");
         backdrop.Initialize();
 
         // 2. Reticle Anchor

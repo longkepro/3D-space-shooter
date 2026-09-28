@@ -42,7 +42,7 @@ public static class VirtualRailEnemyFixer
     private const string HIREZ_WING2 = "Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Grey/Wing2.mat";
     private const string HIREZ_WING6 = "Assets/HiRezSpaceshipsCreatorFree/Materials/Wings/Grey/Wing6.mat";
 
-    [MenuItem("Tools/Virtual Rail/57. Diagnose Enemy 2 and 3 Nozzles (DEBUG)")]
+    // [DEBUG] Diagnose tool (can be called manually if needed)
     public static void DiagnoseEnemy2And3Nozzles()
     {
         string[] prefabs = { PREFAB_2, PREFAB_3 };
@@ -74,7 +74,7 @@ public static class VirtualRailEnemyFixer
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/53. Apply All Enemy Fixes & Calibrations (ACTIVE)")]
+    [MenuItem("Tools/Virtual Rail/Maintenance/Apply All Enemy Fixes & Calibrations")]
     public static void FixAllEnemyPrefabs()
     {
         // 1. Sao lưu 5 prefab trước khi sửa đổi (Tuân thủ Điều 3 Tầng 2)
@@ -92,7 +92,7 @@ public static class VirtualRailEnemyFixer
         Debug.Log("<color=green><b>[VirtualRail] ĐÃ TỰ ĐỘNG CÂN CHỈNH VÀ SỬA XONG TOÀN BỘ 5 KẺ ĐỊCH!</b></color>");
     }
 
-    [MenuItem("Tools/Virtual Rail/55. Mirror Left Thruster to Right on Scout (ACTIVE)")]
+    // Mirror scout thrusters (called automatically by FixEnemy0Scout)
     public static void MirrorScoutThrusters()
     {
         if (!File.Exists(PREFAB_0)) return;
@@ -119,7 +119,7 @@ public static class VirtualRailEnemyFixer
         }
     }
 
-    [MenuItem("Tools/Virtual Rail/54. Undo Enemy Prefab Calibration (OFF - Legacy)")]
+    [MenuItem("Tools/Virtual Rail/Maintenance/Undo Enemy Prefab Calibration (Legacy)")]
     public static void UndoEnemyCalibration()
     {
         if (!Directory.Exists(BACKUP_DIR))
@@ -144,7 +144,7 @@ public static class VirtualRailEnemyFixer
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) 5 PREFAB KẺ ĐỊCH VỀ NGUYÊN BẢN TRƯỚC CÂN CHỈNH!</b></color>");
     }
 
-    [MenuItem("Tools/Virtual Rail/58. Apply Enemy 4 Hex Shield Barrier (ACTIVE)")]
+    [MenuItem("Tools/Virtual Rail/Maintenance/Apply Enemy 4 Hex Shield Barrier")]
     public static void ApplyEnemy4HexShieldBarrier()
     {
         BackupPrefabs();
@@ -154,7 +154,7 @@ public static class VirtualRailEnemyFixer
         Debug.Log("<color=green><b>[VirtualRail] ĐÃ TỰ ĐỘNG THIẾT LẬP TẤM KHIÊN LƯỚI LỤC GIÁC (HEX SHIELD) CHO ENEMY (4) SHIELD BEARER!</b></color>");
     }
 
-    [MenuItem("Tools/Virtual Rail/59. Undo Enemy 4 Hex Shield Barrier (OFF - Legacy)")]
+    [MenuItem("Tools/Virtual Rail/Maintenance/Undo Enemy 4 Hex Shield Barrier")]
     public static void UndoEnemy4HexShieldBarrier()
     {
         string backupFile = Path.Combine(BACKUP_DIR, Path.GetFileName(PREFAB_4));
