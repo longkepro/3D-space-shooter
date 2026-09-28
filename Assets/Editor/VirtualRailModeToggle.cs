@@ -943,6 +943,56 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/49. Backdrop: Switch to Refined Horizon v2 (Fixed AI Flaws - ON)")]
+    public static void EnableRefinedHorizonV2()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableHorizonBackdrop = true;
+            config.backdropDistanceZ = 850f;
+            config.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth_v2.mat");
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ CHUYỂN SANG MÀN CHIẾU CHÂN TRỜI TINH CHỈNH V2:</b></color> Đã khắc phục 5 lỗi AI: Mặt trăng có địa chất hố va chạm chuẩn, mây cuộn xoáy Coriolis, quang học thấu kính tự nhiên, triệt tiêu viền halo!");
+        }
+
+        RebuildPlayerRigPrefab();
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            if (config != null && config.backdropMaterial != null) bd.backdropMaterial = config.backdropMaterial;
+            bd.Initialize();
+            bd.SetBackdropActive(true);
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/50. Backdrop: Undo to v1 Horizon (OFF - Revert to v1)")]
+    public static void RevertToHorizonV1()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableHorizonBackdrop = true;
+            config.backdropDistanceZ = 850f;
+            config.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ MÀN CHIẾU V1 BAN ĐẦU:</b></color> Sử dụng Backdrop_Image1_CosmicEarth.mat.");
+        }
+
+        RebuildPlayerRigPrefab();
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            if (config != null && config.backdropMaterial != null) bd.backdropMaterial = config.backdropMaterial;
+            bd.Initialize();
+            bd.SetBackdropActive(true);
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
