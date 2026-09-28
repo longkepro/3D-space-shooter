@@ -332,6 +332,14 @@ namespace VirtualRail
         [Tooltip("Độ sâu trường bụi sao (m)")]
         public float dustFieldDepth = 90f;
 
+        [Header("21. Horizon Backdrop (Màn Chiếu Chân Trời HD 1:1 Pixel-Perfect)")]
+        [Tooltip("Bật màn chiếu chân trời trực diện độ nét cao 1:1 (Chuẩn Arcade Star Fox 64). Khóa chuẩn vòm Trái Đất & Mặt Trăng chính diện trước mũi tàu, triệt tiêu hoàn toàn mờ nhòe")]
+        public bool enableHorizonBackdrop = true;
+        [Tooltip("Khoảng cách Z của màn chiếu phía trước camera (m)")]
+        public float backdropDistanceZ = 850f;
+        [Tooltip("Vật liệu tùy chỉnh cho Horizon Backdrop")]
+        public Material backdropMaterial;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

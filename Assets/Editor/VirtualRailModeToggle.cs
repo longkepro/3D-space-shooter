@@ -831,7 +831,7 @@ public class VirtualRailModeToggle
             skyboxMat.mainTexture = tex;
         }
         skyboxMat.SetFloat("_Exposure", 1.25f);
-        skyboxMat.SetFloat("_Rotation", 0f);
+        skyboxMat.SetFloat("_Rotation", 270f);
         skyboxMat.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, 0.5f));
         skyboxMat.SetFloat("_Mapping", 0); // 0 = Latitude Longitude Layout
         skyboxMat.SetFloat("_ImageType", 0); // 0 = 360 degrees
@@ -878,6 +878,46 @@ public class VirtualRailModeToggle
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ SKYBOX GỐC:</b></color> skyboxv1.mat đã được gán lại vào RenderSettings.");
     }
 
+    [MenuItem("Tools/Virtual Rail/47. Backdrop: Enable Cosmic Earth Horizon (Image 1 - ON)")]
+    public static void EnableHorizonBackdrop()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableHorizonBackdrop = true;
+            config.backdropDistanceZ = 850f;
+            config.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT MÀN CHIẾU CHÂN TRỜI 1:1 (FRONT-FACING HORIZON BACKDROP - ON):</b></color> Vòm Trái Đất & Mặt Trăng sắc nét 100% từng pixel, luôn khóa chuẩn trước mũi tàu theo đúng hướng bay!");
+        }
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            bd.SetBackdropActive(true);
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/48. Backdrop: Disable Horizon Backdrop (OFF - Skybox Only)")]
+    public static void DisableHorizonBackdrop()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableHorizonBackdrop = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT MÀN CHIẾU CHÂN TRỜI (OFF):</b></color> Quay về sử dụng nền Skybox thông thường.");
+        }
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            bd.SetBackdropActive(false);
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
@@ -911,6 +951,16 @@ public class VirtualRailModeToggle
         spaceDust.anchor = anchor;
         spaceDust.config = config;
         spaceDust.InitializeSystem();
+
+        // 1c. Horizon Backdrop (Màn chiếu chân trời độ nét cao 1:1 khóa chuẩn trước mũi tàu)
+        GameObject backdropObj = new GameObject("[Horizon Backdrop]");
+        backdropObj.transform.SetParent(camRigObj.transform, false);
+        backdropObj.transform.localPosition = new Vector3(0, 0, config.backdropDistanceZ);
+        backdropObj.transform.localRotation = Quaternion.identity;
+        VirtualRailHorizonBackdrop backdrop = backdropObj.AddComponent<VirtualRailHorizonBackdrop>();
+        backdrop.distanceZ = config.backdropDistanceZ;
+        backdrop.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
+        backdrop.Initialize();
 
         // 2. Reticle Anchor
         GameObject reticleObj = new GameObject("[Reticle Anchor]");

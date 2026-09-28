@@ -54,6 +54,24 @@ namespace VirtualRail
                     dust.config = anchor.config;
                 }
             }
+
+            // Khởi tạo Màn Chiếu Chân Trời Độ Nét Cao 1:1 (Front-Facing Horizon Backdrop)
+            if (anchor != null && anchor.config != null && anchor.config.enableHorizonBackdrop)
+            {
+                var existingBackdrop = GetComponentInChildren<VirtualRailHorizonBackdrop>();
+                if (existingBackdrop == null)
+                {
+                    GameObject backdropObj = new GameObject("[Horizon Backdrop]");
+                    backdropObj.transform.SetParent(transform, false);
+                    backdropObj.transform.localPosition = new Vector3(0f, 0f, anchor.config.backdropDistanceZ);
+                    backdropObj.transform.localRotation = Quaternion.identity;
+                    var backdrop = backdropObj.AddComponent<VirtualRailHorizonBackdrop>();
+                    backdrop.targetCamera = targetCamera;
+                    backdrop.distanceZ = anchor.config.backdropDistanceZ;
+                    if (anchor.config.backdropMaterial != null) backdrop.backdropMaterial = anchor.config.backdropMaterial;
+                    backdrop.Initialize();
+                }
+            }
         }
 
         private void LateUpdate()
