@@ -4,12 +4,31 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using VirtualRail;
 
+[InitializeOnLoad]
 public class VirtualRailModeToggle
 {
     private const string ORIGINAL_SHIP_PREFAB = "Assets/Prefabs/Player Ship (1).prefab";
     private const string VIRTUAL_RAIL_PREFAB = "Assets/Prefabs/VirtualRail_PlayerRig.prefab";
     private const string CONFIG_PATH = "Assets/Scripts/VirtualRail/DefaultVirtualRailConfig.asset";
     private const string MISSILE_PREFAB = "Assets/FreeSciFi/Prefabs/MinesBombs/Missile.prefab";
+    private const string COSMIC_EARTH_TEXTURE_PATH = "Assets/Textures/Skybox/skybox_cosmic_earth.jpg";
+    private const string COSMIC_EARTH_MATERIAL_PATH = "Assets/Materials/Skybox_Image1_CosmicEarth.mat";
+    private const string ORIGINAL_SKYBOX_MATERIAL_PATH = "Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1.mat";
+    private const string SKYBOX_INIT_KEY = "VirtualRail_Skybox_Image1_Initialized";
+
+    static VirtualRailModeToggle()
+    {
+        EditorApplication.delayCall += InitializeSkyboxOnce;
+    }
+
+    private static void InitializeSkyboxOnce()
+    {
+        if (!SessionState.GetBool(SKYBOX_INIT_KEY, false))
+        {
+            SessionState.SetBool(SKYBOX_INIT_KEY, true);
+            ApplyCosmicEarthSkybox();
+        }
+    }
 
     [MenuItem("Tools/Virtual Rail/1. Switch to Virtual Rail Mode (ACTIVE)")]
     public static void SwitchToVirtualRail()
@@ -758,6 +777,106 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/45. Skybox: Apply Cosmic Earth Skybox (Image 1 - ON)")]
+    public static void ApplyCosmicEarthSkybox()
+    {
+        // 1. Đảm bảo Texture Importer chuẩn cho Panoramic Skybox
+        TextureImporter importer = AssetImporter.GetAtPath(COSMIC_EARTH_TEXTURE_PATH) as TextureImporter;
+        if (importer != null)
+        {
+            bool needReimport = false;
+            if (importer.textureType != TextureImporterType.Default)
+            {
+                importer.textureType = TextureImporterType.Default;
+                needReimport = true;
+            }
+            if (importer.wrapMode != TextureWrapMode.Repeat)
+            {
+                importer.wrapMode = TextureWrapMode.Repeat;
+                needReimport = true;
+            }
+            if (importer.maxTextureSize < 2048)
+            {
+                importer.maxTextureSize = 2048;
+                needReimport = true;
+            }
+            if (needReimport)
+            {
+                importer.SaveAndReimport();
+            }
+        }
+
+        // 2. Tải hoặc khởi tạo Material mới (Không bao giờ ghi đè skybox cũ - Điều 3 Tầng 2)
+        Material skyboxMat = AssetDatabase.LoadAssetAtPath<Material>(COSMIC_EARTH_MATERIAL_PATH);
+        Shader panoramicShader = Shader.Find("Skybox/Panoramic");
+        if (panoramicShader == null)
+        {
+            Debug.LogError("[VirtualRail] Không tìm thấy Shader 'Skybox/Panoramic' của Unity!");
+            return;
+        }
+
+        if (skyboxMat == null)
+        {
+            skyboxMat = new Material(panoramicShader);
+            AssetDatabase.CreateAsset(skyboxMat, COSMIC_EARTH_MATERIAL_PATH);
+        }
+        else
+        {
+            skyboxMat.shader = panoramicShader;
+        }
+
+        Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(COSMIC_EARTH_TEXTURE_PATH);
+        if (tex != null)
+        {
+            skyboxMat.mainTexture = tex;
+        }
+        skyboxMat.SetFloat("_Exposure", 1.25f);
+        skyboxMat.SetFloat("_Rotation", 0f);
+        skyboxMat.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, 0.5f));
+        skyboxMat.SetFloat("_Mapping", 0); // 0 = Latitude Longitude Layout
+        skyboxMat.SetFloat("_ImageType", 0); // 0 = 360 degrees
+        skyboxMat.SetFloat("_MirrorOnBack", 0);
+        EditorUtility.SetDirty(skyboxMat);
+        AssetDatabase.SaveAssets();
+
+        // 3. Áp dụng vào RenderSettings trong Scene hiện tại
+        RenderSettings.skybox = skyboxMat;
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(0.18f, 0.24f, 0.32f);      // Hắt sáng lam ngọc từ vòm Trái Đất phía trên
+        RenderSettings.ambientEquatorColor = new Color(0.08f, 0.10f, 0.14f);  // Sắc độ xanh vũ trụ trung gian
+        RenderSettings.ambientGroundColor = new Color(0.02f, 0.02f, 0.03f);   // Đáy vũ trụ tối
+        RenderSettings.ambientIntensity = 1.1f;
+
+        DynamicGI.UpdateEnvironment();
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT SKYBOX ẢNH 1 (COSMIC EARTH HORIZON):</b></color> Vòm Trái Đất khí quyển neon uốn cong phía trên trần, mặt trăng và tinh vân vũ trụ!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/46. Skybox: Restore Original Skybox (OFF - Legacy)")]
+    public static void RestoreOriginalSkybox()
+    {
+        Material originalMat = AssetDatabase.LoadAssetAtPath<Material>(ORIGINAL_SKYBOX_MATERIAL_PATH);
+        if (originalMat == null)
+        {
+            Debug.LogError("[VirtualRail] Không tìm thấy skyboxv1.mat gốc!");
+            return;
+        }
+
+        RenderSettings.skybox = originalMat;
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+        RenderSettings.ambientSkyColor = new Color(0.212f, 0.227f, 0.259f);
+        RenderSettings.ambientEquatorColor = new Color(0.114f, 0.125f, 0.133f);
+        RenderSettings.ambientGroundColor = new Color(0.047f, 0.043f, 0.035f);
+        RenderSettings.ambientIntensity = 1.0f;
+
+        DynamicGI.UpdateEnvironment();
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ SKYBOX GỐC:</b></color> skyboxv1.mat đã được gán lại vào RenderSettings.");
+    }
 
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
