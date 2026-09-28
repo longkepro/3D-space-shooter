@@ -15,7 +15,7 @@ public class VirtualRailModeToggle
     private const string COSMIC_EARTH_MATERIAL_PATH = "Assets/Materials/Skybox_Image1_CosmicEarth.mat";
     private const string ORIGINAL_SKYBOX_MATERIAL_PATH = "Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1.mat";
     private const string SKYBOX_INIT_KEY = "VirtualRail_Skybox_Image1_Initialized";
-    private const string BACKDROP_BAKED_KEY = "VirtualRail_Backdrop_Baked_v4";
+    private const string BACKDROP_BAKED_KEY = "VirtualRail_Backdrop_Baked_v5";
 
     static VirtualRailModeToggle()
     {
