@@ -30,17 +30,39 @@ namespace VirtualRail
         [Tooltip("Hệ số thị sai góc nhìn (càng nhỏ càng giữ vững đường chân trời)")]
         public float parallaxFactor = 0.012f;
 
+        private static readonly int MainTexProp = Shader.PropertyToID("_MainTex");
+        private static readonly int ExposureProp = Shader.PropertyToID("_Exposure");
+        private static readonly int TintProp = Shader.PropertyToID("_Tint");
+        private static Material _sharedBaseMaterial;
+
         private MeshFilter _mf;
         private MeshRenderer _mr;
         private Transform _camTransform;
+        private MaterialPropertyBlock _propBlock;
         private float _lastFOV = -1f;
         private float _lastAspect = -1f;
         private bool _isInitialized = false;
+
+        public static Material GetOrCreateSharedBaseMaterial()
+        {
+            if (_sharedBaseMaterial == null)
+            {
+                Shader shader = Shader.Find("VirtualRail/HorizonBackdrop");
+                if (shader == null) shader = Shader.Find("Unlit/Texture");
+                _sharedBaseMaterial = new Material(shader)
+                {
+                    name = "VirtualRail_SharedBackdropBase",
+                    hideFlags = HideFlags.DontSave
+                };
+            }
+            return _sharedBaseMaterial;
+        }
 
         private void Awake()
         {
             _mf = GetComponent<MeshFilter>();
             _mr = GetComponent<MeshRenderer>();
+            _propBlock = new MaterialPropertyBlock();
             Initialize();
         }
 
@@ -49,6 +71,52 @@ namespace VirtualRail
             Initialize();
             FindTargetCamera();
             UpdateFrustumFit(true);
+        }
+
+        /// <summary>
+        /// Áp dụng cấu hình phông nền màn chơi trực tiếp từ StageEnvironmentSettings.
+        /// Tự động chuyển đổi giữa Texture2D trực tiếp (0 GC) và Material tùy biến.
+        /// </summary>
+        public void ApplyStageSettings(StageEnvironmentSettings env)
+        {
+            if (_mr == null) _mr = GetComponent<MeshRenderer>();
+            if (_propBlock == null) _propBlock = new MaterialPropertyBlock();
+
+            if (env.backdropMaterial != null)
+            {
+                backdropMaterial = env.backdropMaterial;
+                if (_mr != null)
+                {
+                    _mr.enabled = true;
+                    _mr.sharedMaterial = env.backdropMaterial;
+                    _mr.SetPropertyBlock(null);
+                }
+            }
+            else if (env.backdropTexture != null)
+            {
+                Material baseMat = GetOrCreateSharedBaseMaterial();
+                backdropMaterial = baseMat;
+                if (_mr != null)
+                {
+                    _mr.enabled = true;
+                    _mr.sharedMaterial = baseMat;
+
+                    _propBlock.Clear();
+                    _propBlock.SetTexture(MainTexProp, env.backdropTexture);
+                    _propBlock.SetFloat(ExposureProp, env.backdropExposure > 0.01f ? env.backdropExposure : 1.0f);
+                    Color tint = env.backdropTint.a > 0.01f ? env.backdropTint : Color.white;
+                    _propBlock.SetColor(TintProp, tint);
+                    _mr.SetPropertyBlock(_propBlock);
+                }
+            }
+            else
+            {
+                backdropMaterial = null;
+                if (_mr != null)
+                {
+                    _mr.enabled = false;
+                }
+            }
         }
 
         public void SetBackdropMaterial(Material mat)
@@ -61,6 +129,7 @@ namespace VirtualRail
                 {
                     _mr.enabled = true;
                     _mr.sharedMaterial = mat;
+                    _mr.SetPropertyBlock(null);
                 }
                 else
                 {

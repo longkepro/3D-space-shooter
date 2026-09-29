@@ -43,6 +43,16 @@ namespace VirtualRail
         [Tooltip("Màn chiếu chân trời HD trực diện (Horizon Backdrop)")]
         public Material backdropMaterial;
 
+        [Tooltip("Ảnh nền chân trời 4K trực tiếp (Kéo thả trực tiếp Texture2D không cần tạo Material riêng)")]
+        public Texture2D backdropTexture;
+
+        [Range(0.1f, 3.0f)]
+        [Tooltip("Độ sáng của bức ảnh nền (Exposure Boost - chuẩn 1.0)")]
+        public float backdropExposure;
+
+        [Tooltip("Màu nhuộm sắc độ bức ảnh nền (Color Tint)")]
+        public Color backdropTint;
+
         [Tooltip("Màu ánh sáng môi trường Ambient Light")]
         public Color ambientLightColor;
 
@@ -71,6 +81,9 @@ namespace VirtualRail
         {
             skyboxMaterial = null,
             backdropMaterial = null,
+            backdropTexture = null,
+            backdropExposure = 1.0f,
+            backdropTint = Color.white,
             ambientLightColor = new Color(0.2f, 0.25f, 0.35f, 1f),
             enableFog = false,
             fogColor = new Color(0.05f, 0.08f, 0.15f, 1f),

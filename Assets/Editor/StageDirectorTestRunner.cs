@@ -68,8 +68,10 @@ namespace VirtualRail.EditorTests
             stage2.railSettings.warpSpeedMultiplier = 2.0f;
             stage2.climaxSettings.climaxType = StageClimaxType.DistanceReached;
 
-            // Mock Backdrop
-            VirtualRailHorizonBackdrop backdrop = harnessObj.AddComponent<VirtualRailHorizonBackdrop>();
+            // Mock Backdrop (trên child object riêng biệt như trong Prefab thực tế)
+            GameObject backdropObj = new GameObject("[Mock_Backdrop]");
+            backdropObj.transform.SetParent(harnessObj.transform, false);
+            VirtualRailHorizonBackdrop backdrop = backdropObj.AddComponent<VirtualRailHorizonBackdrop>();
             Material mockMat1 = new Material(Shader.Find("Unlit/Texture"));
             mockMat1.name = "Mock_Stage1_Backdrop";
             Material mockMat2 = new Material(Shader.Find("Unlit/Texture"));

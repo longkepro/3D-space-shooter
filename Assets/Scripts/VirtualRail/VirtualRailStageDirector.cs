@@ -500,14 +500,15 @@ namespace VirtualRail
                 directionalLight.intensity = env.lightIntensity;
             }
 
-            // Backdrop: Tự động ẩn nếu màn không sử dụng backdropMaterial
+            // Backdrop: Tự động điều phối phông nền chân trời trực diện
             if (backdrop == null) backdrop = FindAnyObjectByType<VirtualRailHorizonBackdrop>();
             if (backdrop != null)
             {
-                backdrop.SetBackdropMaterial(env.backdropMaterial);
-                if (env.backdropMaterial != null)
+                backdrop.ApplyStageSettings(env);
+                if (env.backdropTexture != null || env.backdropMaterial != null)
                 {
-                    Debug.Log($"<color=cyan><b>[StageDirector] ĐÃ ĐỔI HORIZON BACKDROP SANG:</b> {env.backdropMaterial.name}</color>");
+                    string backdropName = env.backdropTexture != null ? env.backdropTexture.name : env.backdropMaterial.name;
+                    Debug.Log($"<color=cyan><b>[StageDirector] ĐÃ ĐỔI HORIZON BACKDROP SANG:</b> {backdropName}</color>");
                 }
             }
 
