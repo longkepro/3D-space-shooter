@@ -13,7 +13,7 @@ public class VirtualRailModeToggle
     private const string MISSILE_PREFAB = "Assets/FreeSciFi/Prefabs/MinesBombs/Missile.prefab";
     private const string COSMIC_EARTH_TEXTURE_PATH = "Assets/Textures/Skybox/skybox_cosmic_earth.jpg";
     private const string COSMIC_EARTH_MATERIAL_PATH = "Assets/Materials/Skybox_Image1_CosmicEarth.mat";
-    private const string ORIGINAL_SKYBOX_MATERIAL_PATH = "Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1.mat";
+    private const string ORIGINAL_SKYBOX_MATERIAL_PATH = "Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1_starsonly.mat";
     private const string SKYBOX_INIT_KEY = "VirtualRail_Skybox_Image1_Initialized";
     private const string BACKDROP_BAKED_KEY = "VirtualRail_Backdrop_Baked_v5";
 
@@ -363,7 +363,7 @@ public class VirtualRailModeToggle
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
 
-        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ SKYBOX ĐEN VŨ TRỤ BAN ĐẦU:</b></color> skyboxv1.mat đã được gán và Backdrop đã được ẩn.");
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ SKYBOX ĐEN VŨ TRỤ (STARS ONLY):</b></color> skyboxv1_starsonly.mat đã được gán và Backdrop đã được ẩn.");
     }
 
     [MenuItem("Tools/Virtual Rail/39. Skybox: Apply Cosmic Earth (Photo)")]

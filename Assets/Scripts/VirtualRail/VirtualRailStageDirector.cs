@@ -128,7 +128,7 @@ namespace VirtualRail
             if (defaultSkyboxMaterial == null)
             {
 #if UNITY_EDITOR
-                defaultSkyboxMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1.mat");
+                defaultSkyboxMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1_starsonly.mat");
 #endif
             }
 
