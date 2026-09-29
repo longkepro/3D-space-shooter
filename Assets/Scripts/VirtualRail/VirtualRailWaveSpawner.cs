@@ -57,6 +57,39 @@ namespace VirtualRail
             SpatialVectorType.WarpInDecloak
         };
 
+        private SpatialVectorType[] _activeVectors = ACTIVE_SPATIAL_VECTORS;
+        private float _stageWaveInterval = -1f;
+        private int _stageFormationInterval = -1;
+        private float _stageLeadDistance = -1f;
+
+        /// <summary>
+        /// Nạp thông số bảng quái và các vector xuất hiện theo màn chơi (0 GC Alloc).
+        /// </summary>
+        public void ApplyStagePalette(StageEnemySettings settings)
+        {
+            if (settings.allowedVectors != null && settings.allowedVectors.Length > 0)
+            {
+                _activeVectors = settings.allowedVectors;
+            }
+            else
+            {
+                _activeVectors = ACTIVE_SPATIAL_VECTORS;
+            }
+
+            if (settings.waveInterval > 0.1f)
+            {
+                _stageWaveInterval = settings.waveInterval;
+            }
+            if (settings.formationIntervalWaves > 0)
+            {
+                _stageFormationInterval = settings.formationIntervalWaves;
+            }
+            if (settings.spawnLeadDistance > 10f)
+            {
+                _stageLeadDistance = settings.spawnLeadDistance;
+            }
+        }
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -249,8 +282,8 @@ namespace VirtualRail
 
             if (!_isSpawning) return;
 
-            float effectiveInterval = cfg != null ? cfg.waveSpawnInterval : waveInterval;
-            float effectiveLead = cfg != null ? cfg.waveSpawnDistance : spawnLeadDistance;
+            float effectiveInterval = _stageWaveInterval > 0f ? _stageWaveInterval : (cfg != null ? cfg.waveSpawnInterval : waveInterval);
+            float effectiveLead = _stageLeadDistance > 0f ? _stageLeadDistance : (cfg != null ? cfg.waveSpawnDistance : spawnLeadDistance);
 
             // 1. Quét sinh đợt quái mới
             if (Time.time >= _nextWaveTime)
@@ -281,7 +314,7 @@ namespace VirtualRail
             bool useSpatial = (cfg != null) ? cfg.useSpatialVectors : useSpatialVectors;
             bool useFSM = (cfg != null) ? cfg.enable4PhaseLifecycle : enable4PhaseFSM;
             bool useFormations = (cfg != null) ? cfg.enableFormations : enableFormations;
-            int interval = (cfg != null) ? cfg.formationIntervalWaves : formationWaveInterval;
+            int interval = _stageFormationInterval > 0 ? _stageFormationInterval : ((cfg != null) ? cfg.formationIntervalWaves : formationWaveInterval);
 
             if (!useSpatial)
             {
@@ -309,7 +342,8 @@ namespace VirtualRail
                 if (availableEnemy == null) break;
 
                 // Chọn vector tiếp theo theo chu kỳ phân bổ đa hướng 10 Vector
-                SpatialVectorType vectorType = ACTIVE_SPATIAL_VECTORS[_vectorCycleIndex % ACTIVE_SPATIAL_VECTORS.Length];
+                var vectors = (_activeVectors != null && _activeVectors.Length > 0) ? _activeVectors : ACTIVE_SPATIAL_VECTORS;
+                SpatialVectorType vectorType = vectors[_vectorCycleIndex % vectors.Length];
                 _vectorCycleIndex++;
 
                 SpatialTrajectoryData trajectory = SpatialVectorFactory.GenerateTrajectory(vectorType, anchor, mainCam, leadDist);

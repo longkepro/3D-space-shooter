@@ -20,9 +20,24 @@ namespace VirtualRail
         [Header("Runtime State")]
         [SerializeField] private float currentSpeed;
         private bool isBoosting = false;
+        private float _overrideSpeed = -1f;
 
-        public float CurrentSpeed => currentSpeed;
+        public float CurrentSpeed
+        {
+            get => currentSpeed;
+            set => currentSpeed = value;
+        }
         public Vector3 ForwardTangent => transform.forward;
+
+        public void SetSpeedOverride(float speed)
+        {
+            _overrideSpeed = speed;
+        }
+
+        public void ClearSpeedOverride()
+        {
+            _overrideSpeed = -1f;
+        }
 
         private void Awake()
         {
@@ -83,7 +98,8 @@ namespace VirtualRail
             float boostInput = Input.GetAxis("Fire3") > 0 ? Input.GetAxis("Fire3") : (Input.GetKey(KeyCode.LeftShift) ? 1f : 0f);
             isBoosting = boostInput > 0.1f;
 
-            float targetSpeed = config.forwardSpeed * (isBoosting ? config.boostMultiplier : 1f);
+            float baseSpeed = _overrideSpeed > 0f ? _overrideSpeed : config.forwardSpeed;
+            float targetSpeed = baseSpeed * (isBoosting ? config.boostMultiplier : 1f);
             currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, 8f * Time.deltaTime);
 
             // Tịnh tiến dọc theo hướng tiến của đường ray

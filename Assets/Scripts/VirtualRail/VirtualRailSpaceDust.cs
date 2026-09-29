@@ -64,6 +64,21 @@ namespace VirtualRail
             UpdateVelocity(anchor != null ? anchor.CurrentSpeed : 28f);
         }
 
+        /// <summary>
+        /// Cập nhật màu sắc và số lượng hạt bụi sao khi chuyển màn (0 GC Alloc).
+        /// </summary>
+        public void SetDustSettings(Color color, int particleCount)
+        {
+            dustColor = color;
+            if (particleCount > 10) targetParticleCount = particleCount;
+            if (_ps != null)
+            {
+                var main = _ps.main;
+                main.startColor = color;
+                main.maxParticles = targetParticleCount;
+            }
+        }
+
         public void InitializeSystem()
         {
             if (_isInitialized) return;

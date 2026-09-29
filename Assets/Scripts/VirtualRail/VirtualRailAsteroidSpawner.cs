@@ -34,6 +34,27 @@ namespace VirtualRail
         private bool _isSpawning = false;
         private bool _isInitialized = false;
 
+        private bool _stageEnableAsteroids = true;
+        private float _stageIndestructibleChance = -1f;
+        private float _stageSpawnDistance = -1f;
+        private float _stageSpawnZInterval = -1f;
+
+        /// <summary>
+        /// Nạp thông số thiên thạch và chướng ngại vật theo màn chơi (0 GC Alloc).
+        /// </summary>
+        public void ApplyStageHazardSettings(StageHazardSettings settings)
+        {
+            _stageEnableAsteroids = settings.enableAsteroids;
+            _stageIndestructibleChance = settings.indestructibleChance;
+            if (settings.asteroidSpawnDistance > 10f) _stageSpawnDistance = settings.asteroidSpawnDistance;
+            if (settings.asteroidZInterval > 5f) _stageSpawnZInterval = settings.asteroidZInterval;
+
+            if (!_stageEnableAsteroids)
+            {
+                RecycleAll();
+            }
+        }
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -156,9 +177,10 @@ namespace VirtualRail
             }
 
             if (!_isSpawning) return;
+            if (!_stageEnableAsteroids) return;
 
-            float effSpawnDist = cfg != null ? cfg.asteroidSpawnDistance : spawnDistance;
-            float effZInterval = cfg != null ? cfg.asteroidZInterval : spawnZInterval;
+            float effSpawnDist = _stageSpawnDistance > 0f ? _stageSpawnDistance : (cfg != null ? cfg.asteroidSpawnDistance : spawnDistance);
+            float effZInterval = _stageSpawnZInterval > 0f ? _stageSpawnZInterval : (cfg != null ? cfg.asteroidZInterval : spawnZInterval);
 
             float playerZ = anchor.transform.position.z;
 
@@ -205,7 +227,8 @@ namespace VirtualRail
 
             if (cfg != null && cfg.enableDestructibleAsteroids)
             {
-                AsteroidHazardType hazard = (Random.value < cfg.indestructibleAsteroidChance)
+                float chance = _stageIndestructibleChance >= 0f ? _stageIndestructibleChance : cfg.indestructibleAsteroidChance;
+                AsteroidHazardType hazard = (Random.value < chance)
                     ? AsteroidHazardType.Indestructible
                     : AsteroidHazardType.Destructible;
                 ast.SetHazardType(hazard);

@@ -51,6 +51,17 @@ namespace VirtualRail
             UpdateFrustumFit(true);
         }
 
+        public void SetBackdropMaterial(Material mat)
+        {
+            if (mat == null) return;
+            backdropMaterial = mat;
+            if (_mr == null) _mr = GetComponent<MeshRenderer>();
+            if (_mr != null)
+            {
+                _mr.sharedMaterial = mat;
+            }
+        }
+
         public void Initialize()
         {
             if (_mf == null) _mf = GetComponent<MeshFilter>();
