@@ -153,4 +153,4 @@ MonoBehaviour:
   dustFieldDepth: 90
   enableHorizonBackdrop: 1
   backdropDistanceZ: 850
-  backdropMaterial: {fileID: 0}
+  backdropMaterial: {fileID: 2100000, guid: b1010101010101010101010101010101, type: 2}

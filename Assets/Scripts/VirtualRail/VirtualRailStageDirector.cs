@@ -501,9 +501,14 @@ namespace VirtualRail
             }
 
             // Backdrop: Tự động ẩn nếu màn không sử dụng backdropMaterial
+            if (backdrop == null) backdrop = FindAnyObjectByType<VirtualRailHorizonBackdrop>();
             if (backdrop != null)
             {
                 backdrop.SetBackdropMaterial(env.backdropMaterial);
+                if (env.backdropMaterial != null)
+                {
+                    Debug.Log($"<color=cyan><b>[StageDirector] ĐÃ ĐỔI HORIZON BACKDROP SANG:</b> {env.backdropMaterial.name}</color>");
+                }
             }
 
             // Space Dust

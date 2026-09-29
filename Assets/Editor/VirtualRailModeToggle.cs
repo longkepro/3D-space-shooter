@@ -225,6 +225,66 @@ public class VirtualRailModeToggle
     }
 
     // =========================================================================
+    // STAGE 4K BACKDROP PREVIEWS & SKYBOX CONTROLS
+    // =========================================================================
+
+    [MenuItem("Tools/Virtual Rail/Stage Backdrops/Preview Stage 1 Backdrop (4K)")]
+    public static void PreviewStage1Backdrop()
+    {
+        ApplyBackdropPreview("Assets/Materials/Stage1_Backdrop.mat", "Stage 1 (4K)");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage Backdrops/Preview Stage 2 Backdrop (4K)")]
+    public static void PreviewStage2Backdrop()
+    {
+        ApplyBackdropPreview("Assets/Materials/Stage2_Backdrop.mat", "Stage 2 (4K)");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage Backdrops/Preview Stage 3 Backdrop (4K)")]
+    public static void PreviewStage3Backdrop()
+    {
+        ApplyBackdropPreview("Assets/Materials/Stage3_Backdrop.mat", "Stage 3 (4K)");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage Backdrops/Reset Skybox to Deep Space Stars (Starsonly)")]
+    public static void ResetSkyboxToStarsOnly()
+    {
+        Material starsMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1_starsonly.mat");
+        if (starsMat != null)
+        {
+            RenderSettings.skybox = starsMat;
+            DynamicGI.UpdateEnvironment();
+            Debug.Log("<color=green><b>[VirtualRail] DA RESET SKYBOX VE KHONG GIAN SAO DEM:</b></color> skyboxv1_starsonly.mat");
+        }
+    }
+
+    private static void ApplyBackdropPreview(string matPath, string stageName)
+    {
+        Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null && mat != null)
+        {
+            config.enableHorizonBackdrop = true;
+            config.backdropDistanceZ = 850f;
+            config.backdropMaterial = mat;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+        }
+
+        RebuildPlayerRigPrefab();
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            if (mat != null) bd.SetBackdropMaterial(mat);
+            bd.Initialize();
+            bd.SetBackdropActive(true);
+        }
+
+        Debug.Log($"<color=cyan><b>[VirtualRail] DA XEM TRUOC BACKDROP 4K:</b></color> {stageName}");
+    }
+
+    // =========================================================================
     // CONFIG INSPECTOR SHORTCUT
     // =========================================================================
 
