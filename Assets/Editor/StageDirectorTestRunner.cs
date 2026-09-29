@@ -126,7 +126,7 @@ namespace VirtualRail.EditorTests
                 float peakSpeedRecorded = 0f;
                 bool swappedAtMidWarp = false;
 
-                for (int w = 0; w < 50; w++) // 50 * 0.02s = 1.0s (đủ chu kỳ warp 1.0s)
+                for (int w = 0; w <= 50; w++) // 51 * 0.02s > 1.0s (đủ hoàn tất chu kỳ warp 1.0s)
                 {
                     director.Tick(dt);
                     if (anchor.CurrentSpeed > peakSpeedRecorded) peakSpeedRecorded = anchor.CurrentSpeed;

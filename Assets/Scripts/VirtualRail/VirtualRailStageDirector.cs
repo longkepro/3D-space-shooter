@@ -87,6 +87,16 @@ namespace VirtualRail
         public static event Action<StageData, StageData> OnWarpTransitionStarted;
         public static event Action OnAllStagesCompleted;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void AutoEnsureDirectorInstance()
+        {
+            if (FindFirstObjectByType<VirtualRailStageDirector>() == null)
+            {
+                GameObject dirObj = new GameObject("[VirtualRail_StageDirector]");
+                dirObj.AddComponent<VirtualRailStageDirector>();
+            }
+        }
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -118,6 +128,20 @@ namespace VirtualRail
 
         private void FindReferences()
         {
+            if (stages == null || stages.Length == 0)
+            {
+#if UNITY_EDITOR
+                var s1 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_01.asset");
+                var s2 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_02.asset");
+                var s3 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03.asset");
+                var list = new System.Collections.Generic.List<StageData>();
+                if (s1 != null) list.Add(s1);
+                if (s2 != null) list.Add(s2);
+                if (s3 != null) list.Add(s3);
+                stages = list.ToArray();
+#endif
+            }
+
             if (anchor == null) anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
             if (waveSpawner == null) waveSpawner = VirtualRailWaveSpawner.Instance != null ? VirtualRailWaveSpawner.Instance : FindAnyObjectByType<VirtualRailWaveSpawner>();
             if (asteroidSpawner == null) asteroidSpawner = VirtualRailAsteroidSpawner.Instance != null ? VirtualRailAsteroidSpawner.Instance : FindAnyObjectByType<VirtualRailAsteroidSpawner>();
@@ -210,6 +234,12 @@ namespace VirtualRail
 
         private void Update()
         {
+            // Phím nóng Debug: N hoặc F2 để Warp sang Stage kế tiếp tức thì khi test trong Play mode
+            if (Application.isPlaying && (Input.GetKeyDown(KeyCode.N) || Input.GetKeyDown(KeyCode.F2)))
+            {
+                StartWarpTransition();
+            }
+
             Tick(Time.deltaTime);
         }
 
@@ -219,6 +249,23 @@ namespace VirtualRail
         /// </summary>
         public void Tick(float dt)
         {
+            // Self-Healing Runtime Binding: Tự động kết nối với Anchor ngay khi tàu xuất hiện trong Scene
+            if (anchor == null)
+            {
+                anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
+                if (anchor != null)
+                {
+                    if (currentState == StageState.Inactive)
+                    {
+                        StartStage(currentStageIndex);
+                    }
+                    else if (_stageStartZ == 0f)
+                    {
+                        _stageStartZ = anchor.transform.position.z;
+                    }
+                }
+            }
+
             if (anchor == null) return;
 
             // Tự động bắt đầu màn nếu tàu bắt đầu di chuyển
@@ -291,6 +338,17 @@ namespace VirtualRail
         public void StartWarpTransition()
         {
             if (currentState == StageState.WarpTransition) return;
+
+            if (anchor == null)
+            {
+                anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
+            }
+
+            if (anchor != null && anchor.CurrentSpeed > 1f)
+            {
+                _normalSpeed = anchor.CurrentSpeed;
+                _warpPeakSpeed = _normalSpeed * 3f;
+            }
 
             currentState = StageState.WarpTransition;
             _warpTimer = 0f;
@@ -421,6 +479,7 @@ namespace VirtualRail
             {
                 RenderSettings.skybox = targetSkybox;
                 DynamicGI.UpdateEnvironment();
+                Debug.Log($"<color=cyan><b>[StageDirector] ĐÃ ĐỔI SKYBOX SANG:</b> {targetSkybox.name}</color>");
             }
 
             // Ambient Light
