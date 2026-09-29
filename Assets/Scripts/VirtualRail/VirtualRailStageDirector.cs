@@ -199,6 +199,15 @@ namespace VirtualRail
 
         private void Update()
         {
+            Tick(Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Bước tiến trạng thái tất định (Deterministic State Tick).
+        /// Cho phép kiểm thử tự động chính xác từng frame độc lập với chu kỳ render Unity.
+        /// </summary>
+        public void Tick(float dt)
+        {
             if (anchor == null) return;
 
             // Tự động bắt đầu màn nếu tàu bắt đầu di chuyển
@@ -214,11 +223,11 @@ namespace VirtualRail
                     break;
 
                 case StageState.Climax:
-                    UpdateClimaxState();
+                    UpdateClimaxState(dt);
                     break;
 
                 case StageState.WarpTransition:
-                    UpdateWarpTransitionState();
+                    UpdateWarpTransitionState(dt);
                     break;
             }
 
@@ -248,17 +257,11 @@ namespace VirtualRail
 
             StageData stage = CurrentStageData;
             OnStageClimaxReached?.Invoke(stage);
-
-            // Nếu màn hoàn thành đơn thuần bằng quãng đường (DistanceReached), chờ 1.5s tạo nhịp thở rồi Warp
-            if (stage != null && stage.climaxSettings.climaxType == StageClimaxType.DistanceReached)
-            {
-                // Sau một khoảng ngắn sẽ kích hoạt Warp
-            }
         }
 
-        private void UpdateClimaxState()
+        private void UpdateClimaxState(float dt)
         {
-            _climaxTimer += Time.deltaTime;
+            _climaxTimer += dt;
 
             StageData stage = CurrentStageData;
             if (stage != null && stage.climaxSettings.climaxType == StageClimaxType.DistanceReached)
@@ -294,9 +297,9 @@ namespace VirtualRail
             OnWarpTransitionStarted?.Invoke(currentStage, nextStage);
         }
 
-        private void UpdateWarpTransitionState()
+        private void UpdateWarpTransitionState(float dt)
         {
-            _warpTimer += Time.deltaTime;
+            _warpTimer += dt;
             float progress = Mathf.Clamp01(_warpTimer / Mathf.Max(0.1f, _warpDuration));
 
             // Đường cong vận tốc Warp: Tăng vọt lên cực đại ở giữa, rồi hạ cánh êm đềm ở cuối
