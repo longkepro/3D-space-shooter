@@ -373,6 +373,25 @@ public class VirtualRailModeToggle
         ApplyCosmicEarthSkybox();
     }
 
+    [MenuItem("Tools/Virtual Rail/40. Stages: Apply Stage 1 Skybox to Scene")]
+    public static void ApplyStage1SkyboxToScene()
+    {
+        Material mat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage1_Skybox.mat");
+        if (mat != null)
+        {
+            RenderSettings.skybox = mat;
+            VirtualRailHorizonBackdrop backdrop = Object.FindAnyObjectByType<VirtualRailHorizonBackdrop>();
+            if (backdrop != null)
+            {
+                backdrop.SetBackdropMaterial(null);
+            }
+            DynamicGI.UpdateEnvironment();
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+            EditorSceneManager.SaveOpenScenes();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ ÁP DỤNG SKYBOX STAGE 1:</b></color> stage1.png đã được gắn vào RenderSettings.skybox.");
+        }
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");

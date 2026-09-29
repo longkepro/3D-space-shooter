@@ -22,7 +22,7 @@ MonoBehaviour:
     warpDuration: 2.5
     warpSpeedMultiplier: 3
   environmentSettings:
-    skyboxMaterial: {fileID: 0}
+    skyboxMaterial: {fileID: 2100000, guid: f1010101010101010101010101010101, type: 2}
     backdropMaterial: {fileID: 0}
     ambientLightColor: {r: 0.2, g: 0.25, b: 0.35, a: 1}
     enableFog: 0
