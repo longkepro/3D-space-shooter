@@ -68,21 +68,33 @@ namespace VirtualRail.EditorTests
             stage2.railSettings.warpSpeedMultiplier = 2.0f;
             stage2.climaxSettings.climaxType = StageClimaxType.DistanceReached;
 
+            // Mock Backdrop
+            VirtualRailHorizonBackdrop backdrop = harnessObj.AddComponent<VirtualRailHorizonBackdrop>();
+            Material mockMat1 = new Material(Shader.Find("Unlit/Texture"));
+            mockMat1.name = "Mock_Stage1_Backdrop";
+            Material mockMat2 = new Material(Shader.Find("Unlit/Texture"));
+            mockMat2.name = "Mock_Stage2_Backdrop";
+            stage1.environmentSettings.backdropMaterial = mockMat1;
+            stage2.environmentSettings.backdropMaterial = mockMat2;
+
             director.stages = new StageData[] { stage1, stage2 };
             director.anchor = anchor;
+            director.backdrop = backdrop;
 
             float dt = 0.02f; // 50 FPS
 
             try
             {
-                // TEST 1: Khởi động Stage 1
+                // TEST 1: Khởi động Stage 1 & Backdrop Màn 1
                 director.StartStage(0);
                 bool t1 = director.CurrentState == StageState.InJourney &&
                           director.currentStageIndex == 0 &&
-                          Mathf.Abs(anchor.CurrentSpeed - 20f) < 0.1f;
+                          Mathf.Abs(anchor.CurrentSpeed - 20f) < 0.1f &&
+                          backdrop.backdropMaterial == mockMat1 &&
+                          backdrop.GetComponent<MeshRenderer>().enabled;
                 if (t1) passedChecks++;
-                sb.AppendLine($"[TEST 1] Khởi động Stage 1: {(t1 ? "PASSED" : "FAILED")}");
-                sb.AppendLine($"         State: {director.CurrentState} | StageIdx: {director.currentStageIndex} | Speed: {anchor.CurrentSpeed:F1} m/s (Expected: 20.0 m/s)");
+                sb.AppendLine($"[TEST 1] Khởi động Stage 1 & Gán Backdrop 4K: {(t1 ? "PASSED" : "FAILED")}");
+                sb.AppendLine($"         State: {director.CurrentState} | Speed: {anchor.CurrentSpeed:F1} m/s | Backdrop: {(backdrop.backdropMaterial != null ? backdrop.backdropMaterial.name : "null")} (Renderer: {backdrop.GetComponent<MeshRenderer>().enabled})");
 
                 // TEST 2: Tiến trình bay và đo đạc Z
                 float prevProgress = -1f;
@@ -133,10 +145,10 @@ namespace VirtualRail.EditorTests
                     if (director.currentStageIndex == 1) swappedAtMidWarp = true;
                 }
 
-                bool t5 = peakSpeedRecorded >= 45f && swappedAtMidWarp;
+                bool t5 = peakSpeedRecorded >= 45f && swappedAtMidWarp && backdrop.backdropMaterial == mockMat2;
                 if (t5) passedChecks++;
-                sb.AppendLine($"[TEST 5] Gia tốc Warp & Hoán đổi dữ liệu giữa Warp: {(t5 ? "PASSED" : "FAILED")}");
-                sb.AppendLine($"         Peak Warp Speed: {peakSpeedRecorded:F1} m/s (Target: ~60 m/s) | Swapped: {swappedAtMidWarp}");
+                sb.AppendLine($"[TEST 5] Gia tốc Warp & Hoán đổi Backdrop giữa Warp: {(t5 ? "PASSED" : "FAILED")}");
+                sb.AppendLine($"         Peak Warp Speed: {peakSpeedRecorded:F1} m/s | Backdrop: {(backdrop.backdropMaterial != null ? backdrop.backdropMaterial.name : "null")}");
 
                 // TEST 6: Bàn giao Stage 2 với vận tốc mới (50 m/s)
                 bool t6 = director.CurrentState == StageState.InJourney &&
@@ -178,6 +190,8 @@ namespace VirtualRail.EditorTests
                 UnityEngine.Object.DestroyImmediate(harnessObj);
                 UnityEngine.Object.DestroyImmediate(stage1);
                 UnityEngine.Object.DestroyImmediate(stage2);
+                UnityEngine.Object.DestroyImmediate(mockMat1);
+                UnityEngine.Object.DestroyImmediate(mockMat2);
             }
 
             string reportContent = sb.ToString();
