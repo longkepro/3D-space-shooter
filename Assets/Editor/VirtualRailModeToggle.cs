@@ -723,24 +723,15 @@ public class VirtualRailModeToggle
         img.raycastTarget = false;
     }
 
-    [MenuItem("Tools/Virtual Rail/36. Stage Director: Setup 3-Stage System (ON)")]
+    [MenuItem("Tools/Virtual Rail/36. Stage Director: Setup Framework (ON)")]
     public static void SetupStageDirectorSystem()
     {
-        EnsureDefaultStageDataAssets();
-
         VirtualRailStageDirector director = Object.FindAnyObjectByType<VirtualRailStageDirector>();
         if (director == null)
         {
             GameObject dirObj = new GameObject("[VirtualRail_StageDirector]");
             director = dirObj.AddComponent<VirtualRailStageDirector>();
         }
-
-        StageData s1 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_01_AsteroidBelt.asset");
-        StageData s2 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_02_RedPlanet.asset");
-        StageData s3 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03_DeepSpaceArmada.asset");
-
-        director.stages = new StageData[] { s1, s2, s3 };
-        director.currentStageIndex = 0;
 
         Canvas canvas = Object.FindAnyObjectByType<Canvas>();
         if (canvas != null && Object.FindAnyObjectByType<StageNotificationUI>() == null)
@@ -749,10 +740,10 @@ public class VirtualRailModeToggle
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT HỆ THỐNG 3 MÀN CHƠI THÀNH CÔNG:</b></color> Đã nạp Stage 1 (Asteroid Belt), Stage 2 (Red Planet), Stage 3 (Deep Space Armada).");
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ THIẾT LẬP KHUNG KIẾN TRÚC STAGE DIRECTOR:</b></color> Đã tạo [VirtualRail_StageDirector] và [StageNotificationUI] (chưa cấu hình nội dung màn chơi).");
     }
 
-    [MenuItem("Tools/Virtual Rail/37. Stage Director: Revert to Single-Stage (OFF)")]
+    [MenuItem("Tools/Virtual Rail/37. Stage Director: Revert Framework (OFF)")]
     public static void RevertStageDirectorSystem()
     {
         VirtualRailStageDirector director = Object.FindAnyObjectByType<VirtualRailStageDirector>();
@@ -768,96 +759,7 @@ public class VirtualRailModeToggle
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ CHẾ ĐỘ 1 MÀN VÔ TẬN:</b></color> Đã gỡ bỏ StageDirector và UI thông báo.");
-    }
-
-    public static void EnsureDefaultStageDataAssets()
-    {
-        string path1 = "Assets/Scripts/VirtualRail/StageData_01_AsteroidBelt.asset";
-        StageData s1 = AssetDatabase.LoadAssetAtPath<StageData>(path1);
-        if (s1 == null)
-        {
-            s1 = ScriptableObject.CreateInstance<StageData>();
-            s1.stageId = "Stage_01";
-            s1.stageTitle = "STAGE 1: ASTEROID BELT";
-            s1.stageSubtitle = "TRENCH RUN - INITIALIZE";
-            s1.stageIndex = 1;
-            s1.railSettings.forwardSpeed = 28f;
-            s1.railSettings.stageDistanceZ = 1200f;
-            s1.railSettings.warpDuration = 2.5f;
-            s1.railSettings.warpSpeedMultiplier = 3.0f;
-            s1.environmentSettings.skyboxMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1_inbetween_moonearth.mat");
-            s1.environmentSettings.backdropMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
-            s1.environmentSettings.ambientLightColor = new Color(0.2f, 0.25f, 0.35f, 1f);
-            s1.environmentSettings.spaceDustColor = new Color(0.85f, 0.95f, 1.0f, 0.85f);
-            s1.environmentSettings.spaceDustCount = 200;
-            s1.enemySettings.waveInterval = 3.5f;
-            s1.hazardSettings.enableAsteroids = true;
-            s1.hazardSettings.indestructibleChance = 0.20f;
-            AssetDatabase.CreateAsset(s1, path1);
-        }
-
-        string path2 = "Assets/Scripts/VirtualRail/StageData_02_RedPlanet.asset";
-        StageData s2 = AssetDatabase.LoadAssetAtPath<StageData>(path2);
-        if (s2 == null)
-        {
-            s2 = ScriptableObject.CreateInstance<StageData>();
-            s2.stageId = "Stage_02";
-            s2.stageTitle = "STAGE 2: RED PLANET AMBUSH";
-            s2.stageSubtitle = "ATMOSPHERIC INFILTRATION";
-            s2.stageIndex = 2;
-            s2.railSettings.forwardSpeed = 35f;
-            s2.railSettings.stageDistanceZ = 1600f;
-            s2.railSettings.warpDuration = 2.5f;
-            s2.railSettings.warpSpeedMultiplier = 3.0f;
-            s2.environmentSettings.skyboxMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1_mars2.mat");
-            s2.environmentSettings.ambientLightColor = new Color(0.45f, 0.25f, 0.18f, 1f);
-            s2.environmentSettings.enableFog = true;
-            s2.environmentSettings.fogColor = new Color(0.35f, 0.12f, 0.08f, 1f);
-            s2.environmentSettings.fogDensity = 0.002f;
-            s2.environmentSettings.spaceDustColor = new Color(1.0f, 0.65f, 0.4f, 0.85f);
-            s2.environmentSettings.spaceDustCount = 300;
-            s2.enemySettings.waveInterval = 2.8f;
-            s2.enemySettings.allowedVectors = new SpatialVectorType[]
-            {
-                SpatialVectorType.RearAmbush,
-                SpatialVectorType.OverheadDiveBomb,
-                SpatialVectorType.LateralFlankingLeft,
-                SpatialVectorType.LateralFlankingRight,
-                SpatialVectorType.SubSurfaceBreach
-            };
-            s2.hazardSettings.enableAsteroids = true;
-            s2.hazardSettings.indestructibleChance = 0.40f;
-            AssetDatabase.CreateAsset(s2, path2);
-        }
-
-        string path3 = "Assets/Scripts/VirtualRail/StageData_03_DeepSpaceArmada.asset";
-        StageData s3 = AssetDatabase.LoadAssetAtPath<StageData>(path3);
-        if (s3 == null)
-        {
-            s3 = ScriptableObject.CreateInstance<StageData>();
-            s3.stageId = "Stage_03";
-            s3.stageTitle = "STAGE 3: DEEP SPACE ARMADA";
-            s3.stageSubtitle = "JUPITER BATTLE - FINAL SECTOR";
-            s3.stageIndex = 3;
-            s3.railSettings.forwardSpeed = 42f;
-            s3.railSettings.stageDistanceZ = 2000f;
-            s3.railSettings.warpDuration = 3.0f;
-            s3.railSettings.warpSpeedMultiplier = 2.8f;
-            s3.environmentSettings.skyboxMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1_jupiter1.mat");
-            s3.environmentSettings.ambientLightColor = new Color(0.18f, 0.15f, 0.35f, 1f);
-            s3.environmentSettings.enableFog = true;
-            s3.environmentSettings.fogColor = new Color(0.1f, 0.08f, 0.22f, 1f);
-            s3.environmentSettings.fogDensity = 0.001f;
-            s3.environmentSettings.spaceDustColor = new Color(0.7f, 0.8f, 1.0f, 0.9f);
-            s3.environmentSettings.spaceDustCount = 350;
-            s3.enemySettings.waveInterval = 2.2f;
-            s3.enemySettings.formationIntervalWaves = 2;
-            s3.hazardSettings.enableAsteroids = false;
-            AssetDatabase.CreateAsset(s3, path3);
-        }
-
-        AssetDatabase.SaveAssets();
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN KHUNG STAGE DIRECTOR:</b></color> Đã gỡ bỏ StageDirector và UI thông báo.");
     }
 
     private static void CreateStageNotificationUI(Transform canvasParent)
