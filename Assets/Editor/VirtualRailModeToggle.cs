@@ -733,6 +733,17 @@ public class VirtualRailModeToggle
             director = dirObj.AddComponent<VirtualRailStageDirector>();
         }
 
+        StageData s1 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_01.asset");
+        StageData s2 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_02.asset");
+        StageData s3 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03.asset");
+
+        var list = new System.Collections.Generic.List<StageData>();
+        if (s1 != null) list.Add(s1);
+        if (s2 != null) list.Add(s2);
+        if (s3 != null) list.Add(s3);
+        director.stages = list.ToArray();
+        director.currentStageIndex = 0;
+
         Canvas canvas = Object.FindAnyObjectByType<Canvas>();
         if (canvas != null && Object.FindAnyObjectByType<StageNotificationUI>() == null)
         {
@@ -740,7 +751,7 @@ public class VirtualRailModeToggle
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log("<color=green><b>[VirtualRail] ĐÃ THIẾT LẬP KHUNG KIẾN TRÚC STAGE DIRECTOR:</b></color> Đã tạo [VirtualRail_StageDirector] và [StageNotificationUI] (chưa cấu hình nội dung màn chơi).");
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ THIẾT LẬP KHUNG KIẾN TRÚC STAGE DIRECTOR:</b></color> Đã gán 3 khung màn chơi (StageData_01, StageData_02, StageData_03).");
     }
 
     [MenuItem("Tools/Virtual Rail/37. Stage Director: Revert Framework (OFF)")]

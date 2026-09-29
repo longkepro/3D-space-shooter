@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 609fb0bdfaf0b284a9aa22251999e469, type: 3}
+  m_Name: StageData_01
+  m_EditorClassIdentifier: 
+  stageId: Stage_01
+  stageTitle: STAGE 1
+  stageSubtitle: SECTOR 1 - INITIALIZE
+  stageIndex: 1
+  railSettings:
+    forwardSpeed: 28
+    stageDistanceZ: 1200
+    warpDuration: 2.5
+    warpSpeedMultiplier: 3
+  environmentSettings:
+    skyboxMaterial: {fileID: 0}
+    backdropMaterial: {fileID: 0}
+    ambientLightColor: {r: 0.2, g: 0.25, b: 0.35, a: 1}
+    enableFog: 0
+    fogColor: {r: 0.05, g: 0.08, b: 0.15, a: 1}
+    fogDensity: 0.0015
+    directionalLightColor: {r: 1, g: 1, b: 1, a: 1}
+    lightIntensity: 1
+    spaceDustColor: {r: 0.85, g: 0.95, b: 1, a: 0.85}
+    spaceDustCount: 200
+  enemySettings:
+    stageEnemyPrefabs: []
+    waveInterval: 3.5
+    spawnLeadDistance: 220
+    formationIntervalWaves: 3
+    enemyClosingSpeed: 20
+    enemyHoldDistance: 60
+    allowedVectors: []
+  hazardSettings:
+    enableAsteroids: 1
+    indestructibleChance: 0.2
+    asteroidSpawnDistance: 250
+    asteroidZInterval: 50
+    enableCollectibleRings: 1
+    ringSpawnRate: 0.35
+  climaxSettings:
+    climaxType: 0
+    targetWaveCount: 10
+    bossPrefab: {fileID: 0}
