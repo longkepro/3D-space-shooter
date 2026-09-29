@@ -1,0 +1,23 @@
+================================================================================
+           VIRTUAL RAIL STAGE DIRECTOR - AUTOMATED TEST REPORT                 
+================================================================================
+Execution Time: 2026-09-29 23:25:50
+Environment: Unity Editor (Deterministic Tick 50 FPS, dt = 0.02s)
+--------------------------------------------------------------------------------
+[TEST 1] Khởi động Stage 1: PASSED
+         State: InJourney | StageIdx: 0 | Speed: 20,0 m/s (Expected: 20.0 m/s)
+[TEST 2] Đo đạc tiến trình Z đơn điệu: PASSED
+         Final Progress: 100,0% at Z = 100,0m (Monotonic: True)
+[TEST 3] Kích hoạt Climax tại ngưỡng Z: PASSED
+         State: Climax (Expected: Climax)
+[TEST 4] Chuyển tiếp Hyperspace Warp: PASSED
+         State: WarpTransition (Expected: WarpTransition)
+[TEST 5] Gia tốc Warp & Hoán đổi dữ liệu giữa Warp: PASSED
+         Peak Warp Speed: 60,0 m/s (Target: ~60 m/s) | Swapped: True
+[TEST 6] Bàn giao Stage 2 với vận tốc mới: FAILED
+         State: WarpTransition | StageIdx: 1 | Speed: 50,0 m/s (Expected: 50.0 m/s)
+[TEST 7] Hoàn thành toàn bộ chuỗi màn (AllStagesCleared): PASSED
+         Final State: AllStagesCleared (Expected: AllStagesCleared)
+--------------------------------------------------------------------------------
+TOTAL SCORE: 6/7 CHECKS PASSED (FAILURES DETECTED)
+================================================================================

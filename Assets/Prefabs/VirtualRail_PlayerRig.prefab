@@ -925,7 +925,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1919524798225674807}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -976,7 +976,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetCamera: {fileID: 0}
-  backdropMaterial: {fileID: 2100000, guid: e5f6a7b8c9d01a2b3c4d5e6f7a8b9c0d, type: 2}
+  backdropMaterial: {fileID: 0}
   distanceZ: 850
   overscan: 1.05
   enableSubtleParallax: 1

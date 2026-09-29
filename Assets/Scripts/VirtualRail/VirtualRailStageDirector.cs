@@ -44,6 +44,10 @@ namespace VirtualRail
         public Light directionalLight;
         public StageNotificationUI notificationUI;
 
+        [Header("Default Fallback Assets")]
+        [Tooltip("Skybox đen không gian mặc định khi Stage không chỉ định")]
+        public Material defaultSkyboxMaterial;
+
         // Runtime Tracking (0 GC Alloc primitives)
         private float _stageStartZ = 0f;
         private float _warpTimer = 0f;
@@ -120,6 +124,13 @@ namespace VirtualRail
             if (backdrop == null) backdrop = FindAnyObjectByType<VirtualRailHorizonBackdrop>();
             if (spaceDust == null) spaceDust = FindAnyObjectByType<VirtualRailSpaceDust>();
             if (notificationUI == null) notificationUI = StageNotificationUI.Instance != null ? StageNotificationUI.Instance : FindAnyObjectByType<StageNotificationUI>();
+
+            if (defaultSkyboxMaterial == null)
+            {
+#if UNITY_EDITOR
+                defaultSkyboxMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1.mat");
+#endif
+            }
 
             if (directionalLight == null)
             {
@@ -276,6 +287,7 @@ namespace VirtualRail
         /// <summary>
         /// Kích hoạt chu trình nhảy vọt Hyperspace Warp để chuyển màn (0 GC Alloc).
         /// </summary>
+        [ContextMenu("Debug: Force Warp to Next Stage")]
         public void StartWarpTransition()
         {
             if (currentState == StageState.WarpTransition) return;
@@ -403,10 +415,11 @@ namespace VirtualRail
         /// </summary>
         public void ApplyEnvironment(StageEnvironmentSettings env)
         {
-            // Skybox
-            if (env.skyboxMaterial != null)
+            // Skybox: Ưu tiên Skybox của màn, nếu để trống thì fallback về Skybox đen không gian ban đầu
+            Material targetSkybox = env.skyboxMaterial != null ? env.skyboxMaterial : defaultSkyboxMaterial;
+            if (targetSkybox != null)
             {
-                RenderSettings.skybox = env.skyboxMaterial;
+                RenderSettings.skybox = targetSkybox;
                 DynamicGI.UpdateEnvironment();
             }
 
@@ -428,8 +441,8 @@ namespace VirtualRail
                 directionalLight.intensity = env.lightIntensity;
             }
 
-            // Backdrop
-            if (backdrop != null && env.backdropMaterial != null)
+            // Backdrop: Tự động ẩn nếu màn không sử dụng backdropMaterial
+            if (backdrop != null)
             {
                 backdrop.SetBackdropMaterial(env.backdropMaterial);
             }

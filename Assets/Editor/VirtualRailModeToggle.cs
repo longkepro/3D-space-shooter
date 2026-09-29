@@ -19,17 +19,8 @@ public class VirtualRailModeToggle
 
     static VirtualRailModeToggle()
     {
-        EditorApplication.delayCall += InitializeSkyboxOnce;
+        // Gỡ bỏ tự động cưỡng ép Cosmic Earth để cho phép Skybox gốc và StageData toàn quyền quyết định
         EditorApplication.delayCall += InitializeBackdropPrefabOnce;
-    }
-
-    private static void InitializeSkyboxOnce()
-    {
-        if (!SessionState.GetBool(SKYBOX_INIT_KEY, false))
-        {
-            SessionState.SetBool(SKYBOX_INIT_KEY, true);
-            ApplyCosmicEarthSkybox();
-        }
     }
 
     private static void InitializeBackdropPrefabOnce()
@@ -331,13 +322,20 @@ public class VirtualRailModeToggle
         RenderSettings.ambientGroundColor = new Color(0.02f, 0.02f, 0.03f);
         RenderSettings.ambientIntensity = 1.1f;
 
+        VirtualRailHorizonBackdrop backdrop = Object.FindAnyObjectByType<VirtualRailHorizonBackdrop>();
+        if (backdrop != null)
+        {
+            backdrop.SetBackdropMaterial(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth_v2.mat"));
+        }
+
         DynamicGI.UpdateEnvironment();
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
 
-        Debug.Log("<color=green><b>[VirtualRail] DA KICH HOAT SKYBOX ANH 1 (COSMIC EARTH HORIZON):</b></color> Vom Trai Dat neon uon cong phia tren!");
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT SKYBOX ẢNH 1 (COSMIC EARTH):</b></color> Vòm Trái Đất neon & màn chiếu Backdrop 1440p!");
     }
 
+    [MenuItem("Tools/Virtual Rail/38. Skybox: Apply Original Dark Space (Black)")]
     [MenuItem("Tools/Virtual Rail/Maintenance/Restore Original Skybox (Legacy)")]
     public static void RestoreOriginalSkybox()
     {
@@ -355,11 +353,24 @@ public class VirtualRailModeToggle
         RenderSettings.ambientGroundColor = new Color(0.047f, 0.043f, 0.035f);
         RenderSettings.ambientIntensity = 1.0f;
 
+        VirtualRailHorizonBackdrop backdrop = Object.FindAnyObjectByType<VirtualRailHorizonBackdrop>();
+        if (backdrop != null)
+        {
+            backdrop.SetBackdropMaterial(null);
+        }
+
         DynamicGI.UpdateEnvironment();
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         EditorSceneManager.SaveOpenScenes();
 
-        Debug.Log("<color=yellow><b>[VirtualRail] DA HOAN NGUYEN (UNDO) VE SKYBOX GOC:</b></color> skyboxv1.mat da duoc gan lai vao RenderSettings.");
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ SKYBOX ĐEN VŨ TRỤ BAN ĐẦU:</b></color> skyboxv1.mat đã được gán và Backdrop đã được ẩn.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/39. Skybox: Apply Cosmic Earth (Photo)")]
+    [MenuItem("Tools/Virtual Rail/Maintenance/Apply Cosmic Earth Skybox")]
+    public static void ApplyCosmicEarthSkyboxMenu()
+    {
+        ApplyCosmicEarthSkybox();
     }
 
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
@@ -403,7 +414,7 @@ public class VirtualRailModeToggle
         backdropObj.transform.localRotation = Quaternion.identity;
         VirtualRailHorizonBackdrop backdrop = backdropObj.AddComponent<VirtualRailHorizonBackdrop>();
         backdrop.distanceZ = config.backdropDistanceZ;
-        backdrop.backdropMaterial = (config.backdropMaterial != null) ? config.backdropMaterial : AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth_v2.mat");
+        backdrop.backdropMaterial = config.backdropMaterial;
         backdrop.Initialize();
 
         // 2. Reticle Anchor
@@ -743,6 +754,7 @@ public class VirtualRailModeToggle
         if (s3 != null) list.Add(s3);
         director.stages = list.ToArray();
         director.currentStageIndex = 0;
+        director.defaultSkyboxMaterial = AssetDatabase.LoadAssetAtPath<Material>(ORIGINAL_SKYBOX_MATERIAL_PATH);
 
         Canvas canvas = Object.FindAnyObjectByType<Canvas>();
         if (canvas != null && Object.FindAnyObjectByType<StageNotificationUI>() == null)

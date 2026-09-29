@@ -53,12 +53,19 @@ namespace VirtualRail
 
         public void SetBackdropMaterial(Material mat)
         {
-            if (mat == null) return;
             backdropMaterial = mat;
             if (_mr == null) _mr = GetComponent<MeshRenderer>();
             if (_mr != null)
             {
-                _mr.sharedMaterial = mat;
+                if (mat != null)
+                {
+                    _mr.enabled = true;
+                    _mr.sharedMaterial = mat;
+                }
+                else
+                {
+                    _mr.enabled = false;
+                }
             }
         }
 
@@ -67,21 +74,21 @@ namespace VirtualRail
             if (_mf == null) _mf = GetComponent<MeshFilter>();
             if (_mr == null) _mr = GetComponent<MeshRenderer>();
 
-            // 1. Tải vật liệu Backdrop nếu chưa gán
-            if (backdropMaterial == null)
+            if (_mr != null)
             {
-#if UNITY_EDITOR
-                backdropMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Backdrop_Image1_CosmicEarth.mat");
-#endif
-            }
-
-            if (_mr != null && backdropMaterial != null)
-            {
-                _mr.sharedMaterial = backdropMaterial;
-                _mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                _mr.receiveShadows = false;
-                _mr.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-                _mr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+                if (backdropMaterial != null)
+                {
+                    _mr.enabled = true;
+                    _mr.sharedMaterial = backdropMaterial;
+                    _mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    _mr.receiveShadows = false;
+                    _mr.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+                    _mr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+                }
+                else
+                {
+                    _mr.enabled = false;
+                }
             }
 
             // 2. Gán Quad Mesh chuẩn Primitive của Unity Engine
@@ -100,6 +107,8 @@ namespace VirtualRail
 
         private void LateUpdate()
         {
+            if (_mr != null && !_mr.enabled) return;
+
             if (targetCamera == null)
             {
                 FindTargetCamera();
