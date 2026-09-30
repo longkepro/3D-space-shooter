@@ -16,10 +16,11 @@ namespace VirtualRail
 
     /// <summary>
     /// Nhạc trưởng điều phối chu trình màn chơi (Stage Director - Chuẩn Star Fox 64 Arcade).
-    /// Quản lý chu trình 3 màn chơi và chuyển giao liền mạch không tải lại Scene (Seamless In-Place Transition):
-    /// - 0 GC Allocation trong Game Loop.
-    /// - Luồng dữ liệu 1 chiều (Unidirectional Data Flow): StageData -> Director -> Subsystems.
-    /// - Đồng bộ mượt mà ánh sáng, Skybox, tốc độ ray, bảng quái và thiên thạch.
+    /// Hỗ trợ kiến trúc Pure Data-Driven:
+    /// - Tự do tùy biến thời gian hoàn thành (Phút/Giây hoặc Mét Z hoặc Diệt quái).
+    /// - Thực thi kịch bản Timeline theo mốc (0 GC Alloc).
+    /// - Chuyển giao liền mạch không tải lại Scene (Seamless In-Place Transition).
+    /// - Quản lý trận đấu Boss và ghìm tốc độ ray.
     /// </summary>
     [DisallowMultipleComponent]
     public class VirtualRailStageDirector : MonoBehaviour
@@ -50,6 +51,11 @@ namespace VirtualRail
 
         // Runtime Tracking (0 GC Alloc primitives)
         private float _stageStartZ = 0f;
+        private float _stageTimer = 0f;
+        private int _nextTimelineIndex = 0;
+        private int _enemiesKilled = 0;
+        private bool _isBossSpawned = false;
+        private GameObject _activeBossInstance = null;
         private float _warpTimer = 0f;
         private float _warpDuration = 2.5f;
         private float _normalSpeed = 28f;
@@ -59,14 +65,36 @@ namespace VirtualRail
 
         public StageData CurrentStageData => (stages != null && currentStageIndex >= 0 && currentStageIndex < stages.Length) ? stages[currentStageIndex] : null;
 
+        public float StageTimer => _stageTimer;
+        public int EnemiesKilled => _enemiesKilled;
+
+        /// <summary>
+        /// Tiến trình hoàn thành màn chơi (0.0 đến 1.0) theo chế độ đã cấu hình.
+        /// </summary>
         public float StageProgress01
         {
             get
             {
                 var stage = CurrentStageData;
-                if (stage == null || anchor == null || stage.railSettings.stageDistanceZ <= 0.001f) return 0f;
-                float distTraveled = anchor.transform.position.z - _stageStartZ;
-                return Mathf.Clamp01(distTraveled / stage.railSettings.stageDistanceZ);
+                if (stage == null || anchor == null) return 0f;
+
+                if (stage.progressionSettings.completionMode == StageCompletionMode.TimeDuration)
+                {
+                    float targetSec = stage.GetTargetDurationSeconds();
+                    return targetSec > 0.01f ? Mathf.Clamp01(_stageTimer / targetSec) : 0f;
+                }
+                else if (stage.progressionSettings.completionMode == StageCompletionMode.EliminationQuota)
+                {
+                    int quota = stage.progressionSettings.targetEliminationCount;
+                    return quota > 0 ? Mathf.Clamp01((float)_enemiesKilled / quota) : 0f;
+                }
+                else
+                {
+                    float targetDist = stage.GetTargetDistanceZ();
+                    if (targetDist <= 0.001f) return 0f;
+                    float distTraveled = anchor.transform.position.z - _stageStartZ;
+                    return Mathf.Clamp01(distTraveled / targetDist);
+                }
             }
         }
 
@@ -77,7 +105,17 @@ namespace VirtualRail
                 var stage = CurrentStageData;
                 if (stage == null || anchor == null) return 0f;
                 float distTraveled = anchor.transform.position.z - _stageStartZ;
-                return Mathf.Max(0f, stage.railSettings.stageDistanceZ - distTraveled);
+                return Mathf.Max(0f, stage.GetTargetDistanceZ() - distTraveled);
+            }
+        }
+
+        public float StageTimeRemainingSeconds
+        {
+            get
+            {
+                var stage = CurrentStageData;
+                if (stage == null) return 0f;
+                return Mathf.Max(0f, stage.GetTargetDurationSeconds() - _stageTimer);
             }
         }
 
@@ -118,12 +156,19 @@ namespace VirtualRail
         {
             GameEventManager.OnStartGame += HandleGameStarted;
             GameEventManager.OnPlayerDestroyed += HandlePlayerDestroyed;
+            GameEventManager.OnIncrementScore += HandleEnemyKilledScore;
         }
 
         private void OnDisable()
         {
             GameEventManager.OnStartGame -= HandleGameStarted;
             GameEventManager.OnPlayerDestroyed -= HandlePlayerDestroyed;
+            GameEventManager.OnIncrementScore -= HandleEnemyKilledScore;
+        }
+
+        private void HandleEnemyKilledScore(int points)
+        {
+            _enemiesKilled++;
         }
 
         private void FindReferences()
@@ -196,9 +241,15 @@ namespace VirtualRail
                 _stageStartZ = anchor.transform.position.z;
             }
 
-            _normalSpeed = stage.railSettings.forwardSpeed > 1f ? stage.railSettings.forwardSpeed : 28f;
-            _warpDuration = stage.railSettings.warpDuration > 0.5f ? stage.railSettings.warpDuration : 2.5f;
-            _warpPeakSpeed = _normalSpeed * (stage.railSettings.warpSpeedMultiplier > 1f ? stage.railSettings.warpSpeedMultiplier : 3.0f);
+            _stageTimer = 0f;
+            _nextTimelineIndex = 0;
+            _enemiesKilled = 0;
+            _isBossSpawned = false;
+            _climaxTimer = 0f;
+
+            _normalSpeed = stage.GetBaseForwardSpeed();
+            _warpDuration = stage.GetWarpDuration();
+            _warpPeakSpeed = _normalSpeed * stage.GetWarpSpeedMultiplier();
 
             // 1. Áp dụng Môi trường & Khí quyển
             ApplyEnvironment(stage.environmentSettings);
@@ -209,7 +260,7 @@ namespace VirtualRail
                 anchor.CurrentSpeed = _normalSpeed;
             }
 
-            // 3. Áp dụng Bảng quái vật & Vector xuất hiện
+            // 3. Áp dụng Bảng quái vật & Vector xuất hiện (Không dùng fallback mặc định)
             if (waveSpawner != null)
             {
                 waveSpawner.ApplyStagePalette(stage.enemySettings);
@@ -277,6 +328,8 @@ namespace VirtualRail
             switch (currentState)
             {
                 case StageState.InJourney:
+                    _stageTimer += dt;
+                    ProcessTimelineEvents();
                     UpdateJourneyState();
                     break;
 
@@ -289,10 +342,83 @@ namespace VirtualRail
                     break;
             }
 
-            // Cập nhật thanh tiến trình Z cho HUD (0 GC Alloc)
+            // Cập nhật thanh tiến trình cho HUD (0 GC Alloc)
             if (notificationUI != null && currentState == StageState.InJourney)
             {
                 notificationUI.UpdateProgressBar(StageProgress01);
+            }
+        }
+
+        private void ProcessTimelineEvents()
+        {
+            StageData stage = CurrentStageData;
+            if (stage == null || stage.timelineEvents == null || _nextTimelineIndex >= stage.timelineEvents.Length) return;
+
+            ref StageTimelineEvent evt = ref stage.timelineEvents[_nextTimelineIndex];
+            float currentVal = (evt.triggerMode == TimelineTriggerMode.TimeInSeconds)
+                ? _stageTimer
+                : (anchor != null ? (anchor.transform.position.z - _stageStartZ) : 0f);
+
+            if (currentVal >= evt.triggerValue)
+            {
+                ExecuteTimelineEvent(in evt);
+                _nextTimelineIndex++;
+            }
+        }
+
+        private void ExecuteTimelineEvent(in StageTimelineEvent evt)
+        {
+            switch (evt.eventType)
+            {
+                case StageTimelineEventType.RadioTransmission:
+                    if (notificationUI != null)
+                    {
+                        notificationUI.ShowNotification(evt.messageTitle, evt.messageSubtitle, evt.messageDuration > 0.5f ? evt.messageDuration : 3.5f);
+                    }
+                    break;
+
+                case StageTimelineEventType.EnvironmentShift:
+                    if (evt.changeFog)
+                    {
+                        RenderSettings.fog = evt.enableFog;
+                        if (evt.enableFog)
+                        {
+                            RenderSettings.fogColor = evt.fogColor;
+                            RenderSettings.fogDensity = evt.fogDensity;
+                        }
+                    }
+                    if (evt.changeSkybox && evt.newSkybox != null)
+                    {
+                        RenderSettings.skybox = evt.newSkybox;
+                        DynamicGI.UpdateEnvironment();
+                    }
+                    break;
+
+                case StageTimelineEventType.SpawnScriptedSquad:
+                    if (waveSpawner != null)
+                    {
+                        waveSpawner.SpawnScriptedSquad(evt.customPrefab, evt.vectorType, evt.squadCount);
+                    }
+                    break;
+
+                case StageTimelineEventType.SpeedChange:
+                    if (anchor != null && evt.targetSpeed > 1f)
+                    {
+                        _normalSpeed = evt.targetSpeed;
+                        anchor.CurrentSpeed = evt.targetSpeed;
+                    }
+                    break;
+
+                case StageTimelineEventType.Checkpoint:
+                    if (notificationUI != null)
+                    {
+                        notificationUI.ShowNotification("CHECKPOINT REACHED", "MISSION PROGRESS SAVED", 2.5f);
+                    }
+                    break;
+
+                case StageTimelineEventType.SpawnBoss:
+                    TriggerBossEncounter();
+                    break;
             }
         }
 
@@ -301,8 +427,69 @@ namespace VirtualRail
             StageData stage = CurrentStageData;
             if (stage == null) return;
 
-            float traveled = anchor.transform.position.z - _stageStartZ;
-            if (traveled >= stage.railSettings.stageDistanceZ)
+            bool reachedEnd = false;
+            switch (stage.progressionSettings.completionMode)
+            {
+                case StageCompletionMode.TimeDuration:
+                    reachedEnd = _stageTimer >= stage.GetTargetDurationSeconds();
+                    break;
+
+                case StageCompletionMode.DistanceTraveled:
+                    float traveled = anchor.transform.position.z - _stageStartZ;
+                    reachedEnd = traveled >= stage.GetTargetDistanceZ();
+                    break;
+
+                case StageCompletionMode.EliminationQuota:
+                    reachedEnd = _enemiesKilled >= stage.progressionSettings.targetEliminationCount;
+                    break;
+
+                case StageCompletionMode.DefeatBoss:
+                    if (!_isBossSpawned)
+                    {
+                        TriggerBossEncounter();
+                    }
+                    break;
+
+                case StageCompletionMode.SurvivalUntilBoss:
+                    float dist = anchor.transform.position.z - _stageStartZ;
+                    if (_stageTimer >= stage.GetTargetDurationSeconds() || dist >= stage.GetTargetDistanceZ())
+                    {
+                        if (!_isBossSpawned)
+                        {
+                            TriggerBossEncounter();
+                        }
+                    }
+                    break;
+            }
+
+            if (reachedEnd)
+            {
+                TriggerClimax();
+            }
+        }
+
+        public void TriggerBossEncounter()
+        {
+            if (_isBossSpawned) return;
+            _isBossSpawned = true;
+
+            StageData stage = CurrentStageData;
+            if (stage != null && stage.climaxSettings.bossPrefab != null)
+            {
+                if (stage.climaxSettings.holdRailOnBoss && anchor != null)
+                {
+                    anchor.CurrentSpeed = Mathf.Max(5f, _normalSpeed * 0.25f);
+                }
+
+                Vector3 spawnPos = anchor.transform.position + anchor.ForwardTangent * 180f;
+                _activeBossInstance = Instantiate(stage.climaxSettings.bossPrefab, spawnPos, Quaternion.LookRotation(-anchor.ForwardTangent));
+
+                if (notificationUI != null)
+                {
+                    notificationUI.ShowNotification("WARNING: MASSIVE SIGNATURE", "TARGET DESTROY PROTOCOL ENGAGED", 4f);
+                }
+            }
+            else
             {
                 TriggerClimax();
             }
@@ -322,12 +509,23 @@ namespace VirtualRail
             _climaxTimer += dt;
 
             StageData stage = CurrentStageData;
-            if (stage != null && stage.climaxSettings.climaxType == StageClimaxType.DistanceReached)
+            if (stage != null)
             {
+                // Nếu là DefeatBoss và có Boss instance đang sống, đợi boss chết
+                if (stage.climaxSettings.climaxType == StageClimaxType.DefeatBoss && _activeBossInstance != null)
+                {
+                    return;
+                }
+
+                // Chế độ thời gian hoặc cự ly: đợi 1.5s ngắt nhịp rồi kích hoạt Warp
                 if (_climaxTimer >= 1.5f)
                 {
                     StartWarpTransition();
                 }
+            }
+            else if (_climaxTimer >= 1.5f)
+            {
+                StartWarpTransition();
             }
         }
 
@@ -432,7 +630,15 @@ namespace VirtualRail
                 _stageStartZ = anchor.transform.position.z;
             }
 
-            _normalSpeed = nextStage.railSettings.forwardSpeed > 1f ? nextStage.railSettings.forwardSpeed : 28f;
+            _stageTimer = 0f;
+            _nextTimelineIndex = 0;
+            _enemiesKilled = 0;
+            _isBossSpawned = false;
+            _activeBossInstance = null;
+
+            _normalSpeed = nextStage.GetBaseForwardSpeed();
+            _warpDuration = nextStage.GetWarpDuration();
+            _warpPeakSpeed = _normalSpeed * nextStage.GetWarpSpeedMultiplier();
 
             // 1. Hoán đổi Môi trường
             ApplyEnvironment(nextStage.environmentSettings);

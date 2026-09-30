@@ -57,24 +57,25 @@ namespace VirtualRail
             SpatialVectorType.WarpInDecloak
         };
 
-        private SpatialVectorType[] _activeVectors = ACTIVE_SPATIAL_VECTORS;
+        private SpatialVectorType[] _activeVectors = null;
+        private GameObject[] _stageEnemyPrefabs = null;
+        private bool _allowShooting = true;
+        private float _stageBulletSpeed = 22f;
+        private bool _stageEnableFormations = true;
         private float _stageWaveInterval = -1f;
         private int _stageFormationInterval = -1;
         private float _stageLeadDistance = -1f;
 
         /// <summary>
-        /// Nạp thông số bảng quái và các vector xuất hiện theo màn chơi (0 GC Alloc).
+        /// Nạp thông số bảng quái và các vector xuất hiện theo màn chơi (0 GC Alloc, không dùng default ngầm).
         /// </summary>
         public void ApplyStagePalette(StageEnemySettings settings)
         {
-            if (settings.allowedVectors != null && settings.allowedVectors.Length > 0)
-            {
-                _activeVectors = settings.allowedVectors;
-            }
-            else
-            {
-                _activeVectors = ACTIVE_SPATIAL_VECTORS;
-            }
+            _activeVectors = (settings.allowedVectors != null && settings.allowedVectors.Length > 0) ? settings.allowedVectors : null;
+            _stageEnemyPrefabs = (settings.stageEnemyPrefabs != null && settings.stageEnemyPrefabs.Length > 0) ? settings.stageEnemyPrefabs : null;
+            _allowShooting = settings.allowShooting;
+            _stageBulletSpeed = settings.bulletSpeed > 1f ? settings.bulletSpeed : 22f;
+            _stageEnableFormations = settings.enableFormations && (settings.formationIntervalWaves > 0);
 
             if (settings.waveInterval > 0.1f)
             {
@@ -341,16 +342,29 @@ namespace VirtualRail
                 EnemyMovement availableEnemy = GetAvailableStandardEnemy();
                 if (availableEnemy == null) break;
 
-                // Chọn vector tiếp theo theo chu kỳ phân bổ đa hướng 10 Vector
-                var vectors = (_activeVectors != null && _activeVectors.Length > 0) ? _activeVectors : ACTIVE_SPATIAL_VECTORS;
-                SpatialVectorType vectorType = vectors[_vectorCycleIndex % vectors.Length];
-                _vectorCycleIndex++;
+                // Chọn vector tiếp theo theo chu kỳ (nếu stage không chỉ định vector thì dùng FrontalHeadOn cơ bản)
+                SpatialVectorType vectorType;
+                if (_activeVectors != null && _activeVectors.Length > 0)
+                {
+                    vectorType = _activeVectors[_vectorCycleIndex % _activeVectors.Length];
+                    _vectorCycleIndex++;
+                }
+                else
+                {
+                    vectorType = SpatialVectorType.FrontalHeadOn;
+                }
 
                 SpatialTrajectoryData trajectory = SpatialVectorFactory.GenerateTrajectory(vectorType, anchor, mainCam, leadDist);
 
                 availableEnemy.ResetState();
                 availableEnemy.transform.localScale = Vector3.one;
                 availableEnemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
+
+                var attackComp = availableEnemy.GetComponent<EnemyAttack>();
+                if (attackComp != null)
+                {
+                    attackComp.enabled = _allowShooting;
+                }
 
                 if (useFSM)
                 {
@@ -591,6 +605,39 @@ namespace VirtualRail
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Sinh một cụm phi đội kịch bản đặc biệt từ Timeline kịch bản (0 GC Alloc).
+        /// </summary>
+        public void SpawnScriptedSquad(GameObject customPrefab, SpatialVectorType vectorType, int count)
+        {
+            if (anchor == null) anchor = VirtualRailAnchor.Instance;
+            if (anchor == null) return;
+
+            Camera mainCam = _mainCam != null ? _mainCam : Camera.main;
+            float leadDist = _stageLeadDistance > 10f ? _stageLeadDistance : spawnLeadDistance;
+            int actualCount = Mathf.Clamp(count, 1, 6);
+
+            for (int i = 0; i < actualCount; i++)
+            {
+                EnemyMovement enemy = GetAvailableStandardEnemy();
+                if (enemy == null) break;
+
+                SpatialTrajectoryData trajectory = SpatialVectorFactory.GenerateTrajectory(vectorType, anchor, mainCam, leadDist + (i * 12f));
+                enemy.ResetState();
+                enemy.transform.localScale = Vector3.one;
+                enemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
+
+                var attack = enemy.GetComponent<EnemyAttack>();
+                if (attack != null) attack.enabled = _allowShooting;
+
+                var fsm = enemy.GetComponent<EnemyLifecycleFSM>();
+                if (fsm == null) fsm = enemy.gameObject.AddComponent<EnemyLifecycleFSM>();
+                fsm.InitializeTrajectory(trajectory, anchor);
+
+                enemy.gameObject.SetActive(true);
+            }
         }
 
         public void RecycleAll()

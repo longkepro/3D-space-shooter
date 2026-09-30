@@ -3,11 +3,109 @@ using UnityEngine;
 
 namespace VirtualRail
 {
+    public enum StageCompletionMode
+    {
+        DistanceTraveled = 0,    // Hoàn thành theo quãng đường ray Z (mét)
+        TimeDuration = 1,        // Hoàn thành theo thời lượng thực tế (phút)
+        EliminationQuota = 2,    // Tiêu diệt đủ số lượng quái chỉ định
+        DefeatBoss = 3,          // Chỉ hoàn thành khi Boss bị tiêu diệt
+        SurvivalUntilBoss = 4    // Hết thời gian/cự ly -> Chuyển sang kích hoạt trận đấu Boss
+    }
+
+    public enum TimelineTriggerMode
+    {
+        TimeInSeconds = 0,       // Kích hoạt theo giây từ lúc bắt đầu màn
+        DistanceInMeters = 1     // Kích hoạt theo mét Z từ lúc bắt đầu màn
+    }
+
+    public enum StageTimelineEventType
+    {
+        RadioTransmission = 0,   // Thông điệp đàm thoại / Cảnh báo nguy hiểm
+        EnvironmentShift = 1,    // Thay đổi sương mù / ánh sáng / Skybox
+        SpawnScriptedSquad = 2,  // Triệu gọi cụm quái / đội hình kịch bản
+        SpeedChange = 3,         // Tăng tốc hoặc giảm tốc đường ray
+        Checkpoint = 4,          // Lưu trạm Checkpoint hồi sinh
+        SpawnBoss = 5            // Kích hoạt trận đấu Boss
+    }
+
     public enum StageClimaxType
     {
-        DistanceReached,
-        EliminateWaveCount,
-        DefeatBoss
+        DistanceReached = 0,
+        EliminateWaveCount = 1,
+        DefeatBoss = 2,
+        TimeElapsed = 3
+    }
+
+    [Serializable]
+    public struct StageProgressionSettings
+    {
+        [Tooltip("Chế độ hoàn thành màn chơi (Thời gian, Cự ly, Diệt quái, Diệt Boss)")]
+        public StageCompletionMode completionMode;
+
+        [Range(0.5f, 60.0f)]
+        [Tooltip("Thời lượng màn chơi tính theo PHÚT (VD: 15.0 cho màn 15 phút)")]
+        public float durationMinutes;
+
+        [Tooltip("Quãng đường ray mục tiêu (m) nếu chạy theo cự ly")]
+        public float targetDistanceZ;
+
+        [Tooltip("Tốc độ tiến cơ sở dọc trục Z của đường ray (m/s)")]
+        public float baseForwardSpeed;
+
+        [Tooltip("Thời gian lướt nhảy vọt Hyperspace Warp khi chuyển màn (giây)")]
+        public float warpDuration;
+
+        [Tooltip("Hệ số tăng tốc khi lướt Hyperspace Warp")]
+        public float warpSpeedMultiplier;
+
+        [Tooltip("Số lượng quái cần tiêu diệt nếu chọn EliminationQuota")]
+        public int targetEliminationCount;
+
+        public static StageProgressionSettings Default => new StageProgressionSettings
+        {
+            completionMode = StageCompletionMode.TimeDuration,
+            durationMinutes = 15.0f,
+            targetDistanceZ = 25200f,
+            baseForwardSpeed = 28f,
+            warpDuration = 2.5f,
+            warpSpeedMultiplier = 3.2f,
+            targetEliminationCount = 50
+        };
+    }
+
+    [Serializable]
+    public struct StageTimelineEvent
+    {
+        [Tooltip("Tên gợi nhớ của sự kiện kịch bản")]
+        public string eventName;
+
+        [Tooltip("Cách thức kích hoạt: Theo thời gian (giây) hoặc theo cự ly (mét Z)")]
+        public TimelineTriggerMode triggerMode;
+
+        [Tooltip("Mốc kích hoạt (giây nếu là Time, mét Z nếu là Distance)")]
+        public float triggerValue;
+
+        [Tooltip("Loại sự kiện")]
+        public StageTimelineEventType eventType;
+
+        [Header("Radio Transmission")]
+        public string messageTitle;
+        public string messageSubtitle;
+        public float messageDuration;
+
+        [Header("Scripted Spawning")]
+        public GameObject customPrefab;
+        public SpatialVectorType vectorType;
+        public int squadCount;
+
+        [Header("Speed & Environment Control")]
+        public float targetSpeed;
+        public bool changeFog;
+        public bool enableFog;
+        public Color fogColor;
+        public float fogDensity;
+        public bool changeSkybox;
+        public Material newSkybox;
     }
 
     [Serializable]
@@ -28,7 +126,7 @@ namespace VirtualRail
         public static StageRailSettings Default => new StageRailSettings
         {
             forwardSpeed = 28f,
-            stageDistanceZ = 1500f,
+            stageDistanceZ = 25200f,
             warpDuration = 2.5f,
             warpSpeedMultiplier = 3.2f
         };
@@ -98,7 +196,7 @@ namespace VirtualRail
     [Serializable]
     public struct StageEnemySettings
     {
-        [Tooltip("Bảng danh mục Prefab quái riêng của màn chơi (nếu null sẽ dùng mặc định)")]
+        [Tooltip("Bảng danh mục Prefab quái riêng của màn chơi (Chỉ sinh những quái có trong danh sách này, rỗng = không sinh quái)")]
         public GameObject[] stageEnemyPrefabs;
 
         [Tooltip("Chu kỳ xuất hiện đợt quái (giây)")]
@@ -107,7 +205,7 @@ namespace VirtualRail
         [Tooltip("Cự ly sinh quái phía trước mũi tàu (m)")]
         public float spawnLeadDistance;
 
-        [Tooltip("Tần suất xuất hiện đợt bay đội hình (mỗi X đợt)")]
+        [Tooltip("Tần suất xuất hiện đợt bay đội hình (mỗi X đợt, <= 0 là tắt)")]
         public int formationIntervalWaves;
 
         [Tooltip("Vận tốc tiếp cận tương đối của quái (m/s)")]
@@ -116,8 +214,17 @@ namespace VirtualRail
         [Tooltip("Cự ly ghìm giao chiến của quái phía trước tàu (m)")]
         public float enemyHoldDistance;
 
-        [Tooltip("Các hướng xuất hiện được kích hoạt trong màn này (nếu null sẽ dùng cả 7 hướng)")]
+        [Tooltip("Các hướng xuất hiện được kích hoạt trong màn này (Chỉ dùng các vector trong danh sách này, rỗng = không dùng vector nâng cao)")]
         public SpatialVectorType[] allowedVectors;
+
+        [Tooltip("Cho phép quái bắn đạn hay không trong màn này")]
+        public bool allowShooting;
+
+        [Tooltip("Vận tốc đạn của quái riêng màn này (m/s)")]
+        public float bulletSpeed;
+
+        [Tooltip("Bật xuất hiện đội hình lượn")]
+        public bool enableFormations;
 
         public static StageEnemySettings Default => new StageEnemySettings
         {
@@ -127,7 +234,10 @@ namespace VirtualRail
             formationIntervalWaves = 3,
             enemyClosingSpeed = 20f,
             enemyHoldDistance = 60f,
-            allowedVectors = null
+            allowedVectors = null,
+            allowShooting = true,
+            bulletSpeed = 22f,
+            enableFormations = true
         };
     }
 
@@ -175,41 +285,107 @@ namespace VirtualRail
         [Tooltip("Prefab Boss (nếu có)")]
         public GameObject bossPrefab;
 
+        [Tooltip("Lượng máu của Boss riêng màn này")]
+        public int bossHealth;
+
+        [Tooltip("Ghìm dừng tốc độ tàu ray khi bước vào trận đấu Boss")]
+        public bool holdRailOnBoss;
+
         public static StageClimaxSettings Default => new StageClimaxSettings
         {
             climaxType = StageClimaxType.DistanceReached,
             targetWaveCount = 10,
-            bossPrefab = null
+            bossPrefab = null,
+            bossHealth = 100,
+            holdRailOnBoss = true
         };
     }
 
     /// <summary>
-    /// Bản thiết kế dữ liệu cho từng màn chơi độc lập (Data-Driven Stage Architecture).
+    /// Bản thiết kế dữ liệu cho từng màn chơi độc lập (Pure Data-Driven Stage Architecture).
     /// Tuân thủ nguyên tắc Open-Closed (SOLID) và 0 GC Alloc.
-    /// Mỗi màn là 1 Asset độc lập, cho phép nhân bản (Ctrl+D) và tùy biến không giới hạn.
+    /// Mỗi màn là 1 Asset độc lập, cho phép nhân bản (Ctrl+D) và tùy biến 100% thời gian, kịch bản, gameplay.
     /// </summary>
     [CreateAssetMenu(fileName = "StageData", menuName = "Virtual Rail/Stage Data", order = 2)]
     public class StageData : ScriptableObject
     {
         [Header("Stage Identity")]
         public string stageId = "Stage_01";
-        public string stageTitle = "STAGE 1: ASTEROID BELT";
-        public string stageSubtitle = "TRENCH RUN - INITIALIZE";
+        public string stageTitle = "STAGE 1: OPERATION METEOR BREACH";
+        public string stageSubtitle = "SECTOR ALPHA - INITIALIZE";
         public int stageIndex = 1;
 
-        [Header("1. Rail & Kinematics")]
+        [Header("1. Progression & Completion Mode (Thời Gian & Cự Ly)")]
+        public StageProgressionSettings progressionSettings = StageProgressionSettings.Default;
+
+        [Header("Legacy Rail Settings (Bảo lưu tương thích ngược)")]
         public StageRailSettings railSettings = StageRailSettings.Default;
 
         [Header("2. Environment & Atmosphere")]
         public StageEnvironmentSettings environmentSettings = StageEnvironmentSettings.Default;
 
-        [Header("3. Enemy & Wave Palette")]
+        [Header("3. Enemy & Wave Palette (Không Dùng Fallback Mặc Định)")]
         public StageEnemySettings enemySettings = StageEnemySettings.Default;
 
         [Header("4. Hazards & Collectibles")]
         public StageHazardSettings hazardSettings = StageHazardSettings.Default;
 
-        [Header("5. Climax & Completion")]
+        [Header("5. Climax & Boss Encounter")]
         public StageClimaxSettings climaxSettings = StageClimaxSettings.Default;
+
+        [Header("6. Scripted Timeline (Kịch Bản Màn Chơi Theo Mốc)")]
+        public StageTimelineEvent[] timelineEvents;
+
+        /// <summary>
+        /// Vận tốc cơ sở của đường ray (ưu tiên progressionSettings, fallback sang railSettings).
+        /// </summary>
+        public float GetBaseForwardSpeed()
+        {
+            if (progressionSettings.baseForwardSpeed > 0.5f) return progressionSettings.baseForwardSpeed;
+            if (railSettings.forwardSpeed > 0.5f) return railSettings.forwardSpeed;
+            return 28f;
+        }
+
+        /// <summary>
+        /// Cự ly ray mục tiêu (m).
+        /// </summary>
+        public float GetTargetDistanceZ()
+        {
+            if (progressionSettings.targetDistanceZ > 10f) return progressionSettings.targetDistanceZ;
+            if (railSettings.stageDistanceZ > 10f) return railSettings.stageDistanceZ;
+            return 25200f;
+        }
+
+        /// <summary>
+        /// Thời lượng mục tiêu tính bằng giây.
+        /// </summary>
+        public float GetTargetDurationSeconds()
+        {
+            if (progressionSettings.durationMinutes > 0.05f)
+            {
+                return progressionSettings.durationMinutes * 60f;
+            }
+            return GetTargetDistanceZ() / Mathf.Max(1f, GetBaseForwardSpeed());
+        }
+
+        /// <summary>
+        /// Thời gian lướt Warp khi xong màn (giây).
+        /// </summary>
+        public float GetWarpDuration()
+        {
+            if (progressionSettings.warpDuration > 0.5f) return progressionSettings.warpDuration;
+            if (railSettings.warpDuration > 0.5f) return railSettings.warpDuration;
+            return 2.5f;
+        }
+
+        /// <summary>
+        /// Hệ số tăng tốc Warp.
+        /// </summary>
+        public float GetWarpSpeedMultiplier()
+        {
+            if (progressionSettings.warpSpeedMultiplier > 1f) return progressionSettings.warpSpeedMultiplier;
+            if (railSettings.warpSpeedMultiplier > 1f) return railSettings.warpSpeedMultiplier;
+            return 3.2f;
+        }
     }
 }

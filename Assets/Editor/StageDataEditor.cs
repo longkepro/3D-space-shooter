@@ -7,10 +7,11 @@ namespace VirtualRail.EditorScripts
     /// <summary>
     /// Custom Inspector chuyên nghiệp cho StageData ScriptableObject.
     /// Cung cấp:
-    /// 1. Kéo thả trực tiếp Texture2D ảnh màn chơi 4K mà không cần tạo file .mat thủ công.
-    /// 2. Hộp xem trước trực quan (Thumbnail Preview 16:9) ngay trên Inspector.
-    /// 3. Nút xem trước 1-click (Preview In Scene/Game) trong Editor mà không cần ấn Play.
-    /// 4. Nút nhảy màn tức thì (Warp To Stage) khi đang test trong Play Mode.
+    /// 1. Tùy biến Chế độ hoàn thành (Thời gian phút, Cự ly Z, Diệt quái, Diệt Boss).
+    /// 2. Cấu hình bảng quái vật và vector độc lập 100% không dùng fallback mặc định.
+    /// 3. Soạn thảo kịch bản Timeline theo mốc thời gian/cự ly trực quan.
+    /// 4. Kéo thả trực tiếp Texture2D ảnh màn chơi 4K mà không cần tạo file .mat thủ công.
+    /// 5. Nút xem trước 1-click (Preview In Scene/Game) và Nút nhảy màn tức thì trong Play Mode.
     /// </summary>
     [CustomEditor(typeof(StageData))]
     public class StageDataEditor : Editor
@@ -20,11 +21,13 @@ namespace VirtualRail.EditorScripts
         private SerializedProperty _stageSubtitleProp;
         private SerializedProperty _stageIndexProp;
 
+        private SerializedProperty _progressionSettingsProp;
         private SerializedProperty _railSettingsProp;
         private SerializedProperty _envSettingsProp;
         private SerializedProperty _enemySettingsProp;
         private SerializedProperty _hazardSettingsProp;
         private SerializedProperty _climaxSettingsProp;
+        private SerializedProperty _timelineEventsProp;
 
         private SerializedProperty _skyboxMatProp;
         private SerializedProperty _backdropMatProp;
@@ -32,9 +35,10 @@ namespace VirtualRail.EditorScripts
         private SerializedProperty _backdropExposureProp;
         private SerializedProperty _backdropTintProp;
 
+        private bool _showProgressionFold = true;
         private bool _showEnvFold = true;
-        private bool _showRailFold = true;
-        private bool _showEnemyFold = false;
+        private bool _showEnemyFold = true;
+        private bool _showTimelineFold = true;
         private bool _showHazardFold = false;
         private bool _showClimaxFold = false;
 
@@ -45,11 +49,13 @@ namespace VirtualRail.EditorScripts
             _stageSubtitleProp = serializedObject.FindProperty("stageSubtitle");
             _stageIndexProp = serializedObject.FindProperty("stageIndex");
 
+            _progressionSettingsProp = serializedObject.FindProperty("progressionSettings");
             _railSettingsProp = serializedObject.FindProperty("railSettings");
             _envSettingsProp = serializedObject.FindProperty("environmentSettings");
             _enemySettingsProp = serializedObject.FindProperty("enemySettings");
             _hazardSettingsProp = serializedObject.FindProperty("hazardSettings");
             _climaxSettingsProp = serializedObject.FindProperty("climaxSettings");
+            _timelineEventsProp = serializedObject.FindProperty("timelineEvents");
 
             if (_envSettingsProp != null)
             {
@@ -101,20 +107,87 @@ namespace VirtualRail.EditorScripts
                 EditorGUILayout.Space(6);
             }
 
-            // 3. Rail Settings
-            _showRailFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showRailFold, "1. Rail & Kinematics (Vận Tốc & Cự Ly)");
-            if (_showRailFold)
+            // 3. Progression & Completion Mode
+            _showProgressionFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showProgressionFold, "1. Progression & Completion Mode (Thời Gian & Cự Ly)");
+            if (_showProgressionFold)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_railSettingsProp, true);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                {
+                    SerializedProperty compMode = _progressionSettingsProp.FindPropertyRelative("completionMode");
+                    SerializedProperty durMin = _progressionSettingsProp.FindPropertyRelative("durationMinutes");
+                    SerializedProperty targetZ = _progressionSettingsProp.FindPropertyRelative("targetDistanceZ");
+                    SerializedProperty baseSpeed = _progressionSettingsProp.FindPropertyRelative("baseForwardSpeed");
+                    SerializedProperty warpDur = _progressionSettingsProp.FindPropertyRelative("warpDuration");
+                    SerializedProperty warpMult = _progressionSettingsProp.FindPropertyRelative("warpSpeedMultiplier");
+                    SerializedProperty targetElim = _progressionSettingsProp.FindPropertyRelative("targetEliminationCount");
+
+                    EditorGUILayout.PropertyField(compMode, new GUIContent("Completion Mode (Kiểu Hoàn Thành)"));
+
+                    StageCompletionMode mode = (StageCompletionMode)compMode.enumValueIndex;
+                    if (mode == StageCompletionMode.TimeDuration || mode == StageCompletionMode.SurvivalUntilBoss)
+                    {
+                        EditorGUILayout.PropertyField(durMin, new GUIContent("Target Duration (Phút)", "Thời lượng màn chơi tính bằng phút"));
+                        float totalSec = durMin.floatValue * 60f;
+                        EditorGUILayout.HelpBox($"⏱️ Màn chơi sẽ kéo dài chính xác: {durMin.floatValue:F1} phút ({totalSec:F0} giây)", MessageType.Info);
+                    }
+                    if (mode == StageCompletionMode.DistanceTraveled || mode == StageCompletionMode.SurvivalUntilBoss)
+                    {
+                        EditorGUILayout.PropertyField(targetZ, new GUIContent("Target Distance Z (m)", "Quãng đường ray mục tiêu"));
+                    }
+                    if (mode == StageCompletionMode.EliminationQuota)
+                    {
+                        EditorGUILayout.PropertyField(targetElim, new GUIContent("Target Elimination Quota", "Số lượng quái cần tiêu diệt"));
+                    }
+
+                    EditorGUILayout.Space(4);
+                    EditorGUILayout.PropertyField(baseSpeed, new GUIContent("Base Forward Speed (m/s)"));
+                    EditorGUILayout.PropertyField(warpDur, new GUIContent("Warp Transition Duration (s)"));
+                    EditorGUILayout.PropertyField(warpMult, new GUIContent("Warp Speed Multiplier"));
+                }
+                EditorGUILayout.EndVertical();
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(6);
 
-            // 4. Environment & Atmosphere (Smart Backdrop 4K)
-            _showEnvFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showEnvFold, "2. Environment & Atmosphere (Phông Nền 4K & Khí Quyển)");
+            // 4. Enemy & Wave Palette
+            _showEnemyFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showEnemyFold, "2. Enemy & Wave Palette (Quái Vật & Hỏa Lực Riêng)");
+            if (_showEnemyFold)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                {
+                    EditorGUILayout.HelpBox("⚠️ NGUYÊN TẮC: Không dùng fallback mặc định ngầm. Màn này chỉ xuất hiện những quái và vector được chỉ định dưới đây.", MessageType.None);
+                    EditorGUILayout.PropertyField(_enemySettingsProp, true);
+                }
+                EditorGUILayout.EndVertical();
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
+            EditorGUILayout.Space(6);
+
+            // 5. Scripted Timeline Events
+            _showTimelineFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showTimelineFold, "3. Scripted Timeline (Kịch Bản Màn Chơi Theo Mốc)");
+            if (_showTimelineFold)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                {
+                    EditorGUILayout.HelpBox("Các sự kiện kích hoạt theo thời gian (giây) hoặc theo cự ly (mét Z) để tạo nhịp điệu phong phú cho màn chơi.", MessageType.Info);
+                    EditorGUILayout.PropertyField(_timelineEventsProp, true);
+                }
+                EditorGUILayout.EndVertical();
+                EditorGUI.indentLevel--;
+            }
+            EditorGUILayout.EndFoldoutHeaderGroup();
+
+            EditorGUILayout.Space(6);
+
+            // 6. Environment & Atmosphere (Smart Backdrop 4K)
+            _showEnvFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showEnvFold, "4. Environment & Atmosphere (Phông Nền 4K & Khí Quyển)");
             if (_showEnvFold)
             {
                 EditorGUI.indentLevel++;
@@ -186,20 +259,8 @@ namespace VirtualRail.EditorScripts
 
             EditorGUILayout.Space(6);
 
-            // 5. Enemy Settings
-            _showEnemyFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showEnemyFold, "3. Enemy & Wave Palette (Quái Vật & Đội Hình)");
-            if (_showEnemyFold)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_enemySettingsProp, true);
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.EndFoldoutHeaderGroup();
-
-            EditorGUILayout.Space(6);
-
-            // 6. Hazards Settings
-            _showHazardFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showHazardFold, "4. Hazards & Collectibles (Thiên Thạch & Vòng Bay)");
+            // 7. Hazards Settings
+            _showHazardFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showHazardFold, "5. Hazards & Collectibles (Thiên Thạch & Vòng Bay)");
             if (_showHazardFold)
             {
                 EditorGUI.indentLevel++;
@@ -210,8 +271,8 @@ namespace VirtualRail.EditorScripts
 
             EditorGUILayout.Space(6);
 
-            // 7. Climax Settings
-            _showClimaxFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showClimaxFold, "5. Climax & Completion (Cao Trào & Chuyển Màn)");
+            // 8. Climax Settings
+            _showClimaxFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showClimaxFold, "6. Climax & Boss Encounter (Cao Trào & Trùm)");
             if (_showClimaxFold)
             {
                 EditorGUI.indentLevel++;

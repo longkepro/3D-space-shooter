@@ -13,17 +13,25 @@ MonoBehaviour:
   m_Name: StageData_01
   m_EditorClassIdentifier: 
   stageId: Stage_01
-  stageTitle: STAGE 1
-  stageSubtitle: SECTOR 1 - INITIALIZE
+  stageTitle: 'STAGE 1: OPERATION METEOR BREACH'
+  stageSubtitle: SECTOR ALPHA - INITIALIZE
   stageIndex: 1
+  progressionSettings:
+    completionMode: 1
+    durationMinutes: 15
+    targetDistanceZ: 25200
+    baseForwardSpeed: 28
+    warpDuration: 2.5
+    warpSpeedMultiplier: 3.2
+    targetEliminationCount: 50
   railSettings:
     forwardSpeed: 28
-    stageDistanceZ: 1200
+    stageDistanceZ: 25200
     warpDuration: 2.5
-    warpSpeedMultiplier: 3
+    warpSpeedMultiplier: 3.2
   environmentSettings:
     skyboxMaterial: {fileID: 2100000, guid: d8c0d4010f9416945912d97b9e581cf6, type: 2}
-    backdropMaterial: {fileID: 0}
+    backdropMaterial: {fileID: 2100000, guid: d1d2d3d4d5d6d7d8d9dadbdcdddeeff1, type: 2}
     backdropTexture: {fileID: 2800000, guid: e1010101010101010101010101010101, type: 3}
     backdropExposure: 1
     backdropTint: {r: 1, g: 1, b: 1, a: 1}
@@ -36,13 +44,26 @@ MonoBehaviour:
     spaceDustColor: {r: 0.85, g: 0.95, b: 1, a: 0.85}
     spaceDustCount: 200
   enemySettings:
-    stageEnemyPrefabs: []
+    stageEnemyPrefabs:
+    - {fileID: 873890533011206334, guid: 2409cb5fe15b192418806e9d75823cb3, type: 3}
+    - {fileID: 873890533011206334, guid: 85f6308b51aa7c44285c2cf24ab00b75, type: 3}
+    - {fileID: 873890533011206334, guid: 2df8f62db18ce064993aa1a21ce8fdd4, type: 3}
+    - {fileID: 873890533011206334, guid: a3c9b7e12f454d89a0123456789abcde, type: 3}
+    - {fileID: 873890533011206334, guid: b4d0c8f23a565e90b123456789abcdef, type: 3}
     waveInterval: 3.5
     spawnLeadDistance: 220
     formationIntervalWaves: 3
     enemyClosingSpeed: 20
     enemyHoldDistance: 60
-    allowedVectors: []
+    allowedVectors:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    allowShooting: 1
+    bulletSpeed: 22
+    enableFormations: 1
   hazardSettings:
     enableAsteroids: 1
     indestructibleChance: 0.2
@@ -51,6 +72,111 @@ MonoBehaviour:
     enableCollectibleRings: 1
     ringSpawnRate: 0.35
   climaxSettings:
-    climaxType: 0
+    climaxType: 2
     targetWaveCount: 10
-    bossPrefab: {fileID: 0}
+    bossPrefab: {fileID: 100000, guid: 50d56e9319acd7440a97582160b01520, type: 3}
+    bossHealth: 150
+    holdRailOnBoss: 1
+  timelineEvents:
+  - eventName: Sector Alpha Incursion
+    triggerMode: 0
+    triggerValue: 10
+    eventType: 0
+    messageTitle: ENTERING METEOR BELT
+    messageSubtitle: SENSORS DETECT HOSTILE PATROLS
+    messageDuration: 3.5
+    customPrefab: {fileID: 0}
+    vectorType: 0
+    squadCount: 0
+    targetSpeed: 0
+    changeFog: 0
+    enableFog: 0
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
+  - eventName: Rear Ambush Warning
+    triggerMode: 0
+    triggerValue: 180
+    eventType: 0
+    messageTitle: WARNING: REAR PURSUIT
+    messageSubtitle: DOUBLE TAP TO BARREL ROLL DEFLECT
+    messageDuration: 3.5
+    customPrefab: {fileID: 0}
+    vectorType: 1
+    squadCount: 0
+    targetSpeed: 0
+    changeFog: 0
+    enableFog: 0
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
+  - eventName: Sector 1 Checkpoint
+    triggerMode: 0
+    triggerValue: 390
+    eventType: 4
+    messageTitle: SECTOR 1 CLEAR
+    messageSubtitle: SYSTEM CHECKPOINT SAVED
+    messageDuration: 3
+    customPrefab: {fileID: 0}
+    vectorType: 0
+    squadCount: 0
+    targetSpeed: 0
+    changeFog: 0
+    enableFog: 0
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
+  - eventName: Dense Nebula Fog Shift
+    triggerMode: 0
+    triggerValue: 420
+    eventType: 1
+    messageTitle: CAUTION: HIGH ION DENSITY
+    messageSubtitle: VISIBILITY COMPROMISED
+    messageDuration: 3.5
+    customPrefab: {fileID: 0}
+    vectorType: 0
+    squadCount: 0
+    targetSpeed: 0
+    changeFog: 1
+    enableFog: 1
+    fogColor: {r: 0.12, g: 0.05, b: 0.22, a: 1}
+    fogDensity: 0.003
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
+  - eventName: Sector 2 Checkpoint & Acceleration
+    triggerMode: 0
+    triggerValue: 570
+    eventType: 4
+    messageTitle: SECTOR 2 CHECKPOINT
+    messageSubtitle: HYPER ACCELERATION ENGAGED
+    messageDuration: 3
+    customPrefab: {fileID: 0}
+    vectorType: 0
+    squadCount: 0
+    targetSpeed: 34
+    changeFog: 0
+    enableFog: 0
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
+  - eventName: Boss Approach Alert
+    triggerMode: 0
+    triggerValue: 780
+    eventType: 5
+    messageTitle: RED ALERT: BATTLECRUISER
+    messageSubtitle: DESTROY CAPITAL SHIP CORE
+    messageDuration: 4.5
+    customPrefab: {fileID: 100000, guid: 50d56e9319acd7440a97582160b01520, type: 3}
+    vectorType: 0
+    squadCount: 1
+    targetSpeed: 10
+    changeFog: 0
+    enableFog: 0
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
