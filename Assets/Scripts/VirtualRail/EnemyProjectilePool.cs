@@ -1,11 +1,14 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 
 namespace VirtualRail
 {
     /// <summary>
-    /// B? d?m Object Pool qu?n lý d?n c?a k? d?ch (0 GC Allocation).
-    /// Tuân th? TDD v1.0.0 Ph?n I: T? d?ng kh?i t?o và tái s? d?ng 40 viên d?n Plasma Orb / Dart.
+    /// Bo dem Object Pool quan ly dan cua ke dich (0 GC Allocation).
+    /// Tuan thu TDD v1.0.0 & v2.0.0:
+    /// - Quan ly tai su dung 40 vien dan Plasma Orb da tang (Loi sang HDR + Quang Plasma + Ribbon Trail).
+    /// - Tich hop quan ly hieu ung no va cham (Impact FX) qua VirtualRailVFXPool.
+    /// - Ho tro nap Prefab tinh hoac tu dong kien tao template thu tuc chuan muc neu chay doc lap.
     /// </summary>
     public class EnemyProjectilePool : MonoBehaviour
     {
@@ -30,10 +33,14 @@ namespace VirtualRail
         [Header("Pool Configuration")]
         [SerializeField] private int initialCapacity = 40;
         [SerializeField] private GameObject projectilePrefab;
+        [SerializeField] private GameObject impactVFXPrefab;
         [SerializeField] private Material bulletMaterial;
 
         private readonly List<EnemyProjectile> _pool = new List<EnemyProjectile>();
         private bool _isInitialized = false;
+
+        public GameObject ProjectilePrefab => projectilePrefab;
+        public GameObject ImpactVFXPrefab => impactVFXPrefab;
 
         private void Awake()
         {
@@ -41,13 +48,49 @@ namespace VirtualRail
             InitializePool();
         }
 
+        public void SetProjectilePrefab(GameObject prefab)
+        {
+            projectilePrefab = prefab;
+        }
+
+        public void SetImpactVFXPrefab(GameObject vfxPrefab)
+        {
+            impactVFXPrefab = vfxPrefab;
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                if (_pool[i] != null)
+                {
+                    _pool[i].SetImpactVFXPrefab(impactVFXPrefab);
+                }
+            }
+        }
+
         public void InitializePool()
         {
             if (_isInitialized) return;
 
+            // 1. Tu dong nap Impact FX neu chua duoc gan
+            if (impactVFXPrefab == null)
+            {
+#if UNITY_EDITOR
+                impactVFXPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX4 Hit B (Orange).prefab");
+#endif
+            }
+
+            // 2. Tu dong nap Prefab dan chuan tu thu muc Prefabs neu chua duoc gan
             if (projectilePrefab == null)
             {
-                projectilePrefab = CreateDefaultPlasmaOrbTemplate();
+#if UNITY_EDITOR
+                projectilePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyProjectile_PlasmaOrb.prefab");
+#endif
+                if (projectilePrefab == null)
+                {
+                    projectilePrefab = Resources.Load<GameObject>("EnemyProjectile_PlasmaOrb");
+                }
+                if (projectilePrefab == null)
+                {
+                    projectilePrefab = CreateDefaultPlasmaOrbTemplate();
+                }
             }
 
             for (int i = 0; i < initialCapacity; i++)
@@ -58,67 +101,158 @@ namespace VirtualRail
 
                 var proj = obj.GetComponent<EnemyProjectile>();
                 if (proj == null) proj = obj.AddComponent<EnemyProjectile>();
+                if (impactVFXPrefab != null)
+                {
+                    proj.SetImpactVFXPrefab(impactVFXPrefab);
+                }
                 _pool.Add(proj);
             }
 
             _isInitialized = true;
         }
 
-        private GameObject CreateDefaultPlasmaOrbTemplate()
+        public GameObject CreateDefaultPlasmaOrbTemplate()
         {
-            GameObject template = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            template.name = "EnemyPlasmaOrb_Template";
-            template.transform.localScale = Vector3.one * 1.2f;
+            GameObject template = new GameObject("EnemyPlasmaOrb_Template");
 
-            // Xóa collider v?t lý m?c d?nh d? thay b?ng trigger
-            var col = template.GetComponent<Collider>();
-            if (col != null) DestroyImmediate(col);
-
+            // Collider Hitbox (35% kich thuoc thi giac)
             var sphereCol = template.AddComponent<SphereCollider>();
             sphereCol.isTrigger = true;
-            sphereCol.radius = 0.45f; // Hitbox 35% kích thu?c th? giác
+            sphereCol.radius = 0.45f;
 
-            // V?t li?u phát sáng d? cam
-            Renderer rend = template.GetComponent<Renderer>();
-            if (rend != null)
+            // Goc truc quan phuc vu Distance Scale Compensation
+            GameObject visualRoot = new GameObject("[Visual_Root]");
+            visualRoot.transform.SetParent(template.transform, false);
+
+            // Tang 1: Quang Plasma ngoai (Outer Corona)
+            GameObject corona = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            corona.name = "[Corona]";
+            corona.transform.SetParent(visualRoot.transform, false);
+            corona.transform.localScale = Vector3.one * 1.2f;
+            var coronaCol = corona.GetComponent<Collider>();
+            if (coronaCol != null) DestroyImmediate(coronaCol);
+
+            Renderer coronaRend = corona.GetComponent<Renderer>();
+            if (coronaRend != null)
             {
-                Material mat = null;
+                Material coronaMat = null;
 #if UNITY_EDITOR
-                mat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire & Explosion Effects/Materials/PlasmaFire.mat");
-                if (mat == null)
+                coronaMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Hovl Studio/Procedural fire/Materials/FireSphere1.mat");
+                if (coronaMat == null)
                 {
-                    mat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Fire/CFX3_FireBulk ADD.mat");
+                    coronaMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire & Explosion Effects/Materials/PlasmaFire.mat");
                 }
 #endif
-                if (mat == null)
+                if (coronaMat == null)
                 {
-                    mat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
-                    mat.color = new Color(1f, 0.35f, 0.05f, 1f);
+                    coronaMat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
+                    coronaMat.color = new Color(1f, 0.35f, 0.05f, 1f);
                 }
-                rend.sharedMaterial = mat;
+                coronaRend.sharedMaterial = coronaMat;
             }
 
-            // G?n TrailRenderer d?i ruy bang 5-8 mét
+            // Tang 2: Loi trang phat sang sieu nhiet (White-Hot Inner Core)
+            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            core.name = "[Core]";
+            core.transform.SetParent(visualRoot.transform, false);
+            core.transform.localScale = Vector3.one * 0.55f;
+            var coreCol = core.GetComponent<Collider>();
+            if (coreCol != null) DestroyImmediate(coreCol);
+
+            Renderer coreRend = core.GetComponent<Renderer>();
+            if (coreRend != null)
+            {
+                Material coreMat = null;
+#if UNITY_EDITOR
+                coreMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/EnemyPlasma_Core.mat");
+#endif
+                if (coreMat == null)
+                {
+                    Shader coreShader = Shader.Find("VirtualRail/PlasmaOrbCore") ?? Shader.Find("Unlit/Color");
+                    coreMat = new Material(coreShader);
+                    coreMat.SetColor("_CoreColor", new Color(3.0f, 2.8f, 2.2f, 1.0f));
+                    coreMat.SetColor("_RimColor", new Color(2.5f, 1.0f, 0.1f, 1.0f));
+                }
+                coreRend.sharedMaterial = coreMat;
+            }
+
+            // Tang 3: Vet duoi Ribbon Trail nang luong
             TrailRenderer trail = template.AddComponent<TrailRenderer>();
             trail.time = 0.25f;
-            trail.startWidth = 0.8f;
+            trail.startWidth = 0.85f;
             trail.endWidth = 0.05f;
-            trail.material = rend != null ? rend.sharedMaterial : null;
+
+            Material trailMat = null;
+#if UNITY_EDITOR
+            trailMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Hovl Studio/Procedural fire/Materials/Trail67.mat");
+            if (trailMat == null)
+            {
+                trailMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Fire/CFX3_FireBulk ADD.mat");
+            }
+#endif
+            if (trailMat == null)
+            {
+                trailMat = coronaRend != null ? coronaRend.sharedMaterial : null;
+            }
+            trail.material = trailMat;
 
             Gradient gradient = new Gradient();
             gradient.SetKeys(
-                new GradientColorKey[] { new GradientColorKey(new Color(1f, 0.9f, 0.4f), 0.0f), new GradientColorKey(new Color(1f, 0.2f, 0.0f), 1.0f) },
-                new GradientAlphaKey[] { new GradientAlphaKey(0.9f, 0.0f), new GradientAlphaKey(0.0f, 1.0f) }
+                new GradientColorKey[] {
+                    new GradientColorKey(new Color(1f, 0.98f, 0.75f), 0.0f),
+                    new GradientColorKey(new Color(1f, 0.35f, 0.05f), 0.5f),
+                    new GradientColorKey(new Color(0.9f, 0.05f, 0.0f), 1.0f)
+                },
+                new GradientAlphaKey[] {
+                    new GradientAlphaKey(0.95f, 0.0f),
+                    new GradientAlphaKey(0.7f, 0.6f),
+                    new GradientAlphaKey(0.0f, 1.0f)
+                }
             );
             trail.colorGradient = gradient;
 
-            template.AddComponent<EnemyProjectile>();
+            // Tang 4: Hat tia lua tan nang luong bay ve phia sau
+            GameObject sparksObj = new GameObject("[Sparks]");
+            sparksObj.transform.SetParent(template.transform, false);
+            ParticleSystem ps = sparksObj.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.startLifetime = 0.22f;
+            main.startSpeed = 1.5f;
+            main.startSize = 0.22f;
+            main.startColor = new Color(1f, 0.7f, 0.2f, 1f);
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 40;
+            main.loop = true;
+            main.playOnAwake = false;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 25f;
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 0.25f;
+
+            // Gan EnemyProjectile script va cau hinh lien ket
+            EnemyProjectile proj = template.AddComponent<EnemyProjectile>();
+            proj.visualTransform = visualRoot.transform;
+            proj.trailRenderer = trail;
+            proj.sphereCollider = sphereCol;
+            proj.sparkParticles = ps;
+            proj.visualBaseRadius = 1.0f;
+            proj.hitboxRadius = 0.45f;
+            proj.damage = 1f;
+            proj.maxLifetime = 5.0f;
+            if (impactVFXPrefab != null)
+            {
+                proj.SetImpactVFXPrefab(impactVFXPrefab);
+            }
+
             template.SetActive(false);
             return template;
         }
 
         /// <summary>
-        /// Sinh viên d?n Plasma dón d?u ho?c bám du?i v?i v?n t?c tuong d?i chu?n m?c.
+        /// Sinh vien dan Plasma don dau hoac bam duoi voi van toc tuong doi chuan muc.
         /// </summary>
         public EnemyProjectile SpawnProjectile(Vector3 startPosition, Vector3 direction, float speed, bool isHeadOn)
         {
@@ -134,13 +268,17 @@ namespace VirtualRail
                 }
             }
 
-            // N?u thi?u d?n thì t? d?ng m? r?ng thêm 1 viên
+            // Neu thieu dan thi tu dong mo rong them 1 vien
             if (available == null)
             {
                 if (projectilePrefab == null) projectilePrefab = CreateDefaultPlasmaOrbTemplate();
                 GameObject obj = Instantiate(projectilePrefab, transform);
                 available = obj.GetComponent<EnemyProjectile>();
                 if (available == null) available = obj.AddComponent<EnemyProjectile>();
+                if (impactVFXPrefab != null)
+                {
+                    available.SetImpactVFXPrefab(impactVFXPrefab);
+                }
                 _pool.Add(available);
             }
 
@@ -149,7 +287,7 @@ namespace VirtualRail
         }
 
         /// <summary>
-        /// Xóa s?ch toàn b? d?n d?ch dang bay (s? d?ng b?i Smart Bomb).
+        /// Xoa sach toan bo dan dich dang bay (su dung boi Smart Bomb).
         /// </summary>
         public void ClearAllActiveProjectiles()
         {

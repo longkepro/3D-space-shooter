@@ -240,6 +240,121 @@ public class VirtualRailModeToggle
         ApplyBackdropPreview("Assets/Materials/Stage2_Backdrop.mat", "Stage 2 (4K)");
     }
 
+    // =========================================================================
+    // STAGE 2 CANDIDATE SELECTION (OPTION 2 vs OPTION 3 vs LEGACY)
+    // =========================================================================
+
+    [MenuItem("Tools/Virtual Rail/Stage 2 Options/1. Apply Option 2 (3-Tier Parallax 4K)")]
+    public static void ApplyStage2Option2()
+    {
+        SwitchStage2Texture("Assets/Textures/Skybox/stage2_option2_parallax_4k.png", "Phương án 2 (3-Tier Parallax 4K)");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage 2 Options/2. Apply Option 3 (8K Remaster 4K)")]
+    public static void ApplyStage2Option3()
+    {
+        SwitchStage2Texture("Assets/Textures/Skybox/stage2_option3_remaster_4k.png", "Phương án 3 (8K Remaster 4K)");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage 2 Options/3. Restore Stage 2 (Legacy 768p Backup)")]
+    public static void RestoreStage2Legacy()
+    {
+        SwitchStage2Texture("Assets/Textures/Skybox/stage2_backup_768p.png", "Bản gốc cũ (Legacy 768p)");
+    }
+
+    private static void SwitchStage2Texture(string sourcePath, string optionName)
+    {
+        string targetPath = "Assets/Textures/Skybox/stage2.png";
+        if (!System.IO.File.Exists(sourcePath))
+        {
+            Debug.LogError($"[VirtualRail] Không tìm thấy tệp nguồn: {sourcePath}");
+            return;
+        }
+
+        System.IO.File.Copy(sourcePath, targetPath, true);
+        AssetDatabase.ImportAsset(targetPath, ImportAssetOptions.ForceUpdate);
+        AssetDatabase.Refresh();
+
+        ApplyBackdropPreview("Assets/Materials/Stage2_Backdrop.mat", $"Stage 2 ({optionName})");
+        Debug.Log($"<color=green><b>[VirtualRail] ĐÃ ÁP DỤNG THÀNH CÔNG CHO STAGE 2:</b></color> {optionName}");
+    }
+
+    // =========================================================================
+    // STAGE 3 CANDIDATE SELECTION (MOTHERSHIP SAUCER 4K vs CLEAN SKY 5K vs CITADEL LEGACY)
+    // =========================================================================
+
+    [MenuItem("Tools/Virtual Rail/Stage 3 Options/1. Apply Mothership Saucer (4K UHD)")]
+    public static void ApplyStage3MothershipSaucer()
+    {
+        SwitchStage3Texture("Assets/Textures/Skybox/stage3_mothership_saucer_4k.png", "Tàu mẹ Saucer Dreadnought (4K UHD)");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage 3 Options/2. Apply Stage 3 Pure Nebula (5K Clean Sky)")]
+    public static void ApplyStage3PureNebula()
+    {
+        SwitchStage3Texture("Assets/Textures/Skybox/stage3_backup_green_nebula.png", "Tinh vân xanh thuần khiết (5K Clean Sky)");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage 3 Options/3. Restore Stage 3 (Citadel Legacy 768p Backup)")]
+    public static void RestoreStage3Legacy()
+    {
+        SwitchStage3Texture("Assets/Textures/Skybox/stage3_backup_citadel_768p.png", "Bản Citadel gốc cũ (Legacy 768p)");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage 3 Options/4. Switch Stage 3 to Animated Mothership Vortex (Dynamic FX - ON)")]
+    public static void EnableStage3AnimatedVortex()
+    {
+        var s3 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03.asset");
+        var m3 = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage3_Backdrop_Animated.mat");
+        if (s3 != null && m3 != null)
+        {
+            s3.environmentSettings.backdropMaterial = m3;
+            EditorUtility.SetDirty(s3);
+            AssetDatabase.SaveAssets();
+        }
+
+        ApplyBackdropPreview("Assets/Materials/Stage3_Backdrop_Animated.mat", "Stage 3 (Animated Vortex Core)");
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT LÕI XOÁY ỐC ĐỘNG CHO TÀU MẸ STAGE 3 (Dynamic FX):</b></color> Shader GPU thời gian thực, 0% giật cục!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage 3 Options/5. Switch Stage 3 to Static Backdrop (Standard Image - OFF)")]
+    public static void EnableStage3StaticBackdrop()
+    {
+        var s3 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03.asset");
+        var m3 = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage3_Backdrop.mat");
+        if (s3 != null && m3 != null)
+        {
+            s3.environmentSettings.backdropMaterial = m3;
+            EditorUtility.SetDirty(s3);
+            AssetDatabase.SaveAssets();
+        }
+
+        ApplyBackdropPreview("Assets/Materials/Stage3_Backdrop.mat", "Stage 3 (Static Image)");
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ CHUYỂN STAGE 3 VỀ PHONG NỀN TĨNH TIÊU CHUẨN:</b></color> Stage3_Backdrop.mat");
+    }
+
+    private static void SwitchStage3Texture(string sourcePath, string optionName)
+    {
+        string targetPath = "Assets/Textures/Skybox/stage3.png";
+        if (!System.IO.File.Exists(sourcePath))
+        {
+            Debug.LogError($"[VirtualRail] Không tìm thấy tệp nguồn: {sourcePath}");
+            return;
+        }
+
+        System.IO.File.Copy(sourcePath, targetPath, true);
+        AssetDatabase.ImportAsset(targetPath, ImportAssetOptions.ForceUpdate);
+        AssetDatabase.Refresh();
+
+        var s3 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03.asset");
+        string matPath = (s3 != null && s3.environmentSettings.backdropMaterial != null) 
+            ? AssetDatabase.GetAssetPath(s3.environmentSettings.backdropMaterial) 
+            : "Assets/Materials/Stage3_Backdrop.mat";
+
+        ApplyBackdropPreview(matPath, $"Stage 3 ({optionName})");
+        Debug.Log($"<color=green><b>[VirtualRail] ĐÃ ÁP DỤNG THÀNH CÔNG CHO STAGE 3:</b></color> {optionName}");
+    }
+
     [MenuItem("Tools/Virtual Rail/Stage Backdrops/Preview Stage 3 Backdrop (4K)")]
     public static void PreviewStage3Backdrop()
     {
@@ -256,6 +371,70 @@ public class VirtualRailModeToggle
             DynamicGI.UpdateEnvironment();
             Debug.Log("<color=green><b>[VirtualRail] DA RESET SKYBOX VE KHONG GIAN SAO DEM:</b></color> skyboxv1_starsonly.mat");
         }
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage Backdrops/Switch All Stages to Static Backdrops (Standard Image)")]
+    public static void SwitchAllStagesToStaticBackdrops()
+    {
+        var s1 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_01.asset");
+        var s2 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_02.asset");
+        var s3 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03.asset");
+
+        var m1 = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage1_Backdrop.mat");
+        var m2 = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage2_Backdrop.mat");
+        var m3 = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage3_Backdrop.mat");
+
+        if (s1 != null && m1 != null) { s1.environmentSettings.backdropMaterial = m1; EditorUtility.SetDirty(s1); }
+        if (s2 != null && m2 != null) { s2.environmentSettings.backdropMaterial = m2; EditorUtility.SetDirty(s2); }
+        if (s3 != null && m3 != null) { s3.environmentSettings.backdropMaterial = m3; EditorUtility.SetDirty(s3); }
+
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null && m1 != null)
+        {
+            config.backdropMaterial = m1;
+            EditorUtility.SetDirty(config);
+        }
+
+        AssetDatabase.SaveAssets();
+        RebuildPlayerRigPrefab();
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            if (m1 != null) bd.SetBackdropMaterial(m1);
+            bd.Initialize();
+            bd.SetBackdropActive(true);
+        }
+
+        Debug.Log("<color=green><b>[VirtualRail] DA CHUYEN TOAN BO MAN CHOI SANG PHONG NEN TINH TIEU CHUAN (Static Image)</b></color>");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Stage Backdrops/Switch All Stages to Animated Backdrops (Dynamic FX)")]
+    public static void SwitchAllStagesToAnimatedBackdrops()
+    {
+        var s1 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_01.asset");
+        var s2 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_02.asset");
+        var s3 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03.asset");
+
+        var m1 = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage1_Backdrop_Animated.mat");
+        var m2 = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage2_Backdrop_Animated.mat");
+        var m3 = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Stage3_Backdrop_Animated.mat");
+
+        if (s1 != null && m1 != null) { s1.environmentSettings.backdropMaterial = m1; EditorUtility.SetDirty(s1); }
+        if (s2 != null && m2 != null) { s2.environmentSettings.backdropMaterial = m2; EditorUtility.SetDirty(s2); }
+        if (s3 != null && m3 != null) { s3.environmentSettings.backdropMaterial = m3; EditorUtility.SetDirty(s3); }
+
+        AssetDatabase.SaveAssets();
+
+        var backdrops = Object.FindObjectsByType<VirtualRailHorizonBackdrop>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var bd in backdrops)
+        {
+            if (m1 != null) bd.SetBackdropMaterial(m1);
+            bd.Initialize();
+            bd.SetBackdropActive(true);
+        }
+
+        Debug.Log("<color=cyan><b>[VirtualRail] DA CHUYEN TOAN BO MAN CHOI SANG PHONG NEN DONG (Dynamic FX Shader)</b></color>");
     }
 
     private static void ApplyBackdropPreview(string matPath, string stageName)
@@ -914,4 +1093,192 @@ public class VirtualRailModeToggle
         notifUI.titleText = titleText;
         notifUI.subtitleText = subText;
     }
+
+    #region Enemy Projectile VFX (Core Option 1)
+    private const string ENEMY_PROJECTILE_PREFAB_PATH = "Assets/Prefabs/EnemyProjectile_PlasmaOrb.prefab";
+    private const string ENEMY_PLASMA_CORE_MAT_PATH = "Assets/Materials/EnemyPlasma_Core.mat";
+    private const string CFX_ORANGE_HIT_PREFAB_PATH = "Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX4 Hit B (Orange).prefab";
+    private const string HOVL_FIRE_MAT_PATH = "Assets/Hovl Studio/Procedural fire/Materials/FireSphere1.mat";
+    private const string HOVL_TRAIL_MAT_PATH = "Assets/Hovl Studio/Procedural fire/Materials/Trail67.mat";
+
+    [MenuItem("Tools/Virtual Rail/Enemy Projectile VFX/1. Apply Enhanced Plasma Projectiles (Core - ON)")]
+    public static void ApplyEnhancedPlasmaProjectiles()
+    {
+        // 1. Khởi tạo vật liệu Lõi trắng nóng (Inner Core)
+        Material coreMat = AssetDatabase.LoadAssetAtPath<Material>(ENEMY_PLASMA_CORE_MAT_PATH);
+        if (coreMat == null)
+        {
+            Shader coreShader = Shader.Find("VirtualRail/PlasmaOrbCore") ?? Shader.Find("Unlit/Color");
+            coreMat = new Material(coreShader);
+            coreMat.SetColor("_CoreColor", new Color(3.0f, 2.8f, 2.2f, 1.0f));
+            coreMat.SetColor("_RimColor", new Color(2.5f, 1.0f, 0.1f, 1.0f));
+            AssetDatabase.CreateAsset(coreMat, ENEMY_PLASMA_CORE_MAT_PATH);
+        }
+
+        // 2. Xây dựng Prefab đa tầng độc lập
+        GameObject template = BuildEnemyPlasmaOrbGameObject(coreMat);
+        PrefabUtility.SaveAsPrefabAsset(template, ENEMY_PROJECTILE_PREFAB_PATH);
+        Object.DestroyImmediate(template);
+        AssetDatabase.SaveAssets();
+
+        // 3. Cập nhật cấu hình VirtualRailConfig
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useEnhancedPlasmaProjectiles = true;
+            config.enemyProjectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ENEMY_PROJECTILE_PREFAB_PATH);
+            config.enemyImpactVFXPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CFX_ORANGE_HIT_PREFAB_PATH);
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+        }
+
+        // 4. Cập nhật Pool trong Scene nếu có
+        EnemyProjectilePool pool = Object.FindAnyObjectByType<EnemyProjectilePool>();
+        if (pool != null)
+        {
+            pool.SetProjectilePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(ENEMY_PROJECTILE_PREFAB_PATH));
+            pool.SetImpactVFXPrefab(AssetDatabase.LoadAssetAtPath<GameObject>(CFX_ORANGE_HIT_PREFAB_PATH));
+            EditorUtility.SetDirty(pool);
+        }
+
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT ĐẠN PLASMA ORB ĐA TẦNG CHO KẺ ĐỊCH:</b></color> Prefab đã lưu tại " + ENEMY_PROJECTILE_PREFAB_PATH);
+    }
+
+    [MenuItem("Tools/Virtual Rail/Enemy Projectile VFX/2. Revert to Legacy Projectiles (OFF)")]
+    public static void RevertToLegacyProjectiles()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useEnhancedPlasmaProjectiles = false;
+            config.enemyProjectilePrefab = null;
+            config.enemyImpactVFXPrefab = null;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+        }
+
+        EnemyProjectilePool pool = Object.FindAnyObjectByType<EnemyProjectilePool>();
+        if (pool != null)
+        {
+            pool.SetProjectilePrefab(null);
+            pool.SetImpactVFXPrefab(null);
+            EditorUtility.SetDirty(pool);
+        }
+
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN ĐẠN KẺ ĐỊCH VỀ LEGACY PROJECTILES (OFF).</b></color>");
+    }
+
+    public static GameObject BuildEnemyPlasmaOrbGameObject(Material coreMat)
+    {
+        GameObject root = new GameObject("EnemyProjectile_PlasmaOrb");
+
+        var sphereCol = root.AddComponent<SphereCollider>();
+        sphereCol.isTrigger = true;
+        sphereCol.radius = 0.45f;
+
+        GameObject visualRoot = new GameObject("[Visual_Root]");
+        visualRoot.transform.SetParent(root.transform, false);
+
+        // Quầng Plasma ngoài (Outer Corona)
+        GameObject corona = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        corona.name = "[Corona]";
+        corona.transform.SetParent(visualRoot.transform, false);
+        corona.transform.localScale = Vector3.one * 1.2f;
+        var coronaCol = corona.GetComponent<Collider>();
+        if (coronaCol != null) Object.DestroyImmediate(coronaCol);
+
+        Material coronaMat = AssetDatabase.LoadAssetAtPath<Material>(HOVL_FIRE_MAT_PATH);
+        if (coronaMat == null)
+        {
+            coronaMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire & Explosion Effects/Materials/PlasmaFire.mat");
+        }
+        Renderer coronaRend = corona.GetComponent<Renderer>();
+        if (coronaRend != null && coronaMat != null)
+        {
+            coronaRend.sharedMaterial = coronaMat;
+        }
+
+        // Lõi trắng siêu nhiệt (Inner Core)
+        GameObject core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        core.name = "[Core]";
+        core.transform.SetParent(visualRoot.transform, false);
+        core.transform.localScale = Vector3.one * 0.55f;
+        var coreCol = core.GetComponent<Collider>();
+        if (coreCol != null) Object.DestroyImmediate(coreCol);
+
+        Renderer coreRend = core.GetComponent<Renderer>();
+        if (coreRend != null && coreMat != null)
+        {
+            coreRend.sharedMaterial = coreMat;
+        }
+
+        // Vệt đuôi Ribbon Trail
+        TrailRenderer trail = root.AddComponent<TrailRenderer>();
+        trail.time = 0.25f;
+        trail.startWidth = 0.85f;
+        trail.endWidth = 0.05f;
+
+        Material trailMat = AssetDatabase.LoadAssetAtPath<Material>(HOVL_TRAIL_MAT_PATH);
+        if (trailMat == null)
+        {
+            trailMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Asset Store/JMO Assets/Cartoon FX/Materials/Fire/CFX3_FireBulk ADD.mat");
+        }
+        trail.material = trailMat;
+
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new GradientColorKey[] {
+                new GradientColorKey(new Color(1f, 0.98f, 0.75f), 0.0f),
+                new GradientColorKey(new Color(1f, 0.35f, 0.05f), 0.5f),
+                new GradientColorKey(new Color(0.9f, 0.05f, 0.0f), 1.0f)
+            },
+            new GradientAlphaKey[] {
+                new GradientAlphaKey(0.95f, 0.0f),
+                new GradientAlphaKey(0.7f, 0.6f),
+                new GradientAlphaKey(0.0f, 1.0f)
+            }
+        );
+        trail.colorGradient = gradient;
+
+        // Hạt tia lửa bay phía sau
+        GameObject sparksObj = new GameObject("[Sparks]");
+        sparksObj.transform.SetParent(root.transform, false);
+        ParticleSystem ps = sparksObj.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.startLifetime = 0.22f;
+        main.startSpeed = 1.5f;
+        main.startSize = 0.22f;
+        main.startColor = new Color(1f, 0.7f, 0.2f, 1f);
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.maxParticles = 40;
+        main.loop = true;
+        main.playOnAwake = false;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 25f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.25f;
+
+        // Gán EnemyProjectile script
+        EnemyProjectile proj = root.AddComponent<EnemyProjectile>();
+        proj.visualTransform = visualRoot.transform;
+        proj.trailRenderer = trail;
+        proj.sphereCollider = sphereCol;
+        proj.sparkParticles = ps;
+        proj.visualBaseRadius = 1.0f;
+        proj.hitboxRadius = 0.45f;
+        proj.damage = 1f;
+        proj.maxLifetime = 5.0f;
+
+        GameObject impactVFX = AssetDatabase.LoadAssetAtPath<GameObject>(CFX_ORANGE_HIT_PREFAB_PATH);
+        if (impactVFX != null)
+        {
+            proj.SetImpactVFXPrefab(impactVFX);
+        }
+
+        return root;
+    }
+    #endregion
 }

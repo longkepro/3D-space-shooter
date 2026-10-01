@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace VirtualRail
 {
@@ -26,6 +26,10 @@ namespace VirtualRail
         public Transform visualTransform;
         public TrailRenderer trailRenderer;
         public SphereCollider sphereCollider;
+        public ParticleSystem sparkParticles;
+
+        [Header("Impact Effects (0 GC Allocation Pool)")]
+        [SerializeField] private GameObject impactVFXPrefab;
 
         /// <summary>
         /// Cờ đánh dấu viên đạn đã kích hoạt Graze với thân tàu người chơi hay chưa (TDD v2.0.0 Phần III.2).
@@ -62,6 +66,11 @@ namespace VirtualRail
             {
                 trailRenderer = GetComponentInChildren<TrailRenderer>();
             }
+
+            if (sparkParticles == null)
+            {
+                sparkParticles = GetComponentInChildren<ParticleSystem>();
+            }
         }
 
         public void Initialize(Vector3 startPosition, Vector3 direction, float speed, bool isHeadOn, VirtualRailAnchor anchor)
@@ -96,6 +105,12 @@ namespace VirtualRail
             if (trailRenderer != null)
             {
                 trailRenderer.Clear();
+            }
+
+            if (sparkParticles != null)
+            {
+                sparkParticles.Clear();
+                sparkParticles.Play();
             }
 
             gameObject.SetActive(true);
@@ -159,6 +174,14 @@ namespace VirtualRail
                     shield.TakeDamage(Mathf.RoundToInt(damage));
                 }
 
+                // Kích hoạt phản hồi sóng lục giác trên tấm khiên nếu có
+                var hexShield = ship.GetComponentInChildren<VirtualRailHexShield>();
+                if (hexShield != null)
+                {
+                    hexShield.TriggerHitFlash();
+                }
+
+                TriggerImpactFX(transform.position);
                 Recycle();
                 return;
             }
@@ -171,6 +194,14 @@ namespace VirtualRail
                 {
                     shield.TakeDamage(Mathf.RoundToInt(damage));
                 }
+
+                var hexShield = other.GetComponentInChildren<VirtualRailHexShield>();
+                if (hexShield != null)
+                {
+                    hexShield.TriggerHitFlash();
+                }
+
+                TriggerImpactFX(transform.position);
                 Recycle();
             }
         }
@@ -203,12 +234,34 @@ namespace VirtualRail
 
         public void DestroyByBomb()
         {
+            TriggerImpactFX(transform.position);
             Recycle();
+        }
+
+        public void TriggerImpactFX(Vector3 pos)
+        {
+            if (impactVFXPrefab != null && VirtualRailVFXPool.Instance != null)
+            {
+                VirtualRailVFXPool.Instance.SpawnVFX(impactVFXPrefab, pos, Quaternion.identity, null, 1.2f);
+            }
+        }
+
+        public void SetImpactVFXPrefab(GameObject vfxPrefab)
+        {
+            impactVFXPrefab = vfxPrefab;
         }
 
         public void Recycle()
         {
             CancelInvoke(nameof(Recycle));
+            if (sparkParticles != null)
+            {
+                sparkParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+            if (trailRenderer != null)
+            {
+                trailRenderer.Clear();
+            }
             gameObject.SetActive(false);
         }
     }

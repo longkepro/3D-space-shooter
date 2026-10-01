@@ -340,6 +340,14 @@ namespace VirtualRail
         [Tooltip("Vật liệu tùy chỉnh cho Horizon Backdrop")]
         public Material backdropMaterial;
 
+        [Header("22. Enemy Projectile VFX (Cơ chế Đạn Plasma Orb - TDD v1.0.0)")]
+        [Tooltip("Bật sử dụng Prefab đạn Plasma Orb đa tầng (Lõi sáng HDR + Quầng Plasma + Vệt Ribbon). Nếu tắt sẽ quay lại bóng tròn cơ bản (Layer 2 Undo)")]
+        public bool useEnhancedPlasmaProjectiles = true;
+        [Tooltip("Prefab tùy chỉnh cho đạn Plasma Orb")]
+        public GameObject enemyProjectilePrefab;
+        [Tooltip("Prefab hiệu ứng nổ va chạm đạn Plasma (Impact FX)")]
+        public GameObject enemyImpactVFXPrefab;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

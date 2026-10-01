@@ -153,4 +153,7 @@ MonoBehaviour:
   dustFieldDepth: 90
   enableHorizonBackdrop: 1
   backdropDistanceZ: 850
-  backdropMaterial: {fileID: 2100000, guid: b1010101010101010101010101010101, type: 2}
+  backdropMaterial: {fileID: 2100000, guid: b2020202020202020202020202020202, type: 2}
+  useEnhancedPlasmaProjectiles: 1
+  enemyProjectilePrefab: {fileID: 0}
+  enemyImpactVFXPrefab: {fileID: 0}
