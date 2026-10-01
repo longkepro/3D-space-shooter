@@ -59,6 +59,8 @@ namespace VirtualRail
 
         private SpatialVectorType[] _activeVectors = null;
         private GameObject[] _stageEnemyPrefabs = null;
+        private FormationPattern[] _stageFormationPatterns = null;
+        private int _formationPatternCycleIndex = 0;
         private bool _allowShooting = true;
         private float _stageBulletSpeed = 22f;
         private bool _stageEnableFormations = true;
@@ -73,6 +75,7 @@ namespace VirtualRail
         {
             _activeVectors = (settings.allowedVectors != null && settings.allowedVectors.Length > 0) ? settings.allowedVectors : null;
             _stageEnemyPrefabs = (settings.stageEnemyPrefabs != null && settings.stageEnemyPrefabs.Length > 0) ? settings.stageEnemyPrefabs : null;
+            _stageFormationPatterns = (settings.stageFormationPool != null && settings.stageFormationPool.Length > 0) ? settings.stageFormationPool : null;
             _allowShooting = settings.allowShooting;
             _stageBulletSpeed = settings.bulletSpeed > 1f ? settings.bulletSpeed : 22f;
             _stageEnableFormations = settings.enableFormations && (settings.formationIntervalWaves > 0);
@@ -384,6 +387,19 @@ namespace VirtualRail
 
         private bool TrySpawnFormationWave(float leadDist, VirtualRailConfig cfg)
         {
+            float formDist = (cfg != null) ? cfg.formationSpawnDistance : 110f;
+
+            // Nếu màn chơi có cấu hình Data-Driven Formation Pattern riêng, ưu tiên sử dụng
+            if (_stageFormationPatterns != null && _stageFormationPatterns.Length > 0)
+            {
+                FormationPattern pattern = _stageFormationPatterns[_formationPatternCycleIndex % _stageFormationPatterns.Length];
+                _formationPatternCycleIndex++;
+                if (pattern != null && SpawnScriptedFormation(pattern, formDist))
+                {
+                    return true;
+                }
+            }
+
             VirtualFormationAnchor availableAnchor = GetAvailableFormationAnchor();
             if (availableAnchor == null) return false;
 
@@ -427,7 +443,6 @@ namespace VirtualRail
                 ? VirtualFormationAnchor.FormationType.WedgeV
                 : VirtualFormationAnchor.FormationType.EchelonLine;
 
-            float formDist = (cfg != null) ? cfg.formationSpawnDistance : 110f;
             Vector3 startPos = anchor.transform.position + anchor.ForwardTangent * formDist + anchor.transform.up * 4f;
             float assemblyTime = (cfg != null) ? cfg.formationAssemblyTime : 1.2f;
 
@@ -638,6 +653,52 @@ namespace VirtualRail
 
                 enemy.gameObject.SetActive(true);
             }
+        }
+
+        /// <summary>
+        /// Kích hoạt một đợt bay đội hình theo Mẫu Data-Driven FormationPattern từ Timeline hoặc kịch bản.
+        /// </summary>
+        public bool SpawnScriptedFormation(FormationPattern pattern, float customLeadDist = -1f)
+        {
+            if (pattern == null || pattern.slots == null || pattern.slots.Length == 0) return false;
+            if (anchor == null) anchor = VirtualRailAnchor.Instance;
+            if (anchor == null) return false;
+
+            VirtualFormationAnchor availableAnchor = GetAvailableFormationAnchor();
+            if (availableAnchor == null) return false;
+
+            int neededCount = pattern.slots.Length;
+            List<EnemyMovement> enemies = new List<EnemyMovement>(neededCount);
+
+            for (int i = 0; i < neededCount; i++)
+            {
+                var slot = pattern.slots[i];
+                EnemyMovement enemy = GetAvailableEnemyByArchetype(slot.preferredArchetype);
+                if (enemy == null) enemy = GetAvailableEnemy();
+                if (enemy != null && !enemies.Contains(enemy))
+                {
+                    enemies.Add(enemy);
+                }
+            }
+
+            if (enemies.Count < neededCount)
+            {
+                for (int i = 0; i < _pool.Count && enemies.Count < neededCount; i++)
+                {
+                    if (_pool[i] != null && !_pool[i].gameObject.activeSelf && !enemies.Contains(_pool[i]))
+                    {
+                        enemies.Add(_pool[i]);
+                    }
+                }
+            }
+
+            if (enemies.Count < 2) return false;
+
+            float formDist = customLeadDist > 10f ? customLeadDist : ((_stageLeadDistance > 10f) ? _stageLeadDistance : 110f);
+            Vector3 startPos = anchor.transform.position + anchor.ForwardTangent * formDist + anchor.transform.up * 4f;
+
+            availableAnchor.InitializeFormation(pattern, anchor, startPos, enemies);
+            return true;
         }
 
         public void RecycleAll()

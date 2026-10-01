@@ -397,7 +397,14 @@ namespace VirtualRail
                 case StageTimelineEventType.SpawnScriptedSquad:
                     if (waveSpawner != null)
                     {
-                        waveSpawner.SpawnScriptedSquad(evt.customPrefab, evt.vectorType, evt.squadCount);
+                        if (evt.scriptedFormationPattern != null)
+                        {
+                            waveSpawner.SpawnScriptedFormation(evt.scriptedFormationPattern);
+                        }
+                        else
+                        {
+                            waveSpawner.SpawnScriptedSquad(evt.customPrefab, evt.vectorType, evt.squadCount);
+                        }
                     }
                     break;
 

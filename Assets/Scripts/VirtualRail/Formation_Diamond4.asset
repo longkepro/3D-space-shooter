@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
+  m_Name: Formation_Diamond4
+  m_EditorClassIdentifier: 
+  patternName: Diamond Guard (4 Ships)
+  slots:
+  - slotName: Apex Leader
+    localOffset: {x: 0, y: 0, z: 0}
+    preferredArchetype: 3
+    isLeader: 1
+    scaleMultiplier: 1.35
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Guard
+    localOffset: {x: -6, y: 0, z: -6}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Guard
+    localOffset: {x: 6, y: 0, z: -6}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Rear Anchor
+    localOffset: {x: 0, y: 0, z: -12}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  assemblyTime: 1.2
+  swaySpeed: 1.2
+  swayAmplitudeX: 10
+  bankingAngle: 25
+  holdDistance: 65
+  maxClosingSpeed: 25
+  maxLifetime: 14
+  leaderDeathReaction: 0

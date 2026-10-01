@@ -30,11 +30,13 @@ namespace VirtualRail
         private VirtualRailAnchor _railAnchor;
         private readonly List<FormationWingman> _activeWingmen = new List<FormationWingman>();
         private FormationWingman _leader;
+        private FormationPattern _activePattern = null;
         private float _lifetimeTimer = 0f;
         private float _maxFormationLifetime = 12f;
         private bool _isLeaderKilled = false;
 
         public FormationType Type => _formationType;
+        public FormationPattern ActivePattern => _activePattern;
         public bool IsActive => gameObject.activeSelf;
         public bool HasActiveLeader => _leader != null && !_isLeaderKilled && _leader.gameObject.activeSelf;
         public FormationWingman Leader => _leader;
@@ -82,6 +84,7 @@ namespace VirtualRail
             float assemblyDuration)
         {
             _formationType = type;
+            _activePattern = null;
             _railAnchor = railAnchor != null ? railAnchor : VirtualRailAnchor.Instance;
             _assemblyTime = assemblyDuration;
             _lifetimeTimer = 0f;
@@ -126,6 +129,80 @@ namespace VirtualRail
             Debug.Log($"<color=cyan><b>[FORMATION ANCHOR]</b></color> Khởi tạo đội hình {_formationType} với {countToAssign} tàu chiến! Pha 1 Ráp nối Bézier bắt đầu.");
         }
 
+        /// <summary>
+        /// Khởi tạo đội hình theo chuẩn DATA-DRIVEN FORMATION PATTERN (ScriptableObject).
+        /// Cho phép tùy biến số lượng tàu, vị trí Slot Offset, Archetype và phản ứng khi mất sếp (0 GC Alloc).
+        /// </summary>
+        public void InitializeFormation(
+            FormationPattern pattern,
+            VirtualRailAnchor railAnchor,
+            Vector3 anchorStartPosition,
+            List<EnemyMovement> assignedEnemies)
+        {
+            if (pattern == null || pattern.slots == null || pattern.slots.Length == 0)
+            {
+                InitializeFormation(FormationType.WedgeV, railAnchor, anchorStartPosition, assignedEnemies, 1.2f);
+                return;
+            }
+
+            _activePattern = pattern;
+            _railAnchor = railAnchor != null ? railAnchor : VirtualRailAnchor.Instance;
+            _assemblyTime = pattern.assemblyTime;
+            _swaySpeed = pattern.swaySpeed;
+            _swayAmplitudeX = pattern.swayAmplitudeX;
+            _bankingAngle = pattern.bankingAngle;
+            _maxFormationLifetime = pattern.maxLifetime > 2f ? pattern.maxLifetime : 14f;
+            _lifetimeTimer = 0f;
+            _isLeaderKilled = false;
+            _activeWingmen.Clear();
+            _leader = null;
+
+            transform.position = anchorStartPosition;
+            transform.rotation = Quaternion.LookRotation(-_railAnchor.ForwardTangent);
+
+            int countToAssign = Mathf.Min(pattern.slots.Length, assignedEnemies.Count);
+
+            for (int i = 0; i < countToAssign; i++)
+            {
+                EnemyMovement enemy = assignedEnemies[i];
+                if (enemy == null) continue;
+
+                var slotDef = pattern.slots[i];
+                var wingman = enemy.GetComponent<FormationWingman>();
+                if (wingman == null) wingman = enemy.gameObject.AddComponent<FormationWingman>();
+
+                bool isLeader = slotDef.isLeader || (i == 0);
+                if (isLeader) _leader = wingman;
+
+                float scale = slotDef.scaleMultiplier > 0.1f ? slotDef.scaleMultiplier : (isLeader ? 1.35f : 1.0f);
+                enemy.transform.localScale = Vector3.one * scale;
+
+                // Áp dụng Archetype chỉ định cho slot nếu có
+                if (slotDef.preferredArchetype != EnemyArchetype.Scout || isLeader)
+                {
+                    enemy.ApplyArchetype(EnemyData.CreateDefaultPreset(slotDef.preferredArchetype));
+                }
+
+                // Điểm xuất phát ngẫu nhiên ngoài màn hình cho từng tàu (chân trời 120m - 140m)
+                Vector3 spawnOffset = new Vector3(
+                    (i % 2 == 0 ? 1f : -1f) * UnityEngine.Random.Range(20f, 35f),
+                    UnityEngine.Random.Range(-5f, 15f),
+                    UnityEngine.Random.Range(10f, 30f)
+                );
+                Vector3 shipSpawnPos = anchorStartPosition + spawnOffset;
+
+                wingman.InitializeSlot(i, isLeader, this, slotDef.localOffset, shipSpawnPos, _assemblyTime);
+                _activeWingmen.Add(wingman);
+
+                enemy.ResetState();
+                enemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : _railAnchor.transform);
+                enemy.gameObject.SetActive(true);
+            }
+
+            gameObject.SetActive(true);
+            Debug.Log($"<color=cyan><b>[FORMATION ANCHOR]</b></color> Khởi tạo đội hình DATA-DRIVEN [{pattern.patternName}] với {countToAssign} tàu chiến! Pha 1 Ráp nối Bézier bắt đầu.");
+        }
+
         private void Update()
         {
             if (_railAnchor == null) return;
@@ -141,8 +218,8 @@ namespace VirtualRail
             {
                 Vector3 toFormation = transform.position - _railAnchor.transform.position;
                 float distToPlayer = Vector3.Dot(toFormation, _railAnchor.ForwardTangent);
-                float targetHoldDist = (_railAnchor.config != null) ? _railAnchor.config.formationHoldDistance : 65f;
-                float maxClosingSpeed = (_railAnchor.config != null) ? _railAnchor.config.formationClosingSpeed : 25f;
+                float targetHoldDist = (_activePattern != null) ? _activePattern.holdDistance : ((_railAnchor.config != null) ? _railAnchor.config.formationHoldDistance : 65f);
+                float maxClosingSpeed = (_activePattern != null) ? _activePattern.maxClosingSpeed : ((_railAnchor.config != null) ? _railAnchor.config.formationClosingSpeed : 25f);
 
                 if (distToPlayer > targetHoldDist)
                 {
@@ -206,11 +283,12 @@ namespace VirtualRail
         }
 
         /// <summary>
-        /// Kích hoạt cơ chế hoảng loạn phân rã toàn đội khi mất Tàu Chỉ Huy (TDD Phần III.3).
+        /// Kích hoạt cơ chế phản ứng toàn đội khi mất Tàu Chỉ Huy theo LeaderDeathReaction.
         /// </summary>
         private void TriggerLeaderDestroyed(Vector3 leaderPos)
         {
-            Debug.Log("<color=red><b>[LEADER KILLED!]</b></color> Chỉ huy Slot 0 đã bị tiêu diệt! Toàn bộ phi đội cánh rơi vào trạng thái hoảng loạn PANIC SCATTER!");
+            LeaderDeathReaction reaction = (_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.PanicScatter;
+            Debug.Log($"<color=red><b>[LEADER KILLED!]</b></color> Chỉ huy Slot 0 đã bị tiêu diệt! Toàn bộ phi đội thực hiện phản ứng: {reaction}!");
 
             Vector3 railFwd = (_railAnchor != null) ? _railAnchor.ForwardTangent : Vector3.forward;
             float railSpeed = (_railAnchor != null) ? _railAnchor.CurrentSpeed : 40f;
@@ -219,7 +297,19 @@ namespace VirtualRail
             {
                 if (_activeWingmen[i] != null && _activeWingmen[i].gameObject.activeSelf)
                 {
-                    _activeWingmen[i].TriggerPanicScatter(leaderPos, railFwd, railSpeed);
+                    switch (reaction)
+                    {
+                        case LeaderDeathReaction.RetreatWarp:
+                            _activeWingmen[i].TriggerRetreatWarp(railFwd, railSpeed);
+                            break;
+                        case LeaderDeathReaction.KamikazeCharge:
+                            _activeWingmen[i].TriggerKamikazeCharge(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : (_railAnchor != null ? _railAnchor.transform : null));
+                            break;
+                        case LeaderDeathReaction.PanicScatter:
+                        default:
+                            _activeWingmen[i].TriggerPanicScatter(leaderPos, railFwd, railSpeed);
+                            break;
+                    }
                 }
             }
 

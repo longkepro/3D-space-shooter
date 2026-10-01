@@ -213,6 +213,47 @@ namespace VirtualRail
             Debug.Log($"<color=orange><b>[PANIC SCATTER]</b></color> Tàu cánh Slot {_slotIndex} mất khiên và hoảng loạn bẻ lái dạt biên thoát ly!");
         }
 
+        /// <summary>
+        /// Kích hoạt cơ chế rút lui khẩn cấp (Retreat Warp) khi mất Tàu Chỉ Huy.
+        /// </summary>
+        public void TriggerRetreatWarp(Vector3 railForward, float railSpeed)
+        {
+            if (_state == WingmanState.PanicScatter) return;
+
+            _state = WingmanState.PanicScatter;
+            _panicTimer = 0f;
+            _panicDuration = 0.8f;
+
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null) _health.SetShieldActive(false);
+
+            _panicVelocity = -railForward * (railSpeed + 45f) + transform.up * 15f;
+            _panicRollDir = 0f;
+
+            Debug.Log($"<color=cyan><b>[RETREAT WARP]</b></color> Tàu cánh Slot {_slotIndex} tăng tốc thoát ly khẩn cấp!");
+        }
+
+        /// <summary>
+        /// Kích hoạt cơ chế cảm tử (Kamikaze Charge) lao thẳng vào người chơi khi mất Tàu Chỉ Huy.
+        /// </summary>
+        public void TriggerKamikazeCharge(Transform playerTarget)
+        {
+            if (_state == WingmanState.PanicScatter) return;
+
+            _state = WingmanState.PanicScatter;
+            _panicTimer = 0f;
+            _panicDuration = 2.5f;
+
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null) _health.SetShieldActive(false);
+
+            Vector3 toPlayer = (playerTarget != null) ? (playerTarget.position - transform.position).normalized : -transform.forward;
+            _panicVelocity = toPlayer * 45f;
+            _panicRollDir = 1f;
+
+            Debug.Log($"<color=red><b>[KAMIKAZE CHARGE]</b></color> Tàu cánh Slot {_slotIndex} lao thẳng cảm tử vào người chơi!");
+        }
+
         private static Vector3 EvaluateCubicBezier(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
         {
             float u = 1f - t;

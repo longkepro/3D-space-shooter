@@ -97,6 +97,8 @@ namespace VirtualRail
         public GameObject customPrefab;
         public SpatialVectorType vectorType;
         public int squadCount;
+        [Tooltip("Mẫu đội hình bay Data-Driven (nếu gán, sẽ ưu tiên dùng mẫu này thay vì lính lẻ)")]
+        public FormationPattern scriptedFormationPattern;
 
         [Header("Speed & Environment Control")]
         public float targetSpeed;
@@ -226,6 +228,9 @@ namespace VirtualRail
         [Tooltip("Bật xuất hiện đội hình lượn")]
         public bool enableFormations;
 
+        [Tooltip("Danh sách các mẫu đội hình Data-Driven sử dụng trong màn này (nếu có)")]
+        public FormationPattern[] stageFormationPool;
+
         public static StageEnemySettings Default => new StageEnemySettings
         {
             stageEnemyPrefabs = null,
@@ -237,7 +242,8 @@ namespace VirtualRail
             allowedVectors = null,
             allowShooting = true,
             bulletSpeed = 22f,
-            enableFormations = true
+            enableFormations = true,
+            stageFormationPool = null
         };
     }
 
