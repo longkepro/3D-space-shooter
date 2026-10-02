@@ -1094,57 +1094,74 @@ public class VirtualRailModeToggle
         notifUI.subtitleText = subText;
     }
 
-    #region Enemy Projectile VFX (Core Option 1)
+    #region Enemy Projectile VFX (Bright Red & Bright Purple Geodesic Orbs)
     private const string ENEMY_PROJECTILE_PREFAB_PATH = "Assets/Prefabs/EnemyProjectile_PlasmaOrb.prefab";
+    private const string ENEMY_PROJECTILE_RED_PREFAB_PATH = "Assets/Prefabs/EnemyProjectile_BrightRed.prefab";
+    private const string ENEMY_PROJECTILE_PURPLE_PREFAB_PATH = "Assets/Prefabs/EnemyProjectile_BrightPurple.prefab";
     private const string ENEMY_PLASMA_CORE_MAT_PATH = "Assets/Materials/EnemyPlasma_Core.mat";
+    private const string ENEMY_PLASMA_RED_MAT_PATH = "Assets/Materials/EnemyPlasma_BrightRed.mat";
+    private const string ENEMY_PLASMA_PURPLE_MAT_PATH = "Assets/Materials/EnemyPlasma_BrightPurple.mat";
     private const string CFX_ORANGE_HIT_PREFAB_PATH = "Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX4 Hit B (Orange).prefab";
     private const string HOVL_FIRE_MAT_PATH = "Assets/Hovl Studio/Procedural fire/Materials/FireSphere1.mat";
     private const string HOVL_TRAIL_MAT_PATH = "Assets/Hovl Studio/Procedural fire/Materials/Trail67.mat";
+    private const string ICOSPHERE_MESH_PATH = "Assets/Models/Projectiles/EnemyPlasmaOrb_Mesh.obj";
 
-    [MenuItem("Tools/Virtual Rail/Enemy Projectile VFX/1. Apply Enhanced Plasma Projectiles (Core - ON)")]
-    public static void ApplyEnhancedPlasmaProjectiles()
+    [MenuItem("Tools/Virtual Rail/Enemy Projectile VFX/1. Switch to Bright Red Plasma (ON)")]
+    public static void ApplyBrightRedPlasmaProjectiles()
     {
-        // 1. Khởi tạo vật liệu Lõi trắng nóng (Inner Core)
-        Material coreMat = AssetDatabase.LoadAssetAtPath<Material>(ENEMY_PLASMA_CORE_MAT_PATH);
-        if (coreMat == null)
+        Material redMat = AssetDatabase.LoadAssetAtPath<Material>(ENEMY_PLASMA_RED_MAT_PATH);
+        if (redMat == null)
         {
-            Shader coreShader = Shader.Find("VirtualRail/PlasmaOrbCore") ?? Shader.Find("Unlit/Color");
-            coreMat = new Material(coreShader);
-            coreMat.SetColor("_CoreColor", new Color(3.0f, 2.8f, 2.2f, 1.0f));
-            coreMat.SetColor("_RimColor", new Color(2.5f, 1.0f, 0.1f, 1.0f));
-            AssetDatabase.CreateAsset(coreMat, ENEMY_PLASMA_CORE_MAT_PATH);
+            ApplyEnhancedPlasmaProjectiles();
+            redMat = AssetDatabase.LoadAssetAtPath<Material>(ENEMY_PLASMA_RED_MAT_PATH);
         }
 
-        // 2. Xây dựng Prefab đa tầng độc lập
-        GameObject template = BuildEnemyPlasmaOrbGameObject(coreMat);
-        PrefabUtility.SaveAsPrefabAsset(template, ENEMY_PROJECTILE_PREFAB_PATH);
-        Object.DestroyImmediate(template);
+        GameObject redObj = BuildEnemyPlasmaOrbGameObject(
+            redMat,
+            new Color(1f, 0.98f, 0.75f),
+            new Color(1f, 0.15f, 0.05f),
+            new Color(0.85f, 0.02f, 0.0f),
+            "EnemyProjectile_BrightRed"
+        );
+        PrefabUtility.SaveAsPrefabAsset(redObj, ENEMY_PROJECTILE_RED_PREFAB_PATH);
+        Object.DestroyImmediate(redObj);
+
+        // Đồng thời cập nhật cả prefab mặc định
+        AssetDatabase.CopyAsset(ENEMY_PROJECTILE_RED_PREFAB_PATH, ENEMY_PROJECTILE_PREFAB_PATH);
         AssetDatabase.SaveAssets();
 
-        // 3. Cập nhật cấu hình VirtualRailConfig
-        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
-        if (config != null)
-        {
-            config.useEnhancedPlasmaProjectiles = true;
-            config.enemyProjectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ENEMY_PROJECTILE_PREFAB_PATH);
-            config.enemyImpactVFXPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CFX_ORANGE_HIT_PREFAB_PATH);
-            EditorUtility.SetDirty(config);
-            AssetDatabase.SaveAssets();
-        }
-
-        // 4. Cập nhật Pool trong Scene nếu có
-        EnemyProjectilePool pool = Object.FindAnyObjectByType<EnemyProjectilePool>();
-        if (pool != null)
-        {
-            pool.SetProjectilePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(ENEMY_PROJECTILE_PREFAB_PATH));
-            pool.SetImpactVFXPrefab(AssetDatabase.LoadAssetAtPath<GameObject>(CFX_ORANGE_HIT_PREFAB_PATH));
-            EditorUtility.SetDirty(pool);
-        }
-
-        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT ĐẠN PLASMA ORB ĐA TẦNG CHO KẺ ĐỊCH:</b></color> Prefab đã lưu tại " + ENEMY_PROJECTILE_PREFAB_PATH);
+        UpdateConfigAndPool(ENEMY_PROJECTILE_RED_PREFAB_PATH);
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT ĐẠN ĐỎ SÁNG (BRIGHT RED PLASMA):</b></color> " + ENEMY_PROJECTILE_RED_PREFAB_PATH);
     }
 
-    [MenuItem("Tools/Virtual Rail/Enemy Projectile VFX/2. Revert to Legacy Projectiles (OFF)")]
+    [MenuItem("Tools/Virtual Rail/Enemy Projectile VFX/2. Switch to Bright Purple Plasma (ON)")]
+    public static void ApplyBrightPurplePlasmaProjectiles()
+    {
+        Material purpleMat = AssetDatabase.LoadAssetAtPath<Material>(ENEMY_PLASMA_PURPLE_MAT_PATH);
+        if (purpleMat == null)
+        {
+            ApplyEnhancedPlasmaProjectiles();
+            purpleMat = AssetDatabase.LoadAssetAtPath<Material>(ENEMY_PLASMA_PURPLE_MAT_PATH);
+        }
+
+        GameObject purpleObj = BuildEnemyPlasmaOrbGameObject(
+            purpleMat,
+            new Color(1f, 0.9f, 1f),
+            new Color(0.85f, 0.05f, 1f),
+            new Color(0.55f, 0.0f, 0.85f),
+            "EnemyProjectile_BrightPurple"
+        );
+        PrefabUtility.SaveAsPrefabAsset(purpleObj, ENEMY_PROJECTILE_PURPLE_PREFAB_PATH);
+        Object.DestroyImmediate(purpleObj);
+
+        AssetDatabase.CopyAsset(ENEMY_PROJECTILE_PURPLE_PREFAB_PATH, ENEMY_PROJECTILE_PREFAB_PATH);
+        AssetDatabase.SaveAssets();
+
+        UpdateConfigAndPool(ENEMY_PROJECTILE_PURPLE_PREFAB_PATH);
+        Debug.Log("<color=magenta><b>[VirtualRail] ĐÃ KÍCH HOẠT ĐẠN TÍM SÁNG (BRIGHT PURPLE PLASMA):</b></color> " + ENEMY_PROJECTILE_PURPLE_PREFAB_PATH);
+    }
+
+    [MenuItem("Tools/Virtual Rail/Enemy Projectile VFX/3. Revert to Legacy Projectiles (OFF)")]
     public static void RevertToLegacyProjectiles()
     {
         VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
@@ -1168,9 +1185,38 @@ public class VirtualRailModeToggle
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN ĐẠN KẺ ĐỊCH VỀ LEGACY PROJECTILES (OFF).</b></color>");
     }
 
-    public static GameObject BuildEnemyPlasmaOrbGameObject(Material coreMat)
+    private static void UpdateConfigAndPool(string prefabPath)
     {
-        GameObject root = new GameObject("EnemyProjectile_PlasmaOrb");
+        GameObject prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        GameObject hitAsset = AssetDatabase.LoadAssetAtPath<GameObject>(CFX_ORANGE_HIT_PREFAB_PATH);
+
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useEnhancedPlasmaProjectiles = true;
+            config.enemyProjectilePrefab = prefabAsset;
+            config.enemyImpactVFXPrefab = hitAsset;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+        }
+
+        EnemyProjectilePool pool = Object.FindAnyObjectByType<EnemyProjectilePool>();
+        if (pool != null)
+        {
+            pool.SetProjectilePrefab(prefabAsset);
+            pool.SetImpactVFXPrefab(hitAsset);
+            EditorUtility.SetDirty(pool);
+        }
+    }
+
+    public static void ApplyEnhancedPlasmaProjectiles()
+    {
+        ApplyBrightRedPlasmaProjectiles();
+    }
+
+    public static GameObject BuildEnemyPlasmaOrbGameObject(Material coreMat, Color trailHead, Color trailMid, Color trailEnd, string prefabName = "EnemyProjectile_PlasmaOrb")
+    {
+        GameObject root = new GameObject(prefabName);
 
         var sphereCol = root.AddComponent<SphereCollider>();
         sphereCol.isTrigger = true;
@@ -1179,6 +1225,15 @@ public class VirtualRailModeToggle
         GameObject visualRoot = new GameObject("[Visual_Root]");
         visualRoot.transform.SetParent(root.transform, false);
 
+        // Tải Mesh IcoSphere nếu có
+        Mesh icoMesh = null;
+        GameObject meshObj = AssetDatabase.LoadAssetAtPath<GameObject>(ICOSPHERE_MESH_PATH);
+        if (meshObj != null)
+        {
+            MeshFilter mf = meshObj.GetComponentInChildren<MeshFilter>();
+            if (mf != null) icoMesh = mf.sharedMesh;
+        }
+
         // Quầng Plasma ngoài (Outer Corona)
         GameObject corona = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         corona.name = "[Corona]";
@@ -1186,6 +1241,12 @@ public class VirtualRailModeToggle
         corona.transform.localScale = Vector3.one * 1.2f;
         var coronaCol = corona.GetComponent<Collider>();
         if (coronaCol != null) Object.DestroyImmediate(coronaCol);
+
+        if (icoMesh != null)
+        {
+            MeshFilter cmf = corona.GetComponent<MeshFilter>();
+            if (cmf != null) cmf.sharedMesh = icoMesh;
+        }
 
         Material coronaMat = AssetDatabase.LoadAssetAtPath<Material>(HOVL_FIRE_MAT_PATH);
         if (coronaMat == null)
@@ -1205,6 +1266,12 @@ public class VirtualRailModeToggle
         core.transform.localScale = Vector3.one * 0.55f;
         var coreCol = core.GetComponent<Collider>();
         if (coreCol != null) Object.DestroyImmediate(coreCol);
+
+        if (icoMesh != null)
+        {
+            MeshFilter kmf = core.GetComponent<MeshFilter>();
+            if (kmf != null) kmf.sharedMesh = icoMesh;
+        }
 
         Renderer coreRend = core.GetComponent<Renderer>();
         if (coreRend != null && coreMat != null)
@@ -1228,9 +1295,9 @@ public class VirtualRailModeToggle
         Gradient gradient = new Gradient();
         gradient.SetKeys(
             new GradientColorKey[] {
-                new GradientColorKey(new Color(1f, 0.98f, 0.75f), 0.0f),
-                new GradientColorKey(new Color(1f, 0.35f, 0.05f), 0.5f),
-                new GradientColorKey(new Color(0.9f, 0.05f, 0.0f), 1.0f)
+                new GradientColorKey(trailHead, 0.0f),
+                new GradientColorKey(trailMid, 0.5f),
+                new GradientColorKey(trailEnd, 1.0f)
             },
             new GradientAlphaKey[] {
                 new GradientAlphaKey(0.95f, 0.0f),
@@ -1248,7 +1315,7 @@ public class VirtualRailModeToggle
         main.startLifetime = 0.22f;
         main.startSpeed = 1.5f;
         main.startSize = 0.22f;
-        main.startColor = new Color(1f, 0.7f, 0.2f, 1f);
+        main.startColor = trailMid;
         main.simulationSpace = ParticleSystemSimulationSpace.World;
         main.maxParticles = 40;
         main.loop = true;
