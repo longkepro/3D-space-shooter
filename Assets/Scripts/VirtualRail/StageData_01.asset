@@ -32,7 +32,7 @@ MonoBehaviour:
   environmentSettings:
     skyboxMaterial: {fileID: 2100000, guid: d8c0d4010f9416945912d97b9e581cf6, type: 2}
     backdropMaterial: {fileID: 0}
-    backdropTexture: {fileID: 2800000, guid: e1010101010101010101010101010101, type: 3}
+    backdropTexture: {fileID: 2800000, guid: c6153442a0340e9429bc12491f4e5c29, type: 3}
     backdropExposure: 1
     backdropTint: {r: 1, g: 1, b: 1, a: 1}
     ambientLightColor: {r: 0.2, g: 0.25, b: 0.35, a: 1}
@@ -79,9 +79,28 @@ MonoBehaviour:
     bossHealth: 0
     holdRailOnBoss: 0
   timelineEvents:
+  - eventName: Intro Scouts - Vanguard Patrol
+    triggerMode: 0
+    triggerValue: 2.5
+    eventType: 2
+    messageTitle: 
+    messageSubtitle: 
+    messageDuration: 0
+    customPrefab: {fileID: 873890533011206334, guid: 2409cb5fe15b192418806e9d75823cb3,
+      type: 3}
+    vectorType: 0
+    squadCount: 2
+    scriptedFormationPattern: {fileID: 0}
+    targetSpeed: 0
+    changeFog: 0
+    enableFog: 0
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
   - eventName: Mission Start Transmission
     triggerMode: 0
-    triggerValue: 5
+    triggerValue: 4.5
     eventType: 0
     messageTitle: COMMAND
     messageSubtitle: ARWING INITIALIZED. ENTERING PERIMETER.
@@ -99,7 +118,7 @@ MonoBehaviour:
     newSkybox: {fileID: 0}
   - eventName: Wave 1 - Vanguard Scouts
     triggerMode: 0
-    triggerValue: 15
+    triggerValue: 12
     eventType: 2
     messageTitle: 
     messageSubtitle: 

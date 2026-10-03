@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cc0fa9c728d55b428f256f5340321d5, type: 3}
   m_Name: DefaultVirtualRailConfig
   m_EditorClassIdentifier: 
-  forwardSpeed: 120
+  forwardSpeed: 28
   boostMultiplier: 1.5
   convergenceDistance: 150
   enableDynamicDepthConvergence: 1
@@ -151,9 +151,10 @@ MonoBehaviour:
   dustFieldWidth: 50
   dustFieldHeight: 30
   dustFieldDepth: 90
-  enableHorizonBackdrop: 1
+  enableHorizonBackdrop: 0
   backdropDistanceZ: 850
-  backdropMaterial: {fileID: 2100000, guid: b2020202020202020202020202020202, type: 2}
+  backdropMaterial: {fileID: 2100000, guid: e5f6a7b8c9d01a2b3c4d5e6f7a8b9c0d, type: 2}
   useEnhancedPlasmaProjectiles: 1
-  enemyProjectilePrefab: {fileID: 7464545904787211660, guid: 94beb9fa08fb83049a6e27a33b4dcf42, type: 3}
+  enemyProjectilePrefab: {fileID: 7464545904787211660, guid: 94beb9fa08fb83049a6e27a33b4dcf42,
+    type: 3}
   enemyImpactVFXPrefab: {fileID: 100002, guid: e9391f622091e1449bdef4ef15af4948, type: 3}

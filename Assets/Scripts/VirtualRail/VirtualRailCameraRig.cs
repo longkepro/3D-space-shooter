@@ -130,8 +130,10 @@ namespace VirtualRail
             float targetLocalY = (offsetY * cfg.cameraPanFactor) + cfg.cameraHeight;
             float targetLocalZ = -cfg.cameraDistance;
 
-            Vector3 targetLocalPos = new Vector3(targetLocalX, targetLocalY, targetLocalZ);
-            transform.localPosition = Vector3.Lerp(transform.localPosition, targetLocalPos, cfg.cameraSmoothSpeed * Time.deltaTime);
+            float curX = Mathf.Lerp(transform.localPosition.x, targetLocalX, cfg.cameraSmoothSpeed * Time.deltaTime);
+            float curY = Mathf.Lerp(transform.localPosition.y, targetLocalY, cfg.cameraSmoothSpeed * Time.deltaTime);
+            // Khóa cứng 100% cự ly trục Z (Zero Z-Lag)
+            transform.localPosition = new Vector3(curX, curY, targetLocalZ);
 
             // 2. Góc xoay Camera (Cố định đường chân trời)
             if (!cfg.enableDynamicLookAt)

@@ -261,6 +261,12 @@ namespace VirtualRail
             // Cập nhật vị trí cục bộ của Ship Container
             transform.localPosition = LocalPosition3D;
 
+            // Khóa cứng 100% tọa độ hiển thị đồ họa tại tâm container (triệt tiêu hoàn toàn physics drift)
+            if (shipVisualMesh != null)
+            {
+                shipVisualMesh.localPosition = Vector3.zero;
+            }
+
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
 
             // Micro-Aim Alignment (Khí động học ngước/liếc mũi theo góc ngắm tâm)
@@ -351,6 +357,7 @@ namespace VirtualRail
             if (shipVisualMesh != null)
             {
                 shipVisualMesh.gameObject.SetActive(true);
+                shipVisualMesh.localPosition = Vector3.zero;
                 shipVisualMesh.localRotation = Quaternion.identity;
             }
             localPos2D = Vector2.zero;

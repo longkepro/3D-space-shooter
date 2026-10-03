@@ -325,7 +325,7 @@ namespace VirtualRail
                 // Nếu Anchor.Respawn() đã khởi chạy màn chơi rồi thì không gọi lặp
                 if (currentState != StageState.InJourney)
                 {
-                    StartStage(0);
+                    StartStage(0, true);
                 }
             }
             else
@@ -340,6 +340,7 @@ namespace VirtualRail
             currentState = StageState.Inactive;
             _pendingStageStart = false;
             _stagePaletteApplied = false;
+            currentStageIndex = 0;
             if (_activeBossInstance != null)
             {
                 Destroy(_activeBossInstance);
@@ -405,6 +406,7 @@ namespace VirtualRail
             // 2. Áp dụng Tốc độ đường ray
             if (anchor != null)
             {
+                anchor.SetSpeedOverride(_normalSpeed);
                 anchor.CurrentSpeed = _normalSpeed;
             }
 
@@ -563,6 +565,7 @@ namespace VirtualRail
                     if (anchor != null && evt.targetSpeed > 1f)
                     {
                         _normalSpeed = evt.targetSpeed;
+                        anchor.SetSpeedOverride(evt.targetSpeed);
                         anchor.CurrentSpeed = evt.targetSpeed;
                     }
                     break;
@@ -825,11 +828,20 @@ namespace VirtualRail
 
         private void CompleteWarpTransition()
         {
-            if (currentState == StageState.AllStagesCleared) return;
+            if (currentState == StageState.AllStagesCleared)
+            {
+                if (anchor != null)
+                {
+                    anchor.SetSpeedOverride(_normalSpeed);
+                    anchor.CurrentSpeed = _normalSpeed;
+                }
+                return;
+            }
 
             currentState = StageState.InJourney;
             if (anchor != null)
             {
+                anchor.SetSpeedOverride(_normalSpeed);
                 anchor.CurrentSpeed = _normalSpeed;
             }
         }
