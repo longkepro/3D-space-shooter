@@ -51,6 +51,28 @@ public class Explosion : MonoBehaviour
 
     public void BlowUp()
     {
+        SpawnBlowUpVFX();
+
+        var poolables = GetComponents<VirtualRail.IPoolableEntity>();
+        if (poolables != null && poolables.Length > 0)
+        {
+            for (int i = 0; i < poolables.Length; i++)
+            {
+                poolables[i].Recycle();
+            }
+        }
+        else if (CompareTag("Player"))
+        {
+            // Với Player Rig / ShipVisual: Bảo tồn GameObject để tránh rò rỉ phân cấp và Camera Rig
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    public void SpawnBlowUpVFX()
+    {
         if (_blowUp != null)
         {
             var vfxPool = VirtualRail.VirtualRailVFXPool.Instance;
@@ -63,22 +85,6 @@ public class Explosion : MonoBehaviour
                 var spawnedExplosion = Instantiate(_blowUp, transform.position, Quaternion.identity);
                 Destroy(spawnedExplosion, _explosionDuration);
             }
-        }
-
-        // Vector 9: Cluster Fracture (TDD v1.0.0 Phần II.1)
-        // Khi thiên thạch hoặc quái vật phát nổ, kích hoạt vỡ mảnh thứ cấp
-        if (VirtualRail.VirtualRailWaveSpawner.Instance != null && Random.value < 0.25f)
-        {
-            VirtualRail.VirtualRailWaveSpawner.Instance.TriggerClusterFracture(transform.position);
-        }
-
-        if (TryGetComponent<VirtualRail.IPoolableEntity>(out var poolable))
-        {
-            poolable.Recycle();
-        }
-        else
-        {
-            Destroy(gameObject);
         }
     }
 

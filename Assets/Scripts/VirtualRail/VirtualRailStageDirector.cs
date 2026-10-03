@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace VirtualRail
 {
@@ -62,6 +63,8 @@ namespace VirtualRail
         private float _warpPeakSpeed = 85f;
         private bool _isMidWarpSwapped = false;
         private float _climaxTimer = 0f;
+        private bool _pendingStageStart = false;
+        private bool _stagePaletteApplied = false;
 
         public StageData CurrentStageData => (stages != null && currentStageIndex >= 0 && currentStageIndex < stages.Length) ? stages[currentStageIndex] : null;
 
@@ -187,12 +190,59 @@ namespace VirtualRail
 #endif
             }
 
-            if (anchor == null) anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
-            if (waveSpawner == null) waveSpawner = VirtualRailWaveSpawner.Instance != null ? VirtualRailWaveSpawner.Instance : FindAnyObjectByType<VirtualRailWaveSpawner>();
-            if (asteroidSpawner == null) asteroidSpawner = VirtualRailAsteroidSpawner.Instance != null ? VirtualRailAsteroidSpawner.Instance : FindAnyObjectByType<VirtualRailAsteroidSpawner>();
-            if (backdrop == null) backdrop = FindAnyObjectByType<VirtualRailHorizonBackdrop>();
-            if (spaceDust == null) spaceDust = FindAnyObjectByType<VirtualRailSpaceDust>();
-            if (notificationUI == null) notificationUI = StageNotificationUI.Instance != null ? StageNotificationUI.Instance : FindAnyObjectByType<StageNotificationUI>();
+            if (anchor == null)
+            {
+                anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
+            }
+
+            if (waveSpawner == null)
+            {
+                waveSpawner = VirtualRailWaveSpawner.Instance != null ? VirtualRailWaveSpawner.Instance : FindAnyObjectByType<VirtualRailWaveSpawner>();
+                if (waveSpawner == null && anchor != null)
+                {
+                    waveSpawner = anchor.GetComponentInChildren<VirtualRailWaveSpawner>();
+                }
+            }
+
+            if (asteroidSpawner == null)
+            {
+                asteroidSpawner = VirtualRailAsteroidSpawner.Instance != null ? VirtualRailAsteroidSpawner.Instance : FindAnyObjectByType<VirtualRailAsteroidSpawner>();
+                if (asteroidSpawner == null && anchor != null)
+                {
+                    asteroidSpawner = anchor.GetComponentInChildren<VirtualRailAsteroidSpawner>();
+                }
+            }
+
+            if (backdrop == null)
+            {
+                backdrop = FindAnyObjectByType<VirtualRailHorizonBackdrop>();
+                if (backdrop == null && anchor != null)
+                {
+                    backdrop = anchor.GetComponentInChildren<VirtualRailHorizonBackdrop>();
+                }
+            }
+
+            if (spaceDust == null)
+            {
+                spaceDust = FindAnyObjectByType<VirtualRailSpaceDust>();
+                if (spaceDust == null && anchor != null)
+                {
+                    spaceDust = anchor.GetComponentInChildren<VirtualRailSpaceDust>();
+                }
+            }
+
+            if (notificationUI == null)
+            {
+                notificationUI = StageNotificationUI.Instance != null ? StageNotificationUI.Instance : FindAnyObjectByType<StageNotificationUI>();
+                if (notificationUI == null)
+                {
+                    Canvas canvas = FindAnyObjectByType<Canvas>();
+                    if (canvas != null)
+                    {
+                        notificationUI = CreateRuntimeNotificationUI(canvas.transform);
+                    }
+                }
+            }
 
             if (defaultSkyboxMaterial == null)
             {
@@ -215,14 +265,82 @@ namespace VirtualRail
             }
         }
 
+        private static StageNotificationUI CreateRuntimeNotificationUI(Transform canvasParent)
+        {
+            GameObject notifObj = new GameObject("[StageNotificationUI]");
+            notifObj.transform.SetParent(canvasParent, false);
+
+            RectTransform rt = notifObj.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 0.6f);
+            rt.anchorMax = new Vector2(1f, 0.85f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            CanvasGroup cg = notifObj.AddComponent<CanvasGroup>();
+            cg.alpha = 0f;
+            cg.blocksRaycasts = false;
+            cg.interactable = false;
+
+            GameObject titleObj = new GameObject("TitleText");
+            titleObj.transform.SetParent(notifObj.transform, false);
+            RectTransform titleRt = titleObj.AddComponent<RectTransform>();
+            titleRt.anchorMin = new Vector2(0f, 0.5f);
+            titleRt.anchorMax = new Vector2(1f, 1f);
+            titleRt.offsetMin = Vector2.zero;
+            titleRt.offsetMax = Vector2.zero;
+            Text titleText = titleObj.AddComponent<Text>();
+            titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (titleText.font == null) titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            titleText.fontSize = 36;
+            titleText.fontStyle = FontStyle.Bold;
+            titleText.alignment = TextAnchor.MiddleCenter;
+            titleText.color = new Color(0.1f, 0.95f, 1.0f, 1.0f);
+
+            GameObject subObj = new GameObject("SubtitleText");
+            subObj.transform.SetParent(notifObj.transform, false);
+            RectTransform subRt = subObj.AddComponent<RectTransform>();
+            subRt.anchorMin = new Vector2(0f, 0f);
+            subRt.anchorMax = new Vector2(1f, 0.5f);
+            subRt.offsetMin = Vector2.zero;
+            subRt.offsetMax = Vector2.zero;
+            Text subText = subObj.AddComponent<Text>();
+            subText.font = titleText.font;
+            subText.fontSize = 20;
+            subText.fontStyle = FontStyle.Normal;
+            subText.alignment = TextAnchor.MiddleCenter;
+            subText.color = new Color(1.0f, 0.95f, 0.4f, 0.9f);
+
+            StageNotificationUI notifUI = notifObj.AddComponent<StageNotificationUI>();
+            notifUI.bannerCanvasGroup = cg;
+            notifUI.titleText = titleText;
+            notifUI.subtitleText = subText;
+            return notifUI;
+        }
+
         private void HandleGameStarted()
         {
-            StartStage(0);
+            FindReferences();
+            if (anchor != null && waveSpawner != null)
+            {
+                StartStage(0);
+            }
+            else
+            {
+                _pendingStageStart = true;
+                currentState = StageState.Inactive;
+            }
         }
 
         private void HandlePlayerDestroyed()
         {
             currentState = StageState.Inactive;
+            _pendingStageStart = false;
+            _stagePaletteApplied = false;
+            if (_activeBossInstance != null)
+            {
+                Destroy(_activeBossInstance);
+                _activeBossInstance = null;
+            }
         }
 
         /// <summary>
@@ -230,11 +348,21 @@ namespace VirtualRail
         /// </summary>
         public void StartStage(int stageIdx)
         {
+            FindReferences();
+
             if (stages == null || stages.Length == 0) return;
 
             currentStageIndex = Mathf.Clamp(stageIdx, 0, stages.Length - 1);
             StageData stage = stages[currentStageIndex];
             if (stage == null) return;
+
+            _pendingStageStart = false;
+
+            if (_activeBossInstance != null)
+            {
+                Destroy(_activeBossInstance);
+                _activeBossInstance = null;
+            }
 
             if (anchor != null)
             {
@@ -263,7 +391,13 @@ namespace VirtualRail
             // 3. Áp dụng Bảng quái vật & Vector xuất hiện (Không dùng fallback mặc định)
             if (waveSpawner != null)
             {
+                waveSpawner.ControlMode = SpawnerControlMode.ScriptedDirectorOnly;
                 waveSpawner.ApplyStagePalette(stage.enemySettings);
+                _stagePaletteApplied = true;
+            }
+            else
+            {
+                _stagePaletteApplied = false;
             }
 
             // 4. Áp dụng Thiên thạch & Chướng ngại vật
@@ -300,29 +434,26 @@ namespace VirtualRail
         /// </summary>
         public void Tick(float dt)
         {
-            // Self-Healing Runtime Binding: Tự động kết nối với Anchor ngay khi tàu xuất hiện trong Scene
-            if (anchor == null)
+            // Self-Healing Runtime Binding: Tự động kết nối với Anchor & Spawners ngay khi tàu xuất hiện trong Scene
+            if (anchor == null || waveSpawner == null || asteroidSpawner == null || notificationUI == null)
             {
-                anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
-                if (anchor != null)
-                {
-                    if (currentState == StageState.Inactive)
-                    {
-                        StartStage(currentStageIndex);
-                    }
-                    else if (_stageStartZ == 0f)
-                    {
-                        _stageStartZ = anchor.transform.position.z;
-                    }
-                }
+                FindReferences();
             }
 
             if (anchor == null) return;
 
-            // Tự động bắt đầu màn nếu tàu bắt đầu di chuyển
-            if (currentState == StageState.Inactive && anchor.CurrentSpeed > 0.5f)
+            // Tự động bắt đầu màn nếu có cờ chờ hoặc tàu bắt đầu di chuyển khi chưa active
+            if (currentState == StageState.Inactive && (_pendingStageStart || anchor.CurrentSpeed > 0.5f))
             {
                 StartStage(currentStageIndex);
+            }
+
+            // Đảm bảo Stage Palette (tắt quái ngẫu nhiên, nạp kịch bản) được áp dụng ngay khi waveSpawner sẵn sàng
+            if (!_stagePaletteApplied && waveSpawner != null && CurrentStageData != null)
+            {
+                waveSpawner.ControlMode = SpawnerControlMode.ScriptedDirectorOnly;
+                waveSpawner.ApplyStagePalette(CurrentStageData.enemySettings);
+                _stagePaletteApplied = true;
             }
 
             switch (currentState)
@@ -653,7 +784,9 @@ namespace VirtualRail
             // 2. Hoán đổi Bảng quái vật
             if (waveSpawner != null)
             {
+                waveSpawner.ControlMode = SpawnerControlMode.ScriptedDirectorOnly;
                 waveSpawner.ApplyStagePalette(nextStage.enemySettings);
+                _stagePaletteApplied = true;
             }
 
             // 3. Hoán đổi Thiên thạch

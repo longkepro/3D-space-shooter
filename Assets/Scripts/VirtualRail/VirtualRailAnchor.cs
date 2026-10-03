@@ -116,6 +116,93 @@ namespace VirtualRail
             return transform.InverseTransformPoint(worldPoint);
         }
 
+        /// <summary>
+        /// Hồi sinh tại chỗ tất định (Deterministic In-Place Respawn - 0 GC Alloc).
+        /// Khôi phục toàn bộ Rig, Camera, Thân tàu, Khiên, Vũ khí, Tâm ngắm và Màn chơi mà không cần Destroy/Instantiate.
+        /// </summary>
+        public void Respawn(Vector3 spawnPosition, Quaternion spawnRotation)
+        {
+            // 1. Dịch chuyển vị trí Rig về tọa độ xuất phát
+            transform.position = spawnPosition;
+            transform.rotation = spawnRotation;
+
+            // 2. Phục hồi tốc độ bay ray
+            ClearSpeedOverride();
+            currentSpeed = (config != null) ? config.forwardSpeed : 28f;
+            isBoosting = false;
+
+            // 3. Phục hồi trạng thái thân tàu & hiển thị đồ họa
+            var ship = GetComponentInChildren<VirtualRailShip>();
+            if (ship != null)
+            {
+                ship.Respawn();
+            }
+
+            // 4. Phục hồi Máu & Thanh Khiên (Shield)
+            var shield = GetComponentInChildren<Shield>();
+            if (shield != null)
+            {
+                shield.ResetHealth();
+            }
+
+            // 5. Phục hồi Vũ khí
+            var weapon = GetComponentInChildren<VirtualRailWeapon>();
+            if (weapon != null)
+            {
+                weapon.ResetWeapon();
+            }
+
+            // 6. Phục hồi Tâm ngắm (Reticle) về chính giữa màn hình
+            var reticle = GetComponentInChildren<VirtualRailReticle>();
+            if (reticle != null)
+            {
+                reticle.ResetPosition();
+            }
+
+            // 7. Snap Camera về vị trí chuẩn tức thì (0 Lerp Jitter)
+            var cameraRig = GetComponentInChildren<VirtualRailCameraRig>();
+            if (cameraRig != null)
+            {
+                cameraRig.SnapToDefault();
+            }
+
+            // 8. Thu hồi toàn bộ quái vật, chướng ngại vật & đạn địch còn sót lại trong Scene (0 GC Alloc)
+            if (VirtualRailWaveSpawner.Instance != null)
+            {
+                VirtualRailWaveSpawner.Instance.RecycleAll();
+                VirtualRailWaveSpawner.Instance.StartSpawning();
+            }
+
+            if (VirtualRailAsteroidSpawner.Instance != null)
+            {
+                VirtualRailAsteroidSpawner.Instance.RecycleAll();
+                VirtualRailAsteroidSpawner.Instance.StartSpawning();
+            }
+
+            if (EnemyProjectilePool.Instance != null)
+            {
+                EnemyProjectilePool.Instance.ClearAllActiveProjectiles();
+            }
+
+            // 9. Đặt lại Động cơ tính điểm Combo & Bom thông minh
+            if (ComboScoringEngine.Instance != null)
+            {
+                ComboScoringEngine.Instance.ResetSession();
+            }
+
+            var bombModule = GetComponentInChildren<SmartBombModule>();
+            if (bombModule != null)
+            {
+                bombModule.ResetBombs();
+            }
+
+            // 10. Bắt đầu lại Màn 1 qua Nhạc trưởng Stage Director
+            if (VirtualRailStageDirector.Instance != null)
+            {
+                VirtualRailStageDirector.Instance.StartStage(0);
+            }
+        }
+
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.cyan;

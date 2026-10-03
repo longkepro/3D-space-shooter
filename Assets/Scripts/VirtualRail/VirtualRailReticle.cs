@@ -464,6 +464,18 @@ namespace VirtualRail
             img.raycastTarget = false;
         }
 
+        /// <summary>
+        /// Khôi phục vị trí tâm ngắm về chính giữa màn hình khi tàu hồi sinh (0 GC Alloc).
+        /// </summary>
+        public void ResetPosition()
+        {
+            localPos2D = Vector2.zero;
+            currentNormalizedInput = Vector2.zero;
+            isAimingMoving = false;
+            isMouseTouchingReticle = false;
+            transform.localPosition = LocalPosition3D;
+        }
+
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.green;

@@ -23,6 +23,9 @@ namespace VirtualRail
         [SerializeField] private VirtualRailConfig.FrustumBounds shipBounds;
         private Vector2 currentVelocity;
         private Thruster[] thrusters;
+        private bool _isDead = false;
+
+        public bool IsDead => _isDead;
 
         [Header("Barrel Roll Deflection (TDD v1.0.0 Phần I.5)")]
         [SerializeField] private bool isDeflecting = false;
@@ -102,6 +105,7 @@ namespace VirtualRail
 
         private void Update()
         {
+            if (_isDead) return;
             if (anchor == null || anchor.config == null) return;
 
             var cfg = anchor.config;
@@ -317,6 +321,56 @@ namespace VirtualRail
             shipNormalizedPos.x = Mathf.Clamp(shipNormalizedPos.x + rollDirection * 0.18f, -1f, 1f);
 
             Debug.Log($"<color=cyan><b>[BARREL ROLL DEFLECTION]</b></color> Kích hoạt lộn cánh {(rollDirection > 0 ? "Phải" : "Trái")}! Phản xạ đạn 100% trong {barrelRollDuration:F2}s.");
+        }
+
+        /// <summary>
+        /// Xử lý đóng băng điều khiển & ẩn hiển thị đồ họa khi người chơi bị bắn hạ (0 GC Alloc).
+        /// </summary>
+        public void OnPlayerDefeated()
+        {
+            _isDead = true;
+            if (shipVisualMesh != null)
+            {
+                shipVisualMesh.gameObject.SetActive(false);
+            }
+            if (thrusters != null)
+            {
+                for (int i = 0; i < thrusters.Length; i++)
+                {
+                    if (thrusters[i] != null) thrusters[i].Intensity(0f);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Hồi sinh thân tàu tại chỗ: Tái kích hoạt đồ họa, reset tọa độ cục bộ, vận tốc và góc xoay.
+        /// </summary>
+        public void Respawn()
+        {
+            _isDead = false;
+            if (shipVisualMesh != null)
+            {
+                shipVisualMesh.gameObject.SetActive(true);
+                shipVisualMesh.localRotation = Quaternion.identity;
+            }
+            localPos2D = Vector2.zero;
+            shipNormalizedPos = Vector2.zero;
+            currentVelocity = Vector2.zero;
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+
+            isRolling = false;
+            isDeflecting = false;
+            currentBarrelRollAngle = 0f;
+            rollTimer = 0f;
+
+            if (thrusters != null)
+            {
+                for (int i = 0; i < thrusters.Length; i++)
+                {
+                    if (thrusters[i] != null) thrusters[i].Intensity(0.5f);
+                }
+            }
         }
 
         private void OnDrawGizmosSelected()

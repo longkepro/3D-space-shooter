@@ -93,7 +93,11 @@ namespace VirtualRail
             if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
             if (weapon == null && anchor != null) weapon = anchor.GetComponentInChildren<VirtualRailWeapon>();
             if (weapon == null) weapon = FindAnyObjectByType<VirtualRailWeapon>();
-            if (mainCamera == null) mainCamera = Camera.main;
+            if (mainCamera == null || !mainCamera.gameObject.activeInHierarchy)
+            {
+                var camRig = anchor != null ? anchor.GetComponentInChildren<VirtualRailCameraRig>() : null;
+                mainCamera = (camRig != null && camRig.targetCamera != null) ? camRig.targetCamera : Camera.main;
+            }
 
             var cfg = anchor != null ? anchor.config : null;
             EnsureCrosshairStyling(cfg);
@@ -101,7 +105,11 @@ namespace VirtualRail
 
         private void LateUpdate()
         {
-            if (mainCamera == null) mainCamera = Camera.main;
+            if (mainCamera == null || !mainCamera.gameObject.activeInHierarchy)
+            {
+                var camRig = anchor != null ? anchor.GetComponentInChildren<VirtualRailCameraRig>() : null;
+                mainCamera = (camRig != null && camRig.targetCamera != null) ? camRig.targetCamera : Camera.main;
+            }
             if (mainCamera == null) return;
 
             var cfg = anchor != null ? anchor.config : null;

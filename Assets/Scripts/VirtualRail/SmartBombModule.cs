@@ -120,5 +120,14 @@ namespace VirtualRail
             _currentBombs += count;
             OnBombCountChanged?.Invoke(_currentBombs);
         }
+
+        /// <summary>
+        /// Khôi phục số lượng bom thông minh về định mức ban đầu khi hồi sinh.
+        /// </summary>
+        public void ResetBombs()
+        {
+            _currentBombs = (_anchor != null && _anchor.config != null) ? _anchor.config.initialSmartBombs : initialBombs;
+            OnBombCountChanged?.Invoke(_currentBombs);
+        }
     }
 }

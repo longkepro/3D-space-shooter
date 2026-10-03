@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 
 public class GameUI : MonoBehaviour
@@ -41,7 +41,17 @@ public class GameUI : MonoBehaviour
     {
         _mainMenu.SetActive(false);
         _gameUI.SetActive(true);
-        Instantiate(_playerPrefab, _playerSpawner.transform.position, _playerSpawner.transform.rotation);
+
+        if (VirtualRail.VirtualRailAnchor.Instance != null)
+        {
+            Vector3 spawnPos = (_playerSpawner != null) ? _playerSpawner.transform.position : Vector3.zero;
+            Quaternion spawnRot = (_playerSpawner != null) ? _playerSpawner.transform.rotation : Quaternion.identity;
+            VirtualRail.VirtualRailAnchor.Instance.Respawn(spawnPos, spawnRot);
+        }
+        else if (_playerPrefab != null && _playerSpawner != null)
+        {
+            Instantiate(_playerPrefab, _playerSpawner.transform.position, _playerSpawner.transform.rotation);
+        }
     }
 
 }

@@ -121,6 +121,8 @@ namespace VirtualRail
                 UpdateGimbalOrientation(cfg);
             }
 
+            if (ship != null && ship.IsDead) return;
+
             bool isManualFire = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
             bool isInputReaderFiring = inputReader != null && inputReader.IsFiring();
             bool isReticleAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
@@ -385,6 +387,16 @@ namespace VirtualRail
                     boltDamage
                 );
             }
+        }
+
+        /// <summary>
+        /// Khôi phục hệ thống vũ khí về trạng thái ban đầu khi hồi sinh.
+        /// </summary>
+        public void ResetWeapon()
+        {
+            _laserLevel = LaserUpgradeLevel.Single;
+            _goldRingsCollected = 0;
+            nextFireTime = 0f;
         }
     }
 }

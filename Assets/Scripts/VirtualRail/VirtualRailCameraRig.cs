@@ -16,26 +16,61 @@ namespace VirtualRail
         public VirtualRailShip ship;
         public Camera targetCamera;
 
+        [Header("Camera Control Mode")]
+        [Tooltip("Bật chế độ dùng Camera riêng biệt tự do: Script sẽ KHÔNG reparent, KHÔNG ghi đè tọa độ/góc xoay/FOV của Camera")]
+        public bool useExternalCamera = false;
+
         private void Start()
         {
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
             if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
-            if (targetCamera == null) targetCamera = Camera.main;
+            if (targetCamera == null)
+            {
+                targetCamera = Camera.main;
+                if (targetCamera == null)
+                {
+                    // Tự phục hồi: Tìm bất kỳ Camera nào kể cả khi đang bị Inactive trong Scene
+                    var cam = Object.FindAnyObjectByType<Camera>(FindObjectsInactive.Include);
+                    if (cam != null)
+                    {
+                        cam.gameObject.SetActive(true);
+                        cam.tag = "MainCamera";
+                        targetCamera = cam;
+                    }
+                    else
+                    {
+                        // Fallback an toàn tuyệt đối: Tự tạo mới Camera nếu Scene bị mất sạch
+                        GameObject camObj = new GameObject("Main Camera");
+                        camObj.tag = "MainCamera";
+                        targetCamera = camObj.AddComponent<Camera>();
+                        camObj.AddComponent<AudioListener>();
+                    }
+                }
+            }
 
-            // Tiếp quản Camera chính của Scene
+            // Tiếp quản Camera nếu không bật chế độ Camera riêng biệt tự do
             if (targetCamera != null)
             {
                 var oldFollow = targetCamera.GetComponent<FollowCam>();
                 if (oldFollow != null) oldFollow.enabled = false;
 
-                targetCamera.transform.SetParent(transform, false);
-                targetCamera.transform.localPosition = Vector3.zero;
-                targetCamera.transform.localRotation = Quaternion.identity;
-
-                if (anchor != null && anchor.config != null)
+                if (!useExternalCamera)
                 {
-                    targetCamera.fieldOfView = anchor.config.cameraFOV;
+                    targetCamera.transform.SetParent(transform, false);
+                    targetCamera.transform.localPosition = Vector3.zero;
+                    targetCamera.transform.localRotation = Quaternion.identity;
+
+                    if (anchor != null && anchor.config != null)
+                    {
+                        targetCamera.fieldOfView = anchor.config.cameraFOV;
+                    }
+                }
+                else
+                {
+                    // Tự động gắn kết Camera riêng biệt vào tàu nhưng GIỮ NGUYÊN 100% góc nhìn World
+                    // Giúp Camera tự động bay bám theo con tàu với đúng cự ly và góc độ người dùng đã đặt trong Scene!
+                    targetCamera.transform.SetParent(transform, true);
                 }
             }
 
@@ -76,6 +111,7 @@ namespace VirtualRail
 
         private void LateUpdate()
         {
+            if (useExternalCamera) return; // Tuyệt đối không can thiệp vị trí, góc xoay hay FOV khi dùng Camera riêng biệt tự do!
             if (anchor == null || anchor.config == null) return;
 
             var cfg = anchor.config;
@@ -119,13 +155,34 @@ namespace VirtualRail
             }
         }
 
+        /// <summary>
+        /// Căn chỉnh tức thì Camera về vị trí và góc nhìn mặc định khi hồi sinh (triệt tiêu 1-frame Lerp Jitter).
+        /// </summary>
+        public void SnapToDefault()
+        {
+            if (useExternalCamera) return;
+            if (anchor == null || anchor.config == null) return;
+            var cfg = anchor.config;
+            transform.localPosition = new Vector3(0f, cfg.cameraHeight, -cfg.cameraDistance);
+            transform.localRotation = Quaternion.Euler(cfg.fixedCameraPitch, 0f, 0f);
+            if (targetCamera != null)
+            {
+                targetCamera.fieldOfView = cfg.cameraFOV;
+                targetCamera.transform.localPosition = Vector3.zero;
+                targetCamera.transform.localRotation = Quaternion.identity;
+            }
+        }
+
         private void OnDestroy()
         {
             if (targetCamera != null)
             {
                 targetCamera.transform.SetParent(null);
-                var oldFollow = targetCamera.GetComponent<FollowCam>();
-                if (oldFollow != null) oldFollow.enabled = true;
+                if (!useExternalCamera)
+                {
+                    var oldFollow = targetCamera.GetComponent<FollowCam>();
+                    if (oldFollow != null) oldFollow.enabled = true;
+                }
             }
         }
     }
