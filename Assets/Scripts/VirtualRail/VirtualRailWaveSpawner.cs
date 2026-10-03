@@ -67,6 +67,7 @@ namespace VirtualRail
         private float _stageWaveInterval = -1f;
         private int _stageFormationInterval = -1;
         private float _stageLeadDistance = -1f;
+        private bool _stageEnablePeriodicWaves = true;
 
         /// <summary>
         /// Nạp thông số bảng quái và các vector xuất hiện theo màn chơi (0 GC Alloc, không dùng default ngầm).
@@ -79,6 +80,7 @@ namespace VirtualRail
             _allowShooting = settings.allowShooting;
             _stageBulletSpeed = settings.bulletSpeed > 1f ? settings.bulletSpeed : 22f;
             _stageEnableFormations = settings.enableFormations && (settings.formationIntervalWaves > 0);
+            _stageEnablePeriodicWaves = settings.enablePeriodicWaves && (settings.waveInterval > 0.1f);
 
             if (settings.waveInterval > 0.1f)
             {
@@ -289,8 +291,8 @@ namespace VirtualRail
             float effectiveInterval = _stageWaveInterval > 0f ? _stageWaveInterval : (cfg != null ? cfg.waveSpawnInterval : waveInterval);
             float effectiveLead = _stageLeadDistance > 0f ? _stageLeadDistance : (cfg != null ? cfg.waveSpawnDistance : spawnLeadDistance);
 
-            // 1. Quét sinh đợt quái mới
-            if (Time.time >= _nextWaveTime)
+            // 1. Quét sinh đợt quái mới (chỉ sinh khi được phép chạy tuần hoàn ngẫu nhiên ở nền)
+            if (_stageEnablePeriodicWaves && Time.time >= _nextWaveTime)
             {
                 SpawnWave(effectiveLead);
                 _nextWaveTime = Time.time + effectiveInterval;

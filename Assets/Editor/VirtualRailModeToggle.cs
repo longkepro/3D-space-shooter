@@ -89,6 +89,14 @@ public class VirtualRailModeToggle
                 EditorUtility.SetDirty(followCam);
             }
 
+            // Vô hiệu hóa Spawner di sản (Enemy Spawner) trong Scene để tránh sinh quái ngẫu nhiên tại gốc (0,0,0)
+            EnemySpawner legacyEnemySpawner = Object.FindAnyObjectByType<EnemySpawner>();
+            if (legacyEnemySpawner != null)
+            {
+                legacyEnemySpawner.gameObject.SetActive(false);
+                EditorUtility.SetDirty(legacyEnemySpawner.gameObject);
+            }
+
             // Đảm bảo có EventSystem trong Scene cho uGUI Touch Joysticks
             if (Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
@@ -135,6 +143,14 @@ public class VirtualRailModeToggle
             {
                 followCam.enabled = true;
                 EditorUtility.SetDirty(followCam);
+            }
+
+            // Bật lại Spawner di sản cũ trong Scene
+            EnemySpawner legacyEnemySpawner = Object.FindAnyObjectByType<EnemySpawner>(FindObjectsInactive.Include);
+            if (legacyEnemySpawner != null)
+            {
+                legacyEnemySpawner.gameObject.SetActive(true);
+                EditorUtility.SetDirty(legacyEnemySpawner.gameObject);
             }
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());

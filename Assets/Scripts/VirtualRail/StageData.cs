@@ -201,6 +201,9 @@ namespace VirtualRail
         [Tooltip("Bảng danh mục Prefab quái riêng của màn chơi (Chỉ sinh những quái có trong danh sách này, rỗng = không sinh quái)")]
         public GameObject[] stageEnemyPrefabs;
 
+        [Tooltip("Bật sinh đợt quái tuần hoàn ngẫu nhiên ở chế độ nền (Tắt để kích hoạt chế độ Level Design thuần Kịch bản Timeline)")]
+        public bool enablePeriodicWaves;
+
         [Tooltip("Chu kỳ xuất hiện đợt quái (giây)")]
         public float waveInterval;
 
@@ -234,6 +237,7 @@ namespace VirtualRail
         public static StageEnemySettings Default => new StageEnemySettings
         {
             stageEnemyPrefabs = null,
+            enablePeriodicWaves = true,
             waveInterval = 3.5f,
             spawnLeadDistance = 220f,
             formationIntervalWaves = 3,
