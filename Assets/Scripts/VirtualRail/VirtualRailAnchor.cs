@@ -196,10 +196,10 @@ namespace VirtualRail
                 bombModule.ResetBombs();
             }
 
-            // 10. Bắt đầu lại Màn 1 qua Nhạc trưởng Stage Director
+            // 10. Bắt đầu lại Màn 1 qua Nhạc trưởng Stage Director (ép buộc reset tiến trình màn chơi)
             if (VirtualRailStageDirector.Instance != null)
             {
-                VirtualRailStageDirector.Instance.StartStage(0);
+                VirtualRailStageDirector.Instance.StartStage(0, true);
             }
         }
 

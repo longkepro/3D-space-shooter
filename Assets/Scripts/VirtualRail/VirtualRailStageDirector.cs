@@ -322,7 +322,11 @@ namespace VirtualRail
             FindReferences();
             if (anchor != null && waveSpawner != null)
             {
-                StartStage(0);
+                // Nếu Anchor.Respawn() đã khởi chạy màn chơi rồi thì không gọi lặp
+                if (currentState != StageState.InJourney)
+                {
+                    StartStage(0);
+                }
             }
             else
             {
@@ -348,14 +352,30 @@ namespace VirtualRail
         /// </summary>
         public void StartStage(int stageIdx)
         {
+            StartStage(stageIdx, false);
+        }
+
+        /// <summary>
+        /// Bắt đầu nạp và khởi chạy một màn chơi cụ thể kèm cờ ép buộc tải lại.
+        /// </summary>
+        public void StartStage(int stageIdx, bool forceReload)
+        {
             FindReferences();
 
             if (stages == null || stages.Length == 0) return;
 
-            currentStageIndex = Mathf.Clamp(stageIdx, 0, stages.Length - 1);
-            StageData stage = stages[currentStageIndex];
+            int targetStageIndex = Mathf.Clamp(stageIdx, 0, stages.Length - 1);
+            StageData stage = stages[targetStageIndex];
             if (stage == null) return;
 
+            // Idempotent Guard: Nếu đã đang bay trong Stage này và không yêu cầu nạp lại ép buộc,
+            // bỏ qua việc re-apply môi trường để triệt tiêu hoàn toàn hiện tượng chớp giật nhấp nháy màn hình.
+            if (!forceReload && currentState == StageState.InJourney && currentStageIndex == targetStageIndex)
+            {
+                return;
+            }
+
+            currentStageIndex = targetStageIndex;
             _pendingStageStart = false;
 
             if (_activeBossInstance != null)
@@ -820,8 +840,9 @@ namespace VirtualRail
         public void ApplyEnvironment(StageEnvironmentSettings env)
         {
             // Skybox: Ưu tiên Skybox của màn, nếu để trống thì fallback về Skybox đen không gian ban đầu
+            // Tối ưu hóa GPU: Chỉ đổi và nướng lại DynamicGI khi Material thực sự thay đổi khác hiện tại
             Material targetSkybox = env.skyboxMaterial != null ? env.skyboxMaterial : defaultSkyboxMaterial;
-            if (targetSkybox != null)
+            if (targetSkybox != null && RenderSettings.skybox != targetSkybox)
             {
                 RenderSettings.skybox = targetSkybox;
                 DynamicGI.UpdateEnvironment();

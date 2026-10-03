@@ -13,6 +13,7 @@ namespace VirtualRail
     /// </summary>
     [ExecuteAlways]
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(100)] // Triệt tiêu hoàn toàn 1-frame jitter: Luôn định vị sau khi CameraRig hoàn tất LateUpdate
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
     public class VirtualRailHorizonBackdrop : MonoBehaviour
     {
@@ -42,6 +43,12 @@ namespace VirtualRail
         private float _lastFOV = -1f;
         private float _lastAspect = -1f;
         private bool _isInitialized = false;
+
+        // Bộ nhớ đệm chống nhấp nháy (GPU Pipeline Flicker-Free Cache - 0 GC Alloc)
+        private Texture2D _appliedTexture = null;
+        private Material _appliedMaterial = null;
+        private float _appliedExposure = -1f;
+        private Color _appliedTint = Color.clear;
 
         public static Material GetOrCreateSharedBaseMaterial()
         {
@@ -76,6 +83,7 @@ namespace VirtualRail
         /// <summary>
         /// Áp dụng cấu hình phông nền màn chơi trực tiếp từ StageEnvironmentSettings.
         /// Tự động chuyển đổi giữa Texture2D trực tiếp (0 GC) và Material tùy biến.
+        /// Chống chớp giật GPU: Bỏ qua gán lại nếu cấu hình không thay đổi.
         /// </summary>
         public void ApplyStageSettings(StageEnvironmentSettings env)
         {
@@ -84,7 +92,12 @@ namespace VirtualRail
 
             if (env.backdropMaterial != null)
             {
+                if (_appliedMaterial == env.backdropMaterial && _mr != null && _mr.enabled) return;
+
                 backdropMaterial = env.backdropMaterial;
+                _appliedMaterial = env.backdropMaterial;
+                _appliedTexture = null;
+
                 if (_mr != null)
                 {
                     _mr.enabled = true;
@@ -94,8 +107,24 @@ namespace VirtualRail
             }
             else if (env.backdropTexture != null)
             {
+                float targetExposure = env.backdropExposure > 0.01f ? env.backdropExposure : 1.0f;
+                Color targetTint = env.backdropTint.a > 0.01f ? env.backdropTint : Color.white;
+
+                if (_appliedTexture == env.backdropTexture &&
+                    Mathf.Abs(_appliedExposure - targetExposure) < 0.005f &&
+                    _appliedTint == targetTint &&
+                    _mr != null && _mr.enabled)
+                {
+                    return; // Đã áp dụng Texture này, bỏ qua để triệt tiêu chớp giật GPU
+                }
+
                 Material baseMat = GetOrCreateSharedBaseMaterial();
                 backdropMaterial = baseMat;
+                _appliedMaterial = null;
+                _appliedTexture = env.backdropTexture;
+                _appliedExposure = targetExposure;
+                _appliedTint = targetTint;
+
                 if (_mr != null)
                 {
                     _mr.enabled = true;
@@ -103,14 +132,15 @@ namespace VirtualRail
 
                     _propBlock.Clear();
                     _propBlock.SetTexture(MainTexProp, env.backdropTexture);
-                    _propBlock.SetFloat(ExposureProp, env.backdropExposure > 0.01f ? env.backdropExposure : 1.0f);
-                    Color tint = env.backdropTint.a > 0.01f ? env.backdropTint : Color.white;
-                    _propBlock.SetColor(TintProp, tint);
+                    _propBlock.SetFloat(ExposureProp, targetExposure);
+                    _propBlock.SetColor(TintProp, targetTint);
                     _mr.SetPropertyBlock(_propBlock);
                 }
             }
             else
             {
+                _appliedMaterial = null;
+                _appliedTexture = null;
                 backdropMaterial = null;
                 if (_mr != null)
                 {
@@ -122,6 +152,8 @@ namespace VirtualRail
         public void SetBackdropMaterial(Material mat)
         {
             backdropMaterial = mat;
+            _appliedMaterial = mat;
+            _appliedTexture = null;
             if (_mr == null) _mr = GetComponent<MeshRenderer>();
             if (_mr != null)
             {
