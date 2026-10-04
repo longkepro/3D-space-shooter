@@ -34,6 +34,7 @@ namespace VirtualRail
         private const float FLASH_DURATION = 0.08f;
         private Color _originalColor = Color.white;
         private bool _isFlashing = false;
+        private float _invulnerableTimer = 0f;
 
         private EnemyMovement _movement;
         private FormationWingman _wingman;
@@ -193,6 +194,19 @@ namespace VirtualRail
                     _shieldRenderer.SetPropertyBlock(_shieldPropBlock);
                 }
             }
+
+            if (_invulnerableTimer > 0f)
+            {
+                _invulnerableTimer -= Time.deltaTime;
+            }
+        }
+
+        /// <summary>
+        /// Kích hoạt cửa sổ bất hoại ngắn (Grace Period) để tránh bị nổ lan chết oan khi Tàu Chỉ Huy nổ cạnh bên.
+        /// </summary>
+        public void TriggerInvulnerability(float duration)
+        {
+            _invulnerableTimer = Mathf.Max(_invulnerableTimer, duration);
         }
 
         private void TriggerShieldFlash()
@@ -231,6 +245,7 @@ namespace VirtualRail
         public bool TakeDamage(int rawDamage, Vector3 hitPoint, Vector3 hitDirection)
         {
             if (_isDead) return true;
+            if (_invulnerableTimer > 0f) return false;
 
             // 1. Kiểm tra lá chắn năng lượng liên kết Chỉ Huy
             if (_isShieldActive)
@@ -325,6 +340,7 @@ namespace VirtualRail
         {
             _isDead = false;
             _isFlashing = false;
+            _invulnerableTimer = 0f;
             SetShieldActive(false);
             ResetColor();
             if (_data != null)

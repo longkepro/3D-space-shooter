@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
+  m_Name: Formation_PulsarDipole
+  m_EditorClassIdentifier: 
+  patternName: Pulsar Dipole (9 Ships)
+  slots:
+  - slotName: Magnetar Singularity
+    localOffset: {x: 0, y: 0, z: 0}
+    preferredArchetype: 3
+    isLeader: 1
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Loop Inner
+    localOffset: {x: -4, y: 5, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Loop Apex
+    localOffset: {x: -10, y: 4, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Loop Outer
+    localOffset: {x: -12, y: 0, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Loop Base
+    localOffset: {x: -7, y: -4, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Loop Inner
+    localOffset: {x: 4, y: 5, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Loop Apex
+    localOffset: {x: 10, y: 4, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Loop Outer
+    localOffset: {x: 12, y: 0, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Loop Base
+    localOffset: {x: 7, y: -4, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  assemblyTime: 1.5
+  swaySpeed: 2
+  swayAmplitudeX: 15
+  bankingAngle: 32
+  holdDistance: 65
+  maxClosingSpeed: 25
+  maxLifetime: 14
+  leaderDeathReaction: 4

@@ -14,7 +14,7 @@ namespace VirtualRail.EditorScripts
     /// 4. Danh sách quản lý slot trực quan không cần viết code.
     /// </summary>
     [CustomEditor(typeof(FormationPattern))]
-    public class FormationPatternEditor : Editor
+    public class FormationPatternEditor : UnityEditor.Editor
     {
         private SerializedProperty _patternNameProp;
         private SerializedProperty _slotsProp;
@@ -73,6 +73,12 @@ namespace VirtualRail.EditorScripts
             // 2. Mini Top-down Radar Preview
             DrawTopDownRadarPreview(pattern);
 
+            EditorGUILayout.Space(3);
+            if (GUILayout.Button("🛸 MỞ SCENE VIEW 3D PREVIEWER (XEM TRƯỚC THỜI GIAN THỰC)", GUILayout.Height(30)))
+            {
+                FormationSceneViewPreviewer.OpenWithPattern(pattern);
+            }
+
             EditorGUILayout.Space(6);
 
             // 3. One-Click Quick Presets
@@ -119,10 +125,9 @@ namespace VirtualRail.EditorScripts
             EditorGUILayout.Space(6);
 
             // 4. Slot Matrix Table
-            _showSlotsFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showSlotsFold, $"1. Slot Matrix (Danh sách {pattern.ShipCount} vị trí tàu)");
+            _showSlotsFold = DrawSectionHeader(_showSlotsFold, $"1. Slot Matrix (Danh sách {pattern.ShipCount} vị trí tàu)");
             if (_showSlotsFold)
             {
-                EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 {
                     for (int i = 0; i < _slotsProp.arraySize; i++)
@@ -134,13 +139,25 @@ namespace VirtualRail.EditorScripts
                         SerializedProperty isLeader = slot.FindPropertyRelative("isLeader");
                         SerializedProperty scale = slot.FindPropertyRelative("scaleMultiplier");
 
+                        bool isSelected = FormationEditorSelection.IsSelected(pattern, i);
+                        if (isSelected) GUI.backgroundColor = new Color(1f, 0.95f, 0.5f, 1f);
                         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                        if (isSelected) GUI.backgroundColor = Color.white;
+
                         EditorGUILayout.BeginHorizontal();
                         {
                             string badge = isLeader.boolValue ? "👑 [LEADER]" : $"[SLOT {i}]";
                             EditorGUILayout.LabelField($"{badge} {slotName.stringValue}", EditorStyles.boldLabel);
+
+                            if (GUILayout.Button(isSelected ? "🎯 ĐANG CHỌN" : "Chọn", EditorStyles.miniButton, GUILayout.Width(80)))
+                            {
+                                FormationEditorSelection.Select(pattern, i);
+                                SceneView.RepaintAll();
+                            }
+
                             if (GUILayout.Button("X", GUILayout.Width(24)))
                             {
+                                if (isSelected) FormationEditorSelection.Clear();
                                 _slotsProp.DeleteArrayElementAtIndex(i);
                                 break;
                             }
@@ -162,24 +179,23 @@ namespace VirtualRail.EditorScripts
                         _slotsProp.arraySize++;
                         SerializedProperty newSlot = _slotsProp.GetArrayElementAtIndex(_slotsProp.arraySize - 1);
                         newSlot.FindPropertyRelative("slotName").stringValue = $"Wingman {_slotsProp.arraySize - 1}";
-                        newSlot.FindPropertyRelative("localOffset").vector3Value = new Vector3(0f, 0f, -(_slotsProp.arraySize - 1) * 6f);
+                        newSlot.FindPropertyRelative("localOffset").vector3Value = Vector3.zero;
                         newSlot.FindPropertyRelative("preferredArchetype").enumValueIndex = (int)EnemyArchetype.Flanker;
                         newSlot.FindPropertyRelative("isLeader").boolValue = false;
                         newSlot.FindPropertyRelative("scaleMultiplier").floatValue = 1.0f;
+                        FormationEditorSelection.Select(pattern, _slotsProp.arraySize - 1);
+                        SceneView.RepaintAll();
                     }
                 }
                 EditorGUILayout.EndVertical();
-                EditorGUI.indentLevel--;
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(6);
 
             // 5. Flight Dynamics
-            _showDynamicsFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showDynamicsFold, "2. Flight Dynamics (Động Lực Học Bay Cả Đội)");
+            _showDynamicsFold = DrawSectionHeader(_showDynamicsFold, "2. Flight Dynamics (Động Lực Học Bay Cả Đội)");
             if (_showDynamicsFold)
             {
-                EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 {
                     EditorGUILayout.PropertyField(_assemblyTimeProp, new GUIContent("Assembly Time (s)", "Thời gian ráp nối Bézier khi nhập đội"));
@@ -191,23 +207,22 @@ namespace VirtualRail.EditorScripts
                     EditorGUILayout.PropertyField(_maxLifetimeProp, new GUIContent("Max Lifetime (s)"));
                 }
                 EditorGUILayout.EndVertical();
-                EditorGUI.indentLevel--;
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(6);
 
             // 6. Tactical Behavior
-            _showTacticalFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showTacticalFold, "3. Tactical Reaction (Phản Ứng Khi Chỉ Huy Bị Hạ)");
+            _showTacticalFold = DrawSectionHeader(_showTacticalFold, "3. Tactical Reaction (Phản Ứng Khi Chỉ Huy Bị Hạ)");
             if (_showTacticalFold)
             {
-                EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 {
                     EditorGUILayout.PropertyField(_leaderDeathReactionProp, new GUIContent("Leader Death Reaction"));
                     LeaderDeathReaction react = (LeaderDeathReaction)_leaderDeathReactionProp.enumValueIndex;
                     string hint = react switch
                     {
+                        LeaderDeathReaction.MaintainFormation => "Đội hình KHÔNG tan rã. Tàu cánh mất khiên nhưng giữ nguyên 100% cự ly và hình khối, tiếp tục chiến đấu!",
+                        LeaderDeathReaction.BreakShieldAndEngage => "Mất khiên bảo vệ, thoát khỏi đội hình và tiếp tục chiến đấu tự do.",
                         LeaderDeathReaction.PanicScatter => "Tất cả tàu cánh mất khiên và hoảng loạn bẻ lái dạt biên thoát ly (Chuẩn Star Fox 64).",
                         LeaderDeathReaction.RetreatWarp => "Tất cả tàu cánh lập tức tăng tốc bứt phá vọt ra sau biến mất khỏi màn chơi.",
                         LeaderDeathReaction.KamikazeCharge => "Tất cả tàu cánh mất khiên và lao thẳng cảm tử vào tàu người chơi!",
@@ -216,55 +231,352 @@ namespace VirtualRail.EditorScripts
                     EditorGUILayout.HelpBox(hint, MessageType.None);
                 }
                 EditorGUILayout.EndVertical();
-                EditorGUI.indentLevel--;
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             serializedObject.ApplyModifiedProperties();
         }
 
+        private static bool DrawSectionHeader(bool foldout, string title)
+        {
+            EditorGUILayout.Space(4);
+            Rect rect = EditorGUILayout.GetControlRect(false, 24f);
+
+            EditorGUI.DrawRect(rect, new Color(0.18f, 0.22f, 0.28f, 1f));
+
+            GUIStyle style = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 11,
+                normal = { textColor = new Color(0.9f, 0.95f, 1f) },
+                alignment = TextAnchor.MiddleLeft
+            };
+
+            Rect foldoutRect = new Rect(rect.x + 6f, rect.y + 2f, rect.width - 12f, rect.height - 4f);
+            return EditorGUI.Foldout(foldoutRect, foldout, title, true, style);
+        }
+
+        private enum RadarPlaneMode
+        {
+            FrontalXY = 0, // Kính ngắm Chính diện (Mặc định)
+            TopDownXZ = 1  // Nhìn từ trên xuống
+        }
+        private static RadarPlaneMode _radarPlaneMode = RadarPlaneMode.FrontalXY;
+        private static bool _isDragging2D = false;
+        private static int _draggedSlotIndex = -1;
+        private static float _radarScale = 4.5f;
+
         private void DrawTopDownRadarPreview(FormationPattern pattern)
         {
-            if (pattern.slots == null || pattern.slots.Length == 0) return;
+            if (pattern.slots == null) pattern.slots = Array.Empty<FormationSlotDefinition>();
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.LabelField("🗺️ Top-Down Radar View (Góc nhìn từ trên xuống)", EditorStyles.miniBoldLabel);
+            EditorGUILayout.BeginHorizontal();
+            {
+                string title = _radarPlaneMode == RadarPlaneMode.FrontalXY
+                    ? "🎯 Frontal HUD View (Kính ngắm Chính diện XY: X Ngang, Y Đứng)"
+                    : "🗺️ Top-Down Radar View (Góc nhìn từ trên xuống XZ)";
+                EditorGUILayout.LabelField(title, EditorStyles.miniBoldLabel);
+
+                EditorGUILayout.LabelField("Zoom:", GUILayout.Width(40));
+                _radarScale = EditorGUILayout.Slider(_radarScale, 2.0f, 8.0f, GUILayout.Width(110));
+
+                if (GUILayout.Button(_radarPlaneMode == RadarPlaneMode.FrontalXY ? "Đổi sang XZ (Mặt đất)" : "Đổi sang XY (Kính ngắm)", EditorStyles.miniButton, GUILayout.Width(130)))
+                {
+                    _radarPlaneMode = _radarPlaneMode == RadarPlaneMode.FrontalXY ? RadarPlaneMode.TopDownXZ : RadarPlaneMode.FrontalXY;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
 
             float width = EditorGUIUtility.currentViewWidth - 40f;
-            float height = 150f;
+            float height = 180f;
             Rect radarRect = GUILayoutUtility.GetRect(width, height);
-            EditorGUI.DrawRect(radarRect, new Color(0.08f, 0.12f, 0.18f, 1f));
+            EditorGUI.DrawRect(radarRect, new Color(0.05f, 0.08f, 0.12f, 1f));
 
-            Vector2 center = new Vector2(radarRect.x + radarRect.width * 0.5f, radarRect.y + 35f);
+            Vector2 center = new Vector2(radarRect.x + radarRect.width * 0.5f, radarRect.y + radarRect.height * 0.5f);
+            Vector2 topCenter = new Vector2(radarRect.x + radarRect.width * 0.5f, radarRect.y + 35f);
 
-            // Vẽ trục tâm
-            Handles.color = new Color(0.3f, 0.4f, 0.5f, 0.5f);
-            Handles.DrawLine(new Vector3(radarRect.x, center.y, 0f), new Vector3(radarRect.x + radarRect.width, center.y, 0f));
-            Handles.DrawLine(new Vector3(center.x, radarRect.y, 0f), new Vector3(center.x, radarRect.y + radarRect.height, 0f));
+            int controlID = GUIUtility.GetControlID(FocusType.Passive);
+            Event evt = Event.current;
 
-            // Tỉ lệ scale mét sang pixel
-            float scale = 3.2f;
+            // Xử lý tương tác Chuột và Phím tắt
+            if (evt.type == EventType.MouseDown && radarRect.Contains(evt.mousePosition))
+            {
+                if (evt.button == 0) // Click chuột trái
+                {
+                    int hitSlot = -1;
+                    for (int i = pattern.slots.Length - 1; i >= 0; i--)
+                    {
+                        var slot = pattern.slots[i];
+                        Vector2 sPos = (_radarPlaneMode == RadarPlaneMode.FrontalXY)
+                            ? center + new Vector2(slot.localOffset.x * _radarScale, -slot.localOffset.y * _radarScale)
+                            : topCenter + new Vector2(slot.localOffset.x * _radarScale, -slot.localOffset.z * _radarScale);
 
+                        if (Vector2.Distance(evt.mousePosition, sPos) <= 14f)
+                        {
+                            hitSlot = i;
+                            break;
+                        }
+                    }
+
+                    if (hitSlot >= 0)
+                    {
+                        FormationEditorSelection.Select(pattern, hitSlot);
+                        _isDragging2D = true;
+                        _draggedSlotIndex = hitSlot;
+                        Undo.RecordObject(pattern, "Drag Formation Slot");
+                        GUIUtility.hotControl = controlID;
+                        evt.Use();
+                        SceneView.RepaintAll();
+                    }
+                    else
+                    {
+                        if (evt.clickCount == 2)
+                        {
+                            // Double-click vào khoảng trống để thêm tàu mới ngay tại vị trí con trỏ
+                            Undo.RecordObject(pattern, "Add Formation Slot at Cursor");
+                            Vector3 newOffset;
+                            if (_radarPlaneMode == RadarPlaneMode.FrontalXY)
+                            {
+                                float lx = (evt.mousePosition.x - center.x) / _radarScale;
+                                float ly = -(evt.mousePosition.y - center.y) / _radarScale;
+                                if (evt.control)
+                                {
+                                    lx = Mathf.Round(lx);
+                                    ly = Mathf.Round(ly);
+                                }
+                                newOffset = new Vector3(lx, ly, 0f);
+                            }
+                            else
+                            {
+                                float lx = (evt.mousePosition.x - topCenter.x) / _radarScale;
+                                float lz = -(evt.mousePosition.y - topCenter.y) / _radarScale;
+                                if (evt.control)
+                                {
+                                    lx = Mathf.Round(lx);
+                                    lz = Mathf.Round(lz);
+                                }
+                                newOffset = new Vector3(lx, 0f, lz);
+                            }
+
+                            var list = new System.Collections.Generic.List<FormationSlotDefinition>(pattern.slots);
+                            int newIdx = list.Count;
+                            list.Add(new FormationSlotDefinition
+                            {
+                                slotName = $"Wingman {newIdx}",
+                                localOffset = newOffset,
+                                preferredArchetype = EnemyArchetype.Flanker,
+                                isLeader = false,
+                                scaleMultiplier = 1.0f
+                            });
+                            pattern.slots = list.ToArray();
+                            FormationEditorSelection.Select(pattern, newIdx);
+                            EditorUtility.SetDirty(pattern);
+                            serializedObject.Update();
+                            evt.Use();
+                            SceneView.RepaintAll();
+                        }
+                        else
+                        {
+                            FormationEditorSelection.Clear();
+                            evt.Use();
+                            SceneView.RepaintAll();
+                        }
+                    }
+                }
+            }
+            else if (evt.type == EventType.MouseDrag && _isDragging2D && GUIUtility.hotControl == controlID)
+            {
+                if (_draggedSlotIndex >= 0 && _draggedSlotIndex < pattern.slots.Length)
+                {
+                    if (_radarPlaneMode == RadarPlaneMode.FrontalXY)
+                    {
+                        float lx = (evt.mousePosition.x - center.x) / _radarScale;
+                        float ly = -(evt.mousePosition.y - center.y) / _radarScale;
+                        if (evt.control)
+                        {
+                            lx = Mathf.Round(lx);
+                            ly = Mathf.Round(ly);
+                        }
+                        pattern.slots[_draggedSlotIndex].localOffset = new Vector3(lx, ly, 0f);
+                    }
+                    else
+                    {
+                        float lx = (evt.mousePosition.x - topCenter.x) / _radarScale;
+                        float lz = -(evt.mousePosition.y - topCenter.y) / _radarScale;
+                        if (evt.control)
+                        {
+                            lx = Mathf.Round(lx);
+                            lz = Mathf.Round(lz);
+                        }
+                        pattern.slots[_draggedSlotIndex].localOffset = new Vector3(lx, 0f, lz);
+                    }
+
+                    EditorUtility.SetDirty(pattern);
+                    serializedObject.Update();
+                    evt.Use();
+                    SceneView.RepaintAll();
+                }
+            }
+            else if (evt.type == EventType.MouseUp && _isDragging2D)
+            {
+                _isDragging2D = false;
+                _draggedSlotIndex = -1;
+                GUIUtility.hotControl = 0;
+                evt.Use();
+            }
+            else if (evt.type == EventType.KeyDown)
+            {
+                if (evt.keyCode == KeyCode.Delete || evt.keyCode == KeyCode.Backspace)
+                {
+                    if (FormationEditorSelection.ActivePattern == pattern &&
+                        FormationEditorSelection.SelectedSlotIndex >= 0 &&
+                        FormationEditorSelection.SelectedSlotIndex < pattern.slots.Length)
+                    {
+                        Undo.RecordObject(pattern, "Delete Formation Slot");
+                        var list = new System.Collections.Generic.List<FormationSlotDefinition>(pattern.slots);
+                        list.RemoveAt(FormationEditorSelection.SelectedSlotIndex);
+                        pattern.slots = list.ToArray();
+                        FormationEditorSelection.Clear();
+                        EditorUtility.SetDirty(pattern);
+                        serializedObject.Update();
+                        evt.Use();
+                        SceneView.RepaintAll();
+                    }
+                }
+            }
+
+            // VẼ NỀN TÂM NGẮM & LƯỚI TỌA ĐỘ
+            if (_radarPlaneMode == RadarPlaneMode.FrontalXY)
+            {
+                // Vòng cự ly ngắm (Reticle Rings)
+                Handles.color = new Color(0.15f, 0.45f, 0.65f, 0.25f);
+                Handles.DrawWireDisc(new Vector3(center.x, center.y, 0f), Vector3.forward, 5f * _radarScale);
+                Handles.DrawWireDisc(new Vector3(center.x, center.y, 0f), Vector3.forward, 10f * _radarScale);
+                Handles.DrawWireDisc(new Vector3(center.x, center.y, 0f), Vector3.forward, 15f * _radarScale);
+                Handles.DrawWireDisc(new Vector3(center.x, center.y, 0f), Vector3.forward, 20f * _radarScale);
+
+                // Trục tâm chữ thập chính
+                Handles.color = new Color(0.25f, 0.65f, 0.85f, 0.55f);
+                Handles.DrawLine(new Vector3(radarRect.x, center.y, 0f), new Vector3(radarRect.x + radarRect.width, center.y, 0f));
+                Handles.DrawLine(new Vector3(center.x, radarRect.y, 0f), new Vector3(center.x, radarRect.y + radarRect.height, 0f));
+
+                // Lưới phụ đứt đoạn (Grid ticks mỗi 5m)
+                Handles.color = new Color(0.2f, 0.5f, 0.7f, 0.2f);
+                for (float m = -30f; m <= 30f; m += 5f)
+                {
+                    if (Mathf.Abs(m) < 0.1f) continue;
+                    float gx = center.x + (m * _radarScale);
+                    if (gx >= radarRect.x && gx <= radarRect.x + radarRect.width)
+                    {
+                        Handles.DrawLine(new Vector3(gx, center.y - 4f, 0f), new Vector3(gx, center.y + 4f, 0f));
+                    }
+                    float gy = center.y - (m * _radarScale);
+                    if (gy >= radarRect.y && gy <= radarRect.y + radarRect.height)
+                    {
+                        Handles.DrawLine(new Vector3(center.x - 4f, gy, 0f), new Vector3(center.x + 4f, gy, 0f));
+                    }
+                }
+            }
+            else
+            {
+                // VẼ GÓC NHÌN TỪ TRÊN XUỐNG XZ (TOP-DOWN)
+                Handles.color = new Color(0.3f, 0.5f, 0.7f, 0.5f);
+                Handles.DrawLine(new Vector3(radarRect.x, topCenter.y, 0f), new Vector3(radarRect.x + radarRect.width, topCenter.y, 0f));
+                Handles.DrawLine(new Vector3(topCenter.x, radarRect.y, 0f), new Vector3(topCenter.x, radarRect.y + radarRect.height, 0f));
+            }
+
+            // VẼ TỪNG CON TÀU
             for (int i = 0; i < pattern.slots.Length; i++)
             {
                 var slot = pattern.slots[i];
-                // LocalOffset: X là ngang, Z là chiều sâu (-Z là ở phía sau leader)
-                Vector2 shipPos = center + new Vector2(slot.localOffset.x * scale, -slot.localOffset.z * scale);
+                Vector2 shipPos = (_radarPlaneMode == RadarPlaneMode.FrontalXY)
+                    ? center + new Vector2(slot.localOffset.x * _radarScale, -slot.localOffset.y * _radarScale)
+                    : topCenter + new Vector2(slot.localOffset.x * _radarScale, -slot.localOffset.z * _radarScale);
 
-                Color shipColor = slot.isLeader ? new Color(1f, 0.85f, 0.2f) : new Color(0.2f, 0.8f, 1f);
-                if (slot.preferredArchetype == EnemyArchetype.ShieldBearer) shipColor = new Color(0.3f, 1f, 0.4f);
-                if (slot.preferredArchetype == EnemyArchetype.Interceptor) shipColor = new Color(1f, 0.3f, 0.3f);
+                bool isSelected = FormationEditorSelection.IsSelected(pattern, i);
 
-                float size = slot.isLeader ? 10f : 7f;
+                Color shipColor = slot.isLeader ? new Color(1f, 0.85f, 0.2f) : new Color(0.2f, 0.85f, 1f);
+                if (slot.preferredArchetype == EnemyArchetype.ShieldBearer) shipColor = new Color(0.85f, 0.35f, 1f);
+                if (slot.preferredArchetype == EnemyArchetype.Interceptor) shipColor = new Color(1f, 0.35f, 0.35f);
+
+                float size = slot.isLeader ? 12f : 9f;
+
+                // Nếu slot đang được chọn: Vẽ vòng hào quang / viền nổi bật
+                if (isSelected)
+                {
+                    Handles.color = Color.yellow;
+                    Handles.DrawWireDisc(new Vector3(shipPos.x, shipPos.y, 0f), Vector3.forward, size + 5f);
+                    Handles.DrawWireDisc(new Vector3(shipPos.x, shipPos.y, 0f), Vector3.forward, size + 2f);
+                }
+
                 Rect shipRect = new Rect(shipPos.x - size * 0.5f, shipPos.y - size * 0.5f, size, size);
-                EditorGUI.DrawRect(shipRect, shipColor);
+                EditorGUI.DrawRect(shipRect, isSelected ? Color.white : shipColor);
 
+                // Nhãn thông tin tàu
                 GUIStyle lblStyle = new GUIStyle(EditorStyles.miniLabel)
                 {
-                    normal = { textColor = shipColor },
-                    fontSize = 9
+                    normal = { textColor = isSelected ? Color.yellow : shipColor },
+                    fontSize = isSelected ? 10 : 9,
+                    fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal
                 };
-                GUI.Label(new Rect(shipPos.x + 6f, shipPos.y - 8f, 70f, 16f), slot.slotName, lblStyle);
+
+                string coords = _radarPlaneMode == RadarPlaneMode.FrontalXY
+                    ? $"({slot.localOffset.x:F1}, {slot.localOffset.y:F1})"
+                    : $"({slot.localOffset.x:F1}, {slot.localOffset.z:F1})";
+                string slotLabel = isSelected ? $"★ {slot.slotName} {coords}" : $"{slot.slotName}";
+                GUI.Label(new Rect(shipPos.x + 8f, shipPos.y - 8f, 140f, 16f), slotLabel, lblStyle);
+            }
+
+            // Thanh Action Bar & Hướng dẫn bên dưới HUD
+            EditorGUILayout.Space(2);
+            if (FormationEditorSelection.ActivePattern == pattern &&
+                FormationEditorSelection.SelectedSlotIndex >= 0 &&
+                FormationEditorSelection.SelectedSlotIndex < pattern.slots.Length)
+            {
+                int selIdx = FormationEditorSelection.SelectedSlotIndex;
+                var selSlot = pattern.slots[selIdx];
+
+                EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+                {
+                    string info = $"🎯 ĐANG CHỌN: [{selIdx}] {selSlot.slotName} | X: {selSlot.localOffset.x:F1}m, Y: {selSlot.localOffset.y:F1}m, Z: {selSlot.localOffset.z:F1}m";
+                    EditorGUILayout.LabelField(info, EditorStyles.boldLabel);
+
+                    if (GUILayout.Button("👑 Đặt Leader", EditorStyles.miniButton, GUILayout.Width(90)))
+                    {
+                        Undo.RecordObject(pattern, "Set As Leader");
+                        for (int k = 0; k < pattern.slots.Length; k++)
+                        {
+                            pattern.slots[k].isLeader = (k == selIdx);
+                        }
+                        EditorUtility.SetDirty(pattern);
+                        serializedObject.Update();
+                    }
+
+                    if (GUILayout.Button("🪞 Đảo X", EditorStyles.miniButton, GUILayout.Width(60)))
+                    {
+                        Undo.RecordObject(pattern, "Mirror Slot X");
+                        pattern.slots[selIdx].localOffset.x = -pattern.slots[selIdx].localOffset.x;
+                        EditorUtility.SetDirty(pattern);
+                        serializedObject.Update();
+                        SceneView.RepaintAll();
+                    }
+
+                    if (GUILayout.Button("🗑️ Xóa", EditorStyles.miniButton, GUILayout.Width(55)))
+                    {
+                        Undo.RecordObject(pattern, "Delete Slot");
+                        var list = new System.Collections.Generic.List<FormationSlotDefinition>(pattern.slots);
+                        list.RemoveAt(selIdx);
+                        pattern.slots = list.ToArray();
+                        FormationEditorSelection.Clear();
+                        EditorUtility.SetDirty(pattern);
+                        serializedObject.Update();
+                        SceneView.RepaintAll();
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("💡 Kéo chuột để di chuyển tàu | Double Click vùng trống để thêm tàu mới | Phím Delete để xóa | Giữ Ctrl để bắt dính lưới (Snap 1m)", MessageType.None);
             }
 
             EditorGUILayout.EndVertical();
@@ -272,47 +584,47 @@ namespace VirtualRail.EditorScripts
 
         private void ApplyPresetWedgeV()
         {
-            Undo.RecordObject(target, "Apply Wedge V Preset");
+            Undo.RecordObject(target, "Apply Wedge V Preset (Coplanar XY)");
             _slotsProp.arraySize = 5;
 
-            SetSlot(0, "Leader", Vector3.zero, EnemyArchetype.SquadLeader, true, 1.35f);
-            SetSlot(1, "Left Wing 1", new Vector3(-7f, 0f, -8f), EnemyArchetype.ShieldBearer, false, 1.0f);
-            SetSlot(2, "Right Wing 1", new Vector3(7f, 0f, -8f), EnemyArchetype.ShieldBearer, false, 1.0f);
-            SetSlot(3, "Left Wing 2", new Vector3(-14f, 0f, -16f), EnemyArchetype.Scout, false, 1.0f);
-            SetSlot(4, "Right Wing 2", new Vector3(14f, 0f, -16f), EnemyArchetype.Scout, false, 1.0f);
+            SetSlot(0, "Leader", new Vector3(0f, -2.0f, 0f), EnemyArchetype.SquadLeader, true, 1.0f);
+            SetSlot(1, "Left Wing 1", new Vector3(-8f, 2.0f, 0f), EnemyArchetype.ShieldBearer, false, 1.0f);
+            SetSlot(2, "Right Wing 1", new Vector3(8f, 2.0f, 0f), EnemyArchetype.ShieldBearer, false, 1.0f);
+            SetSlot(3, "Left Wing 2", new Vector3(-16f, 6.0f, 0f), EnemyArchetype.Scout, false, 1.0f);
+            SetSlot(4, "Right Wing 2", new Vector3(16f, 6.0f, 0f), EnemyArchetype.Scout, false, 1.0f);
         }
 
         private void ApplyPresetEchelonLine()
         {
-            Undo.RecordObject(target, "Apply Echelon Line Preset");
+            Undo.RecordObject(target, "Apply Echelon Line Preset (Coplanar XY)");
             _slotsProp.arraySize = 3;
 
-            SetSlot(0, "Leader", Vector3.zero, EnemyArchetype.SquadLeader, true, 1.35f);
-            SetSlot(1, "Left Wing", new Vector3(-10f, 0f, -4f), EnemyArchetype.Flanker, false, 1.0f);
-            SetSlot(2, "Right Wing", new Vector3(10f, 0f, -4f), EnemyArchetype.Flanker, false, 1.0f);
+            SetSlot(0, "Leader", new Vector3(0f, 0f, 0f), EnemyArchetype.SquadLeader, true, 1.0f);
+            SetSlot(1, "Left Wing", new Vector3(-12f, 2.5f, 0f), EnemyArchetype.Flanker, false, 1.0f);
+            SetSlot(2, "Right Wing", new Vector3(12f, -2.5f, 0f), EnemyArchetype.Flanker, false, 1.0f);
         }
 
         private void ApplyPresetDiamond()
         {
-            Undo.RecordObject(target, "Apply Diamond Preset");
+            Undo.RecordObject(target, "Apply Diamond Preset (Coplanar XY)");
             _slotsProp.arraySize = 4;
 
-            SetSlot(0, "Apex Leader", Vector3.zero, EnemyArchetype.SquadLeader, true, 1.35f);
-            SetSlot(1, "Left Guard", new Vector3(-6f, 0f, -6f), EnemyArchetype.ShieldBearer, false, 1.0f);
-            SetSlot(2, "Right Guard", new Vector3(6f, 0f, -6f), EnemyArchetype.ShieldBearer, false, 1.0f);
-            SetSlot(3, "Rear Anchor", new Vector3(0f, 0f, -12f), EnemyArchetype.Interceptor, false, 1.0f);
+            SetSlot(0, "Apex Leader", new Vector3(0f, 5f, 0f), EnemyArchetype.SquadLeader, true, 1.0f);
+            SetSlot(1, "Left Guard", new Vector3(-8f, 0f, 0f), EnemyArchetype.ShieldBearer, false, 1.0f);
+            SetSlot(2, "Right Guard", new Vector3(8f, 0f, 0f), EnemyArchetype.ShieldBearer, false, 1.0f);
+            SetSlot(3, "Rear Anchor", new Vector3(0f, -5f, 0f), EnemyArchetype.Interceptor, false, 1.0f);
         }
 
         private void ApplyPresetSpiralStream()
         {
-            Undo.RecordObject(target, "Apply Spiral Stream Preset");
+            Undo.RecordObject(target, "Apply Wave Stream Preset (Coplanar XY)");
             _slotsProp.arraySize = 5;
 
-            SetSlot(0, "Head", Vector3.zero, EnemyArchetype.SquadLeader, true, 1.25f);
-            SetSlot(1, "Segment 1", new Vector3(6f, 3f, -10f), EnemyArchetype.Interceptor, false, 1.0f);
-            SetSlot(2, "Segment 2", new Vector3(0f, 6f, -20f), EnemyArchetype.Interceptor, false, 1.0f);
-            SetSlot(3, "Segment 3", new Vector3(-6f, 3f, -30f), EnemyArchetype.Interceptor, false, 1.0f);
-            SetSlot(4, "Segment 4", new Vector3(-6f, -3f, -40f), EnemyArchetype.Interceptor, false, 1.0f);
+            SetSlot(0, "Head", new Vector3(0f, 0f, 0f), EnemyArchetype.SquadLeader, true, 1.0f);
+            SetSlot(1, "Segment 1", new Vector3(7f, 4f, 0f), EnemyArchetype.Interceptor, false, 1.0f);
+            SetSlot(2, "Segment 2", new Vector3(12f, 0f, 0f), EnemyArchetype.Interceptor, false, 1.0f);
+            SetSlot(3, "Segment 3", new Vector3(7f, -4f, 0f), EnemyArchetype.Interceptor, false, 1.0f);
+            SetSlot(4, "Segment 4", new Vector3(0f, -8f, 0f), EnemyArchetype.Interceptor, false, 1.0f);
         }
 
         private void AutoMirrorSlots()
@@ -382,7 +694,7 @@ namespace VirtualRail.EditorScripts
                 AssetDatabase.CreateFolder("Assets/Scripts", "VirtualRail");
             }
 
-            // 1. Wedge V
+            // 1. Wedge V (Coplanar XY)
             CreateOrUpdateAsset($"{folder}/Formation_WedgeV.asset", "Wedge V Formation", pattern =>
             {
                 pattern.patternName = "Wedge V (5 Ships)";
@@ -394,15 +706,15 @@ namespace VirtualRail.EditorScripts
                 pattern.leaderDeathReaction = LeaderDeathReaction.PanicScatter;
                 pattern.slots = new FormationSlotDefinition[]
                 {
-                    new FormationSlotDefinition { slotName = "Leader", localOffset = Vector3.zero, preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.35f },
-                    new FormationSlotDefinition { slotName = "Left Wing 1", localOffset = new Vector3(-7f, 0f, -8f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Right Wing 1", localOffset = new Vector3(7f, 0f, -8f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Left Wing 2", localOffset = new Vector3(-14f, 0f, -16f), preferredArchetype = EnemyArchetype.Scout, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Right Wing 2", localOffset = new Vector3(14f, 0f, -16f), preferredArchetype = EnemyArchetype.Scout, isLeader = false, scaleMultiplier = 1.0f }
+                    new FormationSlotDefinition { slotName = "Leader", localOffset = new Vector3(0f, -2.0f, 0f), preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Left Wing 1", localOffset = new Vector3(-8f, 2.0f, 0f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Right Wing 1", localOffset = new Vector3(8f, 2.0f, 0f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Left Wing 2", localOffset = new Vector3(-16f, 6.0f, 0f), preferredArchetype = EnemyArchetype.Scout, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Right Wing 2", localOffset = new Vector3(16f, 6.0f, 0f), preferredArchetype = EnemyArchetype.Scout, isLeader = false, scaleMultiplier = 1.0f }
                 };
             });
 
-            // 2. Echelon Line
+            // 2. Echelon Line (Coplanar XY)
             CreateOrUpdateAsset($"{folder}/Formation_EchelonLine.asset", "Echelon Line Formation", pattern =>
             {
                 pattern.patternName = "Echelon Line (3 Ships)";
@@ -414,13 +726,13 @@ namespace VirtualRail.EditorScripts
                 pattern.leaderDeathReaction = LeaderDeathReaction.PanicScatter;
                 pattern.slots = new FormationSlotDefinition[]
                 {
-                    new FormationSlotDefinition { slotName = "Leader", localOffset = Vector3.zero, preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.35f },
-                    new FormationSlotDefinition { slotName = "Left Wing", localOffset = new Vector3(-10f, 0f, -4f), preferredArchetype = EnemyArchetype.Flanker, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Right Wing", localOffset = new Vector3(10f, 0f, -4f), preferredArchetype = EnemyArchetype.Flanker, isLeader = false, scaleMultiplier = 1.0f }
+                    new FormationSlotDefinition { slotName = "Leader", localOffset = new Vector3(0f, 0f, 0f), preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Left Wing", localOffset = new Vector3(-12f, 2.5f, 0f), preferredArchetype = EnemyArchetype.Flanker, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Right Wing", localOffset = new Vector3(12f, -2.5f, 0f), preferredArchetype = EnemyArchetype.Flanker, isLeader = false, scaleMultiplier = 1.0f }
                 };
             });
 
-            // 3. Diamond 4
+            // 3. Diamond 4 (Coplanar XY)
             CreateOrUpdateAsset($"{folder}/Formation_Diamond4.asset", "Diamond 4 Formation", pattern =>
             {
                 pattern.patternName = "Diamond Guard (4 Ships)";
@@ -432,14 +744,14 @@ namespace VirtualRail.EditorScripts
                 pattern.leaderDeathReaction = LeaderDeathReaction.PanicScatter;
                 pattern.slots = new FormationSlotDefinition[]
                 {
-                    new FormationSlotDefinition { slotName = "Apex Leader", localOffset = Vector3.zero, preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.35f },
-                    new FormationSlotDefinition { slotName = "Left Guard", localOffset = new Vector3(-6f, 0f, -6f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Right Guard", localOffset = new Vector3(6f, 0f, -6f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Rear Anchor", localOffset = new Vector3(0f, 0f, -12f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f }
+                    new FormationSlotDefinition { slotName = "Apex Leader", localOffset = new Vector3(0f, 5f, 0f), preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Left Guard", localOffset = new Vector3(-8f, 0f, 0f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Right Guard", localOffset = new Vector3(8f, 0f, 0f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Rear Anchor", localOffset = new Vector3(0f, -5f, 0f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f }
                 };
             });
 
-            // 4. Spiral Stream
+            // 4. Spiral Stream (Coplanar XY)
             CreateOrUpdateAsset($"{folder}/Formation_SpiralStream.asset", "Spiral Stream Formation", pattern =>
             {
                 pattern.patternName = "Spiral Stream (5 Ships)";
@@ -451,11 +763,11 @@ namespace VirtualRail.EditorScripts
                 pattern.leaderDeathReaction = LeaderDeathReaction.RetreatWarp;
                 pattern.slots = new FormationSlotDefinition[]
                 {
-                    new FormationSlotDefinition { slotName = "Head", localOffset = Vector3.zero, preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.25f },
-                    new FormationSlotDefinition { slotName = "Segment 1", localOffset = new Vector3(6f, 3f, -10f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Segment 2", localOffset = new Vector3(0f, 6f, -20f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Segment 3", localOffset = new Vector3(-6f, 3f, -30f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f },
-                    new FormationSlotDefinition { slotName = "Segment 4", localOffset = new Vector3(-6f, -3f, -40f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f }
+                    new FormationSlotDefinition { slotName = "Head", localOffset = new Vector3(0f, 0f, 0f), preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Segment 1", localOffset = new Vector3(7f, 4f, 0f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Segment 2", localOffset = new Vector3(12f, 0f, 0f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Segment 3", localOffset = new Vector3(7f, -4f, 0f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f },
+                    new FormationSlotDefinition { slotName = "Segment 4", localOffset = new Vector3(0f, -8f, 0f), preferredArchetype = EnemyArchetype.Interceptor, isLeader = false, scaleMultiplier = 1.0f }
                 };
             });
 

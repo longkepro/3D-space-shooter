@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
+  m_Name: Formation_WarpGate
+  m_EditorClassIdentifier: 
+  patternName: Warp Gate Aperture (9 Ships)
+  slots:
+  - slotName: Vanguard Gate Lead
+    localOffset: {x: 0, y: -5, z: 0}
+    preferredArchetype: 3
+    isLeader: 1
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Pylon Top Left
+    localOffset: {x: -4, y: 10, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Pylon Top Right
+    localOffset: {x: 4, y: 10, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Pylon Upper Left
+    localOffset: {x: -10, y: 8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Pylon Upper Right
+    localOffset: {x: 10, y: 8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Pylon Mid Left
+    localOffset: {x: -16, y: 2, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Pylon Mid Right
+    localOffset: {x: 16, y: 2, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Pylon Bottom Left
+    localOffset: {x: -14, y: -4, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Pylon Bottom Right
+    localOffset: {x: 14, y: -4, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  assemblyTime: 1.6
+  swaySpeed: 1.2
+  swayAmplitudeX: 10
+  bankingAngle: 20
+  holdDistance: 70
+  maxClosingSpeed: 25
+  maxLifetime: 14
+  leaderDeathReaction: 4

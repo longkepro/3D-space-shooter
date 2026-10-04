@@ -16,11 +16,13 @@ public class VirtualRailModeToggle
     private const string ORIGINAL_SKYBOX_MATERIAL_PATH = "Assets/Stagit/SkyboxEarthPlanets/skyboxes/skyboxv1_starsonly.mat";
     private const string SKYBOX_INIT_KEY = "VirtualRail_Skybox_Image1_Initialized";
     private const string BACKDROP_BAKED_KEY = "VirtualRail_Backdrop_Baked_v5";
+    private const string GREEN_ORB_INIT_KEY = "VirtualRail_GreenOrb_ChargeShot_v1";
 
     static VirtualRailModeToggle()
     {
         // Gỡ bỏ tự động cưỡng ép Cosmic Earth để cho phép Skybox gốc và StageData toàn quyền quyết định
         EditorApplication.delayCall += InitializeBackdropPrefabOnce;
+        EditorApplication.delayCall += InitializeGreenOrbChargeShotOnce;
     }
 
     private static void InitializeBackdropPrefabOnce()
@@ -29,6 +31,15 @@ public class VirtualRailModeToggle
         {
             SessionState.SetBool(BACKDROP_BAKED_KEY, true);
             RebuildPlayerRigPrefab();
+        }
+    }
+
+    private static void InitializeGreenOrbChargeShotOnce()
+    {
+        if (!SessionState.GetBool(GREEN_ORB_INIT_KEY, false))
+        {
+            SessionState.SetBool(GREEN_ORB_INIT_KEY, true);
+            ApplyHouidisoftGreenPlasmaOrb();
         }
     }
 
@@ -106,6 +117,9 @@ public class VirtualRailModeToggle
                 Undo.RegisterCreatedObjectUndo(es, "Create EventSystem");
             }
 
+            // Tự động thiết lập Stage Director và UI thông báo kịch bản
+            SetupStageDirectorSystem();
+
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
             Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT THÀNH CÔNG CHẾ ĐỘ VIRTUAL RAIL!</b></color>\nGameUI._playerPrefab hiện đã trỏ tới: VirtualRail_PlayerRig.prefab. Hãy bấm PLAY và click 'Play Game' để trải nghiệm!");
@@ -152,6 +166,9 @@ public class VirtualRailModeToggle
                 legacyEnemySpawner.gameObject.SetActive(true);
                 EditorUtility.SetDirty(legacyEnemySpawner.gameObject);
             }
+
+            // Hoàn nguyên Stage Director và UI thông báo
+            RevertStageDirectorSystem();
 
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
@@ -237,6 +254,52 @@ public class VirtualRailModeToggle
             if (config != null && config.backdropMaterial != null) bd.backdropMaterial = config.backdropMaterial;
             bd.Initialize();
             bd.SetBackdropActive(config != null && config.enableHorizonBackdrop);
+        }
+    }
+
+    // =========================================================================
+    // RETICLE & AIMING SYSTEM CONTROLS (Tâm ngắm đơn vs Tâm ngắm kép)
+    // =========================================================================
+
+    [MenuItem("Tools/Virtual Rail/6. Aiming: Single Reticle Mode (Disable Boresight Reticle - ON)")]
+    public static void EnableSingleReticleMode()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableDualReticle = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT CHẾ ĐỘ TÂM NGẮM ĐƠN (SINGLE RETICLE):</b></color> Đã vô hiệu hóa tâm ngắm mũi tàu (Boresight Near Reticle). Chỉ sử dụng tâm ngắm chính Sci-Fi.");
+        }
+
+        RebuildPlayerRigPrefab();
+
+        var huds = Object.FindObjectsByType<DualReticleHUD>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var hud in huds)
+        {
+            if (hud.nearCrosshairUI != null) hud.nearCrosshairUI.gameObject.SetActive(false);
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/7. Aiming: Undo / Restore Dual Reticle (Boresight Reticle - OFF)")]
+    public static void RevertToDualReticleMode()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableDualReticle = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ TÂM NGẮM KÉP (DUAL RETICLE):</b></color> Đã bật lại tâm ngắm mũi tàu (Boresight Near Reticle).");
+        }
+
+        RebuildPlayerRigPrefab();
+
+        var huds = Object.FindObjectsByType<DualReticleHUD>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var hud in huds)
+        {
+            if (hud.nearCrosshairUI != null) hud.nearCrosshairUI.gameObject.SetActive(true);
         }
     }
 
@@ -647,6 +710,31 @@ public class VirtualRailModeToggle
         }
     }
 
+    [MenuItem("Tools/Virtual Rail/41. Spawner Mode: Scripted Director Only (ON - Production)")]
+    public static void SetSpawnerModeScriptedDirectorOnly()
+    {
+        VirtualRailWaveSpawner[] spawners = Object.FindObjectsByType<VirtualRailWaveSpawner>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < spawners.Length; i++)
+        {
+            spawners[i].ControlMode = SpawnerControlMode.ScriptedDirectorOnly;
+            EditorUtility.SetDirty(spawners[i]);
+        }
+        RebuildPlayerRigPrefab();
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT CHẾ ĐỘ SCRIPTED DIRECTOR ONLY:</b></color> 100% quái vật do StageDirector điều phối qua Timeline kịch bản. Triệt tiêu hoàn toàn quái ngẫu nhiên/demo!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/42. Spawner Mode: Endless Sandbox Demo (OFF - Test Only)")]
+    public static void SetSpawnerModeEndlessSandboxDemo()
+    {
+        VirtualRailWaveSpawner[] spawners = Object.FindObjectsByType<VirtualRailWaveSpawner>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < spawners.Length; i++)
+        {
+            spawners[i].ControlMode = SpawnerControlMode.EndlessSandboxDemo;
+            EditorUtility.SetDirty(spawners[i]);
+        }
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ KÍCH HOẠT CHẾ ĐỘ ENDLESS SANDBOX DEMO:</b></color> Quái vật tự động sinh tuần hoàn ngẫu nhiên để kiểm thử tải!");
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
@@ -756,6 +844,11 @@ public class VirtualRailModeToggle
         CreateBorderLine(nearCrossObj.transform, "NearBottom", new Vector2(0, -nearSize * 0.35f), new Vector2(2f, nearSize * 0.3f), new Color(0.2f, 1f, 0.4f, 0.95f));
         CreateBorderLine(nearCrossObj.transform, "NearLeft", new Vector2(-nearSize * 0.35f, 0), new Vector2(nearSize * 0.3f, 2f), new Color(0.2f, 1f, 0.4f, 0.95f));
         CreateBorderLine(nearCrossObj.transform, "NearRight", new Vector2(nearSize * 0.35f, 0), new Vector2(nearSize * 0.3f, 2f), new Color(0.2f, 1f, 0.4f, 0.95f));
+
+        if (!config.enableDualReticle)
+        {
+            nearCrossObj.SetActive(false);
+        }
 
         // DualReticleHUD (Presentation Layer - Chuẩn hóa Điều 4 GEMINI.md)
         DualReticleHUD hud = canvasObj.AddComponent<DualReticleHUD>();
@@ -950,6 +1043,7 @@ public class VirtualRailModeToggle
 
         VirtualRailWaveSpawner waveSpawner = root.AddComponent<VirtualRailWaveSpawner>();
         waveSpawner.anchor = anchor;
+        waveSpawner.ControlMode = SpawnerControlMode.ScriptedDirectorOnly;
 
         VirtualRailAsteroidSpawner asteroidSpawner = root.AddComponent<VirtualRailAsteroidSpawner>();
         asteroidSpawner.anchor = anchor;
@@ -1036,8 +1130,18 @@ public class VirtualRailModeToggle
             CreateStageNotificationUI(canvas.transform);
         }
 
+        director.notificationUI = Object.FindAnyObjectByType<StageNotificationUI>();
+        EditorUtility.SetDirty(director);
+
+        VirtualRailWaveSpawner[] spawners = Object.FindObjectsByType<VirtualRailWaveSpawner>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < spawners.Length; i++)
+        {
+            spawners[i].ControlMode = SpawnerControlMode.ScriptedDirectorOnly;
+            EditorUtility.SetDirty(spawners[i]);
+        }
+
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log("<color=green><b>[VirtualRail] ĐÃ THIẾT LẬP KHUNG KIẾN TRÚC STAGE DIRECTOR:</b></color> Đã gán 3 khung màn chơi (StageData_01, StageData_02, StageData_03).");
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ THIẾT LẬP KHUNG KIẾN TRÚC STAGE DIRECTOR:</b></color> Đã gán 3 khung màn chơi (StageData_01, StageData_02, StageData_03) và khóa Spawner ở chế độ ScriptedDirectorOnly.");
     }
 
     [MenuItem("Tools/Virtual Rail/37. Stage Director: Revert Framework (OFF)")]
@@ -1360,6 +1464,632 @@ public class VirtualRailModeToggle
         {
             proj.SetImpactVFXPrefab(impactVFX);
         }
+
+        return root;
+    }
+    #endregion
+
+    #region 51 & 52: User Custom Camera Setup & Undo
+    private static GameObject FindGameObjectInScene(string name)
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        foreach (var root in scene.GetRootGameObjects())
+        {
+            if (root.name == name) return root;
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.gameObject.name == name) return t.gameObject;
+            }
+        }
+        return null;
+    }
+
+    [MenuItem("Tools/Virtual Rail/51. Setup User Custom Camera (Tạo Camera Riêng Biệt Tự Do)")]
+    public static void SetupUserCustomCamera()
+    {
+        // 1. Tìm hoặc tạo GameObject UserCustomCamera trong Scene
+        GameObject customCamObj = FindGameObjectInScene("UserCustomCamera");
+        if (customCamObj == null)
+        {
+            customCamObj = new GameObject("UserCustomCamera");
+            customCamObj.tag = "MainCamera";
+            Camera cam = customCamObj.AddComponent<Camera>();
+            cam.clearFlags = CameraClearFlags.Skybox;
+            cam.fieldOfView = 50f;
+            cam.nearClipPlane = 0.3f;
+            cam.farClipPlane = 2000f;
+            cam.depth = 0;
+
+            customCamObj.AddComponent<AudioListener>();
+
+            // Đặt vị trí khởi đầu thuận tiện để người dùng quan sát và tự kéo
+            customCamObj.transform.position = new Vector3(0f, 6.5f, -30f);
+            customCamObj.transform.rotation = Quaternion.Euler(6f, 0f, 0f);
+
+            Undo.RegisterCreatedObjectUndo(customCamObj, "Create UserCustomCamera");
+        }
+        else
+        {
+            customCamObj.SetActive(true);
+            customCamObj.tag = "MainCamera";
+        }
+
+        // 2. Vô hiệu hóa Camera cũ (Follow Cam) trong Scene để tránh 2 Camera cùng tag MainCamera
+        GameObject oldCam = FindGameObjectInScene("Follow Cam");
+        if (oldCam != null)
+        {
+            oldCam.SetActive(false);
+            EditorUtility.SetDirty(oldCam);
+        }
+
+        // 3. Bật cờ useExternalCamera trên Prefab VirtualRail_PlayerRig
+        GameObject playerRigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(VIRTUAL_RAIL_PREFAB);
+        if (playerRigPrefab != null)
+        {
+            VirtualRailCameraRig camRig = playerRigPrefab.GetComponentInChildren<VirtualRailCameraRig>(true);
+            if (camRig != null)
+            {
+                SerializedObject so = new SerializedObject(camRig);
+                SerializedProperty prop = so.FindProperty("useExternalCamera");
+                if (prop != null)
+                {
+                    prop.boolValue = true;
+                    so.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(playerRigPrefab);
+                    AssetDatabase.SaveAssets();
+                }
+            }
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+
+        // 4. Chọn ngay UserCustomCamera để người dùng dùng phím W/E kéo thả
+        Selection.activeGameObject = customCamObj;
+        EditorGUIUtility.PingObject(customCamObj);
+
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ TẠO VÀ KÍCH HOẠT THÀNH CÔNG CAMERA RIÊNG BIỆT: UserCustomCamera!</b></color>\nBạn có thể tự do dùng công cụ Move/Rotate (W/E) kéo Camera này đến bất kỳ vị trí và góc nhìn nào trong Scene View!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/52. Revert to Default Rail Camera (UNDO - Trở Về Camera Tự Động)")]
+    public static void RevertToDefaultRailCamera()
+    {
+        // 1. Tắt UserCustomCamera trong Scene
+        GameObject customCamObj = FindGameObjectInScene("UserCustomCamera");
+        if (customCamObj != null)
+        {
+            customCamObj.SetActive(false);
+            customCamObj.tag = "Untagged";
+            EditorUtility.SetDirty(customCamObj);
+        }
+
+        // 2. Bật lại Follow Cam cũ trong Scene (kể cả khi đang bị Inactive)
+        GameObject oldCam = FindGameObjectInScene("Follow Cam");
+        if (oldCam != null)
+        {
+            oldCam.SetActive(true);
+            oldCam.tag = "MainCamera";
+            EditorUtility.SetDirty(oldCam);
+        }
+
+        // 3. Tắt cờ useExternalCamera trên Prefab VirtualRail_PlayerRig
+        GameObject playerRigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(VIRTUAL_RAIL_PREFAB);
+        if (playerRigPrefab != null)
+        {
+            VirtualRailCameraRig camRig = playerRigPrefab.GetComponentInChildren<VirtualRailCameraRig>(true);
+            if (camRig != null)
+            {
+                SerializedObject so = new SerializedObject(camRig);
+                SerializedProperty prop = so.FindProperty("useExternalCamera");
+                if (prop != null)
+                {
+                    prop.boolValue = false;
+                    so.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(playerRigPrefab);
+                    AssetDatabase.SaveAssets();
+                }
+            }
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
+
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ CAMERA TỰ ĐỘNG MẶC ĐỊNH!</b></color>");
+    }
+    #endregion
+
+    #region Charge Shot VFX (Houidisoft Green Plasma Orb & Star Fox Cyan Plasma Orb)
+    public const string HOUIDI_PLASMA_GREEN_PREFAB_PATH = "Assets/Houidisoft technology/Plasma Shader/Prefabs/Plasma Sphere (3).prefab";
+    public const string PLAYER_CHARGE_HOUIDI_ORB_PREFAB_PATH = "Assets/Prefabs/PlayerChargeShot_GreenPlasmaOrb.prefab";
+    public const string PLAYER_CHARGE_ORB_PREFAB_PATH = "Assets/Prefabs/PlayerChargeShot_PlasmaOrb.prefab";
+    public const string PLAYER_CHARGE_GREEN_ORB_PREFAB_PATH = "Assets/Prefabs/PlayerChargeShot_GreenOrb.prefab";
+    public const string LEGACY_MISSILE_PREFAB_PATH = "Assets/FreeSciFi/Prefabs/MinesBombs/Missile.prefab";
+    public const string PLAYER_CHARGE_CORE_MAT_PATH = "Assets/Materials/PlayerChargeShot_Core.mat";
+    public const string HOVL_GREEN_FIRE_PREFAB_PATH = "Assets/Hovl Studio/Procedural fire/Prefabs/Magic fire pro green.prefab";
+    public const string HOUIDI_PLASMA_BUILTIN_SHADER = "VirtualRail/HouidiPlasmaBuiltin";
+    public const string HOUIDI_CORE_BUILTIN_MAT_PATH = "Assets/Materials/PlayerChargeShot_HouidiCore_Builtin.mat";
+    public const string HOUIDI_GREEN_BUILTIN_MAT_PATH = "Assets/Materials/PlayerChargeShot_HouidiGreen_Builtin.mat";
+    public const string HOUIDI_MAT_PLSM2_2 = "Assets/Houidisoft technology/Plasma Shader/Materials/plsm2 2.mat";
+    public const string HOUIDI_MAT_PLSM_2 = "Assets/Houidisoft technology/Plasma Shader/Materials/plsm 2.mat";
+
+    [MenuItem("Tools/Virtual Rail/Charge Shot VFX/1. Apply Houidisoft Green Plasma Orb (NEW - ON)")]
+    public static void ApplyHouidisoftGreenPlasmaOrb()
+    {
+        // 1. Đảm bảo file Prefab Quả cầu Plasma Xanh Lá Houidisoft đã được dựng với Material Built-in
+        GameObject orbObj = BuildPlayerChargeHouidiGreenOrbGameObject();
+        PrefabUtility.SaveAsPrefabAsset(orbObj, PLAYER_CHARGE_HOUIDI_ORB_PREFAB_PATH);
+        Object.DestroyImmediate(orbObj);
+        AssetDatabase.SaveAssets();
+
+        // 2. Gán prefab mới vào AimAssistModule trên VirtualRail_PlayerRig.prefab
+        SetAimAssistMissilePrefab(PLAYER_CHARGE_HOUIDI_ORB_PREFAB_PATH);
+
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT QUẢ CẦU PLASMA NĂNG LƯỢNG XANH LÁ HOUIDISOFT (NEW - ON):</b></color> " + PLAYER_CHARGE_HOUIDI_ORB_PREFAB_PATH);
+    }
+
+    [MenuItem("Tools/Virtual Rail/Charge Shot VFX/Inspect & Adjust Plasma Orb Size (Open Inspector)")]
+    public static void SelectAndAdjustPlasmaOrbInInspector()
+    {
+        GameObject orbAsset = AssetDatabase.LoadAssetAtPath<GameObject>(PLAYER_CHARGE_HOUIDI_ORB_PREFAB_PATH);
+        if (orbAsset != null)
+        {
+            Selection.activeObject = orbAsset;
+            EditorGUIUtility.PingObject(orbAsset);
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ CHỌN PREFAB QUẢ CẦU PLASMA:</b></color> Hãy xem cửa sổ Inspector bên phải để kéo thanh trượt điều chỉnh kích thước trực quan!");
+        }
+        else
+        {
+            Debug.LogError("[VirtualRail] Không tìm thấy prefab: " + PLAYER_CHARGE_HOUIDI_ORB_PREFAB_PATH);
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/Charge Shot VFX/Fix Houidisoft Asset Folder Materials for Built-in RP (NO PINK)")]
+    public static void FixHouidisoftPlasmaForBuiltIn()
+    {
+        // 1. Cập nhật material plsm2 2.mat (vỏ ngoài xanh lá của Houidisoft) sang shader Built-in
+        Material outerMat = AssetDatabase.LoadAssetAtPath<Material>(HOUIDI_MAT_PLSM2_2);
+        Shader builtinShader = Shader.Find(HOUIDI_PLASMA_BUILTIN_SHADER);
+        if (outerMat != null && builtinShader != null)
+        {
+            outerMat.shader = builtinShader;
+            outerMat.SetColor("_BoarderColor", new Color(0f, 3f, 0.2f, 1f));
+            outerMat.SetColor("_Boarder_Color", new Color(0.35f, 2.6f, 0.85f, 1f));
+            outerMat.SetColor("_Color", new Color(0.07f, 0.95f, 0.15f, 1f));
+            Texture2D caustics = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Houidisoft technology/Plasma Shader/Texture/caustics.png");
+            if (caustics != null) outerMat.SetTexture("_Texture2D", caustics);
+            EditorUtility.SetDirty(outerMat);
+        }
+
+        // 2. Cập nhật material plsm 2.mat (lõi trong xanh lá của Houidisoft) sang shader Core Built-in
+        Material coreMat = AssetDatabase.LoadAssetAtPath<Material>(HOUIDI_MAT_PLSM_2);
+        Shader coreShader = Shader.Find("VirtualRail/PlasmaOrbCore");
+        if (coreMat != null && coreShader != null)
+        {
+            coreMat.shader = coreShader;
+            coreMat.SetColor("_CoreColor", new Color(1.5f, 3.5f, 1.8f, 1f));
+            coreMat.SetColor("_RimColor", new Color(0.1f, 3.0f, 0.3f, 1f));
+            EditorUtility.SetDirty(coreMat);
+        }
+
+        // 3. Đảm bảo PlayerChargeShot_GreenPlasmaOrb.prefab sử dụng material Built-in
+        ApplyHouidisoftGreenPlasmaOrb();
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ FIX TRIỆT ĐỂ LỖI TÍM CHO HOUIDISOFT PLASMA TRÊN BUILT-IN RP!</b></color>");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Charge Shot VFX/Revert Houidisoft Asset Folder to Original URP (OFF)")]
+    public static void RevertHouidisoftPlasmaToOriginalURP()
+    {
+        Material outerMat = AssetDatabase.LoadAssetAtPath<Material>(HOUIDI_MAT_PLSM2_2);
+        Shader sg = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Houidisoft technology/Plasma Shader/Shader/Plasma.shadergraph");
+        if (outerMat != null && sg != null)
+        {
+            outerMat.shader = sg;
+            EditorUtility.SetDirty(outerMat);
+        }
+
+        Material coreMat = AssetDatabase.LoadAssetAtPath<Material>(HOUIDI_MAT_PLSM_2);
+        Shader urpLit = Shader.Find("Universal Render Pipeline/Lit");
+        if (coreMat != null && urpLit != null)
+        {
+            coreMat.shader = urpLit;
+            EditorUtility.SetDirty(coreMat);
+        }
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN HOUIDISOFT VỀ URP GỐC!</b></color>");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Charge Shot VFX/2. Apply Star Fox Cyan Plasma Orb")]
+    public static void ApplyStarFoxChargePlasmaOrb()
+    {
+        // 1. Tạo Material lõi phát quang nếu chưa có
+        Material coreMat = AssetDatabase.LoadAssetAtPath<Material>(PLAYER_CHARGE_CORE_MAT_PATH);
+        if (coreMat == null)
+        {
+            Shader standardShader = Shader.Find("Standard");
+            if (standardShader == null) standardShader = Shader.Find("Universal Render Pipeline/Lit");
+            if (standardShader == null) standardShader = Shader.Find("Mobile/Diffuse");
+
+            coreMat = new Material(standardShader);
+            coreMat.name = "PlayerChargeShot_Core";
+            coreMat.color = new Color(0.1f, 1f, 0.9f, 1f);
+            if (coreMat.HasProperty("_EmissionColor"))
+            {
+                coreMat.EnableKeyword("_EMISSION");
+                coreMat.SetColor("_EmissionColor", new Color(0.15f, 2.2f, 1.8f) * 1.5f);
+            }
+            AssetDatabase.CreateAsset(coreMat, PLAYER_CHARGE_CORE_MAT_PATH);
+            AssetDatabase.SaveAssets();
+        }
+
+        // 2. Dựng GameObject Quả cầu Plasma tụ lực chuẩn Star Fox 64
+        GameObject orbObj = BuildPlayerChargeOrbGameObject(coreMat);
+        PrefabUtility.SaveAsPrefabAsset(orbObj, PLAYER_CHARGE_ORB_PREFAB_PATH);
+        Object.DestroyImmediate(orbObj);
+        AssetDatabase.SaveAssets();
+
+        // 3. Gán prefab mới vào AimAssistModule trên VirtualRail_PlayerRig.prefab
+        SetAimAssistMissilePrefab(PLAYER_CHARGE_ORB_PREFAB_PATH);
+
+        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ KÍCH HOẠT QUẢ CẦU PLASMA TỤ LỰC CHUẨN STAR FOX 64 (ON):</b></color> " + PLAYER_CHARGE_ORB_PREFAB_PATH);
+    }
+
+    [MenuItem("Tools/Virtual Rail/Charge Shot VFX/3. Revert to Legacy Military Missile (OFF)")]
+    public static void RevertToLegacyMilitaryMissile()
+    {
+        SetAimAssistMissilePrefab(LEGACY_MISSILE_PREFAB_PATH);
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN (UNDO) VỀ TÊN LỬA QUÂN SỰ CŨ (OFF):</b></color> " + LEGACY_MISSILE_PREFAB_PATH);
+    }
+
+    private static void SetAimAssistMissilePrefab(string prefabPath)
+    {
+        GameObject newMissilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        if (newMissilePrefab == null)
+        {
+            Debug.LogError("[VirtualRail] Không tìm thấy prefab: " + prefabPath);
+            return;
+        }
+
+        GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(VIRTUAL_RAIL_PREFAB);
+        if (rigPrefab != null)
+        {
+            AimAssistModule aimAssist = rigPrefab.GetComponentInChildren<AimAssistModule>(true);
+            if (aimAssist != null)
+            {
+                SerializedObject so = new SerializedObject(aimAssist);
+                SerializedProperty prop = so.FindProperty("missilePrefab");
+                if (prop != null)
+                {
+                    prop.objectReferenceValue = newMissilePrefab;
+                    so.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(rigPrefab);
+                    AssetDatabase.SaveAssets();
+                }
+            }
+        }
+
+        // Cập nhật cả instance trong scene đang mở nếu có
+        AimAssistModule sceneAimAssist = Object.FindAnyObjectByType<AimAssistModule>();
+        if (sceneAimAssist != null)
+        {
+            sceneAimAssist.missilePrefab = newMissilePrefab;
+            EditorUtility.SetDirty(sceneAimAssist);
+        }
+    }
+
+    public static GameObject BuildPlayerChargeOrbGameObject(Material coreMat)
+    {
+        GameObject root = new GameObject("PlayerChargeShot_PlasmaOrb");
+
+        // 1. Collider & Rigidbody
+        var sphereCol = root.AddComponent<SphereCollider>();
+        sphereCol.isTrigger = true;
+        sphereCol.radius = 1.1f;
+
+        var rb = root.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity = false;
+
+        // 2. Logic bay tự dẫn Homing Missile
+        var homing = root.AddComponent<VirtualRailHomingMissile>();
+        homing.speed = 95f;
+        homing.turnRate = 180f;
+        homing.lifeTime = 5.0f;
+        homing.detonationDistance = 2.0f;
+        homing.splashRadius = 10f;
+
+        GameObject expPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire & Explosion Effects/Prefabs/BigExplosion.prefab");
+        if (expPrefab != null) homing.explosionPrefab = expPrefab;
+
+        // 3. Visual Root & Child spheres
+        GameObject visualRoot = new GameObject("[Visual_Root]");
+        visualRoot.transform.SetParent(root.transform, false);
+
+        Mesh icoMesh = null;
+        GameObject meshObj = AssetDatabase.LoadAssetAtPath<GameObject>(ICOSPHERE_MESH_PATH);
+        if (meshObj != null)
+        {
+            MeshFilter mf = meshObj.GetComponentInChildren<MeshFilter>();
+            if (mf != null) icoMesh = mf.sharedMesh;
+        }
+
+        // Corona (Outer Plasma Glow Sphere)
+        GameObject corona = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        corona.name = "[Corona]";
+        corona.transform.SetParent(visualRoot.transform, false);
+        corona.transform.localScale = Vector3.one * 1.8f;
+        var cCol = corona.GetComponent<Collider>();
+        if (cCol != null) Object.DestroyImmediate(cCol);
+
+        if (icoMesh != null)
+        {
+            MeshFilter cmf = corona.GetComponent<MeshFilter>();
+            if (cmf != null) cmf.sharedMesh = icoMesh;
+        }
+
+        Material coronaMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexShield_ElectricCyan.mat");
+        if (coronaMat == null) coronaMat = AssetDatabase.LoadAssetAtPath<Material>(HOVL_FIRE_MAT_PATH);
+        Renderer cRend = corona.GetComponent<Renderer>();
+        if (cRend != null && coronaMat != null) cRend.sharedMaterial = coronaMat;
+
+        // Core (Inner Hot Plasma Sphere)
+        GameObject core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        core.name = "[Core]";
+        core.transform.SetParent(visualRoot.transform, false);
+        core.transform.localScale = Vector3.one * 1.0f;
+        var kCol = core.GetComponent<Collider>();
+        if (kCol != null) Object.DestroyImmediate(kCol);
+
+        if (icoMesh != null)
+        {
+            MeshFilter kmf = core.GetComponent<MeshFilter>();
+            if (kmf != null) kmf.sharedMesh = icoMesh;
+        }
+
+        Renderer kRend = core.GetComponent<Renderer>();
+        if (kRend != null && coreMat != null) kRend.sharedMaterial = coreMat;
+
+        // Dynamic Point Light
+        GameObject lightObj = new GameObject("[PointLight]");
+        lightObj.transform.SetParent(root.transform, false);
+        Light pl = lightObj.AddComponent<Light>();
+        pl.type = LightType.Point;
+        pl.color = new Color(0.15f, 0.95f, 1f);
+        pl.range = 16f;
+        pl.intensity = 4.0f;
+
+        // Ribbon Trail Renderer
+        TrailRenderer trail = root.AddComponent<TrailRenderer>();
+        trail.time = 0.35f;
+        trail.startWidth = 1.4f;
+        trail.endWidth = 0.05f;
+
+        Material trailMat = AssetDatabase.LoadAssetAtPath<Material>(HOVL_TRAIL_MAT_PATH);
+        if (trailMat == null) trailMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/LaserBolt_BrightNeon.mat");
+        if (trailMat != null) trail.material = trailMat;
+
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new GradientColorKey[] {
+                new GradientColorKey(new Color(0.2f, 1f, 0.95f), 0.0f),
+                new GradientColorKey(new Color(0.1f, 0.85f, 1f), 0.5f),
+                new GradientColorKey(new Color(0.0f, 0.4f, 0.85f), 1.0f)
+            },
+            new GradientAlphaKey[] {
+                new GradientAlphaKey(1.0f, 0.0f),
+                new GradientAlphaKey(0.7f, 0.6f),
+                new GradientAlphaKey(0.0f, 1.0f)
+            }
+        );
+        trail.colorGradient = gradient;
+
+        // Controller Visual Animation
+        root.AddComponent<VirtualRailChargeShotVisual>();
+
+        return root;
+    }
+
+    public static GameObject BuildPlayerChargeGreenOrbGameObject()
+    {
+        GameObject root = new GameObject("PlayerChargeShot_GreenOrb");
+
+        // 1. Collider & Rigidbody (Gameplay / Physics)
+        var sphereCol = root.AddComponent<SphereCollider>();
+        sphereCol.isTrigger = true;
+        sphereCol.radius = 1.2f;
+
+        var rb = root.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity = false;
+
+        // 2. Logic bay tự dẫn Homing Missile & Splash AoE Star Fox 64
+        var homing = root.AddComponent<VirtualRailHomingMissile>();
+        homing.speed = 240f;
+        homing.turnRate = 420f;
+        homing.lifeTime = 5.0f;
+        homing.detonationDistance = 2.0f;
+        homing.splashRadius = 10f;
+
+        GameObject expPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire & Explosion Effects/Prefabs/BigExplosion.prefab");
+        if (expPrefab != null) homing.explosionPrefab = expPrefab;
+
+        // 3. Visual Child: Load Magic fire pro green prefab
+        GameObject hovlPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(HOVL_GREEN_FIRE_PREFAB_PATH);
+        if (hovlPrefab != null)
+        {
+            GameObject vfx = Object.Instantiate(hovlPrefab);
+            vfx.name = "[Visual_MagicFireGreen]";
+            vfx.transform.SetParent(root.transform, false);
+            vfx.transform.localPosition = Vector3.zero;
+            vfx.transform.localRotation = Quaternion.identity;
+            vfx.transform.localScale = Vector3.one * 1.0f;
+
+            // Đảm bảo không có Collider nào sót lại trong VFX gây va quệt thân tàu
+            Collider[] colliders = vfx.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Object.DestroyImmediate(colliders[i]);
+            }
+
+            // Tinh chỉnh Particle Systems: World Simulation Space cho vệt khói và tia lửa
+            ParticleSystem[] pss = vfx.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < pss.Length; i++)
+            {
+                var main = pss[i].main;
+                if (pss[i].name.Contains("Sparks") || pss[i].name.Contains("Smoke"))
+                {
+                    main.simulationSpace = ParticleSystemSimulationSpace.World;
+                }
+            }
+        }
+
+        // 4. Dynamic Point Light (Màu xanh lục phát quang trong không gian)
+        GameObject lightObj = new GameObject("[PointLight]");
+        lightObj.transform.SetParent(root.transform, false);
+        Light pl = lightObj.AddComponent<Light>();
+        pl.type = LightType.Point;
+        pl.color = new Color(0.2f, 1f, 0.35f);
+        pl.range = 16f;
+        pl.intensity = 3.5f;
+
+        // 5. Ribbon Trail Renderer (Vệt đuôi xanh lục phát sáng)
+        TrailRenderer trail = root.AddComponent<TrailRenderer>();
+        trail.time = 0.35f;
+        trail.startWidth = 1.2f;
+        trail.endWidth = 0.05f;
+
+        Material trailMat = AssetDatabase.LoadAssetAtPath<Material>(HOVL_TRAIL_MAT_PATH);
+        if (trailMat == null) trailMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/LaserBolt_BrightNeon.mat");
+        if (trailMat != null) trail.material = trailMat;
+
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new GradientColorKey[] {
+                new GradientColorKey(new Color(0.3f, 1f, 0.4f), 0.0f),
+                new GradientColorKey(new Color(0.1f, 0.9f, 0.2f), 0.5f),
+                new GradientColorKey(new Color(0.0f, 0.5f, 0.1f), 1.0f)
+            },
+            new GradientAlphaKey[] {
+                new GradientAlphaKey(1.0f, 0.0f),
+                new GradientAlphaKey(0.7f, 0.6f),
+                new GradientAlphaKey(0.0f, 1.0f)
+            }
+        );
+        trail.colorGradient = gradient;
+
+        return root;
+    }
+
+    public static GameObject BuildPlayerChargeHouidiGreenOrbGameObject()
+    {
+        GameObject root = new GameObject("PlayerChargeShot_GreenPlasmaOrb");
+
+        // 1. Collider & Rigidbody trên Root (Gameplay / Physics)
+        var sphereCol = root.AddComponent<SphereCollider>();
+        sphereCol.isTrigger = true;
+        sphereCol.radius = 2.85f;
+
+        var rb = root.AddComponent<Rigidbody>();
+        rb.isKinematic = true;
+        rb.useGravity = false;
+
+        // 2. Logic bay tự dẫn & Splash AoE Star Fox 64
+        var homing = root.AddComponent<VirtualRailHomingMissile>();
+        homing.speed = 240f;
+        homing.turnRate = 420f;
+        homing.lifeTime = 5.0f;
+        homing.detonationDistance = 2.0f;
+        homing.splashRadius = 25f;
+
+        GameObject expPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire & Explosion Effects/Prefabs/BigExplosion.prefab");
+        if (expPrefab != null) homing.explosionPrefab = expPrefab;
+
+        // 3. Visual Child: Nạp model Plasma Sphere (3) từ Houidisoft
+        GameObject houidiSource = AssetDatabase.LoadAssetAtPath<GameObject>(HOUIDI_PLASMA_GREEN_PREFAB_PATH);
+        Transform coronaT = null;
+        Transform coreT = null;
+
+        if (houidiSource != null)
+        {
+            GameObject visual = Object.Instantiate(houidiSource);
+            visual.name = "[Visual_PlasmaSphere3]";
+            visual.transform.SetParent(root.transform, false);
+            visual.transform.localPosition = Vector3.zero;
+            visual.transform.localRotation = Quaternion.identity;
+            // Kích thước chuẩn gốc Houidisoft: 3.85m
+            visual.transform.localScale = Vector3.one * 3.85f;
+
+            // Bóc tách toàn bộ Collider đặc của Houidisoft để triệt tiêu va chạm cứng với thân tàu
+            Collider[] colliders = visual.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Object.DestroyImmediate(colliders[i]);
+            }
+
+            coronaT = visual.transform;
+            Renderer outRend = visual.GetComponent<Renderer>();
+            Material outMat = AssetDatabase.LoadAssetAtPath<Material>(HOUIDI_GREEN_BUILTIN_MAT_PATH);
+            if (outRend != null && outMat != null) outRend.sharedMaterial = outMat;
+
+            Transform childSphere = visual.transform.Find("Sphere");
+            if (childSphere != null)
+            {
+                coreT = childSphere;
+                Renderer inRend = childSphere.GetComponent<Renderer>();
+                Material inMat = AssetDatabase.LoadAssetAtPath<Material>(HOUIDI_CORE_BUILTIN_MAT_PATH);
+                if (inRend != null && inMat != null) inRend.sharedMaterial = inMat;
+            }
+        }
+
+        // 4. Dynamic Point Light (Màu xanh lục phát quang trong không gian)
+        GameObject lightObj = new GameObject("[PointLight]");
+        lightObj.transform.SetParent(root.transform, false);
+        Light pl = lightObj.AddComponent<Light>();
+        pl.type = LightType.Point;
+        pl.color = new Color(0.15f, 1f, 0.35f);
+        pl.range = 32f;
+        pl.intensity = 4.5f;
+
+        // 5. Ribbon Trail Renderer (Tắt vệt đuôi theo yêu cầu để quả cầu năng lượng thuần khiết)
+        TrailRenderer trail = root.AddComponent<TrailRenderer>();
+        trail.enabled = false;
+        trail.time = 0.35f;
+        trail.startWidth = 1.2f;
+        trail.endWidth = 0.05f;
+
+        Material trailMat = AssetDatabase.LoadAssetAtPath<Material>(HOVL_TRAIL_MAT_PATH);
+        if (trailMat == null) trailMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/LaserBolt_BrightNeon.mat");
+        if (trailMat != null) trail.material = trailMat;
+
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new GradientColorKey[] {
+                new GradientColorKey(new Color(0.2f, 1f, 0.4f), 0.0f),
+                new GradientColorKey(new Color(0.1f, 0.9f, 0.25f), 0.5f),
+                new GradientColorKey(new Color(0.0f, 0.5f, 0.1f), 1.0f)
+            },
+            new GradientAlphaKey[] {
+                new GradientAlphaKey(1.0f, 0.0f),
+                new GradientAlphaKey(0.7f, 0.6f),
+                new GradientAlphaKey(0.0f, 1.0f)
+            }
+        );
+        trail.colorGradient = gradient;
+
+        // 6. Xoay tròn tự nhiên quanh trục đạn và hỗ trợ chỉnh kích thước trực quan
+        var visualAnim = root.AddComponent<VirtualRailChargeShotVisual>();
+        visualAnim.outerDiameter = 3.85f;
+        visualAnim.innerCoreRatio = 0.54f;
+        visualAnim.enableTrail = false;
+        visualAnim.lightRange = 32f;
+        visualAnim.collisionRadius = 2.85f;
+        visualAnim.splashRadius = 25f;
+        visualAnim.AutoBindReferences();
+        visualAnim.ApplyDimensions();
 
         return root;
     }

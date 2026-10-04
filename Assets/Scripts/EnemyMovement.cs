@@ -95,9 +95,22 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
         _cachedAvoidanceOffset = Vector3.zero;
         _nextAvoidanceTime = 0f;
         _isFlankerStrafing = false;
+        transform.localScale = Vector3.one;
         if (_health != null)
         {
             _health.ResetState();
+        }
+
+        var fsm = GetComponent<VirtualRail.EnemyLifecycleFSM>();
+        if (fsm != null)
+        {
+            fsm.ResetState();
+        }
+
+        var wingman = GetComponent<VirtualRail.FormationWingman>();
+        if (wingman != null)
+        {
+            wingman.ResetState();
         }
     }
 
@@ -276,6 +289,14 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
     {
         gameObject.SetActive(false);
         OnRecycle?.Invoke(this);
+    }
+
+    /// <summary>
+    /// Ép quái vật rút lui / tái chế dọn sạch sàn đấu khi wave hết hạn.
+    /// </summary>
+    public void ForceRetreat()
+    {
+        Recycle();
     }
 
     private void SelfDestruct()

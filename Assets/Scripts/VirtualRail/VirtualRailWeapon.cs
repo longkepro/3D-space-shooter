@@ -36,6 +36,13 @@ namespace VirtualRail
         public float fireRate = 0.15f;
         private float nextFireTime = 0f;
 
+        [Header("Charge Shot Integration (Star Fox 64 1B)")]
+        [SerializeField] private float holdToChargeThreshold = 0.25f;
+        private float _fireButtonDownTime = -1f;
+        private bool _isChargeActive = false;
+        private float _weaponCooldownUntil = 0f;
+        private AimAssistModule _cachedAimAssist;
+
         // Ụ súng xoay cơ học (Gimbaled Turrets - 0 GC Alloc)
         private Vector3 _currentGimbalDir = Vector3.forward;
         private bool _gimbalInitialized = false;
@@ -113,6 +120,22 @@ namespace VirtualRail
             if (_cachedCam == null) _cachedCam = Camera.main;
         }
 
+        private void EnsureAimAssist()
+        {
+            if (_cachedAimAssist == null)
+            {
+                _cachedAimAssist = GetComponent<AimAssistModule>();
+                if (_cachedAimAssist == null && anchor != null)
+                {
+                    _cachedAimAssist = anchor.GetComponentInChildren<AimAssistModule>();
+                }
+                if (_cachedAimAssist == null)
+                {
+                    _cachedAimAssist = FindAnyObjectByType<AimAssistModule>();
+                }
+            }
+        }
+
         private void Update()
         {
             var cfg = anchor != null ? anchor.config : null;
@@ -123,14 +146,94 @@ namespace VirtualRail
 
             if (ship != null && ship.IsDead) return;
 
-            bool isManualFire = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
-            bool isInputReaderFiring = inputReader != null && inputReader.IsFiring();
-            bool isReticleAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
-            bool isHoverFire = cfg != null && cfg.enableMouseHoverFire && !cfg.enableMouseAim && reticle != null && reticle.IsMouseTouchingReticle;
+            EnsureAimAssist();
 
-            if (isManualFire || isInputReaderFiring || isReticleAutoFire || isHoverFire)
+            bool isFireButton = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
+            bool isInputReaderFiring = inputReader != null && inputReader.IsFiring();
+            bool isManualFire = isFireButton || isInputReaderFiring;
+
+            bool fireDown = Input.GetButtonDown("Fire1") || Input.GetKeyDown(KeyCode.Space);
+            bool fireUp = Input.GetButtonUp("Fire1") || Input.GetKeyUp(KeyCode.Space);
+
+            // Kiểm tra trạng thái nạp đạn tụ lực & khóa hồi nòng (0 GC Alloc)
+            bool isAimAssistCharging = (_cachedAimAssist != null && _cachedAimAssist.IsCharging);
+            bool canFireRegular = (Time.time >= _weaponCooldownUntil) && !_isChargeActive && !isAimAssistCharging;
+
+            // 1. Máy trạng thái Tap-to-Fire vs Hold-to-Charge (Chuẩn Star Fox 64 1B - 0 Latency)
+            if (_cachedAimAssist != null)
             {
-                if (Time.time >= nextFireTime)
+                if (fireDown)
+                {
+                    _fireButtonDownTime = Time.time;
+                    _isChargeActive = false;
+
+                    // Phản xạ tức thời phát bắn đầu tiên (0ms input lag), chỉ bắn khi không trong cooldown
+                    if (canFireRegular && Time.time >= nextFireTime)
+                    {
+                        FireAllMuzzles();
+                        nextFireTime = Time.time + fireRate;
+                    }
+                }
+                else if (isManualFire && _fireButtonDownTime > 0f)
+                {
+                    float holdDuration = Time.time - _fireButtonDownTime;
+                    if (holdDuration >= holdToChargeThreshold)
+                    {
+                        // Giữ phím >= 0.25s -> Chuyển sang nạp tụ lực, ngừng bắn đạn thường
+                        // Chỉ kích hoạt nạp đạn nếu đã hết thời gian hồi nòng
+                        if (Time.time >= _weaponCooldownUntil)
+                        {
+                            if (!_isChargeActive)
+                            {
+                                _isChargeActive = true;
+                                _cachedAimAssist.BeginChargingFromWeapon();
+                            }
+                            _cachedAimAssist.UpdateChargeFromWeapon(Time.deltaTime);
+                        }
+                    }
+                    else
+                    {
+                        // Trong khoảng 0 < holdDuration < 0.25s: Bắn đạn liên thanh bình thường
+                        if (canFireRegular && Time.time >= nextFireTime)
+                        {
+                            FireAllMuzzles();
+                            nextFireTime = Time.time + fireRate;
+                        }
+                    }
+                }
+
+                if (fireUp)
+                {
+                    if (_isChargeActive)
+                    {
+                        _cachedAimAssist.ReleaseChargeFromWeapon();
+                        _isChargeActive = false;
+
+                        // Kích hoạt Khóa hồi nòng sau khi phóng tụ lực (chuẩn Star Fox 64, chặn 100% rò rỉ đạn thường)
+                        float cooldown = (cfg != null && cfg.postChargeCooldown > 0f) ? cfg.postChargeCooldown : 0.35f;
+                        _weaponCooldownUntil = Time.time + cooldown;
+                        nextFireTime = _weaponCooldownUntil;
+                    }
+                    _fireButtonDownTime = -1f;
+                }
+            }
+            else
+            {
+                // Fallback nếu không có AimAssistModule
+                if (isManualFire && canFireRegular && Time.time >= nextFireTime)
+                {
+                    FireAllMuzzles();
+                    nextFireTime = Time.time + fireRate;
+                }
+            }
+
+            // 2. Tự động bắn (Auto-fire) - Bị chặn hoàn toàn khi đang nạp tụ lực HOẶC trong thời gian hồi nòng
+            if (canFireRegular && !isManualFire)
+            {
+                bool isReticleAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
+                bool isHoverFire = cfg != null && cfg.enableMouseHoverFire && !cfg.enableMouseAim && reticle != null && reticle.IsMouseTouchingReticle;
+
+                if ((isReticleAutoFire || isHoverFire) && Time.time >= nextFireTime)
                 {
                     FireAllMuzzles();
                     nextFireTime = Time.time + fireRate;
@@ -188,34 +291,36 @@ namespace VirtualRail
             }
         }
 
-        public void FireAllMuzzles()
+        /// <summary>
+        /// Tính toán điểm hội tụ độ sâu động theo trục ngắm của Camera (Dynamic Depth Convergence - 0 GC Alloc).
+        /// Dùng chung cho cả Súng Laser thường và Đạn Tụ Lực Dumb-fire.
+        /// </summary>
+        public Vector3 GetCurrentConvergencePoint(out bool foundTarget, out float closestDist)
         {
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
             if (reticle == null) reticle = FindAnyObjectByType<VirtualRailReticle>();
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
             if (anchor == null) anchor = FindAnyObjectByType<VirtualRailAnchor>();
-            if (reticle == null || anchor == null || anchor.config == null) return;
 
-            Vector3 aimWorld = reticle.WorldPosition;
-            var cfg = anchor.config;
+            Vector3 aimWorld = (reticle != null) ? reticle.WorldPosition : (transform.position + transform.forward * 150f);
+            var cfg = (anchor != null) ? anchor.config : null;
 
-            float closestDist = float.MaxValue;
+            closestDist = float.MaxValue;
             Vector3 dynamicTarget = aimWorld;
-            bool foundTarget = false;
+            foundTarget = false;
 
-            // Giai đoạn 1: Dynamic Depth Convergence (Hội tụ độ sâu động theo mục tiêu)
-            if (cfg.enableDynamicDepthConvergence)
+            if (cfg != null && cfg.enableDynamicDepthConvergence)
             {
                 Camera cam = _cachedCam != null ? _cachedCam : Camera.main;
                 Vector3 camPos = cam != null ? cam.transform.position : transform.position;
                 Vector3 rayDir = (aimWorld - camPos).normalized;
 
-                // Chiếu tia từ phía trước mũi tàu dọc theo trục ngắm của Camera để không quét trúng thân tàu
                 float camToShipProj = Vector3.Dot(transform.position - camPos, rayDir);
                 Vector3 rayStart = camPos + rayDir * Mathf.Max(0f, camToShipProj + 1.5f);
                 float maxScanDist = cfg.maxConvergenceScanDistance > 0f ? cfg.maxConvergenceScanDistance : 250f;
                 float scanDist = Mathf.Max(50f, maxScanDist - camToShipProj);
                 float scanRadius = cfg.dynamicConvergenceRadius > 0.05f ? cfg.dynamicConvergenceRadius : 0.8f;
+                LayerMask mask = (cfg.enemyLayer.value != 0) ? cfg.enemyLayer : ~0;
 
                 int hitCount = Physics.SphereCastNonAlloc(
                     rayStart,
@@ -223,10 +328,11 @@ namespace VirtualRail
                     rayDir,
                     _depthScanHits,
                     scanDist,
-                    cfg.enemyLayer,
+                    mask,
                     QueryTriggerInteraction.Ignore
                 );
 
+                Vector3 fwd = (anchor != null) ? anchor.transform.forward : transform.forward;
                 for (int i = 0; i < hitCount; i++)
                 {
                     RaycastHit h = _depthScanHits[i];
@@ -238,25 +344,29 @@ namespace VirtualRail
                                   h.transform.CompareTag("Player");
                     if (isSelf) continue;
 
-                    // Đảm bảo mục tiêu nằm ở phía trước tàu theo trục tiến của ray
                     Vector3 toHit = h.point - transform.position;
-                    if (Vector3.Dot(toHit, anchor.transform.forward) <= 1.0f) continue;
+                    if (Vector3.Dot(toHit, fwd) <= 1.0f) continue;
 
                     if (h.distance < closestDist)
                     {
                         closestDist = h.distance;
-                        // Nếu là kẻ địch có EnemyMovement, chụm đạn trực diện vào tâm kẻ địch; nếu là thiên thạch, chụm vào điểm chạm bề mặt
                         var enemy = h.transform.GetComponentInParent<EnemyMovement>();
                         dynamicTarget = enemy != null ? enemy.transform.position : h.point;
                         foundTarget = true;
                     }
                 }
-
-                if (foundTarget)
-                {
-                    aimWorld = dynamicTarget;
-                }
             }
+
+            return foundTarget ? dynamicTarget : aimWorld;
+        }
+
+        public void FireAllMuzzles()
+        {
+            if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
+            if (anchor == null) anchor = FindAnyObjectByType<VirtualRailAnchor>();
+            var cfg = (anchor != null) ? anchor.config : null;
+
+            Vector3 aimWorld = GetCurrentConvergencePoint(out bool foundTarget, out float closestDist);
 
             // 1. Ưu tiên bắn từ nòng súng sạch VirtualRailMuzzle
             if (cleanMuzzles != null && cleanMuzzles.Length > 0)
@@ -397,6 +507,9 @@ namespace VirtualRail
             _laserLevel = LaserUpgradeLevel.Single;
             _goldRingsCollected = 0;
             nextFireTime = 0f;
+            _weaponCooldownUntil = 0f;
+            _isChargeActive = false;
+            _fireButtonDownTime = -1f;
         }
     }
 }

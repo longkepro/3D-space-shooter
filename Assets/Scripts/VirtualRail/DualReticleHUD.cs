@@ -29,6 +29,21 @@ namespace VirtualRail
         public Image multiplierDecayFill;
         public Text grazePopupText;
 
+        [Header("Charge Meter HUD (Star Fox 64 Presentation)")]
+        public AimAssistModule aimAssist;
+        public RectTransform chargeMeterRoot;
+        public Image chargeMeterFill;
+        public Text chargeStatusText;
+
+        [Header("Arcade Lock-on Brackets (Star Fox 64 Presentation)")]
+        public RectTransform lockBracketsRoot;
+        private RectTransform[] _bracketCorners;
+        private Image[] _bracketImages;
+
+        private static readonly string CHARGE_LOCKED_STR = "TARGET LOCKED";
+        private static readonly string CHARGE_READY_STR = "CHARGE READY";
+        private static readonly string CHARGE_CHARGING_STR = "CHARGING...";
+
         // 0 GC String Cache: Bảng chuỗi cự ly tĩnh từ 0m đến 350m để triệt tiêu hoàn toàn Heap Allocation trong LateUpdate
         private static readonly string[] DIST_STRINGS = PrecomputeDistanceStrings();
 
@@ -164,6 +179,12 @@ namespace VirtualRail
 
             // 5. Cập nhật Telemetry Hệ số nhân Combo & Lướt cận kề Graze (0 GC Alloc)
             UpdateMultiplierAndGrazeHUD();
+
+            // 6. Cập nhật Thanh tiến độ Tụ lực (Charge Meter & Reticle Glow - 0 GC Alloc)
+            UpdateChargeMeterHUD();
+
+            // 7. Cập nhật Khung khóa mục tiêu Arcade Procedural Brackets (0 GC Alloc)
+            UpdateLockBracketsHUD(cfg);
         }
 
         /// <summary>
@@ -525,6 +546,12 @@ namespace VirtualRail
 
             // Tự động kiểm tra hoặc sinh Multiplier Badge & Decay Gauge UI
             EnsureMultiplierBadgeHUD();
+
+            // Tự động kiểm tra hoặc sinh Thanh tiến độ Tụ lực (Charge Meter HUD)
+            EnsureChargeMeterHUD(farSize);
+
+            // Tự động kiểm tra hoặc sinh Khung khóa mục tiêu Arcade (Lock-on Brackets HUD)
+            EnsureLockBracketsHUD(cfg);
         }
 
         private void EnsureMultiplierBadgeHUD()
@@ -747,6 +774,356 @@ namespace VirtualRail
             Image img = line.AddComponent<Image>();
             img.color = color;
             img.raycastTarget = false;
+        }
+
+        private void EnsureChargeMeterHUD(float farSize)
+        {
+            if (chargeMeterRoot != null || farCrosshairUI == null) return;
+
+            Transform existingMeter = farCrosshairUI.Find("ChargeMeter");
+            if (existingMeter != null)
+            {
+                chargeMeterRoot = existingMeter.GetComponent<RectTransform>();
+                chargeMeterFill = existingMeter.Find("ChargeTrack/ChargeFill")?.GetComponent<Image>();
+                chargeStatusText = existingMeter.Find("ChargeStatus")?.GetComponent<Text>();
+                return;
+            }
+
+            Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // 1. Root Container đặt ngay dưới tâm ngắm Far Crosshair
+            GameObject rootObj = new GameObject("ChargeMeter");
+            rootObj.transform.SetParent(farCrosshairUI, false);
+            chargeMeterRoot = rootObj.AddComponent<RectTransform>();
+            chargeMeterRoot.anchoredPosition = new Vector2(0f, -farSize * 0.5f - 8f);
+            chargeMeterRoot.sizeDelta = new Vector2(64f, 18f);
+
+            // 2. Track Background
+            GameObject trackObj = new GameObject("ChargeTrack");
+            trackObj.transform.SetParent(rootObj.transform, false);
+            RectTransform trackRt = trackObj.AddComponent<RectTransform>();
+            trackRt.anchorMin = new Vector2(0.5f, 1f);
+            trackRt.anchorMax = new Vector2(0.5f, 1f);
+            trackRt.pivot = new Vector2(0.5f, 1f);
+            trackRt.anchoredPosition = Vector2.zero;
+            trackRt.sizeDelta = new Vector2(64f, 5f);
+
+            Image trackImg = trackObj.AddComponent<Image>();
+            trackImg.color = new Color(0.02f, 0.05f, 0.08f, 0.85f);
+            trackImg.raycastTarget = false;
+
+            Outline trackOutline = trackObj.AddComponent<Outline>();
+            trackOutline.effectColor = new Color(0.1f, 0.85f, 1f, 0.5f);
+            trackOutline.effectDistance = new Vector2(0.8f, -0.8f);
+
+            // 3. Fill Bar
+            GameObject fillObj = new GameObject("ChargeFill");
+            fillObj.transform.SetParent(trackObj.transform, false);
+            RectTransform fillRt = fillObj.AddComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.sizeDelta = Vector2.zero;
+            fillRt.offsetMin = new Vector2(1f, 1f);
+            fillRt.offsetMax = new Vector2(-1f, -1f);
+
+            chargeMeterFill = fillObj.AddComponent<Image>();
+            chargeMeterFill.type = Image.Type.Filled;
+            chargeMeterFill.fillMethod = Image.FillMethod.Horizontal;
+            chargeMeterFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            chargeMeterFill.color = new Color(0.1f, 0.95f, 1f, 1f);
+            chargeMeterFill.fillAmount = 0f;
+            chargeMeterFill.raycastTarget = false;
+
+            // 4. Status Text
+            GameObject txtObj = new GameObject("ChargeStatus");
+            txtObj.transform.SetParent(rootObj.transform, false);
+            RectTransform txtRt = txtObj.AddComponent<RectTransform>();
+            txtRt.anchorMin = new Vector2(0.5f, 0f);
+            txtRt.anchorMax = new Vector2(0.5f, 0f);
+            txtRt.pivot = new Vector2(0.5f, 0f);
+            txtRt.anchoredPosition = new Vector2(0f, 0f);
+            txtRt.sizeDelta = new Vector2(80f, 12f);
+
+            chargeStatusText = txtObj.AddComponent<Text>();
+            chargeStatusText.font = defaultFont;
+            chargeStatusText.fontSize = 9;
+            chargeStatusText.fontStyle = FontStyle.Bold;
+            chargeStatusText.alignment = TextAnchor.MiddleCenter;
+            chargeStatusText.color = new Color(0.1f, 0.95f, 1f, 0.95f);
+            chargeStatusText.text = CHARGE_CHARGING_STR;
+            chargeStatusText.raycastTarget = false;
+
+            Outline txtOutline = txtObj.AddComponent<Outline>();
+            txtOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+            txtOutline.effectDistance = new Vector2(1f, -1f);
+
+            chargeMeterRoot.gameObject.SetActive(false);
+        }
+
+        private void UpdateChargeMeterHUD()
+        {
+            if (aimAssist == null)
+            {
+                aimAssist = (anchor != null) ? anchor.GetComponentInChildren<AimAssistModule>() : null;
+                if (aimAssist == null) aimAssist = FindAnyObjectByType<AimAssistModule>();
+            }
+
+            if (aimAssist == null || chargeMeterRoot == null) return;
+
+            if (aimAssist.IsCharging)
+            {
+                if (!chargeMeterRoot.gameObject.activeSelf)
+                {
+                    chargeMeterRoot.gameObject.SetActive(true);
+                }
+
+                float progress = aimAssist.ChargeProgress;
+                if (chargeMeterFill != null)
+                {
+                    chargeMeterFill.fillAmount = progress;
+
+                    Color chargeColor;
+                    if (aimAssist.IsFullyCharged)
+                    {
+                        if (aimAssist.IsHardLocked)
+                        {
+                            float pulse = 0.75f + 0.25f * Mathf.PingPong(Time.time * 12f, 1f);
+                            chargeColor = new Color(1f, 0.2f, 0.2f, pulse);
+                        }
+                        else
+                        {
+                            // Nhấp nháy ánh vàng/cam rực rỡ khi đầy 100%
+                            float pulse = 0.5f + 0.5f * Mathf.PingPong(Time.time * 6f, 1f);
+                            chargeColor = Color.Lerp(new Color(1f, 0.75f, 0.1f), new Color(1f, 0.35f, 0.05f), pulse);
+                        }
+                    }
+                    else if (progress >= 0.70f)
+                    {
+                        // Pha 2: Gần xong (70% - 99%) - Vàng cam cảnh báo chớp nhanh
+                        float pulse = 0.6f + 0.4f * Mathf.PingPong(Time.time * 14f, 1f);
+                        chargeColor = new Color(1f, 0.70f, 0.1f, pulse);
+                    }
+                    else
+                    {
+                        // Pha 1: Đang nạp (0% - 70%) - Lam ngọc êm dịu
+                        chargeColor = Color.Lerp(new Color(0.1f, 0.95f, 1f), new Color(0.2f, 1f, 0.8f), progress / 0.7f);
+                    }
+                    chargeMeterFill.color = chargeColor;
+
+                    // Tô màu phát sáng đường viền tâm ngắm theo nhịp tụ lực
+                    SetBorderColors(chargeColor);
+                }
+
+                if (chargeStatusText != null)
+                {
+                    if (aimAssist.IsFullyCharged)
+                    {
+                        if (aimAssist.IsHardLocked)
+                        {
+                            chargeStatusText.text = CHARGE_LOCKED_STR;
+                            chargeStatusText.color = new Color(1f, 0.25f, 0.25f, 1f);
+                        }
+                        else
+                        {
+                            chargeStatusText.text = CHARGE_READY_STR;
+                            chargeStatusText.color = new Color(1f, 0.85f, 0.2f, 1f);
+                        }
+                    }
+                    else if (progress >= 0.70f)
+                    {
+                        chargeStatusText.text = CHARGE_CHARGING_STR;
+                        chargeStatusText.color = new Color(1f, 0.75f, 0.15f, 1f);
+                    }
+                    else
+                    {
+                        chargeStatusText.text = CHARGE_CHARGING_STR;
+                        chargeStatusText.color = new Color(0.1f, 0.95f, 1f, 1f);
+                    }
+                }
+            }
+            else
+            {
+                if (chargeMeterRoot.gameObject.activeSelf)
+                {
+                    chargeMeterRoot.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        private void EnsureLockBracketsHUD(VirtualRailConfig cfg)
+        {
+            if (lockBracketsRoot != null) return;
+
+            Transform existing = transform.Find("ArcadeLockBrackets");
+            if (existing != null)
+            {
+                lockBracketsRoot = existing.GetComponent<RectTransform>();
+                _bracketCorners = new RectTransform[4];
+                _bracketCorners[0] = existing.Find("Corner_TL")?.GetComponent<RectTransform>();
+                _bracketCorners[1] = existing.Find("Corner_TR")?.GetComponent<RectTransform>();
+                _bracketCorners[2] = existing.Find("Corner_BL")?.GetComponent<RectTransform>();
+                _bracketCorners[3] = existing.Find("Corner_BR")?.GetComponent<RectTransform>();
+                _bracketImages = lockBracketsRoot.GetComponentsInChildren<Image>(true);
+                return;
+            }
+
+            GameObject rootObj = new GameObject("ArcadeLockBrackets");
+            rootObj.transform.SetParent(transform, false);
+            lockBracketsRoot = rootObj.AddComponent<RectTransform>();
+            lockBracketsRoot.sizeDelta = new Vector2(80f, 80f);
+
+            _bracketCorners = new RectTransform[4];
+            _bracketImages = new Image[8];
+            int imgIdx = 0;
+
+            float armLen = 14f;
+            float armThick = 2.5f;
+            Color initCol = new Color(1f, 0.25f, 0.25f, 0.9f);
+
+            // TL (x = -1, y = 1)
+            _bracketCorners[0] = CreateCornerGroup(lockBracketsRoot, "Corner_TL", new Vector2(-30f, 30f));
+            _bracketImages[imgIdx++] = CreateBracketArm(_bracketCorners[0], "TL_H", new Vector2(armLen * 0.5f, 0f), new Vector2(armLen, armThick), initCol);
+            _bracketImages[imgIdx++] = CreateBracketArm(_bracketCorners[0], "TL_V", new Vector2(0f, -armLen * 0.5f), new Vector2(armThick, armLen), initCol);
+
+            // TR (x = 1, y = 1)
+            _bracketCorners[1] = CreateCornerGroup(lockBracketsRoot, "Corner_TR", new Vector2(30f, 30f));
+            _bracketImages[imgIdx++] = CreateBracketArm(_bracketCorners[1], "TR_H", new Vector2(-armLen * 0.5f, 0f), new Vector2(armLen, armThick), initCol);
+            _bracketImages[imgIdx++] = CreateBracketArm(_bracketCorners[1], "TR_V", new Vector2(0f, -armLen * 0.5f), new Vector2(armThick, armLen), initCol);
+
+            // BL (x = -1, y = -1)
+            _bracketCorners[2] = CreateCornerGroup(lockBracketsRoot, "Corner_BL", new Vector2(-30f, -30f));
+            _bracketImages[imgIdx++] = CreateBracketArm(_bracketCorners[2], "BL_H", new Vector2(armLen * 0.5f, 0f), new Vector2(armLen, armThick), initCol);
+            _bracketImages[imgIdx++] = CreateBracketArm(_bracketCorners[2], "BL_V", new Vector2(0f, armLen * 0.5f), new Vector2(armThick, armLen), initCol);
+
+            // BR (x = 1, y = -1)
+            _bracketCorners[3] = CreateCornerGroup(lockBracketsRoot, "Corner_BR", new Vector2(30f, -30f));
+            _bracketImages[imgIdx++] = CreateBracketArm(_bracketCorners[3], "BR_H", new Vector2(-armLen * 0.5f, 0f), new Vector2(armLen, armThick), initCol);
+            _bracketImages[imgIdx++] = CreateBracketArm(_bracketCorners[3], "BR_V", new Vector2(0f, armLen * 0.5f), new Vector2(armThick, armLen), initCol);
+
+            lockBracketsRoot.gameObject.SetActive(false);
+        }
+
+        private RectTransform CreateCornerGroup(Transform parent, string name, Vector2 pos)
+        {
+            GameObject obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+            RectTransform rt = obj.AddComponent<RectTransform>();
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = Vector2.zero;
+            return rt;
+        }
+
+        private Image CreateBracketArm(Transform parent, string name, Vector2 pos, Vector2 size, Color color)
+        {
+            GameObject obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+            RectTransform rt = obj.AddComponent<RectTransform>();
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+            Image img = obj.AddComponent<Image>();
+            img.color = color;
+            img.raycastTarget = false;
+            return img;
+        }
+
+        private void SetBracketColors(Color color)
+        {
+            if (_bracketImages == null) return;
+            for (int i = 0; i < _bracketImages.Length; i++)
+            {
+                if (_bracketImages[i] != null)
+                {
+                    _bracketImages[i].color = color;
+                }
+            }
+        }
+
+        private void UpdateLockBracketsHUD(VirtualRailConfig cfg)
+        {
+            if (aimAssist == null)
+            {
+                aimAssist = (anchor != null) ? anchor.GetComponentInChildren<AimAssistModule>() : null;
+                if (aimAssist == null) aimAssist = FindAnyObjectByType<AimAssistModule>();
+            }
+
+            if (aimAssist == null) return;
+            if (lockBracketsRoot == null) EnsureLockBracketsHUD(cfg);
+            if (lockBracketsRoot == null) return;
+
+            bool enableArcadeVisual = (cfg == null || cfg.enableArcadeLockVisual);
+
+            if (aimAssist.IsCharging && aimAssist.LockedTarget != null && enableArcadeVisual && mainCamera != null)
+            {
+                Vector3 screenPos = mainCamera.WorldToScreenPoint(aimAssist.LockedTarget.position);
+                if (screenPos.z > 0)
+                {
+                    if (!lockBracketsRoot.gameObject.activeSelf) lockBracketsRoot.gameObject.SetActive(true);
+
+                    lockBracketsRoot.position = screenPos;
+
+                    float lockProg = aimAssist.LockProgress;
+                    float chargeProg = aimAssist.ChargeProgress;
+                    bool isHardLocked = aimAssist.IsHardLocked;
+
+                    float bracketHalf;
+                    Color bracketColor;
+
+                    if (isHardLocked)
+                    {
+                        // Pha 3: SẠC HOÀN TẤT & KHÓA CỨNG 100% (Snap Clamp 44px, Đỏ Neon, Khóa góc 0 độ)
+                        bracketHalf = 22f;
+                        lockBracketsRoot.localRotation = Quaternion.identity;
+
+                        float pulse = 0.75f + 0.25f * Mathf.PingPong(Time.time * 12f, 1f);
+                        bracketColor = new Color(1f, 0.2f, 0.2f, pulse);
+                    }
+                    else if (chargeProg >= 0.70f)
+                    {
+                        // Pha 2: SẠC GẦN XONG (70% - 99%) - Co thắt nhanh về 52px, Dừng xoay, Chớp Vàng Cam cảnh báo dồn dập
+                        float subT = (chargeProg - 0.70f) / 0.30f;
+                        bracketHalf = Mathf.Lerp(42f, 26f, subT);
+                        lockBracketsRoot.localRotation = Quaternion.identity;
+
+                        float pulse = 0.5f + 0.5f * Mathf.PingPong(Time.time * 16f, 1f);
+                        bracketColor = new Color(1f, 0.70f, 0.1f, pulse);
+                    }
+                    else
+                    {
+                        // Pha 1: SẠC CHƯA XONG (0% - 70%) - Mở rộng 84px, Xoay đều tìm kiếm 90 deg/s, Màu Cyan thanh mảnh
+                        bracketHalf = 42f;
+                        float rotZ = (Time.time * 90f) % 360f;
+                        lockBracketsRoot.localRotation = Quaternion.Euler(0f, 0f, rotZ);
+
+                        float pulse = 0.6f + 0.4f * Mathf.PingPong(Time.time * 4f, 1f);
+                        bracketColor = new Color(0.1f, 0.95f, 1f, pulse);
+                    }
+
+                    if (_bracketCorners != null && _bracketCorners.Length == 4)
+                    {
+                        if (_bracketCorners[0] != null) _bracketCorners[0].anchoredPosition = new Vector2(-bracketHalf, bracketHalf);
+                        if (_bracketCorners[1] != null) _bracketCorners[1].anchoredPosition = new Vector2(bracketHalf, bracketHalf);
+                        if (_bracketCorners[2] != null) _bracketCorners[2].anchoredPosition = new Vector2(-bracketHalf, -bracketHalf);
+                        if (_bracketCorners[3] != null) _bracketCorners[3].anchoredPosition = new Vector2(bracketHalf, -bracketHalf);
+                    }
+
+                    SetBracketColors(bracketColor);
+
+                    // Phản hồi Reticle Convergence: Khi đã khóa cứng, co bóp nhẹ và nháy đỏ trên Far Crosshair
+                    if (isHardLocked && farCrosshairUI != null)
+                    {
+                        farCrosshairUI.localScale = new Vector3(currentScale * 0.92f, currentScale * 0.92f, 1f);
+                        SetBorderColors(new Color(1f, 0.25f, 0.25f, 0.95f));
+                    }
+
+                    return;
+                }
+            }
+
+            if (lockBracketsRoot.gameObject.activeSelf)
+            {
+                lockBracketsRoot.gameObject.SetActive(false);
+            }
         }
     }
 }

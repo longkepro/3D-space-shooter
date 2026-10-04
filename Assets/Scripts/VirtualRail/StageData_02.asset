@@ -19,14 +19,14 @@ MonoBehaviour:
   progressionSettings:
     completionMode: 1
     durationMinutes: 4.0
-    targetDistanceZ: 8400
-    baseForwardSpeed: 35
+    targetDistanceZ: 31200
+    baseForwardSpeed: 130
     warpDuration: 2.5
     warpSpeedMultiplier: 3.0
     targetEliminationCount: 60
   railSettings:
-    forwardSpeed: 35
-    stageDistanceZ: 8400
+    forwardSpeed: 130
+    stageDistanceZ: 31200
     warpDuration: 2.5
     warpSpeedMultiplier: 3
   environmentSettings:

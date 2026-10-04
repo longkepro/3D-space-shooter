@@ -12,22 +12,58 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
   m_Name: Formation_EchelonLine
   m_EditorClassIdentifier: 
-  patternName: Echelon Line (3 Ships)
+  patternName: Echelon Line (9 Ships)
   slots:
   - slotName: Leader
     localOffset: {x: 0, y: 0, z: 0}
     preferredArchetype: 3
     isLeader: 1
-    scaleMultiplier: 1.35
+    scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
-  - slotName: Left Wing
-    localOffset: {x: -10, y: 0, z: -4}
+  - slotName: Left Wing 1
+    localOffset: {x: -5, y: 2.5, z: 0}
     preferredArchetype: 1
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
-  - slotName: Right Wing
-    localOffset: {x: 10, y: 0, z: -4}
+  - slotName: Right Wing 1
+    localOffset: {x: 5, y: -2.5, z: 0}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Wing 2
+    localOffset: {x: 10, y: -5, z: 0}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Wing 3
+    localOffset: {x: 15, y: -7.5, z: 0}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Wing 2
+    localOffset: {x: -10, y: 5, z: 0}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Wing 3
+    localOffset: {x: -15, y: 7.5, z: 0}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Wing 4
+    localOffset: {x: -20, y: 10, z: 0}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Wing 4
+    localOffset: {x: 20, y: -10, z: 0}
     preferredArchetype: 1
     isLeader: 0
     scaleMultiplier: 1
@@ -39,4 +75,4 @@ MonoBehaviour:
   holdDistance: 60
   maxClosingSpeed: 25
   maxLifetime: 14
-  leaderDeathReaction: 0
+  leaderDeathReaction: 4

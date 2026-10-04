@@ -65,6 +65,8 @@ namespace VirtualRail
         private float _climaxTimer = 0f;
         private bool _pendingStageStart = false;
         private bool _stagePaletteApplied = false;
+        private float _waveGatingTimer = 0f;
+        private bool _isWaveGated = false;
 
         public StageData CurrentStageData => (stages != null && currentStageIndex >= 0 && currentStageIndex < stages.Length) ? stages[currentStageIndex] : null;
 
@@ -395,6 +397,8 @@ namespace VirtualRail
             _enemiesKilled = 0;
             _isBossSpawned = false;
             _climaxTimer = 0f;
+            _waveGatingTimer = 0f;
+            _isWaveGated = false;
 
             _normalSpeed = stage.GetBaseForwardSpeed();
             _warpDuration = stage.GetWarpDuration();
@@ -481,8 +485,11 @@ namespace VirtualRail
             switch (currentState)
             {
                 case StageState.InJourney:
-                    _stageTimer += dt;
-                    ProcessTimelineEvents();
+                    if (!_isWaveGated)
+                    {
+                        _stageTimer += dt;
+                    }
+                    ProcessTimelineEvents(dt);
                     UpdateJourneyState();
                     break;
 
@@ -502,7 +509,7 @@ namespace VirtualRail
             }
         }
 
-        private void ProcessTimelineEvents()
+        private void ProcessTimelineEvents(float dt)
         {
             StageData stage = CurrentStageData;
             if (stage == null || stage.timelineEvents == null || _nextTimelineIndex >= stage.timelineEvents.Length) return;
@@ -514,6 +521,40 @@ namespace VirtualRail
 
             if (currentVal >= evt.triggerValue)
             {
+                // Kiểm tra Wave Gating: Nếu là sự kiện sinh quái và yêu cầu chờ đợt trước dọn sạch
+                if (evt.eventType == StageTimelineEventType.SpawnScriptedSquad && waveSpawner != null)
+                {
+                    if (evt.waitMode == WaveWaitMode.WaitForStrictClear)
+                    {
+                        if (waveSpawner.IsCurrentWaveActive())
+                        {
+                            _isWaveGated = true;
+                            return; // Tạm dừng timeline, chờ người chơi tiêu diệt sạch đợt trước
+                        }
+                    }
+                    else if (evt.waitMode == WaveWaitMode.WaitForClearOrTimeout)
+                    {
+                        float timeout = evt.maxWaitTimeout > 0.1f ? evt.maxWaitTimeout : 14.0f;
+                        if (waveSpawner.IsCurrentWaveActive())
+                        {
+                            if (_waveGatingTimer < timeout)
+                            {
+                                _isWaveGated = true;
+                                _waveGatingTimer += dt;
+                                return; // Tiếp tục chờ giao chiến
+                            }
+                            else
+                            {
+                                // Quá hạn Timeout an toàn: Ép wave cũ rút lui giải phóng sàn đấu cho wave mới
+                                waveSpawner.ForceRetreatCurrentWave();
+                            }
+                        }
+                    }
+                }
+
+                // Sàn đấu đã sẵn sàng: mở khóa Gating và kích hoạt sự kiện
+                _isWaveGated = false;
+                _waveGatingTimer = 0f;
                 ExecuteTimelineEvent(in evt);
                 _nextTimelineIndex++;
             }

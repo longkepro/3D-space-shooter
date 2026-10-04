@@ -181,15 +181,38 @@ namespace VirtualRail
             }
         }
 
-        public void Recycle()
+        /// <summary>
+        /// Ép buộc quái vật chuyển sang pha Thoát ly (Exit / Peel-off) để dọn sạch sàn đấu khi wave hết hạn (0 GC Alloc).
+        /// </summary>
+        public void ForceExit()
+        {
+            if (_isActiveFSM && _currentPhase != LifecyclePhase.Exit)
+            {
+                EnterPhase(LifecyclePhase.Exit);
+            }
+        }
+
+        public void ResetState()
         {
             _isActiveFSM = false;
             _isInitialized = false;
+            _phaseTimer = 0f;
+            _currentPhase = LifecyclePhase.Telegraph;
             if (_collider != null)
             {
                 _collider.enabled = true;
                 if (_collider is BoxCollider box) box.size = _originalColliderSize;
             }
+        }
+
+        private void OnDisable()
+        {
+            ResetState();
+        }
+
+        public void Recycle()
+        {
+            ResetState();
 
             if (_movement != null)
             {

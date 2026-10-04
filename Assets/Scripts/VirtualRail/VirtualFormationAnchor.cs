@@ -48,30 +48,30 @@ namespace VirtualRail
                 case FormationType.WedgeV:
                     return new Vector3[]
                     {
-                        new Vector3(0f, 0f, 0f),      // Slot 0: Leader
-                        new Vector3(-7f, 0f, -8f),    // Slot 1: Left Wing 1
-                        new Vector3(7f, 0f, -8f),     // Slot 2: Right Wing 1
-                        new Vector3(-14f, 0f, -16f),  // Slot 3: Left Wing 2
-                        new Vector3(14f, 0f, -16f)    // Slot 4: Right Wing 2
+                        new Vector3(0f, -2.0f, 0f),     // Slot 0: Leader
+                        new Vector3(-8f, 2.0f, 0f),     // Slot 1: Left Wing 1
+                        new Vector3(8f, 2.0f, 0f),      // Slot 2: Right Wing 1
+                        new Vector3(-16f, 6.0f, 0f),    // Slot 3: Left Wing 2
+                        new Vector3(16f, 6.0f, 0f)      // Slot 4: Right Wing 2
                     };
 
                 case FormationType.EchelonLine:
                     return new Vector3[]
                     {
-                        new Vector3(0f, 0f, 0f),      // Slot 0: Leader
-                        new Vector3(-10f, 0f, -4f),   // Slot 1: Left Wing
-                        new Vector3(10f, 0f, -4f)     // Slot 2: Right Wing
+                        new Vector3(0f, 0f, 0f),        // Slot 0: Leader
+                        new Vector3(-12f, 2.5f, 0f),    // Slot 1: Left Wing
+                        new Vector3(12f, -2.5f, 0f)     // Slot 2: Right Wing
                     };
 
                 case FormationType.SpiralStream:
                 default:
                     return new Vector3[]
                     {
-                        new Vector3(0f, 0f, 0f),
-                        new Vector3(6f, 3f, -10f),
-                        new Vector3(0f, 6f, -20f),
-                        new Vector3(-6f, 3f, -30f),
-                        new Vector3(-6f, -3f, -40f)
+                        new Vector3(0f, 0f, 0f),        // Slot 0: Head
+                        new Vector3(7f, 4f, 0f),        // Slot 1: Segment 1
+                        new Vector3(12f, 0f, 0f),       // Slot 2: Segment 2
+                        new Vector3(7f, -4f, 0f),       // Slot 3: Segment 3
+                        new Vector3(0f, -8f, 0f)        // Slot 4: Segment 4
                     };
             }
         }
@@ -103,8 +103,17 @@ namespace VirtualRail
                 EnemyMovement enemy = assignedEnemies[i];
                 if (enemy == null) continue;
 
+                enemy.ResetState();
+                var fsm = enemy.GetComponent<EnemyLifecycleFSM>();
+                if (fsm != null)
+                {
+                    fsm.ResetState();
+                    fsm.enabled = false;
+                }
+
                 var wingman = enemy.GetComponent<FormationWingman>();
                 if (wingman == null) wingman = enemy.gameObject.AddComponent<FormationWingman>();
+                wingman.enabled = true;
 
                 bool isLeader = (i == 0);
                 if (isLeader) _leader = wingman;
@@ -120,7 +129,6 @@ namespace VirtualRail
                 wingman.InitializeSlot(i, isLeader, this, slotOffsets[i], shipSpawnPos, _assemblyTime);
                 _activeWingmen.Add(wingman);
 
-                enemy.ResetState();
                 enemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : _railAnchor.transform);
                 enemy.gameObject.SetActive(true);
             }
@@ -167,14 +175,23 @@ namespace VirtualRail
                 EnemyMovement enemy = assignedEnemies[i];
                 if (enemy == null) continue;
 
+                enemy.ResetState();
+                var fsm = enemy.GetComponent<EnemyLifecycleFSM>();
+                if (fsm != null)
+                {
+                    fsm.ResetState();
+                    fsm.enabled = false;
+                }
+
                 var slotDef = pattern.slots[i];
                 var wingman = enemy.GetComponent<FormationWingman>();
                 if (wingman == null) wingman = enemy.gameObject.AddComponent<FormationWingman>();
+                wingman.enabled = true;
 
                 bool isLeader = slotDef.isLeader || (i == 0);
                 if (isLeader) _leader = wingman;
 
-                float scale = slotDef.scaleMultiplier > 0.1f ? slotDef.scaleMultiplier : (isLeader ? 1.35f : 1.0f);
+                float scale = slotDef.scaleMultiplier > 0.01f ? slotDef.scaleMultiplier : 1.0f;
                 enemy.transform.localScale = Vector3.one * scale;
 
                 // Áp dụng Archetype chỉ định cho slot nếu có
@@ -194,7 +211,6 @@ namespace VirtualRail
                 wingman.InitializeSlot(i, isLeader, this, slotDef.localOffset, shipSpawnPos, _assemblyTime);
                 _activeWingmen.Add(wingman);
 
-                enemy.ResetState();
                 enemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : _railAnchor.transform);
                 enemy.gameObject.SetActive(true);
             }
@@ -269,7 +285,24 @@ namespace VirtualRail
             if (ship.IsLeader && !_isLeaderKilled)
             {
                 _isLeaderKilled = true;
-                TriggerLeaderDestroyed(ship.transform.position);
+                LeaderDeathReaction reaction = (_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.BreakShieldAndEngage;
+
+                if (reaction == LeaderDeathReaction.MaintainFormation)
+                {
+                    Debug.Log($"<color=cyan><b>[LEADER KILLED - MAINTAIN FORMATION]</b></color> Chỉ huy Slot 0 đã bị tiêu diệt! Phi đội gồm {_activeWingmen.Count} tàu còn lại VẪN GIỮ NGUYÊN CỰ LY ĐỘI HÌNH VÀ TIẾP TỤC CHIẾN ĐẤU!");
+                    for (int i = 0; i < _activeWingmen.Count; i++)
+                    {
+                        if (_activeWingmen[i] != null && _activeWingmen[i].gameObject.activeSelf)
+                        {
+                            _activeWingmen[i].OnLeaderDestroyedMaintainFormation();
+                        }
+                    }
+                }
+                else
+                {
+                    TriggerLeaderDestroyed(ship.transform.position);
+                    return;
+                }
             }
             else
             {
@@ -287,11 +320,12 @@ namespace VirtualRail
         /// </summary>
         private void TriggerLeaderDestroyed(Vector3 leaderPos)
         {
-            LeaderDeathReaction reaction = (_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.PanicScatter;
+            LeaderDeathReaction reaction = (_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.BreakShieldAndEngage;
             Debug.Log($"<color=red><b>[LEADER KILLED!]</b></color> Chỉ huy Slot 0 đã bị tiêu diệt! Toàn bộ phi đội thực hiện phản ứng: {reaction}!");
 
             Vector3 railFwd = (_railAnchor != null) ? _railAnchor.ForwardTangent : Vector3.forward;
             float railSpeed = (_railAnchor != null) ? _railAnchor.CurrentSpeed : 40f;
+            Transform playerTarget = VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : (_railAnchor != null ? _railAnchor.transform : null);
 
             for (int i = 0; i < _activeWingmen.Count; i++)
             {
@@ -299,11 +333,14 @@ namespace VirtualRail
                 {
                     switch (reaction)
                     {
+                        case LeaderDeathReaction.BreakShieldAndEngage:
+                            _activeWingmen[i].TriggerBreakShieldAndEngage(playerTarget);
+                            break;
                         case LeaderDeathReaction.RetreatWarp:
                             _activeWingmen[i].TriggerRetreatWarp(railFwd, railSpeed);
                             break;
                         case LeaderDeathReaction.KamikazeCharge:
-                            _activeWingmen[i].TriggerKamikazeCharge(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : (_railAnchor != null ? _railAnchor.transform : null));
+                            _activeWingmen[i].TriggerKamikazeCharge(playerTarget);
                             break;
                         case LeaderDeathReaction.PanicScatter:
                         default:
@@ -314,6 +351,26 @@ namespace VirtualRail
             }
 
             _activeWingmen.Clear();
+            gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// Ép buộc đội hình giải tán và rút lui ngay lập tức để giải phóng sàn đấu cho wave sau (0 GC Alloc).
+        /// </summary>
+        public void ForceRetreat()
+        {
+            Vector3 railFwd = (_railAnchor != null) ? _railAnchor.ForwardTangent : Vector3.forward;
+            float railSpeed = (_railAnchor != null) ? _railAnchor.CurrentSpeed : 40f;
+
+            for (int i = 0; i < _activeWingmen.Count; i++)
+            {
+                if (_activeWingmen[i] != null && _activeWingmen[i].gameObject.activeSelf)
+                {
+                    _activeWingmen[i].TriggerRetreatWarp(railFwd, railSpeed);
+                }
+            }
+            _activeWingmen.Clear();
+            gameObject.SetActive(false);
         }
 
         public void Recycle()

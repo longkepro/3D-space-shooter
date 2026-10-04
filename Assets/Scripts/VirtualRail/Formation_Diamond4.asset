@@ -12,29 +12,59 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
   m_Name: Formation_Diamond4
   m_EditorClassIdentifier: 
-  patternName: Diamond Guard (4 Ships)
+  patternName: Diamond Guard (9 Ships)
   slots:
   - slotName: Apex Leader
     localOffset: {x: 0, y: 0, z: 0}
     preferredArchetype: 3
     isLeader: 1
-    scaleMultiplier: 1.35
+    scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Left Guard
-    localOffset: {x: -6, y: 0, z: -6}
+    localOffset: {x: -15, y: 0, z: 0}
     preferredArchetype: 4
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Right Guard
-    localOffset: {x: 6, y: 0, z: -6}
+    localOffset: {x: 15, y: 0, z: 0}
     preferredArchetype: 4
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
-  - slotName: Rear Anchor
-    localOffset: {x: 0, y: 0, z: -12}
-    preferredArchetype: 2
+  - slotName: Bottom Guard
+    localOffset: {x: 0, y: -16, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Top Guard
+    localOffset: {x: 0, y: 16, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Top-Left Escort
+    localOffset: {x: -7, y: 8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Bottom-Left Escort
+    localOffset: {x: -7, y: -8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Top-Right Escort
+    localOffset: {x: 7, y: 8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Bottom-Right Escort
+    localOffset: {x: 7, y: -8, z: 0}
+    preferredArchetype: 4
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
@@ -45,4 +75,4 @@ MonoBehaviour:
   holdDistance: 65
   maxClosingSpeed: 25
   maxLifetime: 14
-  leaderDeathReaction: 0
+  leaderDeathReaction: 4

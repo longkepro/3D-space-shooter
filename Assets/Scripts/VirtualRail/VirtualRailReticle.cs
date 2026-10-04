@@ -37,6 +37,7 @@ namespace VirtualRail
         public void SetMouseTouching(bool state) => isMouseTouchingReticle = state;
 
         private DualReticleHUD hud;
+        private AimAssistModule _aimAssist;
         private Vector2 prevMousePos;
         private float autoFireTimer;
 
@@ -260,6 +261,9 @@ namespace VirtualRail
                 localPos2D = currentBounds.Clamp(new Vector2(targetX, targetY));
             }
 
+            // Áp dụng lực hút từ tính của hồng tâm vào mục tiêu khi đang tụ lực (Reticle Magnetism - 0 GC Alloc)
+            ApplyReticleMagnetism(cfg);
+
             // Cập nhật vị trí transform cục bộ
             transform.localPosition = LocalPosition3D;
 
@@ -268,6 +272,46 @@ namespace VirtualRail
             {
                 UpdateCrosshairUI();
                 CheckMouseTouchReticle(cfg);
+            }
+        }
+
+        /// <summary>
+        /// Áp dụng lực hút từ tính mềm vào mục tiêu đang bị khóa (Reticle Magnetism - 0 GC Alloc).
+        /// Hỗ trợ người chơi giữ tâm ngắm bám chặt vào kẻ địch trong pha tụ lực chuẩn Arcade.
+        /// </summary>
+        private void ApplyReticleMagnetism(VirtualRailConfig cfg)
+        {
+            if (cfg == null || !cfg.enableReticleMagnetism || anchor == null) return;
+
+            if (_aimAssist == null)
+            {
+                _aimAssist = anchor.GetComponentInChildren<AimAssistModule>();
+                if (_aimAssist == null) _aimAssist = FindAnyObjectByType<AimAssistModule>();
+            }
+
+            if (_aimAssist == null || !_aimAssist.IsCharging || _aimAssist.LockedTarget == null) return;
+
+            Vector3 targetLocal = anchor.ToLocalPoint(_aimAssist.LockedTarget.position);
+            // Chỉ hút nếu mục tiêu ở phía trước phi thuyền (tránh lỗi chia 0 hoặc hút ngược ra sau)
+            if (targetLocal.z <= 10f) return;
+
+            Vector2 targetPos2D = new Vector2(targetLocal.x, targetLocal.y);
+            Vector2 diff = targetPos2D - localPos2D;
+            float dist = diff.magnitude;
+
+            // Kiểm tra góc nón từ tính tối đa
+            float maxAngle = cfg.reticleMagnetismMaxAngle > 1f ? cfg.reticleMagnetismMaxAngle : 14f;
+            float maxDist = Mathf.Tan(maxAngle * Mathf.Deg2Rad) * targetLocal.z;
+
+            if (dist <= maxDist && dist > 0.01f)
+            {
+                // Lực hút tăng dần theo tiến trình khóa LockProgress (bắt dính êm ái)
+                float progress = _aimAssist.LockProgress;
+                float pullFactor = cfg.reticleMagnetismStrength * Mathf.Lerp(0.35f, 1.0f, progress);
+                float lerpSpeed = pullFactor * 10f;
+
+                localPos2D = Vector2.MoveTowards(localPos2D, targetPos2D, lerpSpeed * Time.deltaTime * Mathf.Min(dist, 20f));
+                localPos2D = currentBounds.Clamp(localPos2D);
             }
         }
 

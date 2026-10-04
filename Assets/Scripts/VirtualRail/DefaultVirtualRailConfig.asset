@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cc0fa9c728d55b428f256f5340321d5, type: 3}
   m_Name: DefaultVirtualRailConfig
   m_EditorClassIdentifier: 
-  forwardSpeed: 28
+  forwardSpeed: 120
   boostMultiplier: 1.5
   convergenceDistance: 150
   enableDynamicDepthConvergence: 1
   dynamicConvergenceRadius: 2.5
   maxConvergenceScanDistance: 250
-  enableDualReticle: 1
+  enableDualReticle: 0
   nearReticleDistance: 35
   farReticleSize: 56
   nearReticleSize: 28
@@ -89,18 +89,30 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 4294967295
-  chargeTime: 1.2
+  chargeTime: 0.5
   lockConeAngle: 18
   lockMaxDistance: 250
+  chargeShotBaseSpeed: 240
+  chargeShotTurnRate: 420
+  postChargeCooldown: 0.35
+  enableChargeVelocityInheritance: 1
+  enableChargeMuzzleVisual: 1
+  chargeMuzzleMaxDiameter: 1
+  enableEarlyLockScan: 1
+  enableReticleMagnetism: 1
+  reticleMagnetismStrength: 0.35
+  reticleMagnetismMaxAngle: 14
+  lockAcquisitionTime: 0.5
+  enableArcadeLockVisual: 1
   useSegmentedLaser: 1
-  laserBoltSpeed: 220
+  laserBoltSpeed: 420
   laserBoltLength: 8.5
   laserBoltWidth: 4
   laserBoltCollisionRadius: 1
-  enableLateralVelocityInheritance: 0
+  enableLateralVelocityInheritance: 1
   lateralVelocityWeight: 0.85
   laserBoltLifetime: 2
-  laserColor: {r: 1, g: 0.64705884, b: 0, a: 1}
+  laserColor: {r: 0.8627451, g: 0.078431375, b: 0.23529412, a: 1}
   laserBoltMaterial: {fileID: 2100000, guid: 123ac6dc79004e54b8b352a7e64acdca, type: 2}
   useRailWaveSpawner: 1
   waveSpawnInterval: 3.5

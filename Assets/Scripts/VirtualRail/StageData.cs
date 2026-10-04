@@ -28,6 +28,13 @@ namespace VirtualRail
         SpawnBoss = 5            // Kích hoạt trận đấu Boss
     }
 
+    public enum WaveWaitMode
+    {
+        Immediate = 0,               // Chạy ngay lập tức (không chờ wave trước kết thúc)
+        WaitForClearOrTimeout = 1,   // Chờ wave trước sạch hoặc quá timeout an toàn
+        WaitForStrictClear = 2       // Bắt buộc tiêu diệt sạch wave trước mới spawn
+    }
+
     public enum StageClimaxType
     {
         DistanceReached = 0,
@@ -99,6 +106,12 @@ namespace VirtualRail
         public int squadCount;
         [Tooltip("Mẫu đội hình bay Data-Driven (nếu gán, sẽ ưu tiên dùng mẫu này thay vì lính lẻ)")]
         public FormationPattern scriptedFormationPattern;
+
+        [Header("Wave Pacing & Gating")]
+        [Tooltip("Chế độ chờ đợt quái trước dọn sạch trước khi kích hoạt đợt này")]
+        public WaveWaitMode waitMode;
+        [Tooltip("Thời gian chờ tối đa (giây) nếu chọn WaitForClearOrTimeout trước khi ép wave cũ rút lui (mặc định 14s)")]
+        public float maxWaitTimeout;
 
         [Header("Speed & Environment Control")]
         public float targetSpeed;
@@ -319,31 +332,23 @@ namespace VirtualRail
     [CreateAssetMenu(fileName = "StageData", menuName = "Virtual Rail/Stage Data", order = 2)]
     public class StageData : ScriptableObject
     {
-        [Header("Stage Identity")]
         public string stageId = "Stage_01";
         public string stageTitle = "STAGE 1: OPERATION METEOR BREACH";
         public string stageSubtitle = "SECTOR ALPHA - INITIALIZE";
         public int stageIndex = 1;
 
-        [Header("1. Progression & Completion Mode (Thời Gian & Cự Ly)")]
         public StageProgressionSettings progressionSettings = StageProgressionSettings.Default;
 
-        [Header("Legacy Rail Settings (Bảo lưu tương thích ngược)")]
         public StageRailSettings railSettings = StageRailSettings.Default;
 
-        [Header("2. Environment & Atmosphere")]
         public StageEnvironmentSettings environmentSettings = StageEnvironmentSettings.Default;
 
-        [Header("3. Enemy & Wave Palette (Không Dùng Fallback Mặc Định)")]
         public StageEnemySettings enemySettings = StageEnemySettings.Default;
 
-        [Header("4. Hazards & Collectibles")]
         public StageHazardSettings hazardSettings = StageHazardSettings.Default;
 
-        [Header("5. Climax & Boss Encounter")]
         public StageClimaxSettings climaxSettings = StageClimaxSettings.Default;
 
-        [Header("6. Scripted Timeline (Kịch Bản Màn Chơi Theo Mốc)")]
         public StageTimelineEvent[] timelineEvents;
 
         /// <summary>

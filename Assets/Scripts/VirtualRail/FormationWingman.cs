@@ -17,7 +17,8 @@ namespace VirtualRail
         {
             Assembling,   // Đang bay theo đường cong Bézier nhập đội
             LockedInSlot, // Đã khóa cứng đồng điệu theo Slot của Anchor
-            PanicScatter  // Hoảng loạn phân rã khi mất chỉ huy
+            PanicScatter, // Hoảng loạn phân rã khi mất chỉ huy
+            FreeCombat    // Tự do chiến đấu khi mất chỉ huy và mất khiên (không tự hủy)
         }
 
         [Header("Wingman Info")]
@@ -182,6 +183,61 @@ namespace VirtualRail
         }
 
         /// <summary>
+        /// Kích hoạt cơ chế giữ nguyên đội hình (Maintain Formation) khi Tàu Chỉ Huy bị hạ gục.
+        /// Đội hình KHÔNG tan rã, tàu cánh tiếp tục khóa vị trí theo Anchor, lá chắn dập tắt để tạo cửa sổ sát thương.
+        /// </summary>
+        public void OnLeaderDestroyedMaintainFormation()
+        {
+            // Vẫn giữ nguyên trạng thái khóa vị trí theo Anchor (LockedSlot)
+            // Không gán _formationAnchor = null
+
+            // Dập tắt lá chắn bảo vệ của ShieldBearer để thưởng cho người chơi khi đã bắn hạ Leader
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null)
+            {
+                _health.SetShieldActive(false);
+            }
+
+            Debug.Log($"<color=cyan><b>[MAINTAIN FORMATION]</b></color> Chỉ huy hy sinh nhưng tàu cánh Slot {_slotIndex} tiếp tục giữ vững vị trí đội hình!");
+        }
+
+        /// <summary>
+        /// Kích hoạt cơ chế phá khiên và tiếp tục giao chiến tự do (Break Shield & Engage).
+        /// Khi Tàu Chỉ Huy bị hạ, khiên dập tắt ngay, quái KHÔNG tự hủy và tiếp tục bay bắn người chơi.
+        /// </summary>
+        public void TriggerBreakShieldAndEngage(Transform playerTarget)
+        {
+            _state = WingmanState.FreeCombat;
+            _formationAnchor = null;
+
+            // 1. Dập tắt 100% lá chắn bảo vệ
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null)
+            {
+                _health.SetShieldActive(false);
+                // Cung cấp 0.5s grace period để không chết oan do vụ nổ của Chỉ Huy ở cạnh bên
+                _health.TriggerInvulnerability(0.5f);
+            }
+
+            // 2. Kích hoạt lại EnemyMovement để quái tiếp tục hành trình bay theo ray
+            if (_movement == null) _movement = GetComponent<EnemyMovement>();
+            if (_movement != null)
+            {
+                _movement.enabled = true;
+                _movement.SetTarget(playerTarget != null ? playerTarget : (VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : null));
+            }
+
+            // 3. Kích hoạt lại hệ thống bắn đạn EnemyAttack
+            var attack = GetComponent<EnemyAttack>();
+            if (attack != null)
+            {
+                attack.enabled = true;
+            }
+
+            Debug.Log($"<color=green><b>[BREAK SHIELD & ENGAGE]</b></color> Tàu cánh Slot {_slotIndex} mất khiên và tiếp tục chiến đấu!");
+        }
+
+        /// <summary>
         /// Kích hoạt cơ chế phân rã hoảng loạn (Panic Scatter) khi Tàu chỉ huy bị tiêu diệt.
         /// </summary>
         public void TriggerPanicScatter(Vector3 leaderPos, Vector3 railForward, float railSpeed)
@@ -269,21 +325,35 @@ namespace VirtualRail
             return p;
         }
 
+        public void ResetState()
+        {
+            _state = WingmanState.Assembling;
+            _formationAnchor = null;
+            _assemblyTimer = 0f;
+            _panicTimer = 0f;
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null)
+            {
+                _health.SetShieldActive(false);
+            }
+            if (_collider != null)
+            {
+                _collider.enabled = true;
+            }
+        }
+
         private void OnDisable()
         {
             if (_formationAnchor != null)
             {
                 _formationAnchor.NotifyShipDestroyed(this);
             }
+            ResetState();
         }
 
         public void Recycle()
         {
-            if (_health == null) _health = GetComponent<EnemyHealth>();
-            if (_health != null)
-            {
-                _health.SetShieldActive(false);
-            }
+            ResetState();
 
             if (_movement != null)
             {

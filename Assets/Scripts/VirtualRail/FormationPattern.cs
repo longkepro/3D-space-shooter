@@ -5,9 +5,11 @@ namespace VirtualRail
 {
     public enum LeaderDeathReaction
     {
-        PanicScatter = 0,   // Hoảng loạn phân rã ra hai biên màn hình (chuẩn Star Fox 64)
-        RetreatWarp = 1,    // Tăng tốc thoát ly khẩn cấp biến mất khỏi màn chơi
-        KamikazeCharge = 2   // Cảm tử lao thẳng vào vị trí người chơi
+        BreakShieldAndEngage = 0, // Mất khiên bảo vệ, thoát đội hình và tiếp tục chiến đấu tự do (chuẩn arcade)
+        PanicScatter = 1,         // Hoảng loạn phân rã ra hai biên màn hình
+        RetreatWarp = 2,          // Tăng tốc thoát ly khẩn cấp biến mất khỏi màn chơi
+        KamikazeCharge = 3,       // Cảm tử lao thẳng vào vị trí người chơi
+        MaintainFormation = 4     // Giữ nguyên đội hình, các tàu còn lại tiếp tục bay theo đội hình cho đến khi bị tiêu diệt hết hoặc hết thời gian
     }
 
     [Serializable]
@@ -26,7 +28,7 @@ namespace VirtualRail
         public bool isLeader;
 
         [Range(0.5f, 2.5f)]
-        [Tooltip("Hệ số phóng to kích thước của tàu tại slot này (VD: 1.35 cho chỉ huy)")]
+        [Tooltip("Hệ số kích thước của tàu tại slot này (1.0 = kích thước chuẩn)")]
         public float scaleMultiplier;
 
         [Tooltip("Prefab tùy biến riêng cho slot này nếu muốn khác biệt")]
@@ -48,9 +50,9 @@ namespace VirtualRail
         [Tooltip("Danh sách vị trí các tàu trong đội hình")]
         public FormationSlotDefinition[] slots = new FormationSlotDefinition[]
         {
-            new FormationSlotDefinition { slotName = "Leader", localOffset = Vector3.zero, preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.35f },
-            new FormationSlotDefinition { slotName = "Left Wing", localOffset = new Vector3(-8f, 0f, -8f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
-            new FormationSlotDefinition { slotName = "Right Wing", localOffset = new Vector3(8f, 0f, -8f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f }
+            new FormationSlotDefinition { slotName = "Leader", localOffset = Vector3.zero, preferredArchetype = EnemyArchetype.SquadLeader, isLeader = true, scaleMultiplier = 1.0f },
+            new FormationSlotDefinition { slotName = "Left Wing", localOffset = new Vector3(-8f, 0f, 0f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f },
+            new FormationSlotDefinition { slotName = "Right Wing", localOffset = new Vector3(8f, 0f, 0f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f }
         };
 
         [Header("Flight Dynamics")]

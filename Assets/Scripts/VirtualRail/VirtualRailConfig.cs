@@ -189,15 +189,43 @@ namespace VirtualRail
         public LayerMask enemyLayer = ~0;
 
         [Header("10. Charge Shot & Homing")]
-        public float chargeTime = 1.2f;
+        [Tooltip("Thời gian tụ lực để nạp đầy phát bắn Charge Shot (giây) - chuẩn Star Fox 64: 0.5s")]
+        public float chargeTime = 0.5f;
         public float lockConeAngle = 18f;
         public float lockMaxDistance = 250f;
+        [Tooltip("Vận tốc bay cơ sở của quả cầu plasma tụ lực (m/s)")]
+        public float chargeShotBaseSpeed = 240f;
+        [Tooltip("Tốc độ bẻ lái tự dẫn của quả cầu plasma (độ/s) - chuẩn 420-450 để bo cua sắc bén")]
+        public float chargeShotTurnRate = 420f;
+        [Tooltip("Thời gian làm nguội súng sau khi nhả tụ lực (giây) - chuẩn Star Fox 64 để chặn rò rỉ đạn thường")]
+        public float postChargeCooldown = 0.35f;
+        [Tooltip("Bật thừa kế vận tốc tiến của tàu cho quả cầu plasma")]
+        public bool enableChargeVelocityInheritance = true;
+        [Tooltip("Bật/tắt hiệu ứng quả cầu plasma tích tụ và lớn dần tại mũi tàu trong lúc giữ phím tụ lực")]
+        public bool enableChargeMuzzleVisual = true;
+        [Tooltip("Đường kính tối đa của quả cầu năng lượng tại mũi tàu khi sạc đầy 100% (mét)")]
+        [Range(0.2f, 2.5f)]
+        public float chargeMuzzleMaxDiameter = 1.0f;
+        [Tooltip("Bật quét tìm mục tiêu ngay khi bắt đầu tụ lực (chuẩn Star Fox 64, không phải chờ sạc xong 1.2s)")]
+        public bool enableEarlyLockScan = true;
+        [Tooltip("Bật lực hút từ tính của hồng tâm vào mục tiêu khi đang tụ lực (Reticle Magnetism)")]
+        public bool enableReticleMagnetism = true;
+        [Tooltip("Cường độ lực hút của hồng tâm (0.05 nhẹ -> 1.0 rất mạnh)")]
+        [Range(0.05f, 1.0f)]
+        public float reticleMagnetismStrength = 0.35f;
+        [Tooltip("Góc nón tối đa áp dụng lực hút từ tính hồng tâm (độ)")]
+        [Range(5f, 30f)]
+        public float reticleMagnetismMaxAngle = 14f;
+        [Tooltip("Thời gian cần để khóa cứng mục tiêu (giây) - đồng bộ chuẩn 0.5s cùng nhịp nạp tụ lực")]
+        public float lockAcquisitionTime = 0.5f;
+        [Tooltip("Bật khung khóa mục tiêu Arcade Procedural Brackets thay cho khối vuông đỏ")]
+        public bool enableArcadeLockVisual = true;
 
         [Header("11. Segmented Laser Bolts (Hướng 1 - Đoạn đạn laser)")]
         [Tooltip("Bật chế độ bắn đạn laser thành từng đoạn (Direction 1). Nếu tắt sẽ quay lại tia tức thời (Layer 2 Undo)")]
         public bool useSegmentedLaser = true;
         [Tooltip("Tốc độ bay của đoạn đạn laser (m/s)")]
-        public float laserBoltSpeed = 220f;
+        public float laserBoltSpeed = 420f;
         [Tooltip("Chiều dài của mỗi đoạn đạn laser (m) - tăng lên để nhìn rõ và ấn tượng")]
         public float laserBoltLength = 8.5f;
         [Tooltip("Độ rộng của tia đạn laser - tăng lên để nhìn rõ trên màn hình")]

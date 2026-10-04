@@ -2477,6 +2477,7 @@ MonoBehaviour:
   _laserLevel: 1
   _goldRingsCollected: 0
   fireRate: 0.15
+  holdToChargeThreshold: 0.25
 --- !u!114 &964145435455917134
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2491,8 +2492,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   anchor: {fileID: 2669507330047039962}
   reticle: {fileID: 5587759940252231478}
-  missilePrefab: {fileID: 1259865673663102, guid: 8b227e0429c621940acb9e2e8d18d12f,
-    type: 3}
+  missilePrefab: {fileID: 100001, guid: a457ec814f6f43dc8a1486fd51885e2b, type: 3}
   lockMarkerUI: {fileID: 3443250031037233670}
   currentCharge: 0
   isCharging: 0
@@ -2679,6 +2679,10 @@ MonoBehaviour:
   multiplierBadgeText: {fileID: 0}
   multiplierDecayFill: {fileID: 0}
   grazePopupText: {fileID: 0}
+  aimAssist: {fileID: 0}
+  chargeMeterRoot: {fileID: 0}
+  chargeMeterFill: {fileID: 0}
+  chargeStatusText: {fileID: 0}
 --- !u!1 &4915901626004568604
 GameObject:
   m_ObjectHideFlags: 0
@@ -9934,7 +9938,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4896670595402733590
 RectTransform:
   m_ObjectHideFlags: 0

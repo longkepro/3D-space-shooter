@@ -19,20 +19,20 @@ MonoBehaviour:
   progressionSettings:
     completionMode: 1
     durationMinutes: 4.5
-    targetDistanceZ: 7560
-    baseForwardSpeed: 28
+    targetDistanceZ: 34680
+    baseForwardSpeed: 120
     warpDuration: 2.5
     warpSpeedMultiplier: 3.2
     targetEliminationCount: 50
   railSettings:
-    forwardSpeed: 28
-    stageDistanceZ: 7560
+    forwardSpeed: 120
+    stageDistanceZ: 34680
     warpDuration: 2.5
     warpSpeedMultiplier: 3.2
   environmentSettings:
     skyboxMaterial: {fileID: 2100000, guid: d8c0d4010f9416945912d97b9e581cf6, type: 2}
     backdropMaterial: {fileID: 0}
-    backdropTexture: {fileID: 2800000, guid: c6153442a0340e9429bc12491f4e5c29, type: 3}
+    backdropTexture: {fileID: 2800000, guid: c2d3e4f5a6b708192021222324252627, type: 3}
     backdropExposure: 1
     backdropTint: {r: 1, g: 1, b: 1, a: 1}
     ambientLightColor: {r: 0.2, g: 0.25, b: 0.35, a: 1}
@@ -65,6 +65,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0002, type: 2}
     - {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0003, type: 2}
     - {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0004, type: 2}
+    - {fileID: 11400000, guid: 9682da48c9534c1282a1023c082fb301, type: 2}
+    - {fileID: 11400000, guid: 7d2d77fb8e9b4027b4c6ac4685fd08ec, type: 2}
+    - {fileID: 11400000, guid: f3da60cd61aa40e0aa6f2f83265f413e, type: 2}
+    - {fileID: 11400000, guid: 46c6ccceb7f04404ac8d528337d5273d, type: 2}
+    - {fileID: 11400000, guid: 9b79e84d3e9e47e6908ca1f9bae79ae3, type: 2}
+    - {fileID: 11400000, guid: 2ad9b613086c4ceab8b832af4c7c2af5, type: 2}
   hazardSettings:
     enableAsteroids: 1
     indestructibleChance: 0.2
@@ -91,6 +97,8 @@ MonoBehaviour:
     vectorType: 0
     squadCount: 2
     scriptedFormationPattern: {fileID: 0}
+    waitMode: 0
+    maxWaitTimeout: 0
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -109,6 +117,8 @@ MonoBehaviour:
     vectorType: 0
     squadCount: 0
     scriptedFormationPattern: {fileID: 0}
+    waitMode: 0
+    maxWaitTimeout: 0
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -128,44 +138,8 @@ MonoBehaviour:
     vectorType: 0
     squadCount: 4
     scriptedFormationPattern: {fileID: 0}
-    targetSpeed: 0
-    changeFog: 0
-    enableFog: 0
-    fogColor: {r: 0, g: 0, b: 0, a: 0}
-    fogDensity: 0
-    changeSkybox: 0
-    newSkybox: {fileID: 0}
-  - eventName: Wave 1.5 - Pincer Scout Cross
-    triggerMode: 0
-    triggerValue: 26
-    eventType: 2
-    messageTitle: 
-    messageSubtitle: 
-    messageDuration: 0
-    customPrefab: {fileID: 873890533011206334, guid: 2409cb5fe15b192418806e9d75823cb3,
-      type: 3}
-    vectorType: 2
-    squadCount: 4
-    scriptedFormationPattern: {fileID: 0}
-    targetSpeed: 0
-    changeFog: 0
-    enableFog: 0
-    fogColor: {r: 0, g: 0, b: 0, a: 0}
-    fogDensity: 0
-    changeSkybox: 0
-    newSkybox: {fileID: 0}
-  - eventName: Wave 1.8 - Flanker Intercept
-    triggerMode: 0
-    triggerValue: 37
-    eventType: 2
-    messageTitle: 
-    messageSubtitle: 
-    messageDuration: 0
-    customPrefab: {fileID: 873890533011206334, guid: 85f6308b51aa7c44285c2cf24ab00b75,
-      type: 3}
-    vectorType: 1
-    squadCount: 3
-    scriptedFormationPattern: {fileID: 0}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -175,7 +149,7 @@ MonoBehaviour:
     newSkybox: {fileID: 0}
   - eventName: Wave 2 - Flanking Echelon
     triggerMode: 0
-    triggerValue: 48
+    triggerValue: 32
     eventType: 2
     messageTitle: 
     messageSubtitle: 
@@ -185,44 +159,8 @@ MonoBehaviour:
     squadCount: 3
     scriptedFormationPattern: {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0002,
       type: 2}
-    targetSpeed: 0
-    changeFog: 0
-    enableFog: 0
-    fogColor: {r: 0, g: 0, b: 0, a: 0}
-    fogDensity: 0
-    changeSkybox: 0
-    newSkybox: {fileID: 0}
-  - eventName: Wave 2.5 - Wedge Patrol
-    triggerMode: 0
-    triggerValue: 60
-    eventType: 2
-    messageTitle: 
-    messageSubtitle: 
-    messageDuration: 0
-    customPrefab: {fileID: 0}
-    vectorType: 3
-    squadCount: 5
-    scriptedFormationPattern: {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0001,
-      type: 2}
-    targetSpeed: 0
-    changeFog: 0
-    enableFog: 0
-    fogColor: {r: 0, g: 0, b: 0, a: 0}
-    fogDensity: 0
-    changeSkybox: 0
-    newSkybox: {fileID: 0}
-  - eventName: Wave 2.8 - High Altitude Dive
-    triggerMode: 0
-    triggerValue: 72
-    eventType: 2
-    messageTitle: 
-    messageSubtitle: 
-    messageDuration: 0
-    customPrefab: {fileID: 873890533011206334, guid: 2df8f62db18ce064993aa1a21ce8fdd4,
-      type: 3}
-    vectorType: 3
-    squadCount: 4
-    scriptedFormationPattern: {fileID: 0}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -232,7 +170,7 @@ MonoBehaviour:
     newSkybox: {fileID: 0}
   - eventName: Wave 3 - Overhead Dive Bomb (Wedge V)
     triggerMode: 0
-    triggerValue: 84
+    triggerValue: 52
     eventType: 2
     messageTitle: 
     messageSubtitle: 
@@ -242,6 +180,8 @@ MonoBehaviour:
     squadCount: 5
     scriptedFormationPattern: {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0001,
       type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -249,28 +189,9 @@ MonoBehaviour:
     fogDensity: 0
     changeSkybox: 0
     newSkybox: {fileID: 0}
-  - eventName: Wave 3.3 - Flanker Crossfire
+  - eventName: Wave 4 - Diamond Guard Strike
     triggerMode: 0
-    triggerValue: 98
-    eventType: 2
-    messageTitle: 
-    messageSubtitle: 
-    messageDuration: 0
-    customPrefab: {fileID: 873890533011206334, guid: 85f6308b51aa7c44285c2cf24ab00b75,
-      type: 3}
-    vectorType: 2
-    squadCount: 4
-    scriptedFormationPattern: {fileID: 0}
-    targetSpeed: 0
-    changeFog: 0
-    enableFog: 0
-    fogColor: {r: 0, g: 0, b: 0, a: 0}
-    fogDensity: 0
-    changeSkybox: 0
-    newSkybox: {fileID: 0}
-  - eventName: Wave 3.6 - Diamond Guard Strike
-    triggerMode: 0
-    triggerValue: 112
+    triggerValue: 76
     eventType: 2
     messageTitle: 
     messageSubtitle: 
@@ -280,6 +201,8 @@ MonoBehaviour:
     squadCount: 4
     scriptedFormationPattern: {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0003,
       type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -287,18 +210,41 @@ MonoBehaviour:
     fogDensity: 0
     changeSkybox: 0
     newSkybox: {fileID: 0}
-  - eventName: Wave 3.8 - Fast Interceptors
+  - eventName: Wave 5 - Gravitational Arc (Einstein Lens)
     triggerMode: 0
-    triggerValue: 125
+    triggerValue: 98
     eventType: 2
     messageTitle: 
     messageSubtitle: 
     messageDuration: 0
-    customPrefab: {fileID: 873890533011206334, guid: 2df8f62db18ce064993aa1a21ce8fdd4,
-      type: 3}
-    vectorType: 1
-    squadCount: 4
-    scriptedFormationPattern: {fileID: 0}
+    customPrefab: {fileID: 0}
+    vectorType: 0
+    squadCount: 5
+    scriptedFormationPattern: {fileID: 11400000, guid: 46c6ccceb7f04404ac8d528337d5273d,
+      type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
+    targetSpeed: 0
+    changeFog: 0
+    enableFog: 0
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
+  - eventName: Wave 6 - Orbital Citadel (Lagrange Triad)
+    triggerMode: 0
+    triggerValue: 124
+    eventType: 2
+    messageTitle: 
+    messageSubtitle: 
+    messageDuration: 0
+    customPrefab: {fileID: 0}
+    vectorType: 5
+    squadCount: 5
+    scriptedFormationPattern: {fileID: 11400000, guid: 2ad9b613086c4ceab8b832af4c7c2af5,
+      type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -308,7 +254,7 @@ MonoBehaviour:
     newSkybox: {fileID: 0}
   - eventName: Rear Ambush Warning
     triggerMode: 0
-    triggerValue: 137
+    triggerValue: 138
     eventType: 0
     messageTitle: TACTICAL ALERT
     messageSubtitle: HOSTILE BOGEYS ON YOUR TAIL! DOUBLE TAP BARREL ROLL!
@@ -317,6 +263,8 @@ MonoBehaviour:
     vectorType: 0
     squadCount: 0
     scriptedFormationPattern: {fileID: 0}
+    waitMode: 0
+    maxWaitTimeout: 0
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -324,7 +272,7 @@ MonoBehaviour:
     fogDensity: 0
     changeSkybox: 0
     newSkybox: {fileID: 0}
-  - eventName: Wave 4 - Rear Ambush Interceptors
+  - eventName: Wave 7 - Rear Ambush Interceptors
     triggerMode: 0
     triggerValue: 141
     eventType: 2
@@ -336,6 +284,8 @@ MonoBehaviour:
     vectorType: 1
     squadCount: 4
     scriptedFormationPattern: {fileID: 0}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -343,56 +293,41 @@ MonoBehaviour:
     fogDensity: 0
     changeSkybox: 0
     newSkybox: {fileID: 0}
-  - eventName: Wave 4.5 - Heavy Flanker Sweep
+  - eventName: Wave 8 - Magnetic Helix (Pulsar Dipole)
     triggerMode: 0
-    triggerValue: 153
-    eventType: 2
-    messageTitle: 
-    messageSubtitle: 
-    messageDuration: 0
-    customPrefab: {fileID: 873890533011206334, guid: 85f6308b51aa7c44285c2cf24ab00b75,
-      type: 3}
-    vectorType: 0
-    squadCount: 4
-    scriptedFormationPattern: {fileID: 0}
-    targetSpeed: 0
-    changeFog: 0
-    enableFog: 0
-    fogColor: {r: 0, g: 0, b: 0, a: 0}
-    fogDensity: 0
-    changeSkybox: 0
-    newSkybox: {fileID: 0}
-  - eventName: Wave 5 - Diamond Guard Escort
-    triggerMode: 0
-    triggerValue: 165
+    triggerValue: 150
     eventType: 2
     messageTitle: 
     messageSubtitle: 
     messageDuration: 0
     customPrefab: {fileID: 0}
-    vectorType: 0
-    squadCount: 4
-    scriptedFormationPattern: {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0003,
-      type: 2}
-    targetSpeed: 0
-    changeFog: 0
-    enableFog: 0
-    fogColor: {r: 0, g: 0, b: 0, a: 0}
-    fogDensity: 0
-    changeSkybox: 0
-    newSkybox: {fileID: 0}
-  - eventName: Wave 5.5 - Twin Wedge Ambush
-    triggerMode: 0
-    triggerValue: 178
-    eventType: 2
-    messageTitle: 
-    messageSubtitle: 
-    messageDuration: 0
-    customPrefab: {fileID: 0}
-    vectorType: 3
+    vectorType: 4
     squadCount: 5
-    scriptedFormationPattern: {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0001,
+    scriptedFormationPattern: {fileID: 11400000, guid: 9b79e84d3e9e47e6908ca1f9bae79ae3,
       type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
+    targetSpeed: 0
+    changeFog: 0
+    enableFog: 0
+    fogColor: {r: 0, g: 0, b: 0, a: 0}
+    fogDensity: 0
+    changeSkybox: 0
+    newSkybox: {fileID: 0}
+  - eventName: Wave 9 - Orbital Megastructure (Dyson Swarm)
+    triggerMode: 0
+    triggerValue: 174
+    eventType: 2
+    messageTitle: 
+    messageSubtitle: 
+    messageDuration: 0
+    customPrefab: {fileID: 0}
+    vectorType: 0
+    squadCount: 5
+    scriptedFormationPattern: {fileID: 11400000, guid: 7d2d77fb8e9b4027b4c6ac4685fd08ec,
+      type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -411,6 +346,8 @@ MonoBehaviour:
     vectorType: 0
     squadCount: 0
     scriptedFormationPattern: {fileID: 0}
+    waitMode: 0
+    maxWaitTimeout: 0
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -429,25 +366,29 @@ MonoBehaviour:
     vectorType: 0
     squadCount: 0
     scriptedFormationPattern: {fileID: 0}
-    targetSpeed: 35
+    waitMode: 0
+    maxWaitTimeout: 0
+    targetSpeed: 150
     changeFog: 0
     enableFog: 0
     fogColor: {r: 0, g: 0, b: 0, a: 0}
     fogDensity: 0
     changeSkybox: 0
     newSkybox: {fileID: 0}
-  - eventName: Wave 5.8 - Asteroid Belt Skirmishers
+  - eventName: Wave 10 - Relativistic Jet (Accretion Jet)
     triggerMode: 0
-    triggerValue: 206
+    triggerValue: 198
     eventType: 2
     messageTitle: 
     messageSubtitle: 
     messageDuration: 0
-    customPrefab: {fileID: 873890533011206334, guid: 2df8f62db18ce064993aa1a21ce8fdd4,
-      type: 3}
-    vectorType: 4
-    squadCount: 4
-    scriptedFormationPattern: {fileID: 0}
+    customPrefab: {fileID: 0}
+    vectorType: 3
+    squadCount: 5
+    scriptedFormationPattern: {fileID: 11400000, guid: 9682da48c9534c1282a1023c082fb301,
+      type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -455,18 +396,20 @@ MonoBehaviour:
     fogDensity: 0
     changeSkybox: 0
     newSkybox: {fileID: 0}
-  - eventName: Wave 6 - Ace Swarm Spiral Stream
+  - eventName: Wave 11 - Ace Swarm Spiral Stream
     triggerMode: 0
-    triggerValue: 219
+    triggerValue: 220
     eventType: 2
     messageTitle: 
     messageSubtitle: 
     messageDuration: 0
     customPrefab: {fileID: 0}
-    vectorType: 4
+    vectorType: 5
     squadCount: 5
     scriptedFormationPattern: {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0004,
       type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -474,37 +417,20 @@ MonoBehaviour:
     fogDensity: 0
     changeSkybox: 0
     newSkybox: {fileID: 0}
-  - eventName: Wave 6.5 - Last Stand Escort
+  - eventName: Wave 12 - Hyperspace Aperture (Warp Gate)
     triggerMode: 0
-    triggerValue: 233
+    triggerValue: 240
     eventType: 2
     messageTitle: 
     messageSubtitle: 
     messageDuration: 0
     customPrefab: {fileID: 0}
     vectorType: 0
-    squadCount: 4
-    scriptedFormationPattern: {fileID: 11400000, guid: 57fa10a1b2c3d4e5f60718293a4b0003,
-      type: 2}
-    targetSpeed: 0
-    changeFog: 0
-    enableFog: 0
-    fogColor: {r: 0, g: 0, b: 0, a: 0}
-    fogDensity: 0
-    changeSkybox: 0
-    newSkybox: {fileID: 0}
-  - eventName: Wave 6.8 - Final Vanguard Rush
-    triggerMode: 0
-    triggerValue: 245
-    eventType: 2
-    messageTitle: 
-    messageSubtitle: 
-    messageDuration: 0
-    customPrefab: {fileID: 873890533011206334, guid: 2409cb5fe15b192418806e9d75823cb3,
-      type: 3}
-    vectorType: 0
     squadCount: 5
-    scriptedFormationPattern: {fileID: 0}
+    scriptedFormationPattern: {fileID: 11400000, guid: f3da60cd61aa40e0aa6f2f83265f413e,
+      type: 2}
+    waitMode: 1
+    maxWaitTimeout: 14
     targetSpeed: 0
     changeFog: 0
     enableFog: 0
@@ -523,6 +449,8 @@ MonoBehaviour:
     vectorType: 0
     squadCount: 0
     scriptedFormationPattern: {fileID: 0}
+    waitMode: 0
+    maxWaitTimeout: 0
     targetSpeed: 0
     changeFog: 0
     enableFog: 0

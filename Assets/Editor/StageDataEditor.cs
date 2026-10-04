@@ -14,7 +14,7 @@ namespace VirtualRail.EditorScripts
     /// 5. Nút xem trước 1-click (Preview In Scene/Game) và Nút nhảy màn tức thì trong Play Mode.
     /// </summary>
     [CustomEditor(typeof(StageData))]
-    public class StageDataEditor : Editor
+    public class StageDataEditor : UnityEditor.Editor
     {
         private SerializedProperty _stageIdProp;
         private SerializedProperty _stageTitleProp;
@@ -108,10 +108,9 @@ namespace VirtualRail.EditorScripts
             }
 
             // 3. Progression & Completion Mode
-            _showProgressionFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showProgressionFold, "1. Progression & Completion Mode (Thời Gian & Cự Ly)");
+            _showProgressionFold = DrawSectionHeader(_showProgressionFold, "1. Progression & Completion Mode (Thời Gian & Cự Ly)");
             if (_showProgressionFold)
             {
-                EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 {
                     SerializedProperty compMode = _progressionSettingsProp.FindPropertyRelative("completionMode");
@@ -146,142 +145,157 @@ namespace VirtualRail.EditorScripts
                     EditorGUILayout.PropertyField(warpMult, new GUIContent("Warp Speed Multiplier"));
                 }
                 EditorGUILayout.EndVertical();
-                EditorGUI.indentLevel--;
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(6);
 
             // 4. Enemy & Wave Palette
-            _showEnemyFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showEnemyFold, "2. Enemy & Wave Palette (Quái Vật & Hỏa Lực Riêng)");
+            _showEnemyFold = DrawSectionHeader(_showEnemyFold, "2. Enemy & Wave Palette (Quái Vật & Hỏa Lực Riêng)");
             if (_showEnemyFold)
             {
-                EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 {
                     EditorGUILayout.HelpBox("⚠️ NGUYÊN TẮC: Không dùng fallback mặc định ngầm. Màn này chỉ xuất hiện những quái và vector được chỉ định dưới đây.", MessageType.None);
                     EditorGUILayout.PropertyField(_enemySettingsProp, true);
                 }
                 EditorGUILayout.EndVertical();
-                EditorGUI.indentLevel--;
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(6);
 
             // 5. Scripted Timeline Events
-            _showTimelineFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showTimelineFold, "3. Scripted Timeline (Kịch Bản Màn Chơi Theo Mốc)");
+            _showTimelineFold = DrawSectionHeader(_showTimelineFold, "3. Scripted Timeline (Kịch Bản Màn Chơi Theo Mốc)");
             if (_showTimelineFold)
             {
-                EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 {
                     EditorGUILayout.HelpBox("Các sự kiện kích hoạt theo thời gian (giây) hoặc theo cự ly (mét Z) để tạo nhịp điệu phong phú cho màn chơi.", MessageType.Info);
-                    EditorGUILayout.PropertyField(_timelineEventsProp, true);
+                    EditorGUILayout.PropertyField(_timelineEventsProp, new GUIContent("Danh Sách Sự Kiện Kịch Bản"), true);
                 }
                 EditorGUILayout.EndVertical();
-                EditorGUI.indentLevel--;
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(6);
 
             // 6. Environment & Atmosphere (Smart Backdrop 4K)
-            _showEnvFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showEnvFold, "4. Environment & Atmosphere (Phông Nền 4K & Khí Quyển)");
+            _showEnvFold = DrawSectionHeader(_showEnvFold, "4. Environment & Atmosphere (Phông Nền 4K & Khí Quyển)");
             if (_showEnvFold)
             {
-                EditorGUI.indentLevel++;
-
-                EditorGUILayout.LabelField("4K Horizon Backdrop Settings", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_backdropTexProp, new GUIContent("Backdrop Image (4K Texture2D)", "Kéo thả thẳng ảnh 4K PNG/JPG màn chơi"));
-                EditorGUILayout.PropertyField(_backdropExposureProp, new GUIContent("Backdrop Exposure Boost"));
-                EditorGUILayout.PropertyField(_backdropTintProp, new GUIContent("Backdrop Color Tint"));
-                EditorGUILayout.PropertyField(_backdropMatProp, new GUIContent("Custom Material Override", "Tùy chọn: chỉ gán khi muốn dùng shader/material riêng"));
-
-                // Thumbnail Visual Preview
-                Texture2D tex = _backdropTexProp.objectReferenceValue as Texture2D;
-                if (tex != null)
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 {
-                    EditorGUILayout.Space(4);
-                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                    EditorGUILayout.LabelField("4K Horizon Backdrop Settings", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(_backdropTexProp, new GUIContent("Backdrop Image (4K Texture2D)", "Kéo thả thẳng ảnh 4K PNG/JPG màn chơi"));
+                    EditorGUILayout.PropertyField(_backdropExposureProp, new GUIContent("Backdrop Exposure Boost"));
+                    EditorGUILayout.PropertyField(_backdropTintProp, new GUIContent("Backdrop Color Tint"));
+                    EditorGUILayout.PropertyField(_backdropMatProp, new GUIContent("Custom Material Override", "Tùy chọn: chỉ gán khi muốn dùng shader/material riêng"));
+
+                    // Thumbnail Visual Preview
+                    Texture2D tex = _backdropTexProp.objectReferenceValue as Texture2D;
+                    if (tex != null)
                     {
-                        EditorGUILayout.LabelField($"Preview: {tex.name} ({tex.width} x {tex.height})", EditorStyles.miniLabel);
-                        float previewWidth = EditorGUIUtility.currentViewWidth - 60f;
-                        float previewHeight = previewWidth * (9f / 16f);
-                        Rect r = GUILayoutUtility.GetRect(previewWidth, previewHeight);
-                        GUI.DrawTexture(r, tex, ScaleMode.ScaleToFit);
+                        EditorGUILayout.Space(4);
+                        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                        {
+                            EditorGUILayout.LabelField($"Preview: {tex.name} ({tex.width} x {tex.height})", EditorStyles.miniLabel);
+                            float previewWidth = EditorGUIUtility.currentViewWidth - 60f;
+                            float previewHeight = previewWidth * (9f / 16f);
+                            Rect r = GUILayoutUtility.GetRect(previewWidth, previewHeight);
+                            GUI.DrawTexture(r, tex, ScaleMode.ScaleToFit);
+                        }
+                        EditorGUILayout.EndVertical();
                     }
-                    EditorGUILayout.EndVertical();
+
+                    // 1-Click Preview Action Button
+                    EditorGUILayout.Space(4);
+                    EditorGUILayout.BeginHorizontal();
+                    if (GUILayout.Button("👁️ Preview Backdrop In Scene/Game", GUILayout.Height(26)))
+                    {
+                        PreviewStageBackdrop(stage);
+                    }
+                    if (GUILayout.Button("🌌 Reset Skybox To Stars", GUILayout.Height(26)))
+                    {
+                        ResetSceneSkybox();
+                    }
+                    EditorGUILayout.EndHorizontal();
+
+                    EditorGUILayout.Space(6);
+                    EditorGUILayout.LabelField("Atmosphere & Lighting", EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(_skyboxMatProp, new GUIContent("Skybox Material (Mặc định: Sao đêm)"));
+
+                    // Ambient, Fog, Light, Dust
+                    SerializedProperty ambientLight = _envSettingsProp.FindPropertyRelative("ambientLightColor");
+                    SerializedProperty enableFog = _envSettingsProp.FindPropertyRelative("enableFog");
+                    SerializedProperty fogColor = _envSettingsProp.FindPropertyRelative("fogColor");
+                    SerializedProperty fogDensity = _envSettingsProp.FindPropertyRelative("fogDensity");
+                    SerializedProperty lightColor = _envSettingsProp.FindPropertyRelative("directionalLightColor");
+                    SerializedProperty lightInt = _envSettingsProp.FindPropertyRelative("lightIntensity");
+                    SerializedProperty dustColor = _envSettingsProp.FindPropertyRelative("spaceDustColor");
+                    SerializedProperty dustCount = _envSettingsProp.FindPropertyRelative("spaceDustCount");
+
+                    EditorGUILayout.PropertyField(ambientLight);
+                    EditorGUILayout.PropertyField(enableFog);
+                    if (enableFog.boolValue)
+                    {
+                        EditorGUILayout.PropertyField(fogColor);
+                        EditorGUILayout.PropertyField(fogDensity);
+                    }
+                    EditorGUILayout.PropertyField(lightColor);
+                    EditorGUILayout.PropertyField(lightInt);
+                    EditorGUILayout.PropertyField(dustColor);
+                    EditorGUILayout.PropertyField(dustCount);
                 }
-
-                // 1-Click Preview Action Button
-                EditorGUILayout.Space(4);
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("👁️ Preview Backdrop In Scene/Game", GUILayout.Height(26)))
-                {
-                    PreviewStageBackdrop(stage);
-                }
-                if (GUILayout.Button("🌌 Reset Skybox To Stars", GUILayout.Height(26)))
-                {
-                    ResetSceneSkybox();
-                }
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.Space(6);
-                EditorGUILayout.LabelField("Atmosphere & Lighting", EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(_skyboxMatProp, new GUIContent("Skybox Material (Mặc định: Sao đêm)"));
-
-                // Ambient, Fog, Light, Dust
-                SerializedProperty ambientLight = _envSettingsProp.FindPropertyRelative("ambientLightColor");
-                SerializedProperty enableFog = _envSettingsProp.FindPropertyRelative("enableFog");
-                SerializedProperty fogColor = _envSettingsProp.FindPropertyRelative("fogColor");
-                SerializedProperty fogDensity = _envSettingsProp.FindPropertyRelative("fogDensity");
-                SerializedProperty lightColor = _envSettingsProp.FindPropertyRelative("directionalLightColor");
-                SerializedProperty lightInt = _envSettingsProp.FindPropertyRelative("lightIntensity");
-                SerializedProperty dustColor = _envSettingsProp.FindPropertyRelative("spaceDustColor");
-                SerializedProperty dustCount = _envSettingsProp.FindPropertyRelative("spaceDustCount");
-
-                EditorGUILayout.PropertyField(ambientLight);
-                EditorGUILayout.PropertyField(enableFog);
-                if (enableFog.boolValue)
-                {
-                    EditorGUILayout.PropertyField(fogColor);
-                    EditorGUILayout.PropertyField(fogDensity);
-                }
-                EditorGUILayout.PropertyField(lightColor);
-                EditorGUILayout.PropertyField(lightInt);
-                EditorGUILayout.PropertyField(dustColor);
-                EditorGUILayout.PropertyField(dustCount);
-
-                EditorGUI.indentLevel--;
+                EditorGUILayout.EndVertical();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(6);
 
             // 7. Hazards Settings
-            _showHazardFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showHazardFold, "5. Hazards & Collectibles (Thiên Thạch & Vòng Bay)");
+            _showHazardFold = DrawSectionHeader(_showHazardFold, "5. Hazards & Collectibles (Thiên Thạch & Vòng Bay)");
             if (_showHazardFold)
             {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_hazardSettingsProp, true);
-                EditorGUI.indentLevel--;
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                {
+                    EditorGUILayout.PropertyField(_hazardSettingsProp, true);
+                }
+                EditorGUILayout.EndVertical();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             EditorGUILayout.Space(6);
 
             // 8. Climax Settings
-            _showClimaxFold = EditorGUILayout.BeginFoldoutHeaderGroup(_showClimaxFold, "6. Climax & Boss Encounter (Cao Trào & Trùm)");
+            _showClimaxFold = DrawSectionHeader(_showClimaxFold, "6. Climax & Boss Encounter (Cao Trào & Trùm)");
             if (_showClimaxFold)
             {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_climaxSettingsProp, true);
-                EditorGUI.indentLevel--;
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                {
+                    EditorGUILayout.PropertyField(_climaxSettingsProp, true);
+                }
+                EditorGUILayout.EndVertical();
             }
-            EditorGUILayout.EndFoldoutHeaderGroup();
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// Vẽ thanh Foldout Section dạng banner độc lập an toàn 100%, không xung đột stack với ReorderableList nội bộ của Unity.
+        /// </summary>
+        private static bool DrawSectionHeader(bool foldout, string title)
+        {
+            EditorGUILayout.Space(4);
+            Rect rect = EditorGUILayout.GetControlRect(false, 24f);
+
+            // Nền banner bo nhẹ màu than chuẩn Unity Pro Inspector
+            EditorGUI.DrawRect(rect, new Color(0.18f, 0.22f, 0.28f, 1f));
+
+            GUIStyle style = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 11,
+                normal = { textColor = new Color(0.9f, 0.95f, 1f) },
+                alignment = TextAnchor.MiddleLeft
+            };
+
+            Rect foldoutRect = new Rect(rect.x + 6f, rect.y + 2f, rect.width - 12f, rect.height - 4f);
+            return EditorGUI.Foldout(foldoutRect, foldout, title, true, style);
         }
 
         private static void PreviewStageBackdrop(StageData stage)

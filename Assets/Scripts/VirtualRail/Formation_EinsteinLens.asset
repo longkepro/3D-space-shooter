@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
+  m_Name: Formation_EinsteinLens
+  m_EditorClassIdentifier: 
+  patternName: Einstein Lens (9 Ships)
+  slots:
+  - slotName: Lensed Quasar Core
+    localOffset: {x: 0, y: 0, z: 0}
+    preferredArchetype: 3
+    isLeader: 1
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Upper Arc Mid Left
+    localOffset: {x: -7, y: 8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Upper Arc Mid Right
+    localOffset: {x: 7, y: 8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Upper Arc Outer Left
+    localOffset: {x: -14, y: 6, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Upper Arc Outer Right
+    localOffset: {x: 14, y: 6, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Lower Arc Mid Left
+    localOffset: {x: -7, y: -8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Lower Arc Mid Right
+    localOffset: {x: 7, y: -8, z: 0}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Lower Arc Outer Left
+    localOffset: {x: -14, y: -6, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Lower Arc Outer Right
+    localOffset: {x: 14, y: -6, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  assemblyTime: 1.4
+  swaySpeed: 1.8
+  swayAmplitudeX: 14
+  bankingAngle: 28
+  holdDistance: 65
+  maxClosingSpeed: 25
+  maxLifetime: 14
+  leaderDeathReaction: 4

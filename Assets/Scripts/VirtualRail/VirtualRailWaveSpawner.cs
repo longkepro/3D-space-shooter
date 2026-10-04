@@ -4,6 +4,17 @@ using UnityEngine;
 namespace VirtualRail
 {
     /// <summary>
+    /// Chế độ vận hành của bộ sinh quái:
+    /// - ScriptedDirectorOnly: 100% quái và formation do StageDirector điều phối qua Timeline kịch bản (Production/Arcade).
+    /// - EndlessSandboxDemo: Tự động đếm giờ sinh quái ngẫu nhiên tuần hoàn (Chỉ dùng kiểm thử sandbox).
+    /// </summary>
+    public enum SpawnerControlMode
+    {
+        ScriptedDirectorOnly = 0,
+        EndlessSandboxDemo = 1
+    }
+
+    /// <summary>
     /// Bộ điều phối đợt tấn công đường ray (Rail Wave Spawner - Hướng Star Fox 64).
     /// Tuân thủ TDD v1.0.0:
     /// - Quản lý 10 Vector xuất hiện không gian (Spatial Vectors).
@@ -14,6 +25,15 @@ namespace VirtualRail
     public class VirtualRailWaveSpawner : MonoBehaviour
     {
         public static VirtualRailWaveSpawner Instance { get; private set; }
+
+        [Header("Control Mode (Kiến Trúc Module Hóa)")]
+        [Tooltip("Chế độ điều phối: ScriptedDirectorOnly = 100% theo kịch bản StageDirector; EndlessSandboxDemo = sinh quái ngẫu nhiên")]
+        [SerializeField] private SpawnerControlMode controlMode = SpawnerControlMode.ScriptedDirectorOnly;
+        public SpawnerControlMode ControlMode
+        {
+            get => controlMode;
+            set => controlMode = value;
+        }
 
         [Header("Configuration")]
         public VirtualRailAnchor anchor;
@@ -67,7 +87,14 @@ namespace VirtualRail
         private float _stageWaveInterval = -1f;
         private int _stageFormationInterval = -1;
         private float _stageLeadDistance = -1f;
-        private bool _stageEnablePeriodicWaves = true;
+        private bool _stageEnablePeriodicWaves = false;
+
+        // --- Active Wave Tracking & Gating (0 GC Alloc) ---
+        private readonly List<EnemyMovement> _activeWaveEnemies = new List<EnemyMovement>(16);
+        private VirtualFormationAnchor _activeWaveFormationAnchor = null;
+        private float _currentWaveTimer = 0f;
+        private float _currentWaveMaxLifetime = 14f;
+        private bool _isCurrentWaveTracking = false;
 
         /// <summary>
         /// Nạp thông số bảng quái và các vector xuất hiện theo màn chơi (0 GC Alloc, không dùng default ngầm).
@@ -80,7 +107,16 @@ namespace VirtualRail
             _allowShooting = settings.allowShooting;
             _stageBulletSpeed = settings.bulletSpeed > 1f ? settings.bulletSpeed : 22f;
             _stageEnableFormations = settings.enableFormations && (settings.formationIntervalWaves > 0);
-            _stageEnablePeriodicWaves = settings.enablePeriodicWaves && (settings.waveInterval > 0.1f);
+
+            // Chế độ ScriptedDirectorOnly: KHÓA CỨNG 100% việc sinh đợt quái tuần hoàn ngẫu nhiên
+            if (controlMode == SpawnerControlMode.ScriptedDirectorOnly)
+            {
+                _stageEnablePeriodicWaves = false;
+            }
+            else
+            {
+                _stageEnablePeriodicWaves = settings.enablePeriodicWaves && (settings.waveInterval > 0.1f);
+            }
 
             if (settings.waveInterval > 0.1f)
             {
@@ -262,12 +298,22 @@ namespace VirtualRail
         {
             if (_isSpawning) return;
             _isSpawning = true;
-            _nextWaveTime = Time.time + 1.5f; // Đợi 1.5s sau khi vào game rồi bắt đầu đợt 1
+            if (controlMode == SpawnerControlMode.EndlessSandboxDemo)
+            {
+                _nextWaveTime = Time.time + 1.5f; // Đợi 1.5s sau khi vào game rồi bắt đầu đợt 1 (Chế độ Sandbox)
+            }
+            else
+            {
+                _nextWaveTime = float.MaxValue; // Chế độ ScriptedDirectorOnly: Tuyệt đối không tự đếm giờ sinh quái
+            }
         }
 
         public void StopSpawning()
         {
             _isSpawning = false;
+            _isCurrentWaveTracking = false;
+            _activeWaveEnemies.Clear();
+            _activeWaveFormationAnchor = null;
             RecycleAll();
         }
 
@@ -291,8 +337,9 @@ namespace VirtualRail
             float effectiveInterval = _stageWaveInterval > 0f ? _stageWaveInterval : (cfg != null ? cfg.waveSpawnInterval : waveInterval);
             float effectiveLead = _stageLeadDistance > 0f ? _stageLeadDistance : (cfg != null ? cfg.waveSpawnDistance : spawnLeadDistance);
 
-            // 1. Quét sinh đợt quái mới (chỉ sinh khi được phép chạy tuần hoàn ngẫu nhiên ở nền)
-            if (_stageEnablePeriodicWaves && Time.time >= _nextWaveTime)
+            // 1. Quét sinh đợt quái mới:
+            // CHỈ sinh đợt quái tuần hoàn nếu đang ở chế độ EndlessSandboxDemo VÀ _stageEnablePeriodicWaves được bật
+            if (controlMode == SpawnerControlMode.EndlessSandboxDemo && _stageEnablePeriodicWaves && Time.time >= _nextWaveTime)
             {
                 SpawnWave(effectiveLead);
                 _nextWaveTime = Time.time + effectiveInterval;
@@ -308,6 +355,20 @@ namespace VirtualRail
                     {
                         _pool[i].Recycle();
                     }
+                }
+            }
+
+            // 3. Tự động kiểm tra Timeout của Wave hiện tại: nếu đã quá hạn mà quái chưa chết hết, ép rút lui để nhường sàn đấu
+            if (_isCurrentWaveTracking)
+            {
+                _currentWaveTimer += Time.deltaTime;
+                if (_currentWaveTimer >= _currentWaveMaxLifetime)
+                {
+                    ForceRetreatCurrentWave();
+                }
+                else if (!IsCurrentWaveActive())
+                {
+                    _isCurrentWaveTracking = false;
                 }
             }
         }
@@ -371,14 +432,29 @@ namespace VirtualRail
                     attackComp.enabled = _allowShooting;
                 }
 
+                var wingman = availableEnemy.GetComponent<FormationWingman>();
+                if (wingman != null)
+                {
+                    wingman.ResetState();
+                    wingman.enabled = false;
+                }
+
                 if (useFSM)
                 {
                     var fsm = availableEnemy.GetComponent<EnemyLifecycleFSM>();
                     if (fsm == null) fsm = availableEnemy.gameObject.AddComponent<EnemyLifecycleFSM>();
+                    fsm.enabled = true;
                     fsm.InitializeTrajectory(trajectory, anchor);
                 }
                 else
                 {
+                    var fsm = availableEnemy.GetComponent<EnemyLifecycleFSM>();
+                    if (fsm != null)
+                    {
+                        fsm.ResetState();
+                        fsm.enabled = false;
+                    }
+                    availableEnemy.enabled = true;
                     availableEnemy.transform.position = trajectory.spawnPosition;
                     availableEnemy.transform.rotation = trajectory.spawnRotation;
                 }
@@ -454,12 +530,8 @@ namespace VirtualRail
                 if (enemies[0].ArchetypeData == null || enemies[0].ArchetypeData.archetype != EnemyArchetype.SquadLeader)
                 {
                     enemies[0].ApplyArchetype(EnemyData.CreateDefaultPreset(EnemyArchetype.SquadLeader));
-                    enemies[0].transform.localScale = Vector3.one * 1.35f;
                 }
-                else
-                {
-                    enemies[0].transform.localScale = Vector3.one;
-                }
+                enemies[0].transform.localScale = Vector3.one;
 
                 bool useShieldBearers = cfg.enableShieldBearerEnemies && enemies.Count >= 3;
 
@@ -587,29 +659,8 @@ namespace VirtualRail
         /// </summary>
         public void TriggerClusterFracture(Vector3 explosionCenter)
         {
-            Camera mainCam = _mainCam != null ? _mainCam : Camera.main;
-            int fragmentCount = Random.Range(3, 5);
-
-            for (int i = 0; i < fragmentCount; i++)
-            {
-                EnemyMovement fragment = GetAvailableEnemy();
-                if (fragment == null) break;
-
-                SpatialTrajectoryData trajectory = SpatialVectorFactory.GenerateTrajectory(
-                    SpatialVectorType.ClusterFracture, anchor, mainCam, 60f);
-                trajectory.spawnPosition = explosionCenter + Random.insideUnitSphere * 2.5f;
-
-                fragment.ResetState();
-                fragment.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
-
-                var fsm = fragment.GetComponent<EnemyLifecycleFSM>();
-                if (fsm == null) fsm = fragment.gameObject.AddComponent<EnemyLifecycleFSM>();
-                fsm.InitializeTrajectory(trajectory, anchor);
-
-                fragment.gameObject.SetActive(true);
-            }
-
-            Debug.Log($"<color=yellow><b>[CLUSTER FRACTURE]</b></color> Nổ văng {fragmentCount} mảnh vỡ quán tính từ tâm {explosionCenter}!");
+            // Tránh sinh các tàu chiến quái vật chiến đấu dính chùm vào tâm vụ nổ.
+            // Phân rã mảnh vụn hình ảnh trong tương lai sẽ sử dụng Particle VFX Pool thay vì rút thực thể từ Enemy Pool.
         }
 
         private EnemyMovement GetAvailableEnemy()
@@ -632,14 +683,30 @@ namespace VirtualRail
             if (anchor == null) anchor = VirtualRailAnchor.Instance;
             if (anchor == null) return;
 
+            // Dọn sạch tàn dư đợt quái cũ trước khi kích hoạt đợt mới (0 Wave Overlap)
+            ForceRetreatCurrentWave();
+
             Camera mainCam = _mainCam != null ? _mainCam : Camera.main;
             float leadDist = _stageLeadDistance > 10f ? _stageLeadDistance : spawnLeadDistance;
             int actualCount = Mathf.Clamp(count, 1, 6);
+
+            _activeWaveEnemies.Clear();
+            _activeWaveFormationAnchor = null;
+            _currentWaveTimer = 0f;
+            _currentWaveMaxLifetime = 14f;
+            _isCurrentWaveTracking = true;
 
             for (int i = 0; i < actualCount; i++)
             {
                 EnemyMovement enemy = GetAvailableStandardEnemy();
                 if (enemy == null) break;
+
+                var wingman = enemy.GetComponent<FormationWingman>();
+                if (wingman != null)
+                {
+                    wingman.ResetState();
+                    wingman.enabled = false;
+                }
 
                 SpatialTrajectoryData trajectory = SpatialVectorFactory.GenerateTrajectory(vectorType, anchor, mainCam, leadDist + (i * 12f));
                 enemy.ResetState();
@@ -651,9 +718,11 @@ namespace VirtualRail
 
                 var fsm = enemy.GetComponent<EnemyLifecycleFSM>();
                 if (fsm == null) fsm = enemy.gameObject.AddComponent<EnemyLifecycleFSM>();
+                fsm.enabled = true;
                 fsm.InitializeTrajectory(trajectory, anchor);
 
                 enemy.gameObject.SetActive(true);
+                _activeWaveEnemies.Add(enemy);
             }
         }
 
@@ -665,6 +734,9 @@ namespace VirtualRail
             if (pattern == null || pattern.slots == null || pattern.slots.Length == 0) return false;
             if (anchor == null) anchor = VirtualRailAnchor.Instance;
             if (anchor == null) return false;
+
+            // Dọn sạch tàn dư đợt quái cũ trước khi kích hoạt đợt mới (0 Wave Overlap)
+            ForceRetreatCurrentWave();
 
             VirtualFormationAnchor availableAnchor = GetAvailableFormationAnchor();
             if (availableAnchor == null) return false;
@@ -699,8 +771,85 @@ namespace VirtualRail
             float formDist = customLeadDist > 10f ? customLeadDist : ((_stageLeadDistance > 10f) ? _stageLeadDistance : 110f);
             Vector3 startPos = anchor.transform.position + anchor.ForwardTangent * formDist + anchor.transform.up * 4f;
 
+            _activeWaveEnemies.Clear();
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                if (enemies[i] != null) _activeWaveEnemies.Add(enemies[i]);
+            }
+            _activeWaveFormationAnchor = availableAnchor;
+            _currentWaveTimer = 0f;
+            _currentWaveMaxLifetime = pattern.maxLifetime > 1f ? pattern.maxLifetime : 14f;
+            _isCurrentWaveTracking = true;
+
             availableAnchor.InitializeFormation(pattern, anchor, startPos, enemies);
             return true;
+        }
+
+        /// <summary>
+        /// Kiểm tra xem đợt quái gần nhất còn tàu nào đang hoạt động trên chiến trường không (O(1), 0 GC Alloc).
+        /// </summary>
+        public bool IsCurrentWaveActive()
+        {
+            if (_activeWaveFormationAnchor != null && _activeWaveFormationAnchor.gameObject.activeSelf)
+            {
+                return true;
+            }
+            for (int i = 0; i < _activeWaveEnemies.Count; i++)
+            {
+                if (_activeWaveEnemies[i] != null && _activeWaveEnemies[i].gameObject.activeSelf)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Đếm số lượng tàu còn sống trong đợt quái gần nhất (0 GC Alloc).
+        /// </summary>
+        public int GetActiveWaveEnemyCount()
+        {
+            int count = 0;
+            for (int i = 0; i < _activeWaveEnemies.Count; i++)
+            {
+                if (_activeWaveEnemies[i] != null && _activeWaveEnemies[i].gameObject.activeSelf)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Ép buộc đợt quái hiện tại rút lui ngay lập tức để giải phóng sàn đấu cho đợt tiếp theo (0 GC Alloc).
+        /// </summary>
+        public void ForceRetreatCurrentWave()
+        {
+            if (_activeWaveFormationAnchor != null && _activeWaveFormationAnchor.gameObject.activeSelf)
+            {
+                _activeWaveFormationAnchor.ForceRetreat();
+                _activeWaveFormationAnchor = null;
+            }
+
+            for (int i = 0; i < _activeWaveEnemies.Count; i++)
+            {
+                EnemyMovement enemy = _activeWaveEnemies[i];
+                if (enemy != null && enemy.gameObject.activeSelf)
+                {
+                    var fsm = enemy.GetComponent<EnemyLifecycleFSM>();
+                    if (fsm != null && fsm.enabled)
+                    {
+                        fsm.ForceExit();
+                    }
+                    else
+                    {
+                        enemy.ForceRetreat();
+                    }
+                }
+            }
+
+            _activeWaveEnemies.Clear();
+            _isCurrentWaveTracking = false;
         }
 
         public void RecycleAll()

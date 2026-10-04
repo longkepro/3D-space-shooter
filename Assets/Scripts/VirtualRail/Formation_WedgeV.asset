@@ -12,34 +12,58 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
   m_Name: Formation_WedgeV
   m_EditorClassIdentifier: 
-  patternName: Wedge V (5 Ships)
+  patternName: Wedge V (9 Ships)
   slots:
   - slotName: Leader
-    localOffset: {x: 0, y: 0, z: 0}
+    localOffset: {x: 0, y: -3, z: 0}
     preferredArchetype: 3
     isLeader: 1
-    scaleMultiplier: 1.35
+    scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Left Wing 1
-    localOffset: {x: -7, y: 0, z: -8}
+    localOffset: {x: -4, y: -1, z: 0}
     preferredArchetype: 4
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Right Wing 1
-    localOffset: {x: 7, y: 0, z: -8}
+    localOffset: {x: 4, y: -1, z: 0}
     preferredArchetype: 4
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Left Wing 2
-    localOffset: {x: -14, y: 0, z: -16}
-    preferredArchetype: 0
+    localOffset: {x: -8, y: 1, z: 0}
+    preferredArchetype: 2
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Right Wing 2
-    localOffset: {x: 14, y: 0, z: -16}
+    localOffset: {x: 8, y: 1, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Wing 3
+    localOffset: {x: -12, y: 3, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Wing 3
+    localOffset: {x: 12, y: 3, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Wing 4
+    localOffset: {x: -16, y: 5, z: 0}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Wing 4
+    localOffset: {x: 16, y: 5, z: 0}
     preferredArchetype: 0
     isLeader: 0
     scaleMultiplier: 1
@@ -51,4 +75,4 @@ MonoBehaviour:
   holdDistance: 65
   maxClosingSpeed: 25
   maxLifetime: 14
-  leaderDeathReaction: 0
+  leaderDeathReaction: 4

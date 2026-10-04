@@ -12,34 +12,70 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
   m_Name: Formation_SpiralStream
   m_EditorClassIdentifier: 
-  patternName: Spiral Stream (5 Ships)
+  patternName: Spiral Stream (11 Ships)
   slots:
   - slotName: Head
     localOffset: {x: 0, y: 0, z: 0}
     preferredArchetype: 3
     isLeader: 1
-    scaleMultiplier: 1.25
+    scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Segment 1
-    localOffset: {x: 6, y: 3, z: -10}
+    localOffset: {x: 5, y: 1, z: 0}
     preferredArchetype: 2
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Segment 2
-    localOffset: {x: 0, y: 6, z: -20}
+    localOffset: {x: 3.5, y: -5, z: 0}
     preferredArchetype: 2
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Segment 3
-    localOffset: {x: -6, y: 3, z: -30}
+    localOffset: {x: -2.5, y: -6.5, z: 0}
     preferredArchetype: 2
     isLeader: 0
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   - slotName: Segment 4
-    localOffset: {x: -6, y: -3, z: -40}
+    localOffset: {x: -7.5, y: -3, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Segment 5
+    localOffset: {x: -9, y: 2.5, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Segment 6
+    localOffset: {x: -6, y: 8.5, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Segment 7
+    localOffset: {x: 1, y: 11.5, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Segment 8
+    localOffset: {x: 8, y: 9, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Segment 9
+    localOffset: {x: 12, y: 3, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Segment 10
+    localOffset: {x: 10, y: -4.5, z: 0}
     preferredArchetype: 2
     isLeader: 0
     scaleMultiplier: 1
@@ -51,4 +87,4 @@ MonoBehaviour:
   holdDistance: 70
   maxClosingSpeed: 25
   maxLifetime: 14
-  leaderDeathReaction: 1
+  leaderDeathReaction: 4

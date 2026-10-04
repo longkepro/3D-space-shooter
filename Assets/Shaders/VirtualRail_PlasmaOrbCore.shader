@@ -2,19 +2,19 @@ Shader "VirtualRail/PlasmaOrbCore"
 {
     Properties
     {
-        [HDR] _CoreColor ("Core Color (Center)", Color) = (3.0, 2.8, 2.2, 1.0)
-        [HDR] _RimColor ("Rim Color (Edge)", Color) = (2.5, 1.0, 0.1, 1.0)
-        _CoreFalloff ("Core Sharpness", Range(0.5, 8.0)) = 2.5
+        [HDR] _CoreColor ("Core Color (Center - Hot White)", Color) = (2.5, 3.5, 2.8, 1.0)
+        [HDR] _RimColor ("Rim Color (Edge - HDR Glow)", Color) = (0.168, 3.211, 0.426, 1.0)
+        _CoreFalloff ("Core Falloff / Sharpness", Range(0.5, 8.0)) = 1.8
         _PulseSpeed ("Pulsing Speed", Range(0.0, 20.0)) = 8.0
-        _PulseIntensity ("Pulsing Depth", Range(0.0, 0.5)) = 0.15
+        _PulseIntensity ("Pulsing Depth", Range(0.0, 0.5)) = 0.1
     }
 
     SubShader
     {
-        Tags { "Queue"="Transparent+10" "RenderType"="Transparent" "IgnoreProjector"="True" }
-        Blend One One
-        ZWrite Off
-        Cull Off
+        // Render in Geometry queue so GrabPass in the outer sphere captures the solid luminous core
+        Tags { "Queue"="Geometry+10" "RenderType"="Opaque" "IgnoreProjector"="True" }
+        ZWrite On
+        Cull Back
         Lighting Off
 
         Pass
@@ -59,10 +59,11 @@ Shader "VirtualRail/PlasmaOrbCore"
                 float3 view = normalize(i.viewDir);
                 float ndotv = saturate(dot(norm, view));
 
-                // Phối trộn lõi trắng nóng trung tâm ra rìa cam rực rỡ
-                float core = pow(ndotv, _CoreFalloff);
+                // Nhân lõi đặc: tâm trắng nóng cực sáng, rìa xanh ngọc rực rỡ
+                float core = pow(ndotv, max(0.1, _CoreFalloff));
                 float pulse = 1.0 + sin(_Time.y * _PulseSpeed) * _PulseIntensity;
                 fixed4 finalCol = lerp(_RimColor, _CoreColor, core) * pulse;
+                finalCol.a = 1.0;
                 return finalCol;
             }
             ENDCG
