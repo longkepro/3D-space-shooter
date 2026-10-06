@@ -18,7 +18,8 @@ namespace VirtualRail
             Assembling,   // Đang bay theo đường cong Bézier nhập đội
             LockedInSlot, // Đã khóa cứng đồng điệu theo Slot của Anchor
             PanicScatter, // Hoảng loạn phân rã khi mất chỉ huy
-            FreeCombat    // Tự do chiến đấu khi mất chỉ huy và mất khiên (không tự hủy)
+            FreeCombat,   // Tự do chiến đấu khi mất chỉ huy và mất khiên (không tự hủy)
+            Exiting       // Đang thực hiện động tác thoát ly rời đi điện ảnh
         }
 
         [Header("Wingman Info")]
@@ -40,6 +41,13 @@ namespace VirtualRail
         private float _panicDuration = 1.5f;
         private float _panicRollDir = 1f;
 
+        // Cinematic Exit kinematics state
+        private Vector3 _exitVelocity;
+        private float _exitTimer = 0f;
+        private float _exitDuration = 1.8f;
+        private float _exitRollRate = 0f;
+        private float _exitRollDir = 1f;
+
         private EnemyMovement _movement;
         private Collider _collider;
         private EnemyHealth _health;
@@ -47,6 +55,18 @@ namespace VirtualRail
         public int SlotIndex => _slotIndex;
         public bool IsLeader => _isLeader;
         public WingmanState State => _state;
+        public Vector3 SlotLocalOffset => _slotLocalOffset;
+
+        public void SetDynamicSlotOffset(Vector3 dynamicOffset)
+        {
+            _slotLocalOffset = dynamicOffset;
+        }
+
+        public void UpdateSlotDefinition(int newSlotIndex, Vector3 newOffset)
+        {
+            _slotIndex = newSlotIndex;
+            _slotLocalOffset = newOffset;
+        }
 
         private void Awake()
         {
@@ -61,7 +81,8 @@ namespace VirtualRail
             VirtualFormationAnchor anchor,
             Vector3 slotOffset,
             Vector3 spawnPosition,
-            float assemblyTime)
+            float assemblyTime,
+            FormationEntryStyle entryStyle = FormationEntryStyle.FlankIn)
         {
             _slotIndex = slotIndex;
             _isLeader = isLeader;
@@ -77,14 +98,39 @@ namespace VirtualRail
 
             transform.position = _spawnPos;
 
-            // Tính toán 2 điểm điều khiển (Control Points) cho đường cong Cubic Bézier 3D
-            Vector3 targetSlotWorld = _formationAnchor.transform.TransformPoint(_slotLocalOffset);
-            Vector3 toTarget = targetSlotWorld - _spawnPos;
+            // Tính toán 2 điểm điều khiển (Control Points) cho đường cong Cubic Bézier 3D theo Entry Style
+            Vector3 targetSlotWorld = _formationAnchor.GetSlotWorldPosition(_slotIndex, _slotLocalOffset);
+            Vector3 railFwd = anchor != null ? anchor.transform.forward : Vector3.forward;
+            Vector3 railRight = anchor != null ? anchor.transform.right : Vector3.right;
+            Vector3 railUp = anchor != null ? anchor.transform.up : Vector3.up;
 
-            // Điểm điều khiển 1: Uốn lượn theo hướng vung sườn ban đầu
-            _ctrl1 = _spawnPos + Vector3.up * 8f + Vector3.right * (UnityEngine.Random.Range(-12f, 12f));
-            // Điểm điều khiển 2: Nắn theo hướng vector đường ray tới gần Slot
-            _ctrl2 = targetSlotWorld - anchor.transform.forward * 20f + Vector3.up * 4f;
+            switch (entryStyle)
+            {
+                case FormationEntryStyle.OverheadDive:
+                    // Bổ nhào từ tầng mây +Y: ctrl1 cắm dốc xuống cực mạnh, ctrl2 võng lên đón slot
+                    _ctrl1 = _spawnPos - railUp * 24f - railFwd * 6f;
+                    _ctrl2 = targetSlotWorld - railUp * 8f - railFwd * 16f;
+                    break;
+
+                case FormationEntryStyle.RearFlyby:
+                    // Phóng vọt từ sau lưng lên phía trước vượt mặt Arwing
+                    _ctrl1 = _spawnPos + railFwd * 35f + railUp * 8f;
+                    _ctrl2 = targetSlotWorld + railFwd * 15f + railUp * 4f;
+                    break;
+
+                case FormationEntryStyle.FrontalHorizon:
+                    // Lao thẳng từ chân trời xa phía trước rồi xòe ra đón slot
+                    _ctrl1 = _spawnPos - railFwd * 25f;
+                    _ctrl2 = targetSlotWorld + railFwd * 12f;
+                    break;
+
+                case FormationEntryStyle.FlankIn:
+                default:
+                    // Uốn lượn từ 2 bên sườn
+                    _ctrl1 = _spawnPos + railUp * 8f + railRight * (UnityEngine.Random.Range(-12f, 12f));
+                    _ctrl2 = targetSlotWorld - railFwd * 20f + railUp * 4f;
+                    break;
+            }
 
             // Tắt EnemyMovement để toàn quyền kiểm soát vị trí bằng Bézier và Slot
             if (_movement != null) _movement.enabled = false;
@@ -110,6 +156,10 @@ namespace VirtualRail
                 case WingmanState.PanicScatter:
                     UpdatePanicScatter();
                     break;
+
+                case WingmanState.Exiting:
+                    UpdateExiting();
+                    break;
             }
         }
 
@@ -119,16 +169,27 @@ namespace VirtualRail
             float u = Mathf.Clamp01(_assemblyTimer / _assemblyDuration);
 
             // Tọa độ đích động của Slot (Slot di chuyển liên tục theo Anchor)
-            Vector3 dynamicSlotWorld = _formationAnchor.transform.TransformPoint(_slotLocalOffset);
+            Vector3 dynamicSlotWorld = _formationAnchor.GetSlotWorldPosition(_slotIndex, _slotLocalOffset);
 
             // Công thức Cubic Bézier 3D: P(u) = (1-u)^3 P0 + 3(1-u)^2 u P1 + 3(1-u) u^2 P2 + u^3 P3
             Vector3 currentPos = EvaluateCubicBezier(_spawnPos, _ctrl1, _ctrl2, dynamicSlotWorld, u);
             Vector3 nextPos = EvaluateCubicBezier(_spawnPos, _ctrl1, _ctrl2, dynamicSlotWorld, Mathf.Min(u + 0.05f, 1f));
 
             transform.position = currentPos;
-            if ((nextPos - currentPos).sqrMagnitude > 0.001f)
+            Vector3 delta = nextPos - currentPos;
+            if (delta.sqrMagnitude > 0.001f)
             {
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(nextPos - currentPos), 10f * Time.deltaTime);
+                Vector3 travelDir = delta.normalized;
+                Vector3 railRight = (_formationAnchor != null) ? _formationAnchor.transform.right : Vector3.right;
+                Vector3 railUp = (_formationAnchor != null) ? _formationAnchor.transform.up : Vector3.up;
+
+                // Tính góc nghiêng cánh Banking Roll theo độ cong ôm cua ngang
+                float lateralDot = Vector3.Dot(travelDir, railRight);
+                float bankRoll = -Mathf.Clamp(lateralDot * 50f, -40f, 40f);
+
+                Quaternion lookRot = Quaternion.LookRotation(travelDir, railUp);
+                Quaternion targetRot = lookRot * Quaternion.Euler(0f, 0f, bankRoll);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 12f * Time.deltaTime);
             }
 
             if (u >= 1.0f)
@@ -160,8 +221,8 @@ namespace VirtualRail
 
         private void UpdateLockedSlot()
         {
-            // Khóa cứng tọa độ và góc xoay vào Slot của Formation Anchor (Pha 2 Synchronized Lock)
-            Vector3 targetWorld = _formationAnchor.transform.TransformPoint(_slotLocalOffset);
+            // Khóa cứng tọa độ tịnh tiến và góc xoay vào Slot của Formation Anchor (Pha 2 Synchronized Lock)
+            Vector3 targetWorld = _formationAnchor.GetSlotWorldPosition(_slotIndex, _slotLocalOffset);
             transform.position = targetWorld;
             transform.rotation = _formationAnchor.transform.rotation;
         }
@@ -310,6 +371,82 @@ namespace VirtualRail
             Debug.Log($"<color=red><b>[KAMIKAZE CHARGE]</b></color> Tàu cánh Slot {_slotIndex} lao thẳng cảm tử vào người chơi!");
         }
 
+        /// <summary>
+        /// Kích hoạt cơ chế thoát ly rời đi điện ảnh (Cinematic Exit) khi phi đội hết hạn tồn tại.
+        /// </summary>
+        public void TriggerExit(
+            FormationExitStyle exitStyle,
+            float duration,
+            Vector3 railForward,
+            Vector3 railRight,
+            Vector3 railUp,
+            float railSpeed)
+        {
+            if (_state == WingmanState.Exiting || _state == WingmanState.PanicScatter) return;
+
+            _state = WingmanState.Exiting;
+            _exitTimer = 0f;
+            _exitDuration = Mathf.Max(0.5f, duration);
+
+            // Dập tắt lá chắn và vô hiệu hóa collider để không cản trở tàu người chơi khi đang thoát ly
+            if (_health == null) _health = GetComponent<EnemyHealth>();
+            if (_health != null) _health.SetShieldActive(false);
+            if (_collider != null) _collider.enabled = false;
+
+            float side = (_slotIndex % 2 == 0) ? 1f : -1f;
+
+            switch (exitStyle)
+            {
+                case FormationExitStyle.ClimbOut:
+                    // Cả đội ngóc mũi 45 độ vút lên nóc màn hình với vận tốc cao
+                    Vector3 climbDir = (railUp * 1.6f + railForward * 1.5f).normalized;
+                    _exitVelocity = climbDir * (railSpeed + 45f) + railRight * (side * 4f);
+                    _exitRollDir = side;
+                    _exitRollRate = 90f;
+                    break;
+
+                case FormationExitStyle.SplitFlyPast:
+                    // Tẽ đôi sang 2 cánh, lộn vòng Barrel Roll bay ngược về phía sau/hai bên người chơi
+                    Vector3 splitDir = (railRight * side * 1.8f - railForward * 1.2f + railUp * 0.4f).normalized;
+                    _exitVelocity = splitDir * (railSpeed + 50f);
+                    _exitRollDir = side;
+                    _exitRollRate = 540f;
+                    break;
+
+                case FormationExitStyle.DiveUnder:
+                    // Cắm dốc xuống đáy sâu
+                    Vector3 diveDir = (-railUp * 1.8f + railForward * 1.2f).normalized;
+                    _exitVelocity = diveDir * (railSpeed + 45f) + railRight * (side * 3f);
+                    _exitRollDir = side;
+                    _exitRollRate = 60f;
+                    break;
+
+                case FormationExitStyle.InstantRecycle:
+                default:
+                    Recycle();
+                    return;
+            }
+        }
+
+        private void UpdateExiting()
+        {
+            _exitTimer += Time.deltaTime;
+            transform.position += _exitVelocity * Time.deltaTime;
+
+            if (_exitVelocity.sqrMagnitude > 0.01f)
+            {
+                Vector3 railUp = (_formationAnchor != null) ? _formationAnchor.transform.up : Vector3.up;
+                Quaternion lookRot = Quaternion.LookRotation(_exitVelocity.normalized, railUp);
+                float rollAngle = _exitRollDir * _exitRollRate * _exitTimer;
+                transform.rotation = lookRot * Quaternion.Euler(0f, 0f, rollAngle);
+            }
+
+            if (_exitTimer >= _exitDuration)
+            {
+                Recycle();
+            }
+        }
+
         private static Vector3 EvaluateCubicBezier(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
         {
             float u = 1f - t;
@@ -331,6 +468,8 @@ namespace VirtualRail
             _formationAnchor = null;
             _assemblyTimer = 0f;
             _panicTimer = 0f;
+            _exitTimer = 0f;
+            _exitVelocity = Vector3.zero;
             if (_health == null) _health = GetComponent<EnemyHealth>();
             if (_health != null)
             {

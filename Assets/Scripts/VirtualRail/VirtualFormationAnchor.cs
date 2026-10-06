@@ -34,12 +34,70 @@ namespace VirtualRail
         private float _lifetimeTimer = 0f;
         private float _maxFormationLifetime = 12f;
         private bool _isLeaderKilled = false;
+        private Vector3 _baseRayPosition;
+
+        // Dynamic Formation Morphing state
+        private bool _isMorphing = false;
+        private float _morphTimer = 0f;
+        private float _morphDuration = 1.8f;
+        private Vector3[] _morphFromOffsets;
+        private Vector3[] _morphToOffsets;
+        private FormationPattern _targetMorphPattern = null;
+        private bool _hasMorphed = false;
+
+        // Cinematic Exit state
+        private bool _isExiting = false;
+        private float _exitTimer = 0f;
+        private float _exitDuration = 1.8f;
 
         public FormationType Type => _formationType;
         public FormationPattern ActivePattern => _activePattern;
         public bool IsActive => gameObject.activeSelf;
         public bool HasActiveLeader => _leader != null && !_isLeaderKilled && _leader.gameObject.activeSelf;
         public FormationWingman Leader => _leader;
+        public bool IsMorphing => _isMorphing;
+        public bool IsExiting => _isExiting;
+
+        /// <summary>
+        /// Tính toán tọa độ không gian thế giới của một Slot Offset theo hệ quy chiếu tịnh tiến của đường ray (0 GC Alloc).
+        /// Hỗ trợ cơ chế Quay quanh tâm tàu chính (Centroid Orbit / Pinwheel Spin) khi slotIndex > 0 và profile có cài đặt centroidSpinSpeed.
+        /// Slot Offset KHÔNG bị xoay theo góc nghiêng của Anchor để triệt tiêu hoàn toàn hiệu ứng quăng quật cánh (Zero Lever Arm Whiplash).
+        /// </summary>
+        public Vector3 GetSlotWorldPosition(int slotIndex, Vector3 slotLocalOffset)
+        {
+            Vector3 effectiveOffset = slotLocalOffset;
+
+            // Cơ chế Centroid Orbit: Các tàu cánh (slotIndex > 0) quay tròn quanh tâm Leader (Slot 0)
+            if (slotIndex > 0 && _activePattern != null && _activePattern.motionProfile != null)
+            {
+                float spinSpeed = _activePattern.motionProfile.centroidSpinSpeed;
+                if (Mathf.Abs(spinSpeed) > 0.01f)
+                {
+                    float angleRad = (spinSpeed * _lifetimeTimer) * Mathf.Deg2Rad;
+                    float cosA = Mathf.Cos(angleRad);
+                    float sinA = Mathf.Sin(angleRad);
+
+                    // Xoay 2D quanh trục Z trong mặt phẳng cục bộ XY của đội hình
+                    float rx = slotLocalOffset.x * cosA - slotLocalOffset.y * sinA;
+                    float ry = slotLocalOffset.x * sinA + slotLocalOffset.y * cosA;
+                    effectiveOffset = new Vector3(rx, ry, slotLocalOffset.z);
+                }
+            }
+
+            if (_railAnchor != null)
+            {
+                return transform.position
+                    + _railAnchor.transform.right * effectiveOffset.x
+                    + _railAnchor.transform.up * effectiveOffset.y
+                    + _railAnchor.ForwardTangent * effectiveOffset.z;
+            }
+            return transform.position + effectiveOffset;
+        }
+
+        public Vector3 GetSlotWorldPosition(Vector3 slotLocalOffset)
+        {
+            return GetSlotWorldPosition(-1, slotLocalOffset);
+        }
 
         public static Vector3[] GetSlotOffsets(FormationType type)
         {
@@ -89,9 +147,16 @@ namespace VirtualRail
             _assemblyTime = assemblyDuration;
             _lifetimeTimer = 0f;
             _isLeaderKilled = false;
+            _isMorphing = false;
+            _morphTimer = 0f;
+            _targetMorphPattern = null;
+            _hasMorphed = false;
+            _isExiting = false;
+            _exitTimer = 0f;
             _activeWingmen.Clear();
             _leader = null;
 
+            _baseRayPosition = anchorStartPosition;
             transform.position = anchorStartPosition;
             transform.rotation = Quaternion.LookRotation(-_railAnchor.ForwardTangent);
 
@@ -126,7 +191,7 @@ namespace VirtualRail
                 );
                 Vector3 shipSpawnPos = anchorStartPosition + spawnOffset;
 
-                wingman.InitializeSlot(i, isLeader, this, slotOffsets[i], shipSpawnPos, _assemblyTime);
+                wingman.InitializeSlot(i, isLeader, this, slotOffsets[i], shipSpawnPos, _assemblyTime, FormationEntryStyle.FlankIn);
                 _activeWingmen.Add(wingman);
 
                 enemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : _railAnchor.transform);
@@ -162,13 +227,24 @@ namespace VirtualRail
             _maxFormationLifetime = pattern.maxLifetime > 2f ? pattern.maxLifetime : 14f;
             _lifetimeTimer = 0f;
             _isLeaderKilled = false;
+            _isMorphing = false;
+            _morphTimer = 0f;
+            _targetMorphPattern = null;
+            _hasMorphed = false;
+            _isExiting = false;
+            _exitTimer = 0f;
             _activeWingmen.Clear();
             _leader = null;
 
+            _baseRayPosition = anchorStartPosition;
             transform.position = anchorStartPosition;
             transform.rotation = Quaternion.LookRotation(-_railAnchor.ForwardTangent);
 
             int countToAssign = Mathf.Min(pattern.slots.Length, assignedEnemies.Count);
+            FormationEntryStyle entryStyle = pattern.entryStyle;
+            Vector3 railUp = _railAnchor.transform.up;
+            Vector3 railRight = _railAnchor.transform.right;
+            Vector3 railFwd = _railAnchor.ForwardTangent;
 
             for (int i = 0; i < countToAssign; i++)
             {
@@ -200,15 +276,39 @@ namespace VirtualRail
                     enemy.ApplyArchetype(EnemyData.CreateDefaultPreset(slotDef.preferredArchetype));
                 }
 
-                // Điểm xuất phát ngẫu nhiên ngoài màn hình cho từng tàu (chân trời 120m - 140m)
-                Vector3 spawnOffset = new Vector3(
-                    (i % 2 == 0 ? 1f : -1f) * UnityEngine.Random.Range(20f, 35f),
-                    UnityEngine.Random.Range(-5f, 15f),
-                    UnityEngine.Random.Range(10f, 30f)
-                );
+                // Điểm xuất phát tính theo FormationEntryStyle
+                float side = (i % 2 == 0 ? 1f : -1f);
+                Vector3 spawnOffset;
+
+                switch (entryStyle)
+                {
+                    case FormationEntryStyle.OverheadDive:
+                        // Bổ nhào từ trần mây +Y (cách mặt đất/ray 28-35m)
+                        spawnOffset = railUp * (28f + (i * 2.5f)) + railRight * (side * (8f + i * 3f)) + railFwd * (18f + i * 4f);
+                        break;
+
+                    case FormationEntryStyle.RearFlyby:
+                        // Từ sau lưng người chơi phóng vượt lên
+                        spawnOffset = -railFwd * (45f + i * 5f) + railRight * (side * (8f + i * 2f)) - railUp * 3f;
+                        break;
+
+                    case FormationEntryStyle.FrontalHorizon:
+                        // Từ chân trời xa xôi phía trước
+                        spawnOffset = railFwd * (50f + i * 8f) + railRight * (side * 4f) + railUp * (i % 2 == 0 ? 3f : -3f);
+                        break;
+
+                    case FormationEntryStyle.FlankIn:
+                    default:
+                        // Xuất phát từ 2 bên sườn
+                        spawnOffset = railRight * (side * UnityEngine.Random.Range(20f, 35f))
+                            + railUp * UnityEngine.Random.Range(-5f, 15f)
+                            + railFwd * UnityEngine.Random.Range(10f, 30f);
+                        break;
+                }
+
                 Vector3 shipSpawnPos = anchorStartPosition + spawnOffset;
 
-                wingman.InitializeSlot(i, isLeader, this, slotDef.localOffset, shipSpawnPos, _assemblyTime);
+                wingman.InitializeSlot(i, isLeader, this, slotDef.localOffset, shipSpawnPos, _assemblyTime, entryStyle);
                 _activeWingmen.Add(wingman);
 
                 enemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : _railAnchor.transform);
@@ -217,6 +317,40 @@ namespace VirtualRail
 
             gameObject.SetActive(true);
             Debug.Log($"<color=cyan><b>[FORMATION ANCHOR]</b></color> Khởi tạo đội hình DATA-DRIVEN [{pattern.patternName}] với {countToAssign} tàu chiến! Pha 1 Ráp nối Bézier bắt đầu.");
+        }
+
+        /// <summary>
+        /// Kích hoạt cơ chế biến hình chuyển đổi từ đội hình hiện tại sang đội hình mới (0 GC Alloc).
+        /// Các tàu cánh còn sống lướt chuyển vị trí theo đường cong né nhau trên trục sâu Z (Depth Separation Curve).
+        /// </summary>
+        public void StartMorphing(FormationPattern targetPattern, float duration)
+        {
+            if (targetPattern == null || _activeWingmen.Count == 0 || _isMorphing) return;
+            if (targetPattern.slots == null || targetPattern.slots.Length == 0) return;
+
+            _targetMorphPattern = targetPattern;
+            _morphDuration = Mathf.Max(0.5f, duration);
+            _morphTimer = 0f;
+            _isMorphing = true;
+
+            int shipCount = _activeWingmen.Count;
+            if (_morphFromOffsets == null || _morphFromOffsets.Length < shipCount)
+            {
+                _morphFromOffsets = new Vector3[shipCount];
+                _morphToOffsets = new Vector3[shipCount];
+            }
+
+            for (int i = 0; i < shipCount; i++)
+            {
+                FormationWingman wingman = _activeWingmen[i];
+                _morphFromOffsets[i] = wingman != null ? wingman.SlotLocalOffset : Vector3.zero;
+
+                // Tàu i gán vào slot i của đội hình mới (kẹp an toàn nếu targetPattern ít slot hơn)
+                int targetSlotIdx = Mathf.Min(i, targetPattern.slots.Length - 1);
+                _morphToOffsets[i] = targetPattern.slots[targetSlotIdx].localOffset;
+            }
+
+            Debug.Log($"<color=yellow><b>[FORMATION MORPHING]</b></color> Bắt đầu biến hình phi đội từ [{(_activePattern != null ? _activePattern.patternName : "Default")}] sang [{targetPattern.patternName}] trong {_morphDuration}s!");
         }
 
         private void Update()
@@ -232,7 +366,7 @@ namespace VirtualRail
             float closingSpeed = 0f;
             if (useSync)
             {
-                Vector3 toFormation = transform.position - _railAnchor.transform.position;
+                Vector3 toFormation = _baseRayPosition - _railAnchor.transform.position;
                 float distToPlayer = Vector3.Dot(toFormation, _railAnchor.ForwardTangent);
                 float targetHoldDist = (_activePattern != null) ? _activePattern.holdDistance : ((_railAnchor.config != null) ? _railAnchor.config.formationHoldDistance : 65f);
                 float maxClosingSpeed = (_activePattern != null) ? _activePattern.maxClosingSpeed : ((_railAnchor.config != null) ? _railAnchor.config.formationClosingSpeed : 25f);
@@ -254,22 +388,109 @@ namespace VirtualRail
             }
 
             float actualSpeed = Mathf.Max(20f, railSpeed - closingSpeed);
-            transform.position += _railAnchor.ForwardTangent * (actualSpeed * Time.deltaTime);
+            _baseRayPosition += _railAnchor.ForwardTangent * (actualSpeed * Time.deltaTime);
 
-            // 2. Chuyển động uốn lượn hình sin và nghiêng cánh (Banking Roll)
-            float sway = Mathf.Sin(_lifetimeTimer * _swaySpeed) * _swayAmplitudeX;
-            Vector3 swayOffset = _railAnchor.transform.right * (Mathf.Cos(_lifetimeTimer * _swaySpeed) * _swayAmplitudeX * 0.5f * Time.deltaTime);
-            transform.position += swayOffset;
+            // 2. Chuyển động uốn lượn / quỹ đạo độc lập thông qua FormationMotionEvaluator (0 GC Alloc)
+            FormationMotionProfile profile = (_activePattern != null) ? _activePattern.motionProfile : null;
+            FormationMotionEvaluator.Evaluate(
+                profile,
+                _lifetimeTimer,
+                _swaySpeed,
+                _swayAmplitudeX,
+                _bankingAngle,
+                _railAnchor.transform.right,
+                _railAnchor.transform.up,
+                _railAnchor.ForwardTangent,
+                out Vector3 localDisplacement,
+                out Quaternion targetRot
+            );
 
-            // Nghiêng cánh theo hướng lượn
-            float rollAngle = -Mathf.Sin(_lifetimeTimer * _swaySpeed) * _bankingAngle;
-            Quaternion targetRot = Quaternion.LookRotation(-_railAnchor.ForwardTangent, _railAnchor.transform.up) * Quaternion.Euler(0, 0, rollAngle);
+            transform.position = _baseRayPosition + localDisplacement;
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 6f * Time.deltaTime);
 
-            // 3. Tự động thu hồi khi hết thời gian tồn tại hoặc bị người chơi vượt qua
-            if (_lifetimeTimer >= _maxFormationLifetime || transform.position.z < _railAnchor.transform.position.z - 40f)
+            // 3. Tự động kích hoạt biến hình đội hình (Dynamic Formation Morphing) nếu Pattern có cấu hình
+            if (_activePattern != null && _activePattern.nextMorphPattern != null && !_hasMorphed && !_isMorphing)
             {
-                Recycle();
+                if (_lifetimeTimer >= _activePattern.morphDelay)
+                {
+                    StartMorphing(_activePattern.nextMorphPattern, _activePattern.morphDuration);
+                }
+            }
+
+            // Xử lý tiến trình biến hình (Morphing Transition với Depth Separation Curve né nhau)
+            if (_isMorphing)
+            {
+                _morphTimer += Time.deltaTime;
+                float u = Mathf.Clamp01(_morphTimer / _morphDuration);
+                float s = u * u * (3f - 2f * u); // SmoothStep
+
+                // Parabol né nhau trên trục sâu Z (Depth Separation Curve): h(u) = 4 * u * (1 - u)
+                float depthArch = 4f * u * (1f - u);
+
+                for (int i = 0; i < _activeWingmen.Count; i++)
+                {
+                    FormationWingman wingman = _activeWingmen[i];
+                    if (wingman == null || !wingman.gameObject.activeSelf) continue;
+
+                    Vector3 from = _morphFromOffsets[i];
+                    Vector3 to = _morphToOffsets[i];
+
+                    // Nội suy vị trí cơ bản
+                    Vector3 currentSlot = Vector3.Lerp(from, to, s);
+
+                    // Tránh va chạm xuyên nhau: nếu tàu di chuyển sang ngang, tách trục Z
+                    float deltaX = to.x - from.x;
+                    if (Mathf.Abs(deltaX) > 1.0f)
+                    {
+                        float zOffset = (deltaX > 0f ? -3.5f : 3.5f) * depthArch;
+                        currentSlot.z += zOffset;
+                    }
+
+                    wingman.SetDynamicSlotOffset(currentSlot);
+                }
+
+                if (u >= 1.0f)
+                {
+                    _isMorphing = false;
+                    _hasMorphed = true;
+                    _activePattern = _targetMorphPattern;
+
+                    // Cập nhật lại slot index và offset chính thức cho các wingman
+                    for (int i = 0; i < _activeWingmen.Count; i++)
+                    {
+                        if (_activeWingmen[i] != null && _activeWingmen[i].gameObject.activeSelf)
+                        {
+                            int targetSlotIdx = Mathf.Min(i, _targetMorphPattern.slots.Length - 1);
+                            _activeWingmen[i].UpdateSlotDefinition(targetSlotIdx, _targetMorphPattern.slots[targetSlotIdx].localOffset);
+                        }
+                    }
+
+                    Debug.Log($"<color=green><b>[FORMATION MORPHING COMPLETE]</b></color> Hoàn tất biến hình phi đội sang [{_targetMorphPattern.patternName}]!");
+                }
+            }
+
+            // 4. Xử lý thoát ly rời đi khi hết thời gian tồn tại hoặc bị người chơi vượt qua
+            if (_isExiting)
+            {
+                _exitTimer += Time.deltaTime;
+                if (_exitTimer >= _exitDuration || _activeWingmen.Count == 0)
+                {
+                    Recycle();
+                }
+                return;
+            }
+
+            if (_lifetimeTimer >= _maxFormationLifetime || _baseRayPosition.z < _railAnchor.transform.position.z - 40f)
+            {
+                FormationExitStyle exitStyle = (_activePattern != null) ? _activePattern.exitStyle : FormationExitStyle.ClimbOut;
+                if (exitStyle != FormationExitStyle.InstantRecycle && _activeWingmen.Count > 0)
+                {
+                    StartExitSequence(exitStyle);
+                }
+                else
+                {
+                    Recycle();
+                }
             }
         }
 
@@ -285,6 +506,7 @@ namespace VirtualRail
             if (ship.IsLeader && !_isLeaderKilled)
             {
                 _isLeaderKilled = true;
+                _isMorphing = false;
                 LeaderDeathReaction reaction = (_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.BreakShieldAndEngage;
 
                 if (reaction == LeaderDeathReaction.MaintainFormation)
@@ -355,6 +577,34 @@ namespace VirtualRail
         }
 
         /// <summary>
+        /// Kích hoạt chuỗi động tác thoát ly điện ảnh cho cả phi đội khi hết thời gian tồn tại (0 GC Alloc).
+        /// </summary>
+        public void StartExitSequence(FormationExitStyle exitStyle)
+        {
+            if (_isExiting) return;
+
+            _isExiting = true;
+            _exitTimer = 0f;
+            _exitDuration = (_activePattern != null) ? _activePattern.exitDuration : 1.8f;
+            _isMorphing = false;
+
+            Vector3 railFwd = (_railAnchor != null) ? _railAnchor.ForwardTangent : Vector3.forward;
+            Vector3 railRight = (_railAnchor != null) ? _railAnchor.transform.right : Vector3.right;
+            Vector3 railUp = (_railAnchor != null) ? _railAnchor.transform.up : Vector3.up;
+            float railSpeed = (_railAnchor != null) ? _railAnchor.CurrentSpeed : 40f;
+
+            Debug.Log($"<color=cyan><b>[FORMATION EXIT]</b></color> Phi đội [{(_activePattern != null ? _activePattern.patternName : _formationType.ToString())}] bắt đầu thoát ly điện ảnh ({exitStyle})!");
+
+            for (int i = 0; i < _activeWingmen.Count; i++)
+            {
+                if (_activeWingmen[i] != null && _activeWingmen[i].gameObject.activeSelf)
+                {
+                    _activeWingmen[i].TriggerExit(exitStyle, _exitDuration, railFwd, railRight, railUp, railSpeed);
+                }
+            }
+        }
+
+        /// <summary>
         /// Ép buộc đội hình giải tán và rút lui ngay lập tức để giải phóng sàn đấu cho wave sau (0 GC Alloc).
         /// </summary>
         public void ForceRetreat()
@@ -375,6 +625,9 @@ namespace VirtualRail
 
         public void Recycle()
         {
+            _isMorphing = false;
+            _isExiting = false;
+            _exitTimer = 0f;
             for (int i = 0; i < _activeWingmen.Count; i++)
             {
                 if (_activeWingmen[i] != null && _activeWingmen[i].gameObject.activeSelf)

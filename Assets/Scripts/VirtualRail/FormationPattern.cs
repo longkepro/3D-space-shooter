@@ -12,6 +12,22 @@ namespace VirtualRail
         MaintainFormation = 4     // Giữ nguyên đội hình, các tàu còn lại tiếp tục bay theo đội hình cho đến khi bị tiêu diệt hết hoặc hết thời gian
     }
 
+    public enum FormationEntryStyle
+    {
+        FlankIn = 0,         // Từ 2 bên sườn bay vào (cơ bản)
+        OverheadDive = 1,    // Từ tầng mây +Y bổ nhào dốc xuống, lượn phẳng rồi dàn đội hình
+        RearFlyby = 2,       // Từ phía sau lưng người chơi phóng vọt lên trước mặt rồi dàn đội hình
+        FrontalHorizon = 3   // Từ chân trời xa xôi phía trước bay thẳng tới rồi xòe ra
+    }
+
+    public enum FormationExitStyle
+    {
+        ClimbOut = 0,        // Cả đội ngóc mũi 45 độ, tăng tốc xé gió vút lên nóc màn hình
+        SplitFlyPast = 1,    // Đội hình tẽ đôi sang 2 cánh, lộn vòng lướt qua phía sau tàu người chơi
+        DiveUnder = 2,       // Cắm mũi chúc xuống đáy sâu thoát ly
+        InstantRecycle = 3   // Tắt ngấm trực tiếp (cơ chế cũ - legacy fallback)
+    }
+
     [Serializable]
     public struct FormationSlotDefinition
     {
@@ -55,11 +71,26 @@ namespace VirtualRail
             new FormationSlotDefinition { slotName = "Right Wing", localOffset = new Vector3(8f, 0f, 0f), preferredArchetype = EnemyArchetype.ShieldBearer, isLeader = false, scaleMultiplier = 1.0f }
         };
 
-        [Header("Flight Dynamics")]
+        [Header("Flight Dynamics & Motion Profile")]
+        [Tooltip("Hồ sơ chuyển động quỹ đạo độc lập. Kéo thả Profile vào đây để tùy biến kiểu bay (Xoắn ốc, Số 8, Nhấp nhô...). Nếu để trống, hệ thống tự động dùng thông số mặc định bên dưới.")]
+        public FormationMotionProfile motionProfile;
+
         [Range(0.5f, 3.0f)]
         [Tooltip("Thời gian các tàu từ ngoài bay vào ráp nối đội hình theo đường cong Bézier (giây)")]
         public float assemblyTime = 1.2f;
 
+        [Header("Cinematic Entry & Exit (Bổ Nhào & Thoát Ly Điện Ảnh)")]
+        [Tooltip("Kiểu xuất hiện ráp nối đội hình")]
+        public FormationEntryStyle entryStyle = FormationEntryStyle.FlankIn;
+
+        [Tooltip("Kiểu thoát ly rời đi khi hết thời gian tồn tại thay vì biến mất đột ngột")]
+        public FormationExitStyle exitStyle = FormationExitStyle.ClimbOut;
+
+        [Range(0.8f, 3.5f)]
+        [Tooltip("Thời gian thực hiện động tác thoát ly rời đi (giây)")]
+        public float exitDuration = 1.8f;
+
+        [Header("Legacy Fallback Parameters (Khi chưa gán Motion Profile)")]
         [Range(0.2f, 4.0f)]
         [Tooltip("Tần số lượn sóng ngang hình sin của cả đội hình")]
         public float swaySpeed = 1.5f;
@@ -80,6 +111,18 @@ namespace VirtualRail
 
         [Tooltip("Thời gian tồn tại tối đa của đội hình trước khi tự giải tán (giây)")]
         public float maxLifetime = 14f;
+
+        [Header("Dynamic Formation Morphing (Biến hình đội hình)")]
+        [Tooltip("Đội hình tiếp theo muốn phi đội tự động biến hình lướt chuyển sang. Nếu để null, đội hình giữ nguyên dạng ban đầu.")]
+        public FormationPattern nextMorphPattern = null;
+
+        [Range(1.0f, 15.0f)]
+        [Tooltip("Thời gian phi đội bay ở dạng cũ trước khi bắt đầu biến hình chuyển đội hình (giây)")]
+        public float morphDelay = 4.0f;
+
+        [Range(0.5f, 4.0f)]
+        [Tooltip("Thời gian các tàu lướt từ slot cũ sang slot mới của đội hình tiếp theo (giây)")]
+        public float morphDuration = 1.8f;
 
         [Header("Tactical Behavior")]
         [Tooltip("Phản ứng của phi đội cánh khi Tàu Chỉ Huy bị bắn hạ")]

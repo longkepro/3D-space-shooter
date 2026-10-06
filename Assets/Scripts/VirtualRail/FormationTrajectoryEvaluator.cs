@@ -78,15 +78,26 @@ namespace VirtualRail
         }
 
         /// <summary>
-        /// Tạo điểm xuất phát deterministic ngoài màn hình cho từng slot (chân trời 120m - 140m).
+        /// Tạo điểm xuất phát deterministic ngoài màn hình cho từng slot theo FormationEntryStyle (chân trời 120m - 140m).
         /// </summary>
-        public static Vector3 GetDeterministicSpawnOffset(int slotIndex)
+        public static Vector3 GetDeterministicSpawnOffset(int slotIndex, FormationEntryStyle entryStyle = FormationEntryStyle.FlankIn)
         {
             float side = (slotIndex % 2 == 0 ? 1f : -1f);
-            float x = side * (24f + (slotIndex * 3.5f));
-            float y = (slotIndex % 3 == 0) ? 6f : -3f;
-            float z = 18f + (slotIndex * 4f);
-            return new Vector3(x, y, z);
+            switch (entryStyle)
+            {
+                case FormationEntryStyle.OverheadDive:
+                    return new Vector3(side * (8f + slotIndex * 3f), 28f + (slotIndex * 2.5f), 18f + (slotIndex * 4f));
+                case FormationEntryStyle.RearFlyby:
+                    return new Vector3(side * (8f + slotIndex * 2f), -3f, -(45f + slotIndex * 5f));
+                case FormationEntryStyle.FrontalHorizon:
+                    return new Vector3(side * 4f, (slotIndex % 2 == 0 ? 3f : -3f), 50f + (slotIndex * 8f));
+                case FormationEntryStyle.FlankIn:
+                default:
+                    float x = side * (24f + (slotIndex * 3.5f));
+                    float y = (slotIndex % 3 == 0) ? 6f : -3f;
+                    float z = 18f + (slotIndex * 4f);
+                    return new Vector3(x, y, z);
+            }
         }
 
         /// <summary>
@@ -109,6 +120,7 @@ namespace VirtualRail
 
             int count = Mathf.Min(pattern.slots.Length, outPoses.Length);
             float assemblyDuration = Mathf.Max(pattern.assemblyTime, 0.5f);
+            FormationEntryStyle entryStyle = pattern.entryStyle;
 
             // 1. Tính toán vị trí tâm Anchor tại thời điểm time
             EvaluateAnchor(pattern, time, startPos, baseRotation, railForward, railRight, out Vector3 anchorPos, out Quaternion anchorRot);
@@ -123,12 +135,33 @@ namespace VirtualRail
                 Vector3 targetSlotWorld = anchorPos + (anchorRot * slotDef.localOffset);
 
                 // Điểm xuất phát ngoài màn hình
-                Vector3 spawnOffset = GetDeterministicSpawnOffset(i);
+                Vector3 spawnOffset = GetDeterministicSpawnOffset(i, entryStyle);
                 Vector3 spawnPos = startPos + spawnOffset;
 
-                // 2 điểm điều khiển Bézier
-                Vector3 ctrl1 = spawnPos + Vector3.up * 8f + railRight * (isLeader ? 0f : (i % 2 == 0 ? 10f : -10f));
-                Vector3 ctrl2 = targetSlotWorld - (anchorRot * Vector3.forward * 20f) + Vector3.up * 4f;
+                // 2 điểm điều khiển Bézier theo Entry Style
+                Vector3 ctrl1;
+                Vector3 ctrl2;
+
+                switch (entryStyle)
+                {
+                    case FormationEntryStyle.OverheadDive:
+                        ctrl1 = spawnPos - Vector3.up * 24f - railForward * 6f;
+                        ctrl2 = targetSlotWorld - Vector3.up * 8f - railForward * 16f;
+                        break;
+                    case FormationEntryStyle.RearFlyby:
+                        ctrl1 = spawnPos + railForward * 35f + Vector3.up * 8f;
+                        ctrl2 = targetSlotWorld + railForward * 15f + Vector3.up * 4f;
+                        break;
+                    case FormationEntryStyle.FrontalHorizon:
+                        ctrl1 = spawnPos - railForward * 25f;
+                        ctrl2 = targetSlotWorld + railForward * 12f;
+                        break;
+                    case FormationEntryStyle.FlankIn:
+                    default:
+                        ctrl1 = spawnPos + Vector3.up * 8f + railRight * (isLeader ? 0f : (i % 2 == 0 ? 10f : -10f));
+                        ctrl2 = targetSlotWorld - (anchorRot * Vector3.forward * 20f) + Vector3.up * 4f;
+                        break;
+                }
 
                 Vector3 currentPos;
                 Quaternion currentRot;
@@ -146,7 +179,9 @@ namespace VirtualRail
                     Vector3 dir = nextPos - currentPos;
                     if (dir.sqrMagnitude > 0.001f)
                     {
-                        currentRot = Quaternion.LookRotation(dir, Vector3.up);
+                        float lateralDot = Vector3.Dot(dir.normalized, railRight);
+                        float bankRoll = -Mathf.Clamp(lateralDot * 50f, -40f, 40f);
+                        currentRot = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(0f, 0f, bankRoll);
                     }
                     else
                     {
