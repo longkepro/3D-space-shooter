@@ -220,6 +220,16 @@ namespace VirtualRail
         public float lockAcquisitionTime = 0.5f;
         [Tooltip("Bật khung khóa mục tiêu Arcade Procedural Brackets thay cho khối vuông đỏ")]
         public bool enableArcadeLockVisual = true;
+        [Tooltip("Bật gia tốc phóng vọt thoát nòng (Ejection Acceleration) cho tên lửa tụ lực")]
+        public bool enableMissileAcceleration = true;
+        [Tooltip("Bật quỹ đạo bay xoắn ốc uốn lượn nghệ thuật chuẩn Star Fox 64 (Corkscrew Wobble)")]
+        public bool enableCorkscrewTrajectory = true;
+        [Tooltip("Biên độ xoắn ốc của tên lửa (mét)")]
+        public float corkscrewAmplitude = 0.65f;
+        [Tooltip("Tần số xoay xoắn ốc của tên lửa")]
+        public float corkscrewFrequency = 14f;
+        [Tooltip("Bật dẫn đường đón đầu mục tiêu di chuyển (Lead Pursuit Navigation)")]
+        public bool enableLeadPursuit = true;
 
         [Header("11. Segmented Laser Bolts (Hướng 1 - Đoạn đạn laser)")]
         [Tooltip("Bật chế độ bắn đạn laser thành từng đoạn (Direction 1). Nếu tắt sẽ quay lại tia tức thời (Layer 2 Undo)")]
@@ -283,6 +293,16 @@ namespace VirtualRail
         public bool enableSmartBomb = true;
         [Tooltip("Số lượng bom thông minh ban đầu")]
         public int initialSmartBombs = 3;
+        [Tooltip("Bán kính nổ sóng xung kích của Bom thông minh (mét)")]
+        public float smartBombShockwaveRadius = 150f;
+        [Tooltip("Vận tốc bay của Bom thông minh (m/s)")]
+        public float smartBombFlightSpeed = 160f;
+        [Tooltip("Góc bẻ lái tự dẫn của Bom thông minh khi có mục tiêu khóa (độ/giây)")]
+        public float smartBombTurnRate = 320f;
+        [Tooltip("Thời gian tồn tại tối đa của Bom trước khi tự kích nổ (giây)")]
+        public float smartBombLifetime = 3.0f;
+        [Tooltip("Cho phép ấn phím B lần 2 để kích nổ Bom giữa không trung (Manual Air Detonation)")]
+        public bool enableSmartBombManualDetonation = true;
         [Tooltip("Bán kính nổ lan của phát bắn tụ lực Charge Shot Splash (mét)")]
         public float chargeShotSplashRadius = 10f;
         [Tooltip("Bật sử dụng đạn vật lý Plasma Orb cho quái thay vì hitscan cũ")]

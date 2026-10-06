@@ -104,6 +104,11 @@ MonoBehaviour:
   reticleMagnetismMaxAngle: 14
   lockAcquisitionTime: 0.5
   enableArcadeLockVisual: 1
+  enableMissileAcceleration: 1
+  enableCorkscrewTrajectory: 1
+  corkscrewAmplitude: 0.65
+  corkscrewFrequency: 14
+  enableLeadPursuit: 1
   useSegmentedLaser: 1
   laserBoltSpeed: 420
   laserBoltLength: 8.5
@@ -131,6 +136,11 @@ MonoBehaviour:
   barrelRollDuration: 0.4
   enableSmartBomb: 1
   initialSmartBombs: 3
+  smartBombShockwaveRadius: 150
+  smartBombFlightSpeed: 160
+  smartBombTurnRate: 320
+  smartBombLifetime: 3
+  enableSmartBombManualDetonation: 1
   chargeShotSplashRadius: 10
   usePhysicalEnemyProjectiles: 1
   useSpatialVectors: 1

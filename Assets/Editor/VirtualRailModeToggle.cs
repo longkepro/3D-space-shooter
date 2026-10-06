@@ -745,7 +745,8 @@ public class VirtualRailModeToggle
         anchor.config = config;
 
         // Module Bom Thông Minh & Động cơ tính điểm Combo (TDD v1.0.0 Phần I)
-        root.AddComponent<SmartBombModule>();
+        var smartBomb = root.AddComponent<SmartBombModule>();
+        smartBomb.BombPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerSmartBomb.prefab");
         root.AddComponent<ComboScoringEngine>();
 
         // Bộ đọc Input tập trung (Hòa trộn PC Keyboard/Mouse và Android Dual Joysticks)
