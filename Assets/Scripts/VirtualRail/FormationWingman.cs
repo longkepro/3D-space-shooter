@@ -189,6 +189,15 @@ namespace VirtualRail
 
                 Quaternion lookRot = Quaternion.LookRotation(travelDir, railUp);
                 Quaternion targetRot = lookRot * Quaternion.Euler(0f, 0f, bankRoll);
+
+                // Nếu đội hình ở chế độ StabilizedBoresight, mượt mà nội suy về góc ổn định phẳng khi gần tới slot
+                bool isStabilized = _formationAnchor != null && _formationAnchor.ActivePattern != null && _formationAnchor.ActivePattern.attitudeMode == FormationAttitudeMode.StabilizedBoresight;
+                if (isStabilized && u > 0.6f)
+                {
+                    float blend = (u - 0.6f) / 0.4f;
+                    targetRot = Quaternion.Slerp(targetRot, _formationAnchor.transform.rotation, blend);
+                }
+
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 12f * Time.deltaTime);
             }
 

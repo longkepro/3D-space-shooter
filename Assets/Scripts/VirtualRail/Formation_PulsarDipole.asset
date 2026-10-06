@@ -69,6 +69,10 @@ MonoBehaviour:
     scaleMultiplier: 1
     customPrefabOverride: {fileID: 0}
   assemblyTime: 1.5
+  entryStyle: 0
+  exitStyle: 0
+  exitDuration: 1.8
+  attitudeMode: 0
   swaySpeed: 2
   swayAmplitudeX: 15
   bankingAngle: 32
@@ -76,3 +80,4 @@ MonoBehaviour:
   maxClosingSpeed: 25
   maxLifetime: 14
   leaderDeathReaction: 4
+  motionProfile: {fileID: 11400000, guid: a1000007b2c3d4e5f60718293a4b0007, type: 2}

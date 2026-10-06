@@ -84,6 +84,7 @@ MonoBehaviour:
   entryStyle: 2
   exitStyle: 2
   exitDuration: 2.0
+  attitudeMode: 0
   swaySpeed: 2
   swayAmplitudeX: 16
   bankingAngle: 35

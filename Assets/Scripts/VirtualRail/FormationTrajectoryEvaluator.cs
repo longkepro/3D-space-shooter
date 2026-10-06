@@ -72,9 +72,16 @@ namespace VirtualRail
             Vector3 swayOffset = railRight * sway;
             anchorPos = startPos + swayOffset;
 
-            // 2. Góc nghiêng cánh khi lượn (Banking Roll)
-            float rollAngle = -Mathf.Sin(time * swaySpeed) * bankingAngle;
-            anchorRot = baseRotation * Quaternion.Euler(0f, 0f, rollAngle);
+            // 2. Góc nghiêng cánh khi lượn (Banking Roll) theo FormationAttitudeMode
+            if (pattern != null && pattern.attitudeMode == FormationAttitudeMode.StabilizedBoresight)
+            {
+                anchorRot = baseRotation; // Mũi và cánh giữ nguyên phẳng đối diện ray (Roll = 0, Pitch = 0)
+            }
+            else
+            {
+                float rollAngle = -Mathf.Sin(time * swaySpeed) * bankingAngle;
+                anchorRot = baseRotation * Quaternion.Euler(0f, 0f, rollAngle);
+            }
         }
 
         /// <summary>
@@ -181,7 +188,14 @@ namespace VirtualRail
                     {
                         float lateralDot = Vector3.Dot(dir.normalized, railRight);
                         float bankRoll = -Mathf.Clamp(lateralDot * 50f, -40f, 40f);
-                        currentRot = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(0f, 0f, bankRoll);
+                        Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up) * Quaternion.Euler(0f, 0f, bankRoll);
+
+                        if (pattern != null && pattern.attitudeMode == FormationAttitudeMode.StabilizedBoresight && u > 0.6f)
+                        {
+                            float blend = (u - 0.6f) / 0.4f;
+                            targetRot = Quaternion.Slerp(targetRot, anchorRot, blend);
+                        }
+                        currentRot = targetRot;
                     }
                     else
                     {

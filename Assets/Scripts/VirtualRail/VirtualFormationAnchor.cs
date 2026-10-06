@@ -406,7 +406,33 @@ namespace VirtualRail
             );
 
             transform.position = _baseRayPosition + localDisplacement;
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 6f * Time.deltaTime);
+
+            // Xử lý góc xoay theo FormationAttitudeMode (Tư thế Mũi & Cánh)
+            FormationAttitudeMode attitudeMode = (_activePattern != null) ? _activePattern.attitudeMode : FormationAttitudeMode.StabilizedBoresight;
+            Quaternion desiredRotation;
+
+            switch (attitudeMode)
+            {
+                case FormationAttitudeMode.StabilizedBoresight:
+                    // Mũi và cánh giữ nguyên tuyệt đối: Khóa cứng hướng đối đầu trực diện đường ray, Roll = 0, Pitch = 0
+                    desiredRotation = Quaternion.LookRotation(-_railAnchor.ForwardTangent, _railAnchor.transform.up);
+                    break;
+
+                case FormationAttitudeMode.TargetLockPlayer:
+                    // Mũi tàu khóa ngắm bám theo vị trí người chơi
+                    Transform playerT = VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : _railAnchor.transform;
+                    Vector3 toPlayer = (playerT != null) ? (playerT.position - transform.position).normalized : -_railAnchor.ForwardTangent;
+                    desiredRotation = Quaternion.LookRotation(toPlayer, _railAnchor.transform.up);
+                    break;
+
+                case FormationAttitudeMode.KinematicBanking:
+                default:
+                    // Dùng góc xoay nghiêng cánh và ngóc/chúc mũi từ Evaluator
+                    desiredRotation = targetRot;
+                    break;
+            }
+
+            transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, 8f * Time.deltaTime);
 
             // 3. Tự động kích hoạt biến hình đội hình (Dynamic Formation Morphing) nếu Pattern có cấu hình
             if (_activePattern != null && _activePattern.nextMorphPattern != null && !_hasMorphed && !_isMorphing)

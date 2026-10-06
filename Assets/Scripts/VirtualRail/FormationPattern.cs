@@ -28,6 +28,13 @@ namespace VirtualRail
         InstantRecycle = 3   // Tắt ngấm trực tiếp (cơ chế cũ - legacy fallback)
     }
 
+    public enum FormationAttitudeMode
+    {
+        StabilizedBoresight = 0, // Mũi và cánh giữ nguyên tuyệt đối, khóa hướng trực diện đối đầu ray (Roll = 0, Pitch = 0)
+        KinematicBanking = 1,    // Nghiêng cánh và chúc/ngóc đầu theo quán tính rẽ
+        TargetLockPlayer = 2     // Mũi tàu tự động xoay ngắm bám theo tọa độ người chơi
+    }
+
     [Serializable]
     public struct FormationSlotDefinition
     {
@@ -89,6 +96,10 @@ namespace VirtualRail
         [Range(0.8f, 3.5f)]
         [Tooltip("Thời gian thực hiện động tác thoát ly rời đi (giây)")]
         public float exitDuration = 1.8f;
+
+        [Header("Attitude Dynamics (Tư thế Mũi & Cánh Tàu)")]
+        [Tooltip("Chế độ định hướng thân tàu trong đội hình: StabilizedBoresight = Mũi và cánh giữ nguyên tuyệt đối đối đầu ray")]
+        public FormationAttitudeMode attitudeMode = FormationAttitudeMode.StabilizedBoresight;
 
         [Header("Legacy Fallback Parameters (Khi chưa gán Motion Profile)")]
         [Range(0.2f, 4.0f)]
