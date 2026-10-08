@@ -315,6 +315,14 @@ namespace VirtualRail
                 {
                     splashRadius = 150f;
                 }
+
+                AudioManager.Instance?.PlaySFX2D(AudioSFXType.SmartBomb, 1.0f);
+                VirtualRailCameraRig.TriggerShake(0.85f);
+            }
+            else
+            {
+                AudioManager.Instance?.PlaySFX3D(AudioSFXType.ChargeSplash, impactPoint, 0.9f);
+                VirtualRailCameraRig.TriggerShake(0.35f);
             }
 
             // 1. Quét nổ lan hình cầu chuẩn Điều 4 (0 GC Alloc)

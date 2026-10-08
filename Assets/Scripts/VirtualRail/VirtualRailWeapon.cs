@@ -96,11 +96,13 @@ namespace VirtualRail
             {
                 _laserLevel = LaserUpgradeLevel.Twin;
                 Debug.Log("<color=yellow><b>[WEAPON UPGRADE]</b></color> Nâng cấp thành TWIN LASER! Hỏa lực gia tăng!");
+                AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 1.0f, 1.2f);
             }
             else if (_laserLevel == LaserUpgradeLevel.Twin)
             {
                 _laserLevel = LaserUpgradeLevel.Hyper;
                 Debug.Log("<color=green><b>[WEAPON UPGRADE]</b></color> Nâng cấp tối thượng HYPER LASER! Hỏa lực cực đại!");
+                AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 1.0f, 1.4f);
             }
         }
 
@@ -367,6 +369,15 @@ namespace VirtualRail
             var cfg = (anchor != null) ? anchor.config : null;
 
             Vector3 aimWorld = GetCurrentConvergencePoint(out bool foundTarget, out float closestDist);
+
+            if (AudioManager.Instance != null)
+            {
+                AudioSFXType laserSfx = AudioSFXType.LaserSingle;
+                if (_laserLevel == LaserUpgradeLevel.Twin) laserSfx = AudioSFXType.LaserTwin;
+                else if (_laserLevel == LaserUpgradeLevel.Hyper) laserSfx = AudioSFXType.LaserHyper;
+                AudioManager.Instance.PlaySFX2D(laserSfx, 0.75f, UnityEngine.Random.Range(0.97f, 1.03f));
+            }
+            VirtualRailCameraRig.TriggerShake(0.035f);
 
             // 1. Ưu tiên bắn từ nòng súng sạch VirtualRailMuzzle
             if (cleanMuzzles != null && cleanMuzzles.Length > 0)

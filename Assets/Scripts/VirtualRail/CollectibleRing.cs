@@ -148,6 +148,7 @@ namespace VirtualRail
             // 1. Cộng điểm
             GameEventManager.IncrementScore(_scoreValue);
             ComboScoringEngine.Instance?.RegisterSingleKill(_scoreValue);
+            AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 0.95f);
 
             // 2. Kích hoạt hiệu ứng tương ứng loại vòng
             switch (_type)

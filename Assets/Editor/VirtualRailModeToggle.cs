@@ -735,6 +735,21 @@ public class VirtualRailModeToggle
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ KÍCH HOẠT CHẾ ĐỘ ENDLESS SANDBOX DEMO:</b></color> Quái vật tự động sinh tuần hoàn ngẫu nhiên để kiểm thử tải!");
     }
 
+    [MenuItem("Tools/Virtual Rail/43. Audio: Setup & Select AudioManager (Inspector)")]
+    public static void SelectAudioManager()
+    {
+        AudioManager audioMgr = Object.FindAnyObjectByType<AudioManager>();
+        if (audioMgr == null)
+        {
+            GameObject audioObj = new GameObject("[VirtualRail_AudioManager]");
+            audioMgr = audioObj.AddComponent<AudioManager>();
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        }
+        Selection.activeGameObject = audioMgr.gameObject;
+        EditorGUIUtility.PingObject(audioMgr.gameObject);
+        Debug.Log("<color=cyan><b>[VirtualRail Audio]</b></color> Đã định vị và chọn <b>[VirtualRail_AudioManager]</b> trong Hierarchy. Bạn có thể kéo thả các file nhạc nền và SFX vào Inspector!");
+    }
+
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
     {
         GameObject root = new GameObject("VirtualRail_PlayerRig");
@@ -1111,6 +1126,14 @@ public class VirtualRailModeToggle
         {
             GameObject dirObj = new GameObject("[VirtualRail_StageDirector]");
             director = dirObj.AddComponent<VirtualRailStageDirector>();
+        }
+
+        AudioManager audioMgr = Object.FindAnyObjectByType<AudioManager>();
+        if (audioMgr == null)
+        {
+            GameObject audioObj = new GameObject("[VirtualRail_AudioManager]");
+            audioMgr = audioObj.AddComponent<AudioManager>();
+            EditorUtility.SetDirty(audioMgr);
         }
 
         StageData s1 = AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_01.asset");

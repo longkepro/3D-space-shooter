@@ -439,6 +439,13 @@ namespace VirtualRail
                 notificationUI.ShowNotification(stage.stageTitle, stage.stageSubtitle, 3.5f);
             }
 
+            // 6. Phát nhạc nền Stage BGM (0 GC Alloc)
+            if (AudioManager.Instance != null && stage != null)
+            {
+                AudioManager.Instance.PlayStageMusic(stage.audioSettings.stageBgm, stage.audioSettings.musicVolume);
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 0.75f);
+            }
+
             currentState = StageState.InJourney;
             OnStageStarted?.Invoke(stage);
         }
@@ -569,6 +576,10 @@ namespace VirtualRail
                     {
                         notificationUI.ShowNotification(evt.messageTitle, evt.messageSubtitle, evt.messageDuration > 0.5f ? evt.messageDuration : 3.5f);
                     }
+                    if (AudioManager.Instance != null)
+                    {
+                        AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 0.75f);
+                    }
                     break;
 
                 case StageTimelineEventType.EnvironmentShift:
@@ -690,6 +701,11 @@ namespace VirtualRail
                 {
                     notificationUI.ShowNotification("WARNING: MASSIVE SIGNATURE", "TARGET DESTROY PROTOCOL ENGAGED", 4f);
                 }
+
+                if (AudioManager.Instance != null && stage.audioSettings.bossBgm != null)
+                {
+                    AudioManager.Instance.PlayBossMusic(stage.audioSettings.bossBgm, stage.audioSettings.musicVolume);
+                }
             }
             else
             {
@@ -763,6 +779,12 @@ namespace VirtualRail
                 string nextTarget = nextStage != null ? nextStage.stageTitle : "MISSION COMPLETE";
                 notificationUI.ShowNotification("WARP SPEED ENGAGED", nextTarget, _warpDuration);
             }
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.SmartBomb, 0.6f, 1.4f);
+            }
+            VirtualRailCameraRig.TriggerShake(0.35f);
 
             OnWarpTransitionStarted?.Invoke(currentStage, nextStage);
         }

@@ -41,6 +41,15 @@ public class Shield : MonoBehaviour
         }
         GameEventManager.UpdateHealthBar(Mathf.RoundToInt(_currentHealth / (float)_maxHealth * 100));
         VirtualRail.ComboScoringEngine.Instance?.ResetMultiplierOnDamage();
+
+        VirtualRail.AudioManager.Instance?.PlaySFX2D(VirtualRail.AudioSFXType.ShieldDamage, 0.85f);
+        VirtualRail.VirtualRailCameraRig.TriggerShake(0.35f);
+
+        if (_currentHealth > 0 && (_currentHealth / (float)_maxHealth) <= 0.3f)
+        {
+            VirtualRail.AudioManager.Instance?.PlaySFX2D(VirtualRail.AudioSFXType.ShieldAlarm, 0.75f);
+        }
+
         if (_currentHealth < 1)
         {
             TriggerPlayerDeath();
@@ -49,6 +58,9 @@ public class Shield : MonoBehaviour
 
     private void TriggerPlayerDeath()
     {
+        VirtualRail.AudioManager.Instance?.PlaySFX2D(VirtualRail.AudioSFXType.ExplosionLarge, 1.0f);
+        VirtualRail.VirtualRailCameraRig.TriggerShake(0.85f);
+
         var exp = GetComponent<Explosion>();
         if (exp != null)
         {

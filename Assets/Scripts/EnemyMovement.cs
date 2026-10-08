@@ -311,6 +311,10 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
             _isBlowingUp = true;
             GameEventManager.IncrementScore(_points);
             VirtualRail.ComboScoringEngine.Instance?.RegisterSingleKill(_points);
+
+            VirtualRail.AudioManager.Instance?.PlaySFX3D(VirtualRail.AudioSFXType.ExplosionSmall, transform.position, 0.85f);
+            VirtualRail.VirtualRailCameraRig.TriggerShake(0.12f);
+
             var explosion = _cachedExplosion != null ? _cachedExplosion : GetComponent<Explosion>();
             if (explosion != null)
             {

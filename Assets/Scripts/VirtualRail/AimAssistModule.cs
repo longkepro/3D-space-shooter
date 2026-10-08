@@ -358,6 +358,7 @@ namespace VirtualRail
                 {
                     lockedTarget = bestTarget;
                     _lockTimer = dt;
+                    AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeLockOn, 0.85f);
                 }
             }
             else
@@ -420,6 +421,9 @@ namespace VirtualRail
             missile.InitializeKinematics(baseSpeed, inheritedSpeed, turnSpeed, cfg, lockedTarget);
             float splashR = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             missile.splashRadius = splashR;
+
+            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeSplash, 0.85f);
+            VirtualRailCameraRig.TriggerShake(0.18f);
         }
 
         public void FireDumbChargeShot()
@@ -469,6 +473,9 @@ namespace VirtualRail
             missile.InitializeKinematics(baseSpeed, inheritedSpeed, turnSpeed, cfg, null);
             float splashRDumb = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             missile.splashRadius = splashRDumb;
+
+            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeSplash, 0.85f);
+            VirtualRailCameraRig.TriggerShake(0.18f);
         }
 
         private void TriggerDirectSplash(Vector3 center, Transform directTarget)

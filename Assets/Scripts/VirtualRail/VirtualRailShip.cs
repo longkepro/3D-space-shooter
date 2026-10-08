@@ -326,6 +326,9 @@ namespace VirtualRail
             // Xung lực lách ngang nhẹ khi lộn vòng né đạn (Emergency Evasion)
             shipNormalizedPos.x = Mathf.Clamp(shipNormalizedPos.x + rollDirection * 0.18f, -1f, 1f);
 
+            AudioManager.Instance?.PlaySFX2D(AudioSFXType.BarrelRoll, 0.85f);
+            VirtualRailCameraRig.TriggerShake(0.08f);
+
             Debug.Log($"<color=cyan><b>[BARREL ROLL DEFLECTION]</b></color> Kích hoạt lộn cánh {(rollDirection > 0 ? "Phải" : "Trái")}! Phản xạ đạn 100% trong {barrelRollDuration:F2}s.");
         }
 

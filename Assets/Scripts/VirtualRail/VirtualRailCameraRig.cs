@@ -16,9 +16,39 @@ namespace VirtualRail
         public VirtualRailShip ship;
         public Camera targetCamera;
 
+        public static VirtualRailCameraRig Instance { get; private set; }
+
         [Header("Camera Control Mode")]
         [Tooltip("Bật chế độ dùng Camera riêng biệt tự do: Script sẽ KHÔNG reparent, KHÔNG ghi đè tọa độ/góc xoay/FOV của Camera")]
         public bool useExternalCamera = false;
+
+        [Header("Camera Impulse Shake (0 GC Alloc Traumatic Stress Model)")]
+        [SerializeField] private float maxShakeTranslationX = 0.45f;
+        [SerializeField] private float maxShakeTranslationY = 0.35f;
+        [SerializeField] private float maxShakeRotationZ = 2.5f;
+        [SerializeField] private float traumaDecayRate = 1.4f;
+        [SerializeField] private float shakeFrequency = 24f;
+
+        private float _trauma = 0f;
+        private float _shakeTime = 0f;
+
+        public static void TriggerShake(float amount)
+        {
+            if (Instance != null)
+            {
+                Instance.AddTrauma(amount);
+            }
+        }
+
+        public void AddTrauma(float amount)
+        {
+            _trauma = Mathf.Clamp01(_trauma + amount);
+        }
+
+        private void Awake()
+        {
+            if (Instance == null) Instance = this;
+        }
 
         private void Start()
         {
@@ -155,6 +185,30 @@ namespace VirtualRail
                     transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, cfg.cameraSmoothSpeed * Time.deltaTime);
                 }
             }
+
+            // 3. Phản hồi Rung Chấn Camera Impulse (Traumatic Stress Model - 0 GC Alloc)
+            if (targetCamera != null && !useExternalCamera)
+            {
+                if (_trauma > 0.001f)
+                {
+                    _shakeTime += Time.deltaTime * shakeFrequency;
+                    float shake = _trauma * _trauma; // Phi tuyến tính bậc hai
+
+                    float shakeX = (Mathf.PerlinNoise(_shakeTime, 0.35f) * 2f - 1f) * maxShakeTranslationX * shake;
+                    float shakeY = (Mathf.PerlinNoise(0.35f, _shakeTime) * 2f - 1f) * maxShakeTranslationY * shake;
+                    float shakeRotZ = (Mathf.PerlinNoise(_shakeTime, _shakeTime) * 2f - 1f) * maxShakeRotationZ * shake;
+
+                    targetCamera.transform.localPosition = new Vector3(shakeX, shakeY, 0f);
+                    targetCamera.transform.localRotation = Quaternion.Euler(0f, 0f, shakeRotZ);
+
+                    _trauma = Mathf.Max(0f, _trauma - traumaDecayRate * Time.deltaTime);
+                }
+                else if (targetCamera.transform.localPosition != Vector3.zero || targetCamera.transform.localRotation != Quaternion.identity)
+                {
+                    targetCamera.transform.localPosition = Vector3.zero;
+                    targetCamera.transform.localRotation = Quaternion.identity;
+                }
+            }
         }
 
         /// <summary>
@@ -177,6 +231,7 @@ namespace VirtualRail
 
         private void OnDestroy()
         {
+            if (Instance == this) Instance = null;
             if (targetCamera != null)
             {
                 targetCamera.transform.SetParent(null);

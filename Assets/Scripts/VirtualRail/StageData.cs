@@ -209,6 +209,27 @@ namespace VirtualRail
     }
 
     [Serializable]
+    public struct StageAudioSettings
+    {
+        [Tooltip("Nhạc nền hành trình của màn chơi (BGM)")]
+        public AudioClip stageBgm;
+
+        [Tooltip("Nhạc nền cao trào / trận đấu Boss của màn chơi (BGM)")]
+        public AudioClip bossBgm;
+
+        [Range(0f, 1f)]
+        [Tooltip("Âm lượng nhạc nền riêng cho màn này")]
+        public float musicVolume;
+
+        public static StageAudioSettings Default => new StageAudioSettings
+        {
+            stageBgm = null,
+            bossBgm = null,
+            musicVolume = 1.0f
+        };
+    }
+
+    [Serializable]
     public struct StageEnemySettings
     {
         [Tooltip("Bảng danh mục Prefab quái riêng của màn chơi (Chỉ sinh những quái có trong danh sách này, rỗng = không sinh quái)")]
@@ -348,6 +369,7 @@ namespace VirtualRail
         public StageHazardSettings hazardSettings = StageHazardSettings.Default;
 
         public StageClimaxSettings climaxSettings = StageClimaxSettings.Default;
+        public StageAudioSettings audioSettings = StageAudioSettings.Default;
 
         public StageTimelineEvent[] timelineEvents;
 
