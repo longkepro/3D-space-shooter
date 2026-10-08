@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 100001}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.5607083, y: 4.750178, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -107,6 +107,7 @@ MonoBehaviour:
   splashRadius: 10
   explosionPrefab: {fileID: 1121192042590650, guid: e1b08032bec16ba4eb1ae23cbd572664,
     type: 3}
+  isSmartBomb: 0
 --- !u!96 &9600001
 TrailRenderer:
   serializedVersion: 3
@@ -153,7 +154,7 @@ TrailRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Time: 0.35
-  m_PreviewTimeScale: 0
+  m_PreviewTimeScale: 1
   m_Parameters:
     serializedVersion: 3
     widthMultiplier: 1
@@ -243,7 +244,7 @@ MonoBehaviour:
   autoSyncHitbox: 1
   collisionRadius: 1.4629999
   splashRadius: 10
-  spinSpeedZ: 440
+  spinSpeedZ: 540
   tumbleSpeed: 160
   coreTransform: {fileID: 3087949834976943599}
   coronaTransform: {fileID: 8476338515782957264}

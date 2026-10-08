@@ -401,20 +401,25 @@ namespace VirtualRail
             }
 
             Quaternion spawnRot = Quaternion.LookRotation(launchDir);
-            GameObject missileObj = Instantiate(missilePrefab, nosePos, spawnRot);
-            var missile = missileObj.GetComponent<VirtualRailHomingMissile>();
-            if (missile == null) missile = missileObj.AddComponent<VirtualRailHomingMissile>();
+            VirtualRailHomingMissile missile = null;
+            if (VirtualRailMissilePool.Instance != null)
+            {
+                missile = VirtualRailMissilePool.Instance.SpawnMissile(missilePrefab, nosePos, spawnRot);
+            }
+            else
+            {
+                GameObject missileObj = Instantiate(missilePrefab, nosePos, spawnRot);
+                missile = missileObj.GetComponent<VirtualRailHomingMissile>();
+                if (missile == null) missile = missileObj.AddComponent<VirtualRailHomingMissile>();
+            }
 
             float shipSpeed = (anchor != null) ? anchor.CurrentSpeed : 120f;
             float baseSpeed = (cfg != null && cfg.chargeShotBaseSpeed > 10f) ? cfg.chargeShotBaseSpeed : 240f;
             float turnSpeed = (cfg != null && cfg.chargeShotTurnRate > 10f) ? cfg.chargeShotTurnRate : 420f;
             float inheritedSpeed = (cfg != null && cfg.enableChargeVelocityInheritance) ? shipSpeed : 0f;
-            missile.InitializeKinematics(baseSpeed, inheritedSpeed, turnSpeed);
+            missile.InitializeKinematics(baseSpeed, inheritedSpeed, turnSpeed, cfg, lockedTarget);
             float splashR = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             missile.splashRadius = splashR;
-
-            missile.target = lockedTarget;
-            Debug.Log($"<color=cyan><b>[VirtualRail]</b></color> Fired Homing Missile at {(lockedTarget != null ? lockedTarget.name : "Target")}");
         }
 
         public void FireDumbChargeShot()
@@ -444,21 +449,26 @@ namespace VirtualRail
             }
 
             Quaternion spawnRot = Quaternion.LookRotation(launchDir);
-            GameObject missileObj = Instantiate(missilePrefab, nosePos, spawnRot);
-            var missile = missileObj.GetComponent<VirtualRailHomingMissile>();
-            if (missile == null) missile = missileObj.AddComponent<VirtualRailHomingMissile>();
+            VirtualRailHomingMissile missile = null;
+            if (VirtualRailMissilePool.Instance != null)
+            {
+                missile = VirtualRailMissilePool.Instance.SpawnMissile(missilePrefab, nosePos, spawnRot);
+            }
+            else
+            {
+                GameObject missileObj = Instantiate(missilePrefab, nosePos, spawnRot);
+                missile = missileObj.GetComponent<VirtualRailHomingMissile>();
+                if (missile == null) missile = missileObj.AddComponent<VirtualRailHomingMissile>();
+            }
 
             var cfg = (anchor != null) ? anchor.config : null;
             float shipSpeed = (anchor != null) ? anchor.CurrentSpeed : 120f;
             float baseSpeed = (cfg != null && cfg.chargeShotBaseSpeed > 10f) ? cfg.chargeShotBaseSpeed : 240f;
             float turnSpeed = (cfg != null && cfg.chargeShotTurnRate > 10f) ? cfg.chargeShotTurnRate : 420f;
             float inheritedSpeed = (cfg != null && cfg.enableChargeVelocityInheritance) ? shipSpeed : 0f;
-            missile.InitializeKinematics(baseSpeed, inheritedSpeed, turnSpeed);
+            missile.InitializeKinematics(baseSpeed, inheritedSpeed, turnSpeed, cfg, null);
             float splashRDumb = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             missile.splashRadius = splashRDumb;
-
-            missile.target = null; // Bay thẳng hội tụ chính xác theo nòng ngắm
-            Debug.Log("<color=cyan><b>[VirtualRail]</b></color> Fired Dumb-fire Charge Plasma Shot forward (Converged)!");
         }
 
         private void TriggerDirectSplash(Vector3 center, Transform directTarget)
@@ -466,19 +476,27 @@ namespace VirtualRail
             var cfg = (anchor != null) ? anchor.config : null;
             float splashR = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             int killCount = 0;
-            Collider[] colliders = Physics.OverlapSphere(center, splashR);
-            for (int i = 0; i < colliders.Length; i++)
+            LayerMask mask = (cfg != null && cfg.enemyLayer.value != 0) ? cfg.enemyLayer : ~0;
+            int hitCount = Physics.OverlapSphereNonAlloc(center, splashR, _scanColliders, mask, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < hitCount; i++)
             {
-                if (colliders[i] == null) continue;
+                var col = _scanColliders[i];
+                if (col == null) continue;
+                if (col.CompareTag("Player") || col.transform.root == transform.root) continue;
 
-                var eh = colliders[i].GetComponentInParent<EnemyHealth>();
+                var eh = col.GetComponentInParent<EnemyHealth>();
                 if (eh != null && !eh.IsDead)
                 {
-                    bool isDirect = (directTarget != null && (colliders[i].transform == directTarget || colliders[i].transform.IsChildOf(directTarget)));
-                    if (!isDirect && eh.IsShieldActive)
+                    bool isDirect = (directTarget != null && (col.transform == directTarget || col.transform.IsChildOf(directTarget)));
+                    if (eh.IsShieldActive)
                     {
-                        eh.TakeDamage(0, eh.transform.position, (eh.transform.position - transform.position).normalized);
-                        continue;
+                        Vector3 toExplosion = (center - eh.transform.position).normalized;
+                        bool hitShieldFront = Vector3.Dot(toExplosion, eh.transform.forward) > 0.1f;
+                        if (hitShieldFront)
+                        {
+                            eh.TakeDamage(0, eh.transform.position, transform.forward);
+                            continue;
+                        }
                     }
 
                     int dmg = isDirect ? 100 : 50;
@@ -489,7 +507,7 @@ namespace VirtualRail
                     continue;
                 }
 
-                var em = colliders[i].GetComponentInParent<EnemyMovement>();
+                var em = col.GetComponentInParent<EnemyMovement>();
                 if (em != null && em.gameObject.activeSelf)
                 {
                     em.BlowUp();
@@ -497,7 +515,7 @@ namespace VirtualRail
                     continue;
                 }
 
-                var ast = colliders[i].GetComponentInParent<Asteroid>();
+                var ast = col.GetComponentInParent<Asteroid>();
                 if (ast != null && ast.gameObject.activeSelf)
                 {
                     ast.TakeDamage(100, ast.transform.position);
@@ -507,7 +525,6 @@ namespace VirtualRail
             {
                 ComboScoringEngine.Instance.RegisterSplashKill(killCount);
             }
-            Debug.Log($"[VirtualRail] Direct Charge Shot Splash Hit: {killCount} enemies");
         }
 
         private void UpdateLockMarkerUI()
