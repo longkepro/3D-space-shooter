@@ -49,6 +49,7 @@ namespace VirtualRail
         private VirtualRailWeapon _weapon;
         private AudioSource _chargeAudioSource;
         private float _nextAllowedLockSoundTime = 0f;
+        private bool _hasPlayedChargeSpool = false;
         private static readonly Collider[] _scanColliders = new Collider[64];
 
         private void Awake()
@@ -141,6 +142,7 @@ namespace VirtualRail
         {
             _weaponDrivesCharge = true;
             isCharging = true;
+            _hasPlayedChargeSpool = false;
         }
 
         /// <summary>
@@ -196,6 +198,7 @@ namespace VirtualRail
             lockedTarget = null;
             _lockTimer = 0f;
             _nextAllowedLockSoundTime = 0f;
+            _hasPlayedChargeSpool = false;
             if (_chargeAudioSource != null && _chargeAudioSource.isPlaying)
             {
                 _chargeAudioSource.Stop();
@@ -218,7 +221,7 @@ namespace VirtualRail
             if (_chargeAudioSource == null)
             {
                 _chargeAudioSource = gameObject.AddComponent<AudioSource>();
-                _chargeAudioSource.loop = true;
+                _chargeAudioSource.loop = false; // Thuần One-Shot, không lặp lại song song với BGM
                 _chargeAudioSource.playOnAwake = false;
                 _chargeAudioSource.spatialBlend = 0f; // 2D Stereo
             }
@@ -230,7 +233,7 @@ namespace VirtualRail
 
             if (isCharging)
             {
-                if (!_chargeAudioSource.isPlaying)
+                if (!_hasPlayedChargeSpool)
                 {
                     AudioClip clip = AudioManager.Instance != null ? AudioManager.Instance.GetClipForType(AudioSFXType.ChargeHum) : null;
                     if (clip != null)
@@ -238,7 +241,9 @@ namespace VirtualRail
                         _chargeAudioSource.clip = clip;
                         _chargeAudioSource.volume = 0.85f;
                         _chargeAudioSource.pitch = 1.0f;
+                        _chargeAudioSource.loop = false;
                         _chargeAudioSource.Play();
+                        _hasPlayedChargeSpool = true;
                     }
                 }
 
@@ -251,6 +256,7 @@ namespace VirtualRail
             }
             else
             {
+                _hasPlayedChargeSpool = false;
                 if (_chargeAudioSource != null && _chargeAudioSource.isPlaying)
                 {
                     _chargeAudioSource.Stop();
@@ -319,6 +325,10 @@ namespace VirtualRail
 
                 if (rightClickHeld)
                 {
+                    if (!isCharging)
+                    {
+                        _hasPlayedChargeSpool = false;
+                    }
                     isCharging = true;
                     currentCharge += Time.deltaTime;
 
