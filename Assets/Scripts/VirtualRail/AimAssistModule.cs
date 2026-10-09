@@ -234,8 +234,8 @@ namespace VirtualRail
                     if (clip != null)
                     {
                         _chargeAudioSource.clip = clip;
-                        _chargeAudioSource.volume = 0.5f;
-                        _chargeAudioSource.pitch = 0.75f;
+                        _chargeAudioSource.volume = 0.85f;
+                        _chargeAudioSource.pitch = 1.0f;
                         _chargeAudioSource.Play();
                     }
                 }
@@ -243,8 +243,8 @@ namespace VirtualRail
                 if (_chargeAudioSource.isPlaying)
                 {
                     float progress = ChargeProgress;
-                    _chargeAudioSource.pitch = Mathf.Lerp(0.75f, 1.35f, progress);
-                    _chargeAudioSource.volume = Mathf.Lerp(0.45f, 0.9f, progress);
+                    _chargeAudioSource.pitch = Mathf.Lerp(0.98f, 1.04f, progress);
+                    _chargeAudioSource.volume = Mathf.Lerp(0.75f, 0.95f, progress);
                 }
             }
             else
