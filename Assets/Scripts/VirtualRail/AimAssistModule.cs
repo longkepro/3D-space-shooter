@@ -48,6 +48,7 @@ namespace VirtualRail
         private VirtualRailShip _ship;
         private VirtualRailWeapon _weapon;
         private AudioSource _chargeAudioSource;
+        private float _nextAllowedLockSoundTime = 0f;
         private static readonly Collider[] _scanColliders = new Collider[64];
 
         private void Awake()
@@ -194,6 +195,7 @@ namespace VirtualRail
             isCharging = false;
             lockedTarget = null;
             _lockTimer = 0f;
+            _nextAllowedLockSoundTime = 0f;
             if (_chargeAudioSource != null && _chargeAudioSource.isPlaying)
             {
                 _chargeAudioSource.Stop();
@@ -413,7 +415,11 @@ namespace VirtualRail
                 {
                     lockedTarget = bestTarget;
                     _lockTimer = dt;
-                    AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeLockOn, 0.85f);
+                    if (Time.time >= _nextAllowedLockSoundTime)
+                    {
+                        AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeLockOn, 0.95f);
+                        _nextAllowedLockSoundTime = Time.time + 0.35f;
+                    }
                 }
             }
             else

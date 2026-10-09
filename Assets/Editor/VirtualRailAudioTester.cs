@@ -70,6 +70,7 @@ namespace VirtualRail.Editor
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             }
 
+            audioMgr.forceProceduralFallback = false;
             audioMgr.customLaserSingle = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_LaserSingle.ogg");
             audioMgr.customLaserTwin = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_LaserTwin.ogg");
             audioMgr.customLaserHyper = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_LaserHyper.ogg");
@@ -102,6 +103,7 @@ namespace VirtualRail.Editor
             AudioManager audioMgr = UnityEngine.Object.FindAnyObjectByType<AudioManager>();
             if (audioMgr != null)
             {
+                audioMgr.forceProceduralFallback = true;
                 audioMgr.customLaserSingle = null;
                 audioMgr.customLaserTwin = null;
                 audioMgr.customLaserHyper = null;

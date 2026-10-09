@@ -91,6 +91,10 @@ namespace VirtualRail
         public float MusicVolume => _musicVolume;
         public float SfxVolume => _sfxVolume;
 
+        [Header("Audio Mode Override (Layer 3 Undo Safety)")]
+        [Tooltip("Nếu bật, cưỡng chế game luôn dùng âm thanh toán học thủ tục N64 (Procedural Fallback)")]
+        public bool forceProceduralFallback = false;
+
         [Header("Custom Sound Effects Overrides (Optional)")]
         [Tooltip("Kéo thả file âm thanh tùy chọn vào đây để ghi đè âm thanh mặc định")]
         public AudioClip customLaserSingle;
@@ -237,7 +241,39 @@ namespace VirtualRail
 
             // 4. Khởi tạo sóng âm toán học dự phòng (Procedural SFX Synthesizer)
             SynthesizeProceduralArcadeClips();
+
+#if UNITY_EDITOR
+            if (!forceProceduralFallback)
+            {
+                AutoLoadStudioClipsIfEmpty();
+            }
+#endif
         }
+
+#if UNITY_EDITOR
+        public void AutoLoadStudioClipsIfEmpty()
+        {
+            const string dir = "Assets/Audio/SFX_Studio";
+            if (customLaserSingle == null) customLaserSingle = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_LaserSingle.ogg");
+            if (customLaserTwin == null) customLaserTwin = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_LaserTwin.ogg");
+            if (customLaserHyper == null) customLaserHyper = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_LaserHyper.ogg");
+            if (customChargeHum == null) customChargeHum = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ChargeHum.ogg");
+            if (customChargeLockOn == null) customChargeLockOn = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ChargeLockOn.ogg");
+            if (customChargeSplash == null) customChargeSplash = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ChargeSplash.ogg");
+            if (customSmartBomb == null) customSmartBomb = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_SmartBomb.ogg");
+            if (customBarrelRoll == null) customBarrelRoll = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_BarrelRoll.ogg");
+            if (customEngineBoost == null) customEngineBoost = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_EngineBoost.ogg");
+            if (customEngineBrake == null) customEngineBrake = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_EngineBrake.ogg");
+            if (customExplosionSmall == null) customExplosionSmall = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ExplosionSmall.ogg");
+            if (customExplosionLarge == null) customExplosionLarge = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ExplosionLarge.ogg");
+            if (customShieldDamage == null) customShieldDamage = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ShieldDamage.ogg");
+            if (customShieldAlarm == null) customShieldAlarm = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ShieldAlarm.ogg");
+            if (customRingCollect == null) customRingCollect = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_RingCollect.ogg");
+            if (customRadioChirp == null) customRadioChirp = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_RadioChirp.ogg");
+            if (customGrazePass == null) customGrazePass = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_GrazePass.ogg");
+            if (customChargeFire == null) customChargeFire = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ChargeFire.ogg");
+        }
+#endif
 
         private void LoadVolumePreferences()
         {
@@ -702,6 +738,18 @@ namespace VirtualRail
 
         public AudioClip GetClipForType(AudioSFXType type)
         {
+            if (forceProceduralFallback)
+            {
+                return (_proceduralClips != null && (int)type >= 0 && (int)type < _proceduralClips.Length) ? _proceduralClips[(int)type] : null;
+            }
+
+#if UNITY_EDITOR
+            if (customChargeHum == null || customChargeLockOn == null)
+            {
+                AutoLoadStudioClipsIfEmpty();
+            }
+#endif
+
             switch (type)
             {
                 case AudioSFXType.LaserSingle:
