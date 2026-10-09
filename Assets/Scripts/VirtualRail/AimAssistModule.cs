@@ -47,6 +47,7 @@ namespace VirtualRail
 
         private VirtualRailShip _ship;
         private VirtualRailWeapon _weapon;
+        private AudioSource _chargeAudioSource;
         private static readonly Collider[] _scanColliders = new Collider[64];
 
         private void Awake()
@@ -60,6 +61,10 @@ namespace VirtualRail
             if (_muzzleVisualInstance != null)
             {
                 Destroy(_muzzleVisualInstance);
+            }
+            if (_chargeAudioSource != null)
+            {
+                Destroy(_chargeAudioSource);
             }
         }
 
@@ -189,6 +194,10 @@ namespace VirtualRail
             isCharging = false;
             lockedTarget = null;
             _lockTimer = 0f;
+            if (_chargeAudioSource != null && _chargeAudioSource.isPlaying)
+            {
+                _chargeAudioSource.Stop();
+            }
             if (lockMarkerUI != null) lockMarkerUI.gameObject.SetActive(false);
             if (_muzzleVisualInstance != null && _muzzleVisualInstance.activeSelf)
             {
@@ -199,6 +208,52 @@ namespace VirtualRail
         private void LateUpdate()
         {
             UpdateMuzzleChargeVisual();
+            UpdateChargeAudioLoop();
+        }
+
+        private void InitializeChargeAudio()
+        {
+            if (_chargeAudioSource == null)
+            {
+                _chargeAudioSource = gameObject.AddComponent<AudioSource>();
+                _chargeAudioSource.loop = true;
+                _chargeAudioSource.playOnAwake = false;
+                _chargeAudioSource.spatialBlend = 0f; // 2D Stereo
+            }
+        }
+
+        private void UpdateChargeAudioLoop()
+        {
+            if (_chargeAudioSource == null) InitializeChargeAudio();
+
+            if (isCharging)
+            {
+                if (!_chargeAudioSource.isPlaying)
+                {
+                    AudioClip clip = AudioManager.Instance != null ? AudioManager.Instance.GetClipForType(AudioSFXType.ChargeHum) : null;
+                    if (clip != null)
+                    {
+                        _chargeAudioSource.clip = clip;
+                        _chargeAudioSource.volume = 0.5f;
+                        _chargeAudioSource.pitch = 0.75f;
+                        _chargeAudioSource.Play();
+                    }
+                }
+
+                if (_chargeAudioSource.isPlaying)
+                {
+                    float progress = ChargeProgress;
+                    _chargeAudioSource.pitch = Mathf.Lerp(0.75f, 1.35f, progress);
+                    _chargeAudioSource.volume = Mathf.Lerp(0.45f, 0.9f, progress);
+                }
+            }
+            else
+            {
+                if (_chargeAudioSource != null && _chargeAudioSource.isPlaying)
+                {
+                    _chargeAudioSource.Stop();
+                }
+            }
         }
 
         /// <summary>
@@ -422,7 +477,7 @@ namespace VirtualRail
             float splashR = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             missile.splashRadius = splashR;
 
-            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeSplash, 0.85f);
+            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeFire, 1.0f);
             VirtualRailCameraRig.TriggerShake(0.18f);
         }
 
@@ -474,7 +529,7 @@ namespace VirtualRail
             float splashRDumb = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             missile.splashRadius = splashRDumb;
 
-            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeSplash, 0.85f);
+            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeFire, 1.0f);
             VirtualRailCameraRig.TriggerShake(0.18f);
         }
 

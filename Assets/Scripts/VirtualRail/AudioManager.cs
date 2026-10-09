@@ -22,7 +22,8 @@ namespace VirtualRail
         ShieldAlarm = 13,
         RingCollect = 14,
         RadioChirp = 15,
-        GrazePass = 16
+        GrazePass = 16,
+        ChargeFire = 17
     }
 
     public enum BgmContext
@@ -109,6 +110,7 @@ namespace VirtualRail
         public AudioClip customRingCollect;
         public AudioClip customRadioChirp;
         public AudioClip customGrazePass;
+        public AudioClip customChargeFire;
 
         [Header("Stage & Boss Music Playlists (Shuffle Supported)")]
         [Tooltip("Danh sách nhạc nền cho các màn chơi thông thường (hỗ trợ xáo trộn Shuffle)")]
@@ -736,6 +738,8 @@ namespace VirtualRail
                     return customRadioChirp != null ? customRadioChirp : _proceduralClips[(int)type];
                 case AudioSFXType.GrazePass:
                     return customGrazePass != null ? customGrazePass : _proceduralClips[(int)type];
+                case AudioSFXType.ChargeFire:
+                    return customChargeFire != null ? customChargeFire : _proceduralClips[(int)type];
                 default:
                     return null;
             }
@@ -909,6 +913,9 @@ namespace VirtualRail
 
             // 17. Graze Pass: Doppler Metallic Near-Miss Shimmer (0.22s)
             _proceduralClips[(int)AudioSFXType.GrazePass] = SynthesizeGrazeShimmer(SAMPLE_RATE, 0.22f);
+
+            // 18. Charge Fire: Heavy Sub-Bass Down-Sweep FM Plasma Discharge (0.16s)
+            _proceduralClips[(int)AudioSFXType.ChargeFire] = SynthesizeLaser(SAMPLE_RATE, 0.16f, 850f, 65f, 0.95f);
         }
 
         private static AudioClip SynthesizeLaser(int sampleRate, float duration, float startFreq, float endFreq, float volume)

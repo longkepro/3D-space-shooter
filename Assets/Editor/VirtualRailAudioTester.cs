@@ -87,12 +87,13 @@ namespace VirtualRail.Editor
             audioMgr.customRingCollect = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_RingCollect.ogg");
             audioMgr.customRadioChirp = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_RadioChirp.ogg");
             audioMgr.customGrazePass = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_GrazePass.ogg");
+            audioMgr.customChargeFire = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_ChargeFire.ogg");
 
             EditorUtility.SetDirty(audioMgr);
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
 
-            Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ KÍCH HOẠT BỘ ÂM THANH PHÒNG THU (STUDIO SFX PACK):</b></color> Toàn bộ 17 hiệu ứng âm thanh đã được gán file Studio Stereo Hi-Fi từ Assets/Audio/SFX_Studio/!");
+            Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ KÍCH HOẠT BỘ ÂM THANH PHÒNG THU (STUDIO SFX PACK):</b></color> Toàn bộ 18 hiệu ứng âm thanh đã được gán file Studio Stereo Hi-Fi từ Assets/Audio/SFX_Studio/!");
         }
 
         [MenuItem("Tools/Virtual Rail/56. Audio: Revert to Procedural SFX (Hoàn Nguyên Về Âm Thanh Thủ Tục - OFF)")]
@@ -118,6 +119,7 @@ namespace VirtualRail.Editor
                 audioMgr.customRingCollect = null;
                 audioMgr.customRadioChirp = null;
                 audioMgr.customGrazePass = null;
+                audioMgr.customChargeFire = null;
 
                 EditorUtility.SetDirty(audioMgr);
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -183,6 +185,7 @@ namespace VirtualRail.Editor
                 (AudioSFXType.LaserHyper, "Hyper Laser (Chùm tia hạng nặng)", "Studio_LaserHyper.ogg"),
                 (AudioSFXType.ChargeHum, "Tụ sạc Plasma (Charge Hum)", "Studio_ChargeHum.ogg"),
                 (AudioSFXType.ChargeLockOn, "Khóa mục tiêu (Lock-On Chirp)", "Studio_ChargeLockOn.ogg"),
+                (AudioSFXType.ChargeFire, "Bắn đạn sạc (Charge Shot Fire)", "Studio_ChargeFire.ogg"),
                 (AudioSFXType.ChargeSplash, "Nổ đạn sạc (Charge Splash)", "Studio_ChargeSplash.ogg"),
                 (AudioSFXType.SmartBomb, "Bom thông minh (Smart Bomb)", "Studio_SmartBomb.ogg")
             });
