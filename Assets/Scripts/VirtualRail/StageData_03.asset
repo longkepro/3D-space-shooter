@@ -78,6 +78,10 @@ MonoBehaviour:
     bossPrefab: {fileID: 0}
     bossHealth: 0
     holdRailOnBoss: 0
+  audioSettings:
+    stageBgm: {fileID: 8300000, guid: e5fa37058f57e464b8ca37295f61a23f, type: 3}
+    bossBgm: {fileID: 8300000, guid: 8223575ae0fddaf4da9f3955996856f3, type: 3}
+    musicVolume: 0.85
   timelineEvents:
   - eventName: Citadel Heavy Escorts
     triggerMode: 0

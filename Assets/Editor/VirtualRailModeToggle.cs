@@ -735,9 +735,29 @@ public class VirtualRailModeToggle
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ KÍCH HOẠT CHẾ ĐỘ ENDLESS SANDBOX DEMO:</b></color> Quái vật tự động sinh tuần hoàn ngẫu nhiên để kiểm thử tải!");
     }
 
+    public const string BGM_VISION_PATH = "Assets/Audio/Music/(No Copyright Music) Sci-Fi Background [Techno Music] by MokkaMusic - Vision.mp3";
+    public const string BGM_PUSHER_PATH = "Assets/Audio/Music/Electro House Techno in Space -no copyright music- by MokkaMusic - Pusher.mp3";
+    public const string BGM_CRYOSLEEP_PATH = "Assets/Audio/Music/Futuristic Sci-Fi Interstellar Synthwave -no copyright music- by MokkaMusic - Cryosleep.mp3";
+    public const string BGM_SECRECY_PATH = "Assets/Audio/Music/Synthwave Futuristic Neon Electro (No Copyright Music) by MokkaMusic - Secrecy.mp3";
+    public const string STAGE_DATA_01_PATH = "Assets/Scripts/VirtualRail/StageData_01.asset";
+    public const string STAGE_DATA_02_PATH = "Assets/Scripts/VirtualRail/StageData_02.asset";
+    public const string STAGE_DATA_03_PATH = "Assets/Scripts/VirtualRail/StageData_03.asset";
+
     [MenuItem("Tools/Virtual Rail/43. Audio: Setup & Select AudioManager (Inspector)")]
     public static void SelectAudioManager()
     {
+        ApplyBackgroundMusicToStagesAndManager();
+    }
+
+    [MenuItem("Tools/Virtual Rail/44. Audio: Apply Background Music to Stage & AudioManager")]
+    public static void ApplyBackgroundMusicToStagesAndManager()
+    {
+        AudioClip clipVision = AssetDatabase.LoadAssetAtPath<AudioClip>(BGM_VISION_PATH);
+        AudioClip clipPusher = AssetDatabase.LoadAssetAtPath<AudioClip>(BGM_PUSHER_PATH);
+        AudioClip clipCryosleep = AssetDatabase.LoadAssetAtPath<AudioClip>(BGM_CRYOSLEEP_PATH);
+        AudioClip clipSecrecy = AssetDatabase.LoadAssetAtPath<AudioClip>(BGM_SECRECY_PATH);
+
+        // 1. Cấu hình vào AudioManager trong Scene
         AudioManager audioMgr = Object.FindAnyObjectByType<AudioManager>();
         if (audioMgr == null)
         {
@@ -745,9 +765,53 @@ public class VirtualRailModeToggle
             audioMgr = audioObj.AddComponent<AudioManager>();
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         }
+
+        if (clipCryosleep != null) audioMgr.defaultStageBgm = clipCryosleep;
+        if (clipPusher != null) audioMgr.defaultBossBgm = clipPusher;
+        if (clipSecrecy != null) audioMgr.defaultMenuBgm = clipSecrecy;
+        audioMgr.musicPlaylist = new AudioClip[] { clipCryosleep, clipPusher, clipVision, clipSecrecy };
+        EditorUtility.SetDirty(audioMgr);
+
+        // 2. Cấu hình vào StageData_01 (Sector Alpha)
+        StageData stage1 = AssetDatabase.LoadAssetAtPath<StageData>(STAGE_DATA_01_PATH);
+        if (stage1 != null)
+        {
+            if (clipCryosleep != null) stage1.audioSettings.stageBgm = clipCryosleep;
+            if (clipPusher != null) stage1.audioSettings.bossBgm = clipPusher;
+            stage1.audioSettings.musicVolume = 0.85f;
+            EditorUtility.SetDirty(stage1);
+        }
+
+        // 3. Cấu hình vào StageData_02 (Volcano)
+        StageData stage2 = AssetDatabase.LoadAssetAtPath<StageData>(STAGE_DATA_02_PATH);
+        if (stage2 != null)
+        {
+            if (clipVision != null) stage2.audioSettings.stageBgm = clipVision;
+            if (clipPusher != null) stage2.audioSettings.bossBgm = clipPusher;
+            stage2.audioSettings.musicVolume = 0.85f;
+            EditorUtility.SetDirty(stage2);
+        }
+
+        // 4. Cấu hình vào StageData_03 (Citadel)
+        StageData stage3 = AssetDatabase.LoadAssetAtPath<StageData>(STAGE_DATA_03_PATH);
+        if (stage3 != null)
+        {
+            if (clipSecrecy != null) stage3.audioSettings.stageBgm = clipSecrecy;
+            if (clipPusher != null) stage3.audioSettings.bossBgm = clipPusher;
+            stage3.audioSettings.musicVolume = 0.85f;
+            EditorUtility.SetDirty(stage3);
+        }
+
+        AssetDatabase.SaveAssets();
+
         Selection.activeGameObject = audioMgr.gameObject;
         EditorGUIUtility.PingObject(audioMgr.gameObject);
-        Debug.Log("<color=cyan><b>[VirtualRail Audio]</b></color> Đã định vị và chọn <b>[VirtualRail_AudioManager]</b> trong Hierarchy. Bạn có thể kéo thả các file nhạc nền và SFX vào Inspector!");
+        Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ GÁN THÀNH CÔNG TOÀN BỘ FILE NHẠC NỀN!</b></color>\n" +
+            "• Stage 1 (Sector Alpha): <b>Cryosleep</b> (Interstellar Synthwave)\n" +
+            "• Boss Encounter: <b>Pusher</b> (Electro House Techno in Space)\n" +
+            "• Stage 2 (Volcano): <b>Vision</b> (Sci-Fi Techno)\n" +
+            "• Menu / Stage 3: <b>Secrecy</b> (Neon Electro Synthwave)\n" +
+            "• Playlist AudioManager: 4 tracks đã nạp đầy đủ.");
     }
 
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)

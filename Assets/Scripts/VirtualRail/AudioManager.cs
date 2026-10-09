@@ -37,7 +37,24 @@ namespace VirtualRail
     [DisallowMultipleComponent]
     public class AudioManager : MonoBehaviour
     {
-        public static AudioManager Instance { get; private set; }
+        private static AudioManager _instance;
+        public static AudioManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = UnityEngine.Object.FindAnyObjectByType<AudioManager>();
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("[VirtualRail_AudioManager]");
+                        _instance = go.AddComponent<AudioManager>();
+                    }
+                }
+                return _instance;
+            }
+            private set => _instance = value;
+        }
 
         private const string PREFS_MASTER_VOL = "VR_Audio_MasterVolume";
         private const string PREFS_MUSIC_VOL = "VR_Audio_MusicVolume";
@@ -90,6 +107,9 @@ namespace VirtualRail
         public AudioClip defaultStageBgm;
         public AudioClip defaultBossBgm;
 
+        [Tooltip("Danh sách toàn bộ các bản nhạc trong game để phát tuần hoàn hoặc lựa chọn")]
+        public AudioClip[] musicPlaylist;
+
         // BGM Dual-Source Controller (Cross-Fade)
         private AudioSource _bgmSourceA;
         private AudioSource _bgmSourceB;
@@ -113,13 +133,13 @@ namespace VirtualRail
 
         private void Awake()
         {
-            if (Instance == null)
+            if (_instance == null)
             {
-                Instance = this;
+                _instance = this;
                 DontDestroyOnLoad(gameObject);
                 InitializeAudioEngine();
             }
-            else if (Instance != this)
+            else if (_instance != this)
             {
                 Destroy(gameObject);
             }
@@ -320,6 +340,26 @@ namespace VirtualRail
             if (clip != null)
             {
                 PlayMusic(clip, volume, 1.0f, true);
+            }
+        }
+
+        public void PlayMenuMusic(AudioClip menuClip = null, float volume = 1f)
+        {
+            AudioClip clip = menuClip != null ? menuClip : defaultMenuBgm;
+            if (clip != null)
+            {
+                PlayMusic(clip, volume, 1.2f, true);
+            }
+        }
+
+        public void PlayPlaylistTrack(int index, float volume = 1f, float fadeDuration = 1.2f)
+        {
+            if (musicPlaylist != null && index >= 0 && index < musicPlaylist.Length)
+            {
+                if (musicPlaylist[index] != null)
+                {
+                    PlayMusic(musicPlaylist[index], volume, fadeDuration, true);
+                }
             }
         }
 
