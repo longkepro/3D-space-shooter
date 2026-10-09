@@ -36,7 +36,7 @@ namespace VirtualRail.Editor
         public static void ExportAllSfxToWav()
         {
             EnsureManagerInstance();
-            string outputDir = Path.Combine(Application.dataPath, "Audio", "SFX");
+            string outputDir = Path.Combine(Application.dataPath, "Audio", "SFX_Procedural");
             if (!Directory.Exists(outputDir))
             {
                 Directory.CreateDirectory(outputDir);
