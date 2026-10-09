@@ -745,6 +745,113 @@ namespace VirtualRail
 
         #region Procedural Arcade Synthesizer (Sóng Âm Toán Học N64 Fallback)
 
+        #region DSP Signal Processing Primitives (0 GC Allocation)
+
+        /// <summary>
+        /// Bộ lọc số IIR 2-Pole Biquad Filter (Lowpass, Bandpass, Highpass với Resonance Q).
+        /// Cắt lọc tần số chói số và tạo độ rung chuyển cơ học tự nhiên cho arcade SFX.
+        /// </summary>
+        private struct BiquadFilter
+        {
+            public float b0, b1, b2, a1, a2;
+            public float x1, x2, y1, y2;
+
+            public static BiquadFilter CreateLowpass(float cutoff, float q, float sampleRate)
+            {
+                cutoff = Mathf.Clamp(cutoff, 20f, sampleRate * 0.48f);
+                float omega = 2f * Mathf.PI * cutoff / sampleRate;
+                float alpha = Mathf.Sin(omega) / (2f * Mathf.Max(0.1f, q));
+                float cosw = Mathf.Cos(omega);
+                float a0 = 1f + alpha;
+
+                return new BiquadFilter
+                {
+                    b0 = ((1f - cosw) * 0.5f) / a0,
+                    b1 = (1f - cosw) / a0,
+                    b2 = ((1f - cosw) * 0.5f) / a0,
+                    a1 = (-2f * cosw) / a0,
+                    a2 = (1f - alpha) / a0,
+                    x1 = 0f, x2 = 0f, y1 = 0f, y2 = 0f
+                };
+            }
+
+            public static BiquadFilter CreateBandpass(float centerFreq, float q, float sampleRate)
+            {
+                centerFreq = Mathf.Clamp(centerFreq, 20f, sampleRate * 0.48f);
+                float omega = 2f * Mathf.PI * centerFreq / sampleRate;
+                float alpha = Mathf.Sin(omega) / (2f * Mathf.Max(0.1f, q));
+                float cosw = Mathf.Cos(omega);
+                float a0 = 1f + alpha;
+
+                return new BiquadFilter
+                {
+                    b0 = alpha / a0,
+                    b1 = 0f,
+                    b2 = -alpha / a0,
+                    a1 = (-2f * cosw) / a0,
+                    a2 = (1f - alpha) / a0,
+                    x1 = 0f, x2 = 0f, y1 = 0f, y2 = 0f
+                };
+            }
+
+            public static BiquadFilter CreateHighpass(float cutoff, float q, float sampleRate)
+            {
+                cutoff = Mathf.Clamp(cutoff, 20f, sampleRate * 0.48f);
+                float omega = 2f * Mathf.PI * cutoff / sampleRate;
+                float alpha = Mathf.Sin(omega) / (2f * Mathf.Max(0.1f, q));
+                float cosw = Mathf.Cos(omega);
+                float a0 = 1f + alpha;
+
+                return new BiquadFilter
+                {
+                    b0 = ((1f + cosw) * 0.5f) / a0,
+                    b1 = (-(1f + cosw)) / a0,
+                    b2 = ((1f + cosw) * 0.5f) / a0,
+                    a1 = (-2f * cosw) / a0,
+                    a2 = (1f - alpha) / a0,
+                    x1 = 0f, x2 = 0f, y1 = 0f, y2 = 0f
+                };
+            }
+
+            public float Process(float inSample)
+            {
+                float outSample = b0 * inSample + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+                x2 = x1;
+                x1 = inSample;
+                y2 = y1;
+                y1 = outSample;
+                return outSample;
+            }
+        }
+
+        /// <summary>
+        /// Bộ tạo tiếng ồn hồng Pink Noise (Voss-McCartney / 3-pole IIR approximation).
+        /// Giảm -3dB/octave cho tiếng nổ và động cơ trầm ấm, đầy uy lực.
+        /// </summary>
+        private struct PinkNoiseFilter
+        {
+            private float b0, b1, b2;
+
+            public float Next(float white)
+            {
+                b0 = 0.99765f * b0 + white * 0.0990460f;
+                b1 = 0.96300f * b1 + white * 0.2965164f;
+                b2 = 0.57000f * b2 + white * 1.0526913f;
+                return (b0 + b1 + b2 + white * 0.1848f) * 0.22f;
+            }
+        }
+
+        /// <summary>
+        /// Bão hòa phi tuyến Analog Saturation (Soft-Clipping Tanh).
+        /// Ngăn chặn vỡ tiếng kỹ thuật số, làm ấm dải trung âm và tăng độ dày (warmth).
+        /// </summary>
+        private static float SoftClip(float x)
+        {
+            return (float)Math.Tanh(x);
+        }
+
+        #endregion
+
         private void SynthesizeProceduralArcadeClips()
         {
             int typeCount = Enum.GetValues(typeof(AudioSFXType)).Length;
@@ -752,55 +859,55 @@ namespace VirtualRail
 
             const int SAMPLE_RATE = 44100;
 
-            // 1. Laser Single: Fast square-sine downsweep 920Hz -> 140Hz (0.09s)
-            _proceduralClips[(int)AudioSFXType.LaserSingle] = SynthesizeLaser(SAMPLE_RATE, 0.085f, 920f, 140f, 0.45f);
+            // 1. Laser Single: FM Downsweep 1150Hz -> 130Hz + Transient Punch (0.085s)
+            _proceduralClips[(int)AudioSFXType.LaserSingle] = SynthesizeLaser(SAMPLE_RATE, 0.085f, 1150f, 130f, 0.65f);
 
-            // 2. Laser Twin: Dual-tone downsweep 980Hz + 740Hz -> 160Hz (0.11s)
-            _proceduralClips[(int)AudioSFXType.LaserTwin] = SynthesizeTwinLaser(SAMPLE_RATE, 0.105f, 980f, 740f, 160f, 0.55f);
+            // 2. Laser Twin: Detuned Dual-Tone FM Sweep 1250Hz + 950Hz -> 140Hz (0.105s)
+            _proceduralClips[(int)AudioSFXType.LaserTwin] = SynthesizeTwinLaser(SAMPLE_RATE, 0.105f, 1250f, 950f, 140f, 0.75f);
 
-            // 3. Laser Hyper: Resonant sweep with harmonic overtones 1250Hz -> 200Hz (0.14s)
-            _proceduralClips[(int)AudioSFXType.LaserHyper] = SynthesizeHyperLaser(SAMPLE_RATE, 0.135f, 1250f, 200f, 0.65f);
+            // 3. Laser Hyper: Multi-Harmonic Resonant FM Sweep 1400Hz + 1050Hz + 700Hz -> 180Hz (0.135s)
+            _proceduralClips[(int)AudioSFXType.LaserHyper] = SynthesizeHyperLaser(SAMPLE_RATE, 0.135f, 1400f, 180f, 0.85f);
 
-            // 4. Charge Hum: Looping triangle FM wave (0.25s loopable)
-            _proceduralClips[(int)AudioSFXType.ChargeHum] = SynthesizeChargeHum(SAMPLE_RATE, 0.25f);
+            // 4. Charge Hum: Looping Triangle + FM Vibrato Wave (0.28s Loopable)
+            _proceduralClips[(int)AudioSFXType.ChargeHum] = SynthesizeChargeHum(SAMPLE_RATE, 0.28f);
 
-            // 5. Charge Lock-On: Dual beep 1200Hz + 1450Hz ("BEEP-BEEP!" chuẩn Star Fox 64)
-            _proceduralClips[(int)AudioSFXType.ChargeLockOn] = SynthesizeLockOn(SAMPLE_RATE, 0.14f);
+            // 5. Charge Lock-On: Dual-Tone Beep 1180Hz/1770Hz & 1480Hz/2220Hz ("BEEP-BEEP!" chuẩn Star Fox 64)
+            _proceduralClips[(int)AudioSFXType.ChargeLockOn] = SynthesizeLockOn(SAMPLE_RATE, 0.15f);
 
-            // 6. Charge Splash: Energetic resonant explosion burst (0.35s)
-            _proceduralClips[(int)AudioSFXType.ChargeSplash] = SynthesizeNoiseBurst(SAMPLE_RATE, 0.35f, 280f, 45f, 0.8f);
+            // 6. Charge Splash: Sub-Bass Punch + Resonant Lowpass Noise Detonation (0.35s)
+            _proceduralClips[(int)AudioSFXType.ChargeSplash] = SynthesizeNoiseBurst(SAMPLE_RATE, 0.35f, 320f, 45f, 0.85f);
 
-            // 7. Smart Bomb: Deep sub-bass boom + expanding pink noise rumble (1.4s)
+            // 7. Smart Bomb: Deep 85Hz->24Hz Sub-Bass Boom + Expanding Pink Noise Rumble (1.4s)
             _proceduralClips[(int)AudioSFXType.SmartBomb] = SynthesizeSmartBomb(SAMPLE_RATE, 1.4f);
 
-            // 8. Barrel Roll: Aerodynamic bandpass noise whoosh (0.35s)
+            // 8. Barrel Roll: Aerodynamic Bandpass Whoosh + Metallic Deflection Chime Ring (0.36s)
             _proceduralClips[(int)AudioSFXType.BarrelRoll] = SynthesizeWhoosh(SAMPLE_RATE, 0.36f);
 
-            // 9. Engine Boost: Jet roar white noise (0.35s)
+            // 9. Engine Boost: Sub-Thump Ignition + Thick Afterburner Jet Roar (0.35s)
             _proceduralClips[(int)AudioSFXType.EngineBoost] = SynthesizeJetRoar(SAMPLE_RATE, 0.35f);
 
-            // 10. Engine Brake: Air decompression release hiss (0.22s)
+            // 10. Engine Brake: Highpass Pneumatic Gas Release Hiss (0.22s)
             _proceduralClips[(int)AudioSFXType.EngineBrake] = SynthesizeHiss(SAMPLE_RATE, 0.22f);
 
-            // 11. Explosion Small: Low-pass noise punch (0.28s)
-            _proceduralClips[(int)AudioSFXType.ExplosionSmall] = SynthesizeNoiseBurst(SAMPLE_RATE, 0.28f, 180f, 30f, 0.7f);
+            // 11. Explosion Small: 220Hz Transient Punch + Resonant Filtered Pink Noise (0.28s)
+            _proceduralClips[(int)AudioSFXType.ExplosionSmall] = SynthesizeNoiseBurst(SAMPLE_RATE, 0.28f, 220f, 35f, 0.8f);
 
-            // 12. Explosion Large: Heavy metal shockwave detonation (0.65s)
-            _proceduralClips[(int)AudioSFXType.ExplosionLarge] = SynthesizeSmartBomb(SAMPLE_RATE, 0.65f);
+            // 12. Explosion Large: Two-Stage Heavy Metal Shockwave Detonation (0.65s)
+            _proceduralClips[(int)AudioSFXType.ExplosionLarge] = SynthesizeExplosionLarge(SAMPLE_RATE, 0.65f);
 
-            // 13. Shield Damage: Metallic clang + electrical buzz (0.16s)
+            // 13. Shield Damage: Dissonant Metallic Ring Modulation + Electric Spark Clang (0.16s)
             _proceduralClips[(int)AudioSFXType.ShieldDamage] = SynthesizeShieldHit(SAMPLE_RATE, 0.16f);
 
-            // 14. Shield Alarm: Cockpit danger pulsing tone (0.20s)
+            // 14. Shield Alarm: Urgency Cockpit Siren Dual Square Wave (0.20s)
             _proceduralClips[(int)AudioSFXType.ShieldAlarm] = SynthesizeAlarm(SAMPLE_RATE, 0.20f);
 
-            // 15. Ring Collect: Rising arpeggio chime (C6-E6-G6-C7)
+            // 15. Ring Collect: Pure Harmonic Arpeggio Chime C6-E6-G6-C7 (0.30s)
             _proceduralClips[(int)AudioSFXType.RingCollect] = SynthesizeChime(SAMPLE_RATE, 0.30f);
 
-            // 16. Radio Chirp: High-frequency carrier blip (0.045s)
+            // 16. Radio Chirp: Dual-Carrier Squelch Military Blip (0.045s)
             _proceduralClips[(int)AudioSFXType.RadioChirp] = SynthesizeRadioBlip(SAMPLE_RATE, 0.045f);
 
-            // 17. Graze Pass: Near-miss metallic shimmer (0.22s)
+            // 17. Graze Pass: Doppler Metallic Near-Miss Shimmer (0.22s)
             _proceduralClips[(int)AudioSFXType.GrazePass] = SynthesizeGrazeShimmer(SAMPLE_RATE, 0.22f);
         }
 
@@ -809,18 +916,29 @@ namespace VirtualRail
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
             float phase = 0f;
+            var filter = BiquadFilter.CreateLowpass(4500f, 1.8f, sampleRate);
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float freq = Mathf.Lerp(startFreq, endFreq, Mathf.Pow(t, 0.55f));
+                // Exponential pitch dive
+                float freq = Mathf.Lerp(startFreq, endFreq, Mathf.Pow(t, 0.45f));
                 phase += 2f * Mathf.PI * freq / sampleRate;
 
-                float envelope = Mathf.Exp(-t * 12f);
-                float wave = Mathf.Sin(phase);
-                // Pha trộn 25% sóng vuông tạo tiếng laser 'tách' sắc nhọn của N64
-                float sqr = wave >= 0f ? 0.8f : -0.8f;
-                data[i] = Mathf.Lerp(wave, sqr, 0.25f) * envelope * volume;
+                // FM Modulation for laser metallic zap bite
+                float fm = Mathf.Sin(phase * 1.8f) * 0.45f;
+                float carrier = Mathf.Sin(phase + fm);
+
+                // Transient click punch at t < 4ms
+                float punch = (i < sampleRate * 0.004f) ? Mathf.Sin((float)i / (sampleRate * 0.004f) * Mathf.PI) * 0.7f : 0f;
+
+                // Fast decay envelope
+                float env = Mathf.Exp(-t * 14f);
+                float raw = (carrier * 0.75f + punch) * env;
+
+                // Filter and analog saturation
+                float filtered = filter.Process(raw);
+                data[i] = SoftClip(filtered * 1.25f) * volume;
             }
 
             AudioClip clip = AudioClip.Create("Proc_LaserSingle", samples, 1, sampleRate, false);
@@ -834,19 +952,29 @@ namespace VirtualRail
             float[] data = new float[samples];
             float phase1 = 0f;
             float phase2 = 0f;
+            var filter = BiquadFilter.CreateLowpass(5200f, 1.6f, sampleRate);
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float freq1 = Mathf.Lerp(f1, endFreq, Mathf.Pow(t, 0.6f));
-                float freq2 = Mathf.Lerp(f2, endFreq * 0.9f, Mathf.Pow(t, 0.6f));
+                float freq1 = Mathf.Lerp(f1, endFreq, Mathf.Pow(t, 0.5f));
+                float freq2 = Mathf.Lerp(f2, endFreq * 0.85f, Mathf.Pow(t, 0.5f));
 
                 phase1 += 2f * Mathf.PI * freq1 / sampleRate;
                 phase2 += 2f * Mathf.PI * freq2 / sampleRate;
 
-                float envelope = Mathf.Exp(-t * 10f);
-                float wave = (Mathf.Sin(phase1) + Mathf.Sin(phase2) * 0.7f) * 0.6f;
-                data[i] = wave * envelope * volume;
+                // FM on both tones + detuned chorus
+                float fm1 = Mathf.Sin(phase1 * 1.5f) * 0.35f;
+                float fm2 = Mathf.Sin(phase2 * 2.0f) * 0.35f;
+
+                float wave1 = Mathf.Sin(phase1 + fm1);
+                float wave2 = Mathf.Sin(phase2 + fm2);
+
+                float punch = (i < sampleRate * 0.005f) ? Mathf.Sin((float)i / (sampleRate * 0.005f) * Mathf.PI) * 0.8f : 0f;
+                float env = Mathf.Exp(-t * 11f);
+
+                float raw = (wave1 * 0.5f + wave2 * 0.45f + punch * 0.4f) * env;
+                data[i] = SoftClip(filter.Process(raw) * 1.3f) * volume;
             }
 
             AudioClip clip = AudioClip.Create("Proc_LaserTwin", samples, 1, sampleRate, false);
@@ -858,17 +986,29 @@ namespace VirtualRail
         {
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
-            float phase = 0f;
+            float phase1 = 0f;
+            float phase2 = 0f;
+            float phase3 = 0f;
+            var filter = BiquadFilter.CreateLowpass(6000f, 2.2f, sampleRate);
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float freq = Mathf.Lerp(startFreq, endFreq, Mathf.Pow(t, 0.5f));
-                phase += 2f * Mathf.PI * freq / sampleRate;
+                float freq = Mathf.Lerp(startFreq, endFreq, Mathf.Pow(t, 0.4f));
 
-                float envelope = Mathf.Exp(-t * 8f);
-                float wave = (Mathf.Sin(phase) + Mathf.Sin(phase * 2f) * 0.35f + Mathf.Sin(phase * 3f) * 0.2f) * 0.65f;
-                data[i] = wave * envelope * volume;
+                phase1 += 2f * Mathf.PI * freq / sampleRate;
+                phase2 += 2f * Mathf.PI * (freq * 1.5f) / sampleRate;
+                phase3 += 2f * Mathf.PI * (freq * 0.5f) / sampleRate;
+
+                // Heavy sci-fi FM modulation
+                float fm = Mathf.Sin(phase1 * 2f) * 0.55f;
+                float wave = (Mathf.Sin(phase1 + fm) * 0.6f + Mathf.Sin(phase2) * 0.3f + Mathf.Sin(phase3) * 0.35f);
+
+                float punch = (i < sampleRate * 0.008f) ? Mathf.Sin((float)i / (sampleRate * 0.008f) * Mathf.PI) * 0.9f : 0f;
+                float env = Mathf.Exp(-t * 8.5f);
+
+                float raw = (wave * 0.8f + punch) * env;
+                data[i] = SoftClip(filter.Process(raw) * 1.5f) * volume;
             }
 
             AudioClip clip = AudioClip.Create("Proc_LaserHyper", samples, 1, sampleRate, false);
@@ -885,13 +1025,18 @@ namespace VirtualRail
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float lfo = Mathf.Sin(2f * Mathf.PI * 8f * t) * 35f;
-                float freq = 360f + lfo;
+                // 8.5 Hz LFO Vibrato
+                float lfo = Mathf.Sin(2f * Mathf.PI * 8.5f * t) * 32f;
+                float freq = 340f + lfo;
                 phase += 2f * Mathf.PI * freq / sampleRate;
 
-                // Triangle wave
+                // Rich triangle wave with subtle harmonic
                 float tri = Mathf.PingPong(phase / Mathf.PI, 1f) * 2f - 1f;
-                data[i] = tri * 0.35f;
+                float sinHarmonic = Mathf.Sin(phase * 2f) * 0.2f;
+
+                // Smooth window to eliminate seam pops when looping
+                float window = Mathf.Sin(t * Mathf.PI);
+                data[i] = SoftClip((tri + sinHarmonic) * 0.5f) * (0.8f + window * 0.2f);
             }
 
             AudioClip clip = AudioClip.Create("Proc_ChargeHum", samples, 1, sampleRate, false);
@@ -904,27 +1049,38 @@ namespace VirtualRail
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
 
-            int beep1End = Mathf.FloorToInt(samples * 0.38f);
-            int pauseEnd = Mathf.FloorToInt(samples * 0.55f);
+            int beep1Len = Mathf.FloorToInt(samples * 0.36f);
+            int pauseLen = Mathf.FloorToInt(samples * 0.16f);
+            int beep2Start = beep1Len + pauseLen;
 
-            float phase1 = 0f;
-            float phase2 = 0f;
+            float phaseA1 = 0f, phaseA2 = 0f;
+            float phaseB1 = 0f, phaseB2 = 0f;
 
             for (int i = 0; i < samples; i++)
             {
-                if (i < beep1End)
+                if (i < beep1Len)
                 {
-                    phase1 += 2f * Mathf.PI * 1200f / sampleRate;
-                    data[i] = Mathf.Sin(phase1) * 0.65f;
+                    float t = (float)i / beep1Len;
+                    // Beep 1: 1180Hz + 1770Hz (Perfect fifth harmony)
+                    phaseA1 += 2f * Mathf.PI * 1180f / sampleRate;
+                    phaseA2 += 2f * Mathf.PI * 1770f / sampleRate;
+                    float env = Mathf.Sin(t * Mathf.PI);
+                    float wave = Mathf.Sin(phaseA1) * 0.65f + Mathf.Sin(phaseA2) * 0.35f;
+                    data[i] = SoftClip(wave * 1.2f) * env * 0.75f;
                 }
-                else if (i < pauseEnd)
+                else if (i < beep2Start)
                 {
                     data[i] = 0f;
                 }
                 else
                 {
-                    phase2 += 2f * Mathf.PI * 1550f / sampleRate;
-                    data[i] = Mathf.Sin(phase2) * 0.75f;
+                    float t = (float)(i - beep2Start) / (samples - beep2Start);
+                    // Beep 2: 1480Hz + 2220Hz (Higher pitch, louder confirm)
+                    phaseB1 += 2f * Mathf.PI * 1480f / sampleRate;
+                    phaseB2 += 2f * Mathf.PI * 2220f / sampleRate;
+                    float env = Mathf.Sin(t * Mathf.PI);
+                    float wave = Mathf.Sin(phaseB1) * 0.7f + Mathf.Sin(phaseB2) * 0.35f;
+                    data[i] = SoftClip(wave * 1.3f) * env * 0.85f;
                 }
             }
 
@@ -937,22 +1093,30 @@ namespace VirtualRail
         {
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
-            float sinePhase = 0f;
-            System.Random rng = new System.Random(1337);
+            float subPhase = 0f;
+            var pink = new PinkNoiseFilter();
+            var rng = new System.Random(1337);
+            var filter = BiquadFilter.CreateLowpass(1600f, 1.2f, sampleRate);
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
 
-                // Sub-bass sine sweep: 90Hz -> 28Hz
-                float subFreq = Mathf.Lerp(90f, 28f, t);
-                sinePhase += 2f * Mathf.PI * subFreq / sampleRate;
-                float subBass = Mathf.Sin(sinePhase) * Mathf.Exp(-t * 2.8f);
+                // Sub-bass sine sweep: 85Hz -> 24Hz with heavy weight
+                float subFreq = Mathf.Lerp(85f, 24f, Mathf.Pow(t, 0.6f));
+                subPhase += 2f * Mathf.PI * subFreq / sampleRate;
+                float subBass = Mathf.Sin(subPhase) * Mathf.Exp(-t * 2.2f);
 
-                // Rumble noise
-                float noise = ((float)rng.NextDouble() * 2f - 1f) * Mathf.Exp(-t * 4.5f);
+                // Deep pink noise rumble
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                float pinkVal = pink.Next(white) * Mathf.Exp(-t * 3.5f);
 
-                data[i] = (subBass * 0.65f + noise * 0.35f) * 0.95f;
+                // Impact crack at t < 20ms
+                float crack = (i < sampleRate * 0.02f) ? ((float)rng.NextDouble() * 2f - 1f) * Mathf.Sin((float)i / (sampleRate * 0.02f) * Mathf.PI) * 0.8f : 0f;
+
+                float raw = subBass * 0.7f + pinkVal * 0.55f + crack * 0.4f;
+                float filtered = filter.Process(raw);
+                data[i] = SoftClip(filtered * 1.6f) * 0.95f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_SmartBomb", samples, 1, sampleRate, false);
@@ -964,14 +1128,30 @@ namespace VirtualRail
         {
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
-            System.Random rng = new System.Random(42);
+            var pink = new PinkNoiseFilter();
+            var rng = new System.Random(42);
+            var bpFilter = BiquadFilter.CreateBandpass(1200f, 2.0f, sampleRate);
+
+            float ringPhase1 = 0f;
+            float ringPhase2 = 0f;
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float env = Mathf.Sin(t * Mathf.PI); // Parabolic bell curve
-                float noise = ((float)rng.NextDouble() * 2f - 1f);
-                data[i] = noise * env * 0.55f;
+                // Parabolic bell envelope for whoosh
+                float env = Mathf.Sin(t * Mathf.PI);
+
+                // Pink noise through bandpass
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                float pinkVal = pink.Next(white);
+                float whoosh = bpFilter.Process(pinkVal) * env;
+
+                // Metallic deflection chime ring (2100Hz & 3150Hz)
+                ringPhase1 += 2f * Mathf.PI * 2100f / sampleRate;
+                ringPhase2 += 2f * Mathf.PI * 3150f / sampleRate;
+                float ring = (Mathf.Sin(ringPhase1) * 0.6f + Mathf.Sin(ringPhase2) * 0.4f) * Mathf.Exp(-t * 8f) * 0.35f;
+
+                data[i] = SoftClip((whoosh * 1.8f + ring) * 1.2f) * 0.75f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_Whoosh", samples, 1, sampleRate, false);
@@ -983,13 +1163,26 @@ namespace VirtualRail
         {
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
-            System.Random rng = new System.Random(99);
+            var pink = new PinkNoiseFilter();
+            var rng = new System.Random(99);
+            var lpFilter = BiquadFilter.CreateLowpass(1400f, 1.5f, sampleRate);
+            float subPhase = 0f;
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float noise = ((float)rng.NextDouble() * 2f - 1f);
-                data[i] = noise * 0.4f * (1f - t * 0.3f);
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                float pinkVal = pink.Next(white);
+
+                // Sub-thump ignition at start
+                subPhase += 2f * Mathf.PI * 60f / sampleRate;
+                float subIgnition = Mathf.Sin(subPhase) * Mathf.Exp(-t * 12f) * 0.5f;
+
+                // Sustained thrust envelope
+                float thrustEnv = Mathf.Clamp01(t * 15f) * (1f - t * 0.25f);
+                float raw = lpFilter.Process(pinkVal) * thrustEnv + subIgnition;
+
+                data[i] = SoftClip(raw * 1.6f) * 0.65f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_JetRoar", samples, 1, sampleRate, false);
@@ -1001,13 +1194,15 @@ namespace VirtualRail
         {
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
-            System.Random rng = new System.Random(77);
+            var rng = new System.Random(77);
+            var hpFilter = BiquadFilter.CreateHighpass(2400f, 1.0f, sampleRate);
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float noise = ((float)rng.NextDouble() * 2f - 1f);
-                data[i] = noise * Mathf.Exp(-t * 8f) * 0.45f;
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                float hiss = hpFilter.Process(white) * Mathf.Exp(-t * 9.5f);
+                data[i] = SoftClip(hiss * 1.4f) * 0.55f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_Hiss", samples, 1, sampleRate, false);
@@ -1020,21 +1215,64 @@ namespace VirtualRail
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
             float phase = 0f;
-            System.Random rng = new System.Random(88);
+            var pink = new PinkNoiseFilter();
+            var rng = new System.Random(88);
+            var filter = BiquadFilter.CreateLowpass(2200f, 1.4f, sampleRate);
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float freq = Mathf.Lerp(punchFreq, endFreq, t);
+                // Downsweep punch
+                float freq = Mathf.Lerp(punchFreq, endFreq, Mathf.Pow(t, 0.4f));
                 phase += 2f * Mathf.PI * freq / sampleRate;
 
-                float sinePunch = Mathf.Sin(phase) * Mathf.Exp(-t * 9f);
-                float noise = ((float)rng.NextDouble() * 2f - 1f) * Mathf.Exp(-t * 7f);
+                float subPunch = Mathf.Sin(phase) * Mathf.Exp(-t * 9f);
 
-                data[i] = (sinePunch * 0.5f + noise * 0.5f) * volume;
+                // Filtered pink noise
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                float pinkVal = pink.Next(white) * Mathf.Exp(-t * 6f);
+
+                float raw = (subPunch * 0.55f + pinkVal * 0.65f);
+                float filtered = filter.Process(raw);
+                data[i] = SoftClip(filtered * 1.5f) * volume;
             }
 
             AudioClip clip = AudioClip.Create("Proc_NoiseBurst", samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        private static AudioClip SynthesizeExplosionLarge(int sampleRate, float duration)
+        {
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            float[] data = new float[samples];
+            float phaseSub = 0f;
+            var pink = new PinkNoiseFilter();
+            var rng = new System.Random(456);
+            var filter = BiquadFilter.CreateLowpass(1800f, 1.6f, sampleRate);
+
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / samples;
+
+                // Stage 1: Initial high-frequency fracture crack (0-30ms)
+                float crack = (i < sampleRate * 0.03f) ? ((float)rng.NextDouble() * 2f - 1f) * Mathf.Sin((float)i / (sampleRate * 0.03f) * Mathf.PI) * 0.9f : 0f;
+
+                // Stage 2: Heavy sub-bass detonation (55Hz -> 20Hz)
+                float subFreq = Mathf.Lerp(65f, 22f, Mathf.Pow(t, 0.5f));
+                phaseSub += 2f * Mathf.PI * subFreq / sampleRate;
+                float subDetonation = Mathf.Sin(phaseSub) * Mathf.Exp(-t * 3.5f);
+
+                // Expanding heavy pink rumble
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                float rumble = pink.Next(white) * Mathf.Exp(-t * 4.2f);
+
+                float raw = crack * 0.4f + subDetonation * 0.65f + rumble * 0.55f;
+                float filtered = filter.Process(raw);
+                data[i] = SoftClip(filtered * 1.6f) * 0.9f;
+            }
+
+            AudioClip clip = AudioClip.Create("Proc_ExplosionLarge", samples, 1, sampleRate, false);
             clip.SetData(data, 0);
             return clip;
         }
@@ -1043,17 +1281,23 @@ namespace VirtualRail
         {
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
-            float phase1 = 0f;
-            float phase2 = 0f;
+            float phase1 = 0f, phase2 = 0f, noisePhase = 0f;
+            var rng = new System.Random(101);
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                phase1 += 2f * Mathf.PI * 680f / sampleRate;
-                phase2 += 2f * Mathf.PI * 1150f / sampleRate;
+                // Metallic dissonance (640Hz + 1180Hz)
+                phase1 += 2f * Mathf.PI * 640f / sampleRate;
+                phase2 += 2f * Mathf.PI * 1180f / sampleRate;
+                float metal = (Mathf.Sin(phase1) + Mathf.Sin(phase2) * 0.8f) * 0.5f;
 
-                float metallic = (Mathf.Sin(phase1) + Mathf.Sin(phase2) * 0.8f) * 0.5f;
-                data[i] = metallic * Mathf.Exp(-t * 15f) * 0.65f;
+                // Electric buzz spark
+                noisePhase += 2f * Mathf.PI * 180f / sampleRate;
+                float spark = ((float)rng.NextDouble() * 2f - 1f) * (Mathf.Sin(noisePhase) > 0f ? 1f : -1f) * 0.4f;
+
+                float env = Mathf.Exp(-t * 16f);
+                data[i] = SoftClip((metal + spark) * env * 1.5f) * 0.75f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_ShieldHit", samples, 1, sampleRate, false);
@@ -1070,9 +1314,19 @@ namespace VirtualRail
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float freq = (t < 0.5f) ? 880f : 660f;
+                float freq = (t < 0.5f) ? 920f : 690f;
                 phase += 2f * Mathf.PI * freq / sampleRate;
-                data[i] = Mathf.Sin(phase) * 0.6f;
+
+                // Square-tinted urgent alarm tone
+                float sin = Mathf.Sin(phase);
+                float sqr = sin >= 0f ? 0.7f : -0.7f;
+                float wave = Mathf.Lerp(sin, sqr, 0.35f);
+
+                // Trapezoidal envelope per half
+                float halfT = (t < 0.5f) ? (t / 0.5f) : ((t - 0.5f) / 0.5f);
+                float env = Mathf.Sin(halfT * Mathf.PI);
+
+                data[i] = SoftClip(wave * 1.2f) * env * 0.7f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_Alarm", samples, 1, sampleRate, false);
@@ -1085,11 +1339,12 @@ namespace VirtualRail
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
 
-            // 4 nốt arpeggio: C6 (1046Hz), E6 (1318Hz), G6 (1568Hz), C7 (2093Hz)
+            // 4 nốt arpeggio: C6 (1046.5Hz), E6 (1318.5Hz), G6 (1567.9Hz), C7 (2093.0Hz)
             float[] freqs = new float[] { 1046.5f, 1318.5f, 1567.9f, 2093.0f };
             int stepSamples = samples / 4;
 
-            float phase = 0f;
+            float phaseMain = 0f;
+            float phaseHarmonic = 0f;
             int currentStep = 0;
 
             for (int i = 0; i < samples; i++)
@@ -1100,11 +1355,16 @@ namespace VirtualRail
                     currentStep = step;
                 }
 
-                phase += 2f * Mathf.PI * freqs[currentStep] / sampleRate;
-                float noteT = (float)(i % stepSamples) / stepSamples;
-                float env = Mathf.Exp(-noteT * 5f);
+                float baseFreq = freqs[currentStep];
+                phaseMain += 2f * Mathf.PI * baseFreq / sampleRate;
+                phaseHarmonic += 2f * Mathf.PI * (baseFreq * 2.0f) / sampleRate;
 
-                data[i] = Mathf.Sin(phase) * env * 0.65f;
+                float noteT = (float)(i % stepSamples) / stepSamples;
+                float env = Mathf.Exp(-noteT * 4.8f);
+
+                // Pure bell chime (Fundamental + 2nd overtone)
+                float chime = (Mathf.Sin(phaseMain) + Mathf.Sin(phaseHarmonic) * 0.28f);
+                data[i] = SoftClip(chime * 1.1f) * env * 0.75f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_Chime", samples, 1, sampleRate, false);
@@ -1116,13 +1376,19 @@ namespace VirtualRail
         {
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
-            float phase = 0f;
+            float phase1 = 0f;
+            float phase2 = 0f;
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                phase += 2f * Mathf.PI * 2200f / sampleRate;
-                data[i] = Mathf.Sin(phase) * Mathf.Sin(t * Mathf.PI) * 0.5f;
+                phase1 += 2f * Mathf.PI * 2400f / sampleRate;
+                phase2 += 2f * Mathf.PI * 2900f / sampleRate;
+
+                float wave = (Mathf.Sin(phase1) + Mathf.Sin(phase2) * 0.6f);
+                float env = Mathf.Sin(t * Mathf.PI);
+
+                data[i] = SoftClip(wave * 1.3f) * env * 0.65f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_RadioBlip", samples, 1, sampleRate, false);
@@ -1135,13 +1401,22 @@ namespace VirtualRail
             int samples = Mathf.CeilToInt(sampleRate * duration);
             float[] data = new float[samples];
             float phase = 0f;
+            var pink = new PinkNoiseFilter();
+            var rng = new System.Random(55);
 
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / samples;
-                float freq = Mathf.Lerp(1800f, 3200f, t);
+                // Doppler bell pitch curve: 1400 -> 3200 -> 1600 Hz
+                float freq = 1400f + Mathf.Sin(t * Mathf.PI) * 1800f;
                 phase += 2f * Mathf.PI * freq / sampleRate;
-                data[i] = Mathf.Sin(phase) * Mathf.Exp(-t * 9f) * 0.5f;
+
+                float shimmer = Mathf.Sin(phase);
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                float air = pink.Next(white) * 0.35f;
+
+                float env = Mathf.Sin(t * Mathf.PI);
+                data[i] = SoftClip((shimmer * 0.7f + air) * 1.3f) * env * 0.6f;
             }
 
             AudioClip clip = AudioClip.Create("Proc_GrazeShimmer", samples, 1, sampleRate, false);
