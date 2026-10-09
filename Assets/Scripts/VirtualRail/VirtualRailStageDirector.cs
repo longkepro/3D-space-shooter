@@ -702,9 +702,11 @@ namespace VirtualRail
                     notificationUI.ShowNotification("WARNING: MASSIVE SIGNATURE", "TARGET DESTROY PROTOCOL ENGAGED", 4f);
                 }
 
-                if (AudioManager.Instance != null && stage.audioSettings.bossBgm != null)
+                if (AudioManager.Instance != null)
                 {
-                    AudioManager.Instance.PlayBossMusic(stage.audioSettings.bossBgm, stage.audioSettings.musicVolume);
+                    AudioClip bossClip = stage != null ? stage.audioSettings.bossBgm : null;
+                    float vol = stage != null ? stage.audioSettings.musicVolume : 1f;
+                    AudioManager.Instance.PlayBossMusic(bossClip, vol);
                 }
             }
             else

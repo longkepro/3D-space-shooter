@@ -25,6 +25,14 @@ namespace VirtualRail
         GrazePass = 16
     }
 
+    public enum BgmContext
+    {
+        None = 0,
+        Menu = 1,
+        Stage = 2,
+        Boss = 3
+    }
+
     /// <summary>
     /// Hệ thống Quản lý Âm thanh Tập trung (Centralized Audio Manager - Chuẩn Star Fox 64 Arcade).
     /// Tuân thủ nghiêm ngặt Điều 4 Bộ Quy Tắc Dự Án (GEMINI.md / AGENTS.md):
@@ -102,7 +110,25 @@ namespace VirtualRail
         public AudioClip customRadioChirp;
         public AudioClip customGrazePass;
 
-        [Header("Default Music Clips (Optional)")]
+        [Header("Stage & Boss Music Playlists (Shuffle Supported)")]
+        [Tooltip("Danh sách nhạc nền cho các màn chơi thông thường (hỗ trợ xáo trộn Shuffle)")]
+        public AudioClip[] stageMusicPlaylist;
+
+        [Tooltip("Danh sách nhạc nền riêng cho các trận chiến với Boss (hỗ trợ xáo trộn Shuffle)")]
+        public AudioClip[] bossMusicPlaylist;
+
+        [Header("Shuffle Settings")]
+        [Tooltip("Tự động xáo trộn và chuyển bài khi hết nhạc trong màn chơi")]
+        public bool shuffleStageMusic = true;
+
+        [Tooltip("Tự động xáo trộn và chuyển bài khi đấu Boss (nếu có nhiều bài Boss)")]
+        public bool shuffleBossMusic = true;
+
+        [Range(0.5f, 5.0f)]
+        [Tooltip("Thời gian trượt hòa âm (Cross-fade) trước khi bài hát hiện tại kết thúc (giây)")]
+        public float crossfadeLeadTime = 2.0f;
+
+        [Header("Default Music Clips (Optional Fallback)")]
         public AudioClip defaultMenuBgm;
         public AudioClip defaultStageBgm;
         public AudioClip defaultBossBgm;
@@ -121,6 +147,16 @@ namespace VirtualRail
         private float _targetMusicVolB = 0f;
         private float _startMusicVolA = 0f;
         private float _startMusicVolB = 0f;
+
+        // Shuffle Context & Decks (0 GC Alloc)
+        private BgmContext _currentContext = BgmContext.None;
+        private float _currentContextVolume = 1.0f;
+        private int[] _stageDeck;
+        private int _stageDeckIndex = 0;
+        private int _lastPlayedStageIndex = -1;
+        private int[] _bossDeck;
+        private int _bossDeckIndex = 0;
+        private int _lastPlayedBossIndex = -1;
 
         // SFX Fixed Pools (0 GC Alloc)
         private AudioSource[] _sfxPool2D;
@@ -263,7 +299,7 @@ namespace VirtualRail
 
         private void Update()
         {
-            // Cập nhật Cross-fade mượt mà giữa 2 kênh BGM (0 GC Alloc)
+            // 1. Cập nhật Cross-fade mượt mà giữa 2 kênh BGM (0 GC Alloc)
             if (_isFadingMusic)
             {
                 _musicFadeTimer += Time.unscaledDeltaTime;
@@ -282,7 +318,178 @@ namespace VirtualRail
                     if (_targetMusicVolB <= 0.001f && _bgmSourceB != null) _bgmSourceB.Stop();
                 }
             }
+            else
+            {
+                // 2. Tự động kiểm tra bài hát sắp kết thúc để kích hoạt Auto-Crossfade Shuffle
+                CheckAutoAdvanceShuffle();
+            }
         }
+
+        #region Shuffle Decks & Context Playback (0 GC Alloc)
+
+        private void CheckAutoAdvanceShuffle()
+        {
+            AudioSource activeSource = _isUsingSourceA ? _bgmSourceA : _bgmSourceB;
+            if (activeSource == null || activeSource.clip == null) return;
+
+            // Nếu đang loop thì không auto-advance
+            if (activeSource.loop) return;
+
+            bool shouldAdvance = false;
+            if (activeSource.isPlaying)
+            {
+                float remainingTime = activeSource.clip.length - activeSource.time;
+                if (remainingTime <= Mathf.Max(0.1f, crossfadeLeadTime))
+                {
+                    shouldAdvance = true;
+                }
+            }
+            else
+            {
+                // Đã hết bài hoặc đã dừng
+                shouldAdvance = true;
+            }
+
+            if (shouldAdvance)
+            {
+                if (_currentContext == BgmContext.Stage && shuffleStageMusic && stageMusicPlaylist != null && stageMusicPlaylist.Length > 1)
+                {
+                    AudioClip nextClip = GetNextShuffledStageClip();
+                    if (nextClip != null)
+                    {
+                        PlayMusic(nextClip, _currentContextVolume, crossfadeLeadTime, false);
+                    }
+                }
+                else if (_currentContext == BgmContext.Boss && shuffleBossMusic && bossMusicPlaylist != null && bossMusicPlaylist.Length > 1)
+                {
+                    AudioClip nextClip = GetNextShuffledBossClip();
+                    if (nextClip != null)
+                    {
+                        PlayMusic(nextClip, _currentContextVolume, crossfadeLeadTime, false);
+                    }
+                }
+            }
+        }
+
+        private void PrepareDeck(ref int[] deck, ref int deckIndex, int count, int lastPlayedIndex)
+        {
+            if (count <= 0)
+            {
+                deck = null;
+                deckIndex = 0;
+                return;
+            }
+
+            if (deck == null || deck.Length != count)
+            {
+                deck = new int[count];
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                deck[i] = i;
+            }
+
+            // Fisher-Yates Shuffle
+            for (int i = count - 1; i > 0; i--)
+            {
+                int r = UnityEngine.Random.Range(0, i + 1);
+                int tmp = deck[i];
+                deck[i] = deck[r];
+                deck[r] = tmp;
+            }
+
+            // Bảo đảm lá bài đầu tiên không trùng với bài vừa phát gần nhất (nếu count > 1)
+            if (count > 1 && deck[0] == lastPlayedIndex)
+            {
+                int swapIdx = UnityEngine.Random.Range(1, count);
+                int tmp = deck[0];
+                deck[0] = deck[swapIdx];
+                deck[swapIdx] = tmp;
+            }
+
+            deckIndex = 0;
+        }
+
+        public AudioClip GetNextShuffledStageClip()
+        {
+            if (stageMusicPlaylist == null || stageMusicPlaylist.Length == 0) return null;
+            if (stageMusicPlaylist.Length == 1) return stageMusicPlaylist[0];
+
+            int totalClips = stageMusicPlaylist.Length;
+            if (_stageDeck == null || _stageDeck.Length != totalClips || _stageDeckIndex >= totalClips)
+            {
+                PrepareDeck(ref _stageDeck, ref _stageDeckIndex, totalClips, _lastPlayedStageIndex);
+            }
+
+            for (int attempts = 0; attempts < totalClips; attempts++)
+            {
+                int clipIndex = _stageDeck[_stageDeckIndex];
+                _stageDeckIndex = (_stageDeckIndex + 1) % totalClips;
+                AudioClip clip = stageMusicPlaylist[clipIndex];
+                if (clip != null)
+                {
+                    _lastPlayedStageIndex = clipIndex;
+                    return clip;
+                }
+            }
+
+            return null;
+        }
+
+        public AudioClip GetNextShuffledBossClip()
+        {
+            if (bossMusicPlaylist == null || bossMusicPlaylist.Length == 0) return null;
+            if (bossMusicPlaylist.Length == 1) return bossMusicPlaylist[0];
+
+            int totalClips = bossMusicPlaylist.Length;
+            if (_bossDeck == null || _bossDeck.Length != totalClips || _bossDeckIndex >= totalClips)
+            {
+                PrepareDeck(ref _bossDeck, ref _bossDeckIndex, totalClips, _lastPlayedBossIndex);
+            }
+
+            for (int attempts = 0; attempts < totalClips; attempts++)
+            {
+                int clipIndex = _bossDeck[_bossDeckIndex];
+                _bossDeckIndex = (_bossDeckIndex + 1) % totalClips;
+                AudioClip clip = bossMusicPlaylist[clipIndex];
+                if (clip != null)
+                {
+                    _lastPlayedBossIndex = clipIndex;
+                    return clip;
+                }
+            }
+
+            return null;
+        }
+
+        public void SkipToNextStageTrack()
+        {
+            if (_currentContext == BgmContext.Stage && stageMusicPlaylist != null && stageMusicPlaylist.Length > 0)
+            {
+                AudioClip nextClip = GetNextShuffledStageClip();
+                if (nextClip != null)
+                {
+                    bool shouldLoop = stageMusicPlaylist.Length == 1;
+                    PlayMusic(nextClip, _currentContextVolume, 1.0f, shouldLoop);
+                }
+            }
+        }
+
+        public void SkipToNextBossTrack()
+        {
+            if (_currentContext == BgmContext.Boss && bossMusicPlaylist != null && bossMusicPlaylist.Length > 0)
+            {
+                AudioClip nextClip = GetNextShuffledBossClip();
+                if (nextClip != null)
+                {
+                    bool shouldLoop = bossMusicPlaylist.Length == 1;
+                    PlayMusic(nextClip, _currentContextVolume, 1.0f, shouldLoop);
+                }
+            }
+        }
+
+        #endregion
 
         #region BGM Playback & Cross-Fade
 
@@ -327,24 +534,58 @@ namespace VirtualRail
 
         public void PlayStageMusic(AudioClip stageClip, float volume = 1f)
         {
-            AudioClip clip = stageClip != null ? stageClip : defaultStageBgm;
-            if (clip != null)
+            _currentContext = BgmContext.Stage;
+            _currentContextVolume = volume;
+
+            if (shuffleStageMusic && stageMusicPlaylist != null && stageMusicPlaylist.Length > 0)
             {
-                PlayMusic(clip, volume, 1.5f, true);
+                AudioClip clip = GetNextShuffledStageClip();
+                if (clip != null)
+                {
+                    bool shouldLoop = stageMusicPlaylist.Length == 1;
+                    PlayMusic(clip, volume, 1.5f, shouldLoop);
+                    return;
+                }
+            }
+
+            AudioClip fallback = stageClip != null ? stageClip : defaultStageBgm;
+            if (fallback != null)
+            {
+                PlayMusic(fallback, volume, 1.5f, true);
             }
         }
 
         public void PlayBossMusic(AudioClip bossClip, float volume = 1f)
         {
-            AudioClip clip = bossClip != null ? bossClip : defaultBossBgm;
-            if (clip != null)
+            _currentContext = BgmContext.Boss;
+            _currentContextVolume = volume;
+
+            if (shuffleBossMusic && bossMusicPlaylist != null && bossMusicPlaylist.Length > 0)
             {
-                PlayMusic(clip, volume, 1.0f, true);
+                AudioClip clip = GetNextShuffledBossClip();
+                if (clip != null)
+                {
+                    bool shouldLoop = bossMusicPlaylist.Length == 1;
+                    PlayMusic(clip, volume, 1.2f, shouldLoop);
+                    return;
+                }
+            }
+
+            AudioClip fallback = bossClip != null ? bossClip : defaultBossBgm;
+            if (fallback != null)
+            {
+                PlayMusic(fallback, volume, 1.2f, true);
+            }
+            else
+            {
+                Debug.Log("<color=yellow>[VirtualRail Audio]</color> Chưa cấu hình danh sách nhạc Boss (bossMusicPlaylist). Tạm thời duy trì âm nhạc hiện tại.");
             }
         }
 
         public void PlayMenuMusic(AudioClip menuClip = null, float volume = 1f)
         {
+            _currentContext = BgmContext.Menu;
+            _currentContextVolume = volume;
             AudioClip clip = menuClip != null ? menuClip : defaultMenuBgm;
             if (clip != null)
             {

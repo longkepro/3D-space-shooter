@@ -80,7 +80,7 @@ MonoBehaviour:
     holdRailOnBoss: 0
   audioSettings:
     stageBgm: {fileID: 8300000, guid: fcaae2cd8ea6b2b45980b36b6bd76687, type: 3}
-    bossBgm: {fileID: 8300000, guid: 8223575ae0fddaf4da9f3955996856f3, type: 3}
+    bossBgm: {fileID: 0}
     musicVolume: 0.85
   timelineEvents:
   - eventName: Sector 2 Perimeter Breach

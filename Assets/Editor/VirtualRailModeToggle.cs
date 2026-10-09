@@ -766,8 +766,20 @@ public class VirtualRailModeToggle
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         }
 
+        // Stage Playlist: 4 bài nhạc không gian của MokkaMusic tự động Shuffle
+        audioMgr.stageMusicPlaylist = new AudioClip[] { clipCryosleep, clipPusher, clipVision, clipSecrecy };
+        audioMgr.shuffleStageMusic = true;
+
+        // Boss Playlist: Danh sách riêng cho Boss, sẵn sàng tiếp nhận khi người dùng thêm nhạc Boss
+        if (audioMgr.bossMusicPlaylist == null)
+        {
+            audioMgr.bossMusicPlaylist = new AudioClip[0];
+        }
+        audioMgr.shuffleBossMusic = true;
+        audioMgr.crossfadeLeadTime = 2.0f;
+
         if (clipCryosleep != null) audioMgr.defaultStageBgm = clipCryosleep;
-        if (clipPusher != null) audioMgr.defaultBossBgm = clipPusher;
+        audioMgr.defaultBossBgm = null; // Chưa có nhạc boss riêng
         if (clipSecrecy != null) audioMgr.defaultMenuBgm = clipSecrecy;
         audioMgr.musicPlaylist = new AudioClip[] { clipCryosleep, clipPusher, clipVision, clipSecrecy };
         EditorUtility.SetDirty(audioMgr);
@@ -777,7 +789,7 @@ public class VirtualRailModeToggle
         if (stage1 != null)
         {
             if (clipCryosleep != null) stage1.audioSettings.stageBgm = clipCryosleep;
-            if (clipPusher != null) stage1.audioSettings.bossBgm = clipPusher;
+            stage1.audioSettings.bossBgm = null;
             stage1.audioSettings.musicVolume = 0.85f;
             EditorUtility.SetDirty(stage1);
         }
@@ -787,7 +799,7 @@ public class VirtualRailModeToggle
         if (stage2 != null)
         {
             if (clipVision != null) stage2.audioSettings.stageBgm = clipVision;
-            if (clipPusher != null) stage2.audioSettings.bossBgm = clipPusher;
+            stage2.audioSettings.bossBgm = null;
             stage2.audioSettings.musicVolume = 0.85f;
             EditorUtility.SetDirty(stage2);
         }
@@ -797,7 +809,7 @@ public class VirtualRailModeToggle
         if (stage3 != null)
         {
             if (clipSecrecy != null) stage3.audioSettings.stageBgm = clipSecrecy;
-            if (clipPusher != null) stage3.audioSettings.bossBgm = clipPusher;
+            stage3.audioSettings.bossBgm = null;
             stage3.audioSettings.musicVolume = 0.85f;
             EditorUtility.SetDirty(stage3);
         }
@@ -806,12 +818,10 @@ public class VirtualRailModeToggle
 
         Selection.activeGameObject = audioMgr.gameObject;
         EditorGUIUtility.PingObject(audioMgr.gameObject);
-        Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ GÁN THÀNH CÔNG TOÀN BỘ FILE NHẠC NỀN!</b></color>\n" +
-            "• Stage 1 (Sector Alpha): <b>Cryosleep</b> (Interstellar Synthwave)\n" +
-            "• Boss Encounter: <b>Pusher</b> (Electro House Techno in Space)\n" +
-            "• Stage 2 (Volcano): <b>Vision</b> (Sci-Fi Techno)\n" +
-            "• Menu / Stage 3: <b>Secrecy</b> (Neon Electro Synthwave)\n" +
-            "• Playlist AudioManager: 4 tracks đã nạp đầy đủ.");
+        Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ CẤU HÌNH XONG CƠ CHẾ DUAL-POOL SHUFFLE!</b></color>\n" +
+            "• <b>Stage BGM Shuffle (4 bài):</b> Cryosleep, Pusher, Vision, Secrecy (Tự động xáo trộn Deck Shuffle, hòa âm trượt 2.0s).\n" +
+            "• <b>Boss BGM Shuffle:</b> Đã tạo danh sách riêng biệt bossMusicPlaylist (Sẵn sàng nhận các bài nhạc Boss mới khi bạn thêm vào).\n" +
+            "• <b>Menu BGM:</b> Secrecy (Neon Electro Synthwave).");
     }
 
     private static GameObject BuildVirtualRailRig(VirtualRailConfig config)
