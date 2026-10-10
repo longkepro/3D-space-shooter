@@ -79,6 +79,69 @@ namespace VirtualRail.EditorScripts
                 FormationSceneViewPreviewer.OpenWithPattern(pattern);
             }
 
+            EditorGUILayout.Space(4);
+
+            // 2.5 Live Play Mode Testing Panel (1-Click Test Triệu Hồi Đội Hình Tức Thì)
+            if (EditorApplication.isPlaying)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                {
+                    EditorGUILayout.LabelField("🎮 LIVE PLAYMODE CONTROLLER", EditorStyles.boldLabel);
+
+                    GUI.backgroundColor = new Color(0.25f, 0.85f, 0.45f, 1f); // Màu xanh lá nổi bật
+                    if (GUILayout.Button("🚀 TRIỆU HỒI NGAY TRƯỚC MẶT (SPAWN TEST - 65M)", GUILayout.Height(32)))
+                    {
+                        if (VirtualRailWaveSpawner.Instance != null)
+                        {
+                            bool ok = VirtualRailWaveSpawner.Instance.SpawnScriptedFormation(pattern, 65f);
+                            if (ok)
+                            {
+                                Debug.Log($"<color=green><b>[TEST SPAWN]</b></color> Đã triệu hồi thành công đội hình [{pattern.patternName}] trước mặt tàu Arwing 65m!");
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"[TEST SPAWN] Không thể triệu hồi đội hình [{pattern.patternName}]! Kiểm tra xem object pool có đủ quái không.");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[TEST SPAWN] Không tìm thấy VirtualRailWaveSpawner trong scene!");
+                        }
+                    }
+
+                    GUI.backgroundColor = new Color(1f, 0.35f, 0.35f, 1f); // Màu đỏ cảnh báo
+                    if (GUILayout.Button("💥 KÍCH NỔ CHỈ HUY (TEST LEADER DEATH REACTION)", GUILayout.Height(26)))
+                    {
+                        VirtualFormationAnchor activeAnchor = UnityEngine.Object.FindAnyObjectByType<VirtualFormationAnchor>();
+                        if (activeAnchor != null && activeAnchor.HasActiveLeader)
+                        {
+                            var health = activeAnchor.Leader.GetComponent<EnemyHealth>();
+                            if (health != null)
+                            {
+                                health.TakeDamage(9999, activeAnchor.Leader.transform.position, Vector3.forward);
+                                Debug.Log($"<color=red><b>[TEST LEADER DEATH]</b></color> Đã kích nổ Chỉ Huy của [{pattern.patternName}]! Hãy quan sát phản xạ của tàu cánh.");
+                            }
+                            else
+                            {
+                                activeAnchor.Leader.gameObject.SetActive(false);
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[TEST LEADER DEATH] Không tìm thấy Tàu Chỉ Huy đang hoạt động trong scene!");
+                        }
+                    }
+                    GUI.backgroundColor = Color.white;
+                }
+                EditorGUILayout.EndVertical();
+            }
+            else
+            {
+                GUI.enabled = false;
+                GUILayout.Button("🚀 BẤM PLAY ĐỂ KÍCH HOẠT NÚT TRIỆU HỒI TRONG GAME", GUILayout.Height(26));
+                GUI.enabled = true;
+            }
+
             EditorGUILayout.Space(6);
 
             // 3. One-Click Quick Presets
