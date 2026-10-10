@@ -148,12 +148,12 @@ namespace VirtualRail
             // 1. Cộng điểm
             GameEventManager.IncrementScore(_scoreValue);
             ComboScoringEngine.Instance?.RegisterSingleKill(_scoreValue);
-            AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 0.95f);
 
-            // 2. Kích hoạt hiệu ứng tương ứng loại vòng
+            // 2. Kích hoạt hiệu ứng và âm thanh tương ứng loại vòng
             switch (_type)
             {
                 case RingType.SilverRing:
+                    AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 0.95f);
                     // Hồi phục 25% Khiên
                     var shield = FindAnyObjectByType<Shield>();
                     if (shield != null)
@@ -164,6 +164,7 @@ namespace VirtualRail
                     break;
 
                 case RingType.GoldRing:
+                    AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 0.95f);
                     // Nạp tiến trình nâng cấp vũ khí
                     if (VirtualRailWeapon.Instance != null)
                     {
@@ -173,12 +174,14 @@ namespace VirtualRail
                     break;
 
                 case RingType.BombSupply:
+                    // Phát âm thanh nạp đạn vũ khí viễn tưởng (Reload.mp3)
+                    AudioManager.Instance?.PlaySFX2D(AudioSFXType.BombSupply, 1.0f);
                     // Bổ sung 1 quả bom thông minh
                     if (SmartBombModule.Instance != null)
                     {
                         SmartBombModule.Instance.AddBomb(1);
                     }
-                    Debug.Log("<color=red><b>[BOMB SUPPLY]</b></color> Thu thập Bom Tiếp Tế! +1 Smart Bomb");
+                    Debug.Log("<color=red><b>[BOMB SUPPLY]</b></color> Thu thập Bom Tiếp Tế (Vòng Đỏ Thẫm)! Gài đạn nén +1 Smart Bomb");
                     break;
             }
 

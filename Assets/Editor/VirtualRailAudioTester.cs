@@ -89,12 +89,13 @@ namespace VirtualRail.Editor
             audioMgr.customRadioChirp = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_RadioChirp.ogg");
             audioMgr.customGrazePass = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_GrazePass.ogg");
             audioMgr.customChargeFire = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_ChargeFire.ogg");
+            audioMgr.customBombSupply = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_BombSupply.ogg");
 
             EditorUtility.SetDirty(audioMgr);
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
 
-            Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ KÍCH HOẠT BỘ ÂM THANH PHÒNG THU (STUDIO SFX PACK):</b></color> Toàn bộ 18 hiệu ứng âm thanh đã được gán file Studio Stereo Hi-Fi từ Assets/Audio/SFX_Studio/!");
+            Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ KÍCH HOẠT BỘ ÂM THANH PHÒNG THU (STUDIO SFX PACK):</b></color> Toàn bộ 19 hiệu ứng âm thanh đã được gán file Studio Stereo Hi-Fi từ Assets/Audio/SFX_Studio/!");
         }
 
         [MenuItem("Tools/Virtual Rail/56. Audio: Revert to Procedural SFX (Hoàn Nguyên Về Âm Thanh Thủ Tục - OFF)")]
@@ -122,6 +123,7 @@ namespace VirtualRail.Editor
                 audioMgr.customRadioChirp = null;
                 audioMgr.customGrazePass = null;
                 audioMgr.customChargeFire = null;
+                audioMgr.customBombSupply = null;
 
                 EditorUtility.SetDirty(audioMgr);
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -214,6 +216,7 @@ namespace VirtualRail.Editor
             DrawSfxCategory("TƯƠNG TÁC & GIAO DIỆN (INTERACTION)", new[]
             {
                 (AudioSFXType.RingCollect, "Nhặt vòng Ring (Ring Collect)", "Studio_RingCollect.ogg"),
+                (AudioSFXType.BombSupply, "Gài đạn nạp bom (Bomb Supply)", "Studio_BombSupply.ogg"),
                 (AudioSFXType.RadioChirp, "Bộ đàm radio (Radio Chirp)", "Studio_RadioChirp.ogg")
             });
 

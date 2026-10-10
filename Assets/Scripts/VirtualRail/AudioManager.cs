@@ -23,7 +23,8 @@ namespace VirtualRail
         RingCollect = 14,
         RadioChirp = 15,
         GrazePass = 16,
-        ChargeFire = 17
+        ChargeFire = 17,
+        BombSupply = 18
     }
 
     public enum BgmContext
@@ -119,6 +120,7 @@ namespace VirtualRail
         public AudioClip customRadioChirp;
         public AudioClip customGrazePass;
         public AudioClip customChargeFire;
+        public AudioClip customBombSupply;
 
         [Header("Stage & Boss Music Playlists (Shuffle Supported)")]
         [Tooltip("Danh sách nhạc nền cho các màn chơi thông thường (hỗ trợ xáo trộn Shuffle)")]
@@ -308,6 +310,7 @@ namespace VirtualRail
             if (customRadioChirp == null) customRadioChirp = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_RadioChirp.ogg");
             if (customGrazePass == null) customGrazePass = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_GrazePass.ogg");
             if (customChargeFire == null) customChargeFire = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ChargeFire.ogg");
+            if (customBombSupply == null) customBombSupply = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_BombSupply.ogg");
         }
 #endif
 
@@ -836,6 +839,8 @@ namespace VirtualRail
                     return customGrazePass != null ? customGrazePass : _proceduralClips[(int)type];
                 case AudioSFXType.ChargeFire:
                     return customChargeFire != null ? customChargeFire : _proceduralClips[(int)type];
+                case AudioSFXType.BombSupply:
+                    return customBombSupply != null ? customBombSupply : _proceduralClips[(int)type];
                 default:
                     return null;
             }
@@ -1012,6 +1017,9 @@ namespace VirtualRail
 
             // 18. Charge Fire: Heavy Sub-Bass Down-Sweep FM Plasma Discharge (0.16s)
             _proceduralClips[(int)AudioSFXType.ChargeFire] = SynthesizeLaser(SAMPLE_RATE, 0.16f, 850f, 65f, 0.95f);
+
+            // 19. Bomb Supply: High-Tech Servo Lock & Munition Chambering Fallback (0.22s)
+            _proceduralClips[(int)AudioSFXType.BombSupply] = SynthesizeHiss(SAMPLE_RATE, 0.22f);
         }
 
         private static AudioClip SynthesizeLaser(int sampleRate, float duration, float startFreq, float endFreq, float volume)
