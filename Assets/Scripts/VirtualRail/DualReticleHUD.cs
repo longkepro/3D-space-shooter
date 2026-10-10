@@ -77,6 +77,8 @@ namespace VirtualRail
         private int lastDistInt = -1;
         private int _lastMultiplierIndex = -1;
         private float _grazeFlashTimer = 0f;
+        private float _nextBindingRetryTime = 0f;
+        private float _nextAimAssistRetryTime = 0f;
 
         public bool IsMouseHovering => isMouseHovering;
         public float CurrentScale => currentScale;
@@ -108,6 +110,8 @@ namespace VirtualRail
             if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
             if (weapon == null && anchor != null) weapon = anchor.GetComponentInChildren<VirtualRailWeapon>();
             if (weapon == null) weapon = FindAnyObjectByType<VirtualRailWeapon>();
+            if (aimAssist == null && anchor != null) aimAssist = anchor.GetComponentInChildren<AimAssistModule>();
+            if (aimAssist == null) aimAssist = FindAnyObjectByType<AimAssistModule>();
             if (mainCamera == null || !mainCamera.gameObject.activeInHierarchy)
             {
                 var camRig = anchor != null ? anchor.GetComponentInChildren<VirtualRailCameraRig>() : null;
@@ -122,15 +126,23 @@ namespace VirtualRail
         {
             if (mainCamera == null || !mainCamera.gameObject.activeInHierarchy)
             {
-                var camRig = anchor != null ? anchor.GetComponentInChildren<VirtualRailCameraRig>() : null;
-                mainCamera = (camRig != null && camRig.targetCamera != null) ? camRig.targetCamera : Camera.main;
+                if (Time.time >= _nextBindingRetryTime)
+                {
+                    _nextBindingRetryTime = Time.time + 0.5f;
+                    var camRig = anchor != null ? anchor.GetComponentInChildren<VirtualRailCameraRig>() : null;
+                    mainCamera = (camRig != null && camRig.targetCamera != null) ? camRig.targetCamera : Camera.main;
+                }
             }
             if (mainCamera == null) return;
 
             var cfg = anchor != null ? anchor.config : null;
-            if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
-            if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
-            if (weapon == null && anchor != null) weapon = anchor.GetComponentInChildren<VirtualRailWeapon>();
+            if ((reticle == null || ship == null || weapon == null) && anchor != null && Time.time >= _nextBindingRetryTime)
+            {
+                _nextBindingRetryTime = Time.time + 0.5f;
+                if (reticle == null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
+                if (ship == null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
+                if (weapon == null) weapon = anchor.GetComponentInChildren<VirtualRailWeapon>();
+            }
 
             // 1. Tâm ngắm chính (Far Reticle) - Chiếu từ reticle.WorldPosition lên Screen Space
             if (farCrosshairUI != null && reticle != null)
@@ -863,8 +875,9 @@ namespace VirtualRail
 
         private void UpdateChargeMeterHUD()
         {
-            if (aimAssist == null)
+            if (aimAssist == null && Time.time >= _nextAimAssistRetryTime)
             {
+                _nextAimAssistRetryTime = Time.time + 1.0f;
                 aimAssist = (anchor != null) ? anchor.GetComponentInChildren<AimAssistModule>() : null;
                 if (aimAssist == null) aimAssist = FindAnyObjectByType<AimAssistModule>();
             }
@@ -1041,8 +1054,9 @@ namespace VirtualRail
 
         private void UpdateLockBracketsHUD(VirtualRailConfig cfg)
         {
-            if (aimAssist == null)
+            if (aimAssist == null && Time.time >= _nextAimAssistRetryTime)
             {
+                _nextAimAssistRetryTime = Time.time + 1.0f;
                 aimAssist = (anchor != null) ? anchor.GetComponentInChildren<AimAssistModule>() : null;
                 if (aimAssist == null) aimAssist = FindAnyObjectByType<AimAssistModule>();
             }

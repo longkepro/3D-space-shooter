@@ -67,6 +67,7 @@ namespace VirtualRail
         private bool _stagePaletteApplied = false;
         private float _waveGatingTimer = 0f;
         private bool _isWaveGated = false;
+        private float _nextFindReferencesTime = 0f;
 
         public StageData CurrentStageData => (stages != null && currentStageIndex >= 0 && currentStageIndex < stages.Length) ? stages[currentStageIndex] : null;
 
@@ -321,6 +322,7 @@ namespace VirtualRail
 
         private void HandleGameStarted()
         {
+            _nextFindReferencesTime = 0f;
             FindReferences();
             if (anchor != null && waveSpawner != null)
             {
@@ -468,8 +470,10 @@ namespace VirtualRail
         public void Tick(float dt)
         {
             // Self-Healing Runtime Binding: Tự động kết nối với Anchor & Spawners ngay khi tàu xuất hiện trong Scene
-            if (anchor == null || waveSpawner == null || asteroidSpawner == null || notificationUI == null)
+            // Tối ưu hóa: Throttled 1s khi thiếu thành phần, triệt tiêu hoàn toàn Scene Scan mỗi frame
+            if ((anchor == null || waveSpawner == null || asteroidSpawner == null || notificationUI == null) && Time.time >= _nextFindReferencesTime)
             {
+                _nextFindReferencesTime = Time.time + 1.0f;
                 FindReferences();
             }
 

@@ -7,6 +7,7 @@ public class FollowCam : MonoBehaviour
 
     private Transform _target;
     private Vector3 _velocity = Vector3.one;
+    private float _nextFindTime = 0f;
 
     private void LateUpdate()
     {
@@ -26,14 +27,21 @@ public class FollowCam : MonoBehaviour
     {
         if (_target == null)
         {
-            var player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
+            _target = VirtualRail.VirtualRailAnchor.PlayerShipTransform != null
+                ? VirtualRail.VirtualRailAnchor.PlayerShipTransform
+                : VirtualRail.VirtualRailAnchor.PlayerTransform;
+
+            if (_target == null && Time.time >= _nextFindTime)
             {
-                _target = player.transform;
+                _nextFindTime = Time.time + 1.0f;
+                var player = GameObject.FindGameObjectWithTag("Player");
+                if (player != null)
+                {
+                    _target = player.transform;
+                }
             }
         }
-        var foundTarget = (_target != null);
-        return foundTarget;
+        return _target != null;
     }
 
 }

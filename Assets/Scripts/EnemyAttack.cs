@@ -18,6 +18,12 @@ public class EnemyAttack : MonoBehaviour
     private float _nextFireTime = 0f;
     private int _burstRemaining = 0;
     private float _nextBurstTime = 0f;
+    private float _nextFindTime = 0f;
+
+    private void OnEnable()
+    {
+        _nextFindTime = 0f;
+    }
 
     private void Awake()
     {
@@ -174,8 +180,9 @@ public class EnemyAttack : MonoBehaviour
                 ? VirtualRail.VirtualRailAnchor.PlayerShipTransform
                 : VirtualRail.VirtualRailAnchor.PlayerTransform;
 
-            if (_target == null)
+            if (_target == null && Time.time >= _nextFindTime)
             {
+                _nextFindTime = Time.time + 1.0f;
                 var player = GameObject.FindGameObjectWithTag("Player");
                 if (player != null)
                 {

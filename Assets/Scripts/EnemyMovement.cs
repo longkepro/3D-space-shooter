@@ -25,6 +25,7 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
     private VirtualRail.EnemyHealth _health;
     private bool _isFlankerStrafing = false;
     private float _flankerStrafeDir = 1f;
+    private float _nextFindTime = 0f;
 
     public Action<EnemyMovement> OnRecycle;
 
@@ -94,6 +95,7 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
         _isBlowingUp = false;
         _cachedAvoidanceOffset = Vector3.zero;
         _nextAvoidanceTime = 0f;
+        _nextFindTime = 0f;
         _isFlankerStrafing = false;
         transform.localScale = Vector3.one;
         if (_health != null)
@@ -263,9 +265,10 @@ public class EnemyMovement : MonoBehaviour, VirtualRail.IPoolableEntity
                 ? VirtualRail.VirtualRailAnchor.PlayerShipTransform
                 : VirtualRail.VirtualRailAnchor.PlayerTransform;
 
-            // 2. Fallback cho scene cũ nếu không chạy VirtualRail
-            if (_target == null)
+            // 2. Fallback cho scene cũ nếu không chạy VirtualRail (Throttled 1s, tránh lag spike)
+            if (_target == null && Time.time >= _nextFindTime)
             {
+                _nextFindTime = Time.time + 1.0f;
                 var player = GameObject.FindGameObjectWithTag("Player");
                 if (player != null)
                 {
