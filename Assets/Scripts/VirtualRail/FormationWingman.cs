@@ -43,10 +43,17 @@ namespace VirtualRail
         private float _panicDuration = 1.5f;
         private float _panicRollDir = 1f;
 
-        // Retreat Warp kinematics state
+        // Retreat Warp kinematics state (Cinematic 3-Phase Retreat Arc)
         private Vector3 _warpVelocity;
         private float _warpTimer = 0f;
-        private float _warpDuration = 3.8f;
+        private float _warpDuration = 3.5f;
+        private float _retreatSide = 1f;
+        private Vector3 _retreatBaseScale = Vector3.one;
+        private bool _hasPlayedWarpSFX = false;
+        private Vector3 _retreatForwardCached = Vector3.forward;
+        private Vector3 _retreatRightCached = Vector3.right;
+        private Vector3 _retreatUpCached = Vector3.up;
+        private float _retreatBaseSpeedCached = 30f;
 
         // Kamikaze Charge pursuit kinematics state
         private Transform _kamikazeTarget;
@@ -128,6 +135,7 @@ namespace VirtualRail
             _movement = GetComponent<EnemyMovement>();
             _collider = GetComponentInChildren<Collider>();
             _health = GetComponent<EnemyHealth>();
+            _retreatBaseScale = transform.localScale != Vector3.zero ? transform.localScale : Vector3.one;
         }
 
         public void InitializeSlot(
@@ -348,21 +356,88 @@ namespace VirtualRail
         private void UpdateRetreatWarp()
         {
             _warpTimer += Time.deltaTime;
+            float t = _warpTimer;
 
-            // Bứt tốc về phía trước chân trời (cùng chiều bay Arwing), kéo dãn cự ly mượt mà
-            // để luôn nằm trong kính ngắm trước mặt Arwing cho người chơi xả đạn bắn hạ
-            transform.position += _warpVelocity * Time.deltaTime;
-
-            // Mũi tàu tự xoay xuôi theo hướng thoát hiểm (để lộ đuôi động cơ cho người chơi ngắm bắn)
-            if (_warpVelocity.sqrMagnitude > 0.01f)
+            if (t < 0.8f)
             {
-                Quaternion targetRot = Quaternion.LookRotation(_warpVelocity.normalized, Vector3.up);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 6f * Time.deltaTime);
+                // =========================================================================
+                // PHA 1 (0.0s - 0.8s): Tactical Fan-out Break Turn (Tẽ đội hình & Lật cánh)
+                // =========================================================================
+                float u1 = t / 0.8f;
+                float lateralSpeed = _retreatSide * (8f + _slotIndex * 2f) * (1f - u1 * 0.5f);
+                float verticalSpeed = 3f * (1f - u1);
+                float fwdSpeed = _retreatBaseSpeedCached + 12f;
+
+                Vector3 stepVel = _retreatForwardCached * fwdSpeed +
+                                  _retreatRightCached * lateralSpeed +
+                                  _retreatUpCached * verticalSpeed;
+
+                transform.position += stepVel * Time.deltaTime;
+
+                float targetRoll = -_retreatSide * 42f * Mathf.Sin(u1 * Mathf.PI * 0.5f);
+                if (stepVel.sqrMagnitude > 0.01f)
+                {
+                    Quaternion lookRot = Quaternion.LookRotation(stepVel.normalized, _retreatUpCached);
+                    Quaternion targetRot = lookRot * Quaternion.Euler(0f, 0f, targetRoll);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 8f * Time.deltaTime);
+                }
             }
-
-            if (_warpTimer >= _warpDuration)
+            else if (t < 2.9f)
             {
-                Recycle();
+                // =========================================================================
+                // PHA 2 (0.8s - 2.9s): Evasive Jinking / S-Turn Weaving (Lượn S né đạn tương tác)
+                // =========================================================================
+                float t2 = t - 0.8f;
+                float freq = 4.2f + (_slotIndex * 0.35f);
+                float vx = Mathf.Cos(t2 * freq) * 6.5f * _retreatSide;
+                float vy = Mathf.Sin(t2 * freq * 0.5f) * 3.5f;
+                float fwdSpeed = _retreatBaseSpeedCached + 12f;
+
+                Vector3 stepVel = _retreatForwardCached * fwdSpeed +
+                                  _retreatRightCached * vx +
+                                  _retreatUpCached * vy;
+
+                transform.position += stepVel * Time.deltaTime;
+
+                float weaveRoll = -vx * 5.0f;
+                if (stepVel.sqrMagnitude > 0.01f)
+                {
+                    Quaternion lookRot = Quaternion.LookRotation(stepVel.normalized, _retreatUpCached);
+                    Quaternion targetRot = lookRot * Quaternion.Euler(0f, 0f, weaveRoll);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
+                }
+            }
+            else
+            {
+                // =========================================================================
+                // PHA 3 (2.9s - 3.5s): Relativistic Warp Stretch & Hyperdrive Jump
+                // =========================================================================
+                float warpU = Mathf.Clamp01((t - 2.9f) / 0.6f);
+                float warpAccel = 1.0f + (warpU * warpU * 8.0f);
+                float fwdSpeed = (_retreatBaseSpeedCached + 12f) * warpAccel;
+
+                Vector3 stepVel = _retreatForwardCached * fwdSpeed;
+                transform.position += stepVel * Time.deltaTime;
+
+                Quaternion targetRot = Quaternion.LookRotation(_retreatForwardCached, _retreatUpCached);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 12f * Time.deltaTime);
+
+                // Kéo giãn relativistic scale trục Z, bóp nhỏ trục X/Y
+                float stretchZ = Mathf.Lerp(1.0f, 3.2f, warpU * warpU);
+                float pinchXY = Mathf.Lerp(1.0f, 0.45f, warpU);
+                transform.localScale = new Vector3(_retreatBaseScale.x * pinchXY, _retreatBaseScale.y * pinchXY, _retreatBaseScale.z * stretchZ);
+
+                if (!_hasPlayedWarpSFX)
+                {
+                    _hasPlayedWarpSFX = true;
+                    AudioManager.Instance?.PlaySFX3D(AudioSFXType.EngineBoost, transform.position, 0.9f, 1.35f);
+                }
+
+                if (t >= _warpDuration)
+                {
+                    transform.localScale = _retreatBaseScale; // Khôi phục tỷ lệ gốc trước khi trả về pool
+                    Recycle();
+                }
             }
         }
 
@@ -538,6 +613,10 @@ namespace VirtualRail
 
         /// <summary>
         /// Kích hoạt cơ chế rút lui khẩn cấp (Retreat Warp) khi mất Tàu Chỉ Huy.
+        /// Triển khai Cung đường Rút lui Điện ảnh 3 Pha (3-Phase Cinematic Retreat Arc):
+        /// - Pha 1 (0.0s - 0.8s): Tẽ đội hình & nghiêng cánh thoát hiểm (Tactical Fan-out Break Turn)
+        /// - Pha 2 (0.8s - 2.9s): Lượn sóng né đạn S-Turn tương tác trong tầm ngắm Arwing
+        /// - Pha 3 (2.9s - 3.5s): Giãn dài không-thời gian (Relativistic Warp Stretch) & nhảy siêu không gian
         /// </summary>
         public void TriggerRetreatWarp(Vector3 railForward, float railSpeed)
         {
@@ -548,20 +627,39 @@ namespace VirtualRail
 
             _state = WingmanState.RetreatWarp;
             _warpTimer = 0f;
-            _warpDuration = 3.8f;
+            _warpDuration = 3.5f;
+            _hasPlayedWarpSFX = false;
+
+            if (_retreatBaseScale == Vector3.zero)
+            {
+                _retreatBaseScale = transform.localScale != Vector3.zero ? transform.localScale : Vector3.one;
+            }
 
             if (_health == null) _health = GetComponent<EnemyHealth>();
             if (_health != null) _health.SetShieldActive(false);
 
-            float speed = (railSpeed > 10f) ? railSpeed : 30f;
-            Vector3 fwd = (railForward.sqrMagnitude > 0.01f) ? railForward.normalized : Vector3.forward;
-            Vector3 railUp = (_formationAnchor != null) ? _formationAnchor.transform.up : Vector3.up;
+            // Xác định hướng tẽ thoát hiểm theo vị trí Slot
+            _retreatSide = (_slotIndex % 2 == 0) ? 1f : -1f;
+            if (Mathf.Abs(_slotLocalOffset.x) > 0.5f)
+            {
+                _retreatSide = Mathf.Sign(_slotLocalOffset.x);
+            }
 
-            // Phóng về phía trước chân trời (cùng chiều ray) với tốc độ dãn cách tương đối +12m/s
-            // Nằm ngay trong tầm ngắm của Arwing để người chơi xả đạn bắn hạ
-            _warpVelocity = fwd * (speed + 12f) + railUp * 3f;
+            _retreatBaseSpeedCached = (railSpeed > 10f) ? railSpeed : 30f;
+            _retreatForwardCached = (railForward.sqrMagnitude > 0.01f) ? railForward.normalized : Vector3.forward;
 
-            Debug.Log($"<color=cyan><b>[RETREAT WARP]</b></color> Tàu cánh Slot {_slotIndex} quay đầu bứt tốc tháo chạy về phía chân trời!");
+            if (_formationAnchor != null)
+            {
+                _retreatRightCached = _formationAnchor.transform.right;
+                _retreatUpCached = _formationAnchor.transform.up;
+            }
+            else
+            {
+                _retreatRightCached = Vector3.Cross(Vector3.up, _retreatForwardCached).normalized;
+                _retreatUpCached = Vector3.Cross(_retreatForwardCached, _retreatRightCached).normalized;
+            }
+
+            Debug.Log($"<color=cyan><b>[RETREAT WARP ARC]</b></color> Tàu cánh Slot {_slotIndex} bắt đầu rút lui điện ảnh 3 pha về chân trời!");
         }
 
         /// <summary>
@@ -704,6 +802,15 @@ namespace VirtualRail
             _morphFromOffset = Vector3.zero;
             _morphToOffset = Vector3.zero;
             _targetMorphSlotIndex = 0;
+            if (_retreatBaseScale != Vector3.zero)
+            {
+                transform.localScale = _retreatBaseScale;
+            }
+            else
+            {
+                transform.localScale = Vector3.one;
+            }
+            _hasPlayedWarpSFX = false;
             if (_health == null) _health = GetComponent<EnemyHealth>();
             if (_health != null)
             {
