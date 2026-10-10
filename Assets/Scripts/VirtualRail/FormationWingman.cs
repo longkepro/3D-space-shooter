@@ -84,6 +84,7 @@ namespace VirtualRail
             float assemblyTime,
             FormationEntryStyle entryStyle = FormationEntryStyle.FlankIn)
         {
+            this.enabled = true;
             _slotIndex = slotIndex;
             _isLeader = isLeader;
             _formationAnchor = anchor;
@@ -141,6 +142,9 @@ namespace VirtualRail
 
         private void Update()
         {
+            // Trạng thái FreeCombat đã được bàn giao toàn bộ cho EnemyMovement, FormationWingman không can thiệp
+            if (_state == WingmanState.FreeCombat) return;
+
             if (_formationAnchor == null) return;
 
             switch (_state)
@@ -159,6 +163,10 @@ namespace VirtualRail
 
                 case WingmanState.Exiting:
                     UpdateExiting();
+                    break;
+
+                case WingmanState.FreeCombat:
+                    // Đã bàn giao cho EnemyMovement
                     break;
             }
         }
@@ -303,6 +311,9 @@ namespace VirtualRail
             {
                 attack.enabled = true;
             }
+
+            // 4. Bàn giao quyền điều khiển hoàn toàn: tắt component FormationWingman
+            this.enabled = false;
 
             Debug.Log($"<color=green><b>[BREAK SHIELD & ENGAGE]</b></color> Tàu cánh Slot {_slotIndex} mất khiên và tiếp tục chiến đấu!");
         }
@@ -473,6 +484,7 @@ namespace VirtualRail
 
         public void ResetState()
         {
+            this.enabled = true;
             _state = WingmanState.Assembling;
             _formationAnchor = null;
             _assemblyTimer = 0f;
@@ -496,7 +508,12 @@ namespace VirtualRail
             {
                 _formationAnchor.NotifyShipDestroyed(this);
             }
-            ResetState();
+
+            // Nếu đang chuyển sang FreeCombat (bàn giao cho EnemyMovement), bảo lưu state để không reset nhầm
+            if (_state != WingmanState.FreeCombat)
+            {
+                ResetState();
+            }
         }
 
         public void Recycle()
