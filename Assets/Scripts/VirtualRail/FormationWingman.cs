@@ -46,14 +46,16 @@ namespace VirtualRail
         // Retreat Warp kinematics state
         private Vector3 _warpVelocity;
         private float _warpTimer = 0f;
-        private float _warpDuration = 0.85f;
+        private float _warpDuration = 3.8f;
 
         // Kamikaze Charge pursuit kinematics state
         private Transform _kamikazeTarget;
         private float _kamikazeTimer = 0f;
-        private float _kamikazeDuration = 2.5f;
-        private float _kamikazeSpeed = 48f;
-        private float _kamikazeTurnRate = 7.5f;
+        private float _kamikazeDuration = 3.2f;
+        private float _kamikazeTelegraphDuration = 0.45f;
+        private float _kamikazeTurnRate = 2.8f;
+        private Vector3 _railForwardCached = Vector3.forward;
+        private float _railSpeedCached = 30f;
 
         // Cinematic Exit kinematics state
         private Vector3 _exitVelocity;
@@ -347,15 +349,15 @@ namespace VirtualRail
         {
             _warpTimer += Time.deltaTime;
 
-            // Tăng tốc lũy tiến theo thời gian (Warp Boost Accel)
-            float accel = 1.0f + (_warpTimer / Mathf.Max(_warpDuration, 0.1f)) * 1.5f;
-            transform.position += _warpVelocity * (accel * Time.deltaTime);
+            // Bứt tốc về phía trước chân trời (cùng chiều bay Arwing), kéo dãn cự ly mượt mà
+            // để luôn nằm trong kính ngắm trước mặt Arwing cho người chơi xả đạn bắn hạ
+            transform.position += _warpVelocity * Time.deltaTime;
 
-            // Mũi tàu tự xoay xuôi theo hướng thoát hiểm (không bị lộn nhào vô lý)
+            // Mũi tàu tự xoay xuôi theo hướng thoát hiểm (để lộ đuôi động cơ cho người chơi ngắm bắn)
             if (_warpVelocity.sqrMagnitude > 0.01f)
             {
                 Quaternion targetRot = Quaternion.LookRotation(_warpVelocity.normalized, Vector3.up);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 6f * Time.deltaTime);
             }
 
             if (_warpTimer >= _warpDuration)
@@ -369,11 +371,25 @@ namespace VirtualRail
             _kamikazeTimer += Time.deltaTime;
 
             Transform target = _kamikazeTarget != null ? _kamikazeTarget : VirtualRailAnchor.PlayerShipTransform;
-            Vector3 toPlayer = target != null ? (target.position - transform.position) : transform.forward;
+            Vector3 toPlayer = target != null ? (target.position - transform.position) : -_railForwardCached;
             float sqrDist = toPlayer.sqrMagnitude;
 
-            // 1. Kiểm tra va chạm trực diện với Arwing trong cự ly nguy hiểm (< 3.5m)
-            if (sqrDist <= 12.25f && target != null)
+            // 1. Pha Telegraph (Khựng lại 0.45s, rung cánh chao đảo báo hiệu để người chơi chuẩn bị)
+            if (_kamikazeTimer < _kamikazeTelegraphDuration)
+            {
+                // Đồng tốc theo ray trong lúc khựng lại để giữ nguyên cự ly
+                transform.position += _railForwardCached * (_railSpeedCached * Time.deltaTime);
+
+                // Rung chao đảo cánh cảnh báo (Visual Telegraph Wobble)
+                float wobble = Mathf.Sin(_kamikazeTimer * 30f) * 15f;
+                Vector3 lookDir = toPlayer.sqrMagnitude > 0.01f ? toPlayer.normalized : -_railForwardCached;
+                Quaternion lookRot = Quaternion.LookRotation(lookDir, Vector3.up);
+                transform.rotation = lookRot * Quaternion.Euler(0f, 0f, wobble);
+                return;
+            }
+
+            // 2. Kiểm tra va chạm trực diện với Arwing trong cự ly nguy hiểm (< 3.0m)
+            if (sqrDist <= 9.0f && target != null)
             {
                 var shield = target.GetComponentInChildren<Shield>();
                 if (shield == null) shield = target.GetComponentInParent<Shield>();
@@ -396,7 +412,7 @@ namespace VirtualRail
                 return;
             }
 
-            // 2. Điều hướng bám đuổi Arwing thời gian thực (Dynamic Homing Pursuit)
+            // 3. Điều hướng bám đuổi Arwing (Turn rate 2.8rad/s vừa phải: nếu Arwing lượn gấp/Barrel Roll sẽ né thoát)
             if (sqrDist > 0.01f)
             {
                 Vector3 desiredDir = toPlayer.normalized;
@@ -404,10 +420,16 @@ namespace VirtualRail
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, _kamikazeTurnRate * Time.deltaTime);
             }
 
-            // 3. Lao tới với vận tốc cao theo hướng mũi tàu
-            transform.position += transform.forward * (_kamikazeSpeed * Time.deltaTime);
+            // 4. Vận tốc tiếp cận cân bằng:
+            // Tốc độ rút ngắn cự ly dọc trục ray là ~26m/s (khoảng 2.5s từ 65m để người chơi kịp xả đạn)
+            // Kèm thành phần lượn ngang ép tâm đuổi theo vị trí Arwing
+            Vector3 lateralDir = Vector3.ProjectOnPlane(toPlayer, _railForwardCached);
+            Vector3 lateralStep = lateralDir.sqrMagnitude > 0.01f ? lateralDir.normalized * 12f : Vector3.zero;
+            Vector3 closingVel = _railForwardCached * (_railSpeedCached - 26f) + lateralStep;
 
-            // 4. Quá thời gian sinh tồn (bay trượt qua người chơi ra sau lưng): Tự nổ
+            transform.position += closingVel * Time.deltaTime;
+
+            // 5. Quá thời gian sinh tồn (bay trượt qua người chơi ra sau lưng): Tự nổ
             if (_kamikazeTimer >= _kamikazeDuration)
             {
                 if (_movement != null)
@@ -526,15 +548,20 @@ namespace VirtualRail
 
             _state = WingmanState.RetreatWarp;
             _warpTimer = 0f;
-            _warpDuration = 0.85f;
+            _warpDuration = 3.8f;
 
             if (_health == null) _health = GetComponent<EnemyHealth>();
             if (_health != null) _health.SetShieldActive(false);
 
+            float speed = (railSpeed > 10f) ? railSpeed : 30f;
+            Vector3 fwd = (railForward.sqrMagnitude > 0.01f) ? railForward.normalized : Vector3.forward;
             Vector3 railUp = (_formationAnchor != null) ? _formationAnchor.transform.up : Vector3.up;
-            _warpVelocity = -railForward * (railSpeed + 45f) + railUp * 18f;
 
-            Debug.Log($"<color=cyan><b>[RETREAT WARP]</b></color> Tàu cánh Slot {_slotIndex} tăng tốc thoát ly khẩn cấp!");
+            // Phóng về phía trước chân trời (cùng chiều ray) với tốc độ dãn cách tương đối +12m/s
+            // Nằm ngay trong tầm ngắm của Arwing để người chơi xả đạn bắn hạ
+            _warpVelocity = fwd * (speed + 12f) + railUp * 3f;
+
+            Debug.Log($"<color=cyan><b>[RETREAT WARP]</b></color> Tàu cánh Slot {_slotIndex} quay đầu bứt tốc tháo chạy về phía chân trời!");
         }
 
         /// <summary>
@@ -549,15 +576,19 @@ namespace VirtualRail
 
             _state = WingmanState.KamikazeCharge;
             _kamikazeTimer = 0f;
-            _kamikazeDuration = 2.5f;
-            _kamikazeSpeed = 48f;
-            _kamikazeTurnRate = 7.5f;
+            _kamikazeDuration = 3.2f;
+            _kamikazeTelegraphDuration = 0.45f;
+            _kamikazeTurnRate = 2.8f;
             _kamikazeTarget = playerTarget != null ? playerTarget : VirtualRailAnchor.PlayerShipTransform;
+
+            var rail = VirtualRailAnchor.Instance;
+            _railForwardCached = (rail != null) ? rail.ForwardTangent : Vector3.forward;
+            _railSpeedCached = (rail != null && rail.CurrentSpeed > 10f) ? rail.CurrentSpeed : 30f;
 
             if (_health == null) _health = GetComponent<EnemyHealth>();
             if (_health != null) _health.SetShieldActive(false);
 
-            Debug.Log($"<color=red><b>[KAMIKAZE CHARGE]</b></color> Tàu cánh Slot {_slotIndex} khóa ngắm và lao thẳng cảm tử vào người chơi!");
+            Debug.Log($"<color=red><b>[KAMIKAZE CHARGE]</b></color> Tàu cánh Slot {_slotIndex} khựng lại 0.45s rồi lao cảm tử vào người chơi với tốc độ cân bằng!");
         }
 
         /// <summary>
@@ -666,6 +697,8 @@ namespace VirtualRail
             _warpVelocity = Vector3.zero;
             _kamikazeTimer = 0f;
             _kamikazeTarget = null;
+            _railForwardCached = Vector3.forward;
+            _railSpeedCached = 30f;
             _exitTimer = 0f;
             _exitVelocity = Vector3.zero;
             _morphFromOffset = Vector3.zero;
