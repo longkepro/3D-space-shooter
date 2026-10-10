@@ -40,8 +40,6 @@ namespace VirtualRail
         private bool _isMorphing = false;
         private float _morphTimer = 0f;
         private float _morphDuration = 1.8f;
-        private Vector3[] _morphFromOffsets;
-        private Vector3[] _morphToOffsets;
         private FormationPattern _targetMorphPattern = null;
         private bool _hasMorphed = false;
 
@@ -334,20 +332,15 @@ namespace VirtualRail
             _isMorphing = true;
 
             int shipCount = _activeWingmen.Count;
-            if (_morphFromOffsets == null || _morphFromOffsets.Length < shipCount)
-            {
-                _morphFromOffsets = new Vector3[shipCount];
-                _morphToOffsets = new Vector3[shipCount];
-            }
-
             for (int i = 0; i < shipCount; i++)
             {
                 FormationWingman wingman = _activeWingmen[i];
-                _morphFromOffsets[i] = wingman != null ? wingman.SlotLocalOffset : Vector3.zero;
+                if (wingman == null) continue;
 
                 // Tàu i gán vào slot i của đội hình mới (kẹp an toàn nếu targetPattern ít slot hơn)
                 int targetSlotIdx = Mathf.Min(i, targetPattern.slots.Length - 1);
-                _morphToOffsets[i] = targetPattern.slots[targetSlotIdx].localOffset;
+                Vector3 targetOffset = targetPattern.slots[targetSlotIdx].localOffset;
+                wingman.StartMorph(wingman.SlotLocalOffset, targetOffset, targetSlotIdx);
             }
 
             Debug.Log($"<color=yellow><b>[FORMATION MORPHING]</b></color> Bắt đầu biến hình phi đội từ [{(_activePattern != null ? _activePattern.patternName : "Default")}] sang [{targetPattern.patternName}] trong {_morphDuration}s!");
@@ -458,21 +451,7 @@ namespace VirtualRail
                     FormationWingman wingman = _activeWingmen[i];
                     if (wingman == null || !wingman.gameObject.activeSelf) continue;
 
-                    Vector3 from = _morphFromOffsets[i];
-                    Vector3 to = _morphToOffsets[i];
-
-                    // Nội suy vị trí cơ bản
-                    Vector3 currentSlot = Vector3.Lerp(from, to, s);
-
-                    // Tránh va chạm xuyên nhau: nếu tàu di chuyển sang ngang, tách trục Z
-                    float deltaX = to.x - from.x;
-                    if (Mathf.Abs(deltaX) > 1.0f)
-                    {
-                        float zOffset = (deltaX > 0f ? -3.5f : 3.5f) * depthArch;
-                        currentSlot.z += zOffset;
-                    }
-
-                    wingman.SetDynamicSlotOffset(currentSlot);
+                    wingman.UpdateMorph(s, depthArch);
                 }
 
                 if (u >= 1.0f)
@@ -481,13 +460,12 @@ namespace VirtualRail
                     _hasMorphed = true;
                     _activePattern = _targetMorphPattern;
 
-                    // Cập nhật lại slot index và offset chính thức cho các wingman
+                    // Hoàn tất biến hình và cập nhật slot chính thức cho các wingman
                     for (int i = 0; i < _activeWingmen.Count; i++)
                     {
                         if (_activeWingmen[i] != null && _activeWingmen[i].gameObject.activeSelf)
                         {
-                            int targetSlotIdx = Mathf.Min(i, _targetMorphPattern.slots.Length - 1);
-                            _activeWingmen[i].UpdateSlotDefinition(targetSlotIdx, _targetMorphPattern.slots[targetSlotIdx].localOffset);
+                            _activeWingmen[i].CompleteMorph();
                         }
                     }
 

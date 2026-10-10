@@ -52,6 +52,11 @@ namespace VirtualRail
         private Collider _collider;
         private EnemyHealth _health;
 
+        // Morphing state độc lập cho từng tàu (0 GC Alloc, chống lỗi lệch index khi có tàu chết giữa chừng)
+        private Vector3 _morphFromOffset;
+        private Vector3 _morphToOffset;
+        private int _targetMorphSlotIndex;
+
         public int SlotIndex => _slotIndex;
         public bool IsLeader => _isLeader;
         public WingmanState State => _state;
@@ -66,6 +71,40 @@ namespace VirtualRail
         {
             _slotIndex = newSlotIndex;
             _slotLocalOffset = newOffset;
+        }
+
+        /// <summary>
+        /// Khởi tạo mục tiêu biến hình cho tàu cánh (0 GC Alloc).
+        /// </summary>
+        public void StartMorph(Vector3 fromOffset, Vector3 toOffset, int targetSlotIndex)
+        {
+            _morphFromOffset = fromOffset;
+            _morphToOffset = toOffset;
+            _targetMorphSlotIndex = targetSlotIndex;
+        }
+
+        /// <summary>
+        /// Cập nhật tiến trình lướt chuyển vị trí khi đang biến hình kết hợp tách độ sâu Z né va chạm.
+        /// </summary>
+        public void UpdateMorph(float s, float depthArch)
+        {
+            Vector3 currentSlot = Vector3.Lerp(_morphFromOffset, _morphToOffset, s);
+            float deltaX = _morphToOffset.x - _morphFromOffset.x;
+            if (Mathf.Abs(deltaX) > 1.0f)
+            {
+                float zOffset = (deltaX > 0f ? -3.5f : 3.5f) * depthArch;
+                currentSlot.z += zOffset;
+            }
+            _slotLocalOffset = currentSlot;
+        }
+
+        /// <summary>
+        /// Hoàn tất biến hình, chính thức cập nhật slot index và offset cố định mới.
+        /// </summary>
+        public void CompleteMorph()
+        {
+            _slotIndex = _targetMorphSlotIndex;
+            _slotLocalOffset = _morphToOffset;
         }
 
         private void Awake()
@@ -491,6 +530,9 @@ namespace VirtualRail
             _panicTimer = 0f;
             _exitTimer = 0f;
             _exitVelocity = Vector3.zero;
+            _morphFromOffset = Vector3.zero;
+            _morphToOffset = Vector3.zero;
+            _targetMorphSlotIndex = 0;
             if (_health == null) _health = GetComponent<EnemyHealth>();
             if (_health != null)
             {
