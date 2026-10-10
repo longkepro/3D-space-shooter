@@ -60,6 +60,10 @@ namespace VirtualRail
                         _instance = go.AddComponent<AudioManager>();
                     }
                 }
+                if (_instance != null)
+                {
+                    _instance.EnsureEngineInitialized();
+                }
                 return _instance;
             }
             private set => _instance = value;
@@ -169,9 +173,32 @@ namespace VirtualRail
         private AudioSource[] _sfxPool3D;
         private int _next2DIndex = 0;
         private int _next3DIndex = 0;
+        private bool _isAudioEngineInitialized = false;
 
         // Procedural Synthesized AudioClips (Generated once at Awake)
         private AudioClip[] _proceduralClips;
+
+        public void EnsureEngineInitialized()
+        {
+            if (_isAudioEngineInitialized && _sfxPool2D != null && _sfxPool2D.Length >= POOL_SIZE_2D && _sfxPool3D != null && _sfxPool3D.Length >= POOL_SIZE_3D)
+            {
+                return;
+            }
+            InitializeAudioEngine();
+        }
+
+        private static void SafeDestroyNode(Transform t)
+        {
+            if (t == null) return;
+            if (Application.isPlaying)
+            {
+                Destroy(t.gameObject);
+            }
+            else
+            {
+                DestroyImmediate(t.gameObject);
+            }
+        }
 
         private void Awake()
         {
@@ -189,7 +216,16 @@ namespace VirtualRail
 
         private void InitializeAudioEngine()
         {
+            _isAudioEngineInitialized = true;
             LoadVolumePreferences();
+
+            // Dọn sạch root cũ nếu có (phòng ngừa trường hợp khởi tạo lại trong Editor)
+            Transform oldMusic = transform.Find("[BGM_Channels]");
+            if (oldMusic != null) SafeDestroyNode(oldMusic);
+            Transform oldSfx2D = transform.Find("[SFX_Pool_2D]");
+            if (oldSfx2D != null) SafeDestroyNode(oldSfx2D);
+            Transform oldSfx3D = transform.Find("[SFX_Pool_3D]");
+            if (oldSfx3D != null) SafeDestroyNode(oldSfx3D);
 
             // 1. Tạo 2 nguồn BGM cho Cross-Fade
             GameObject musicRoot = new GameObject("[BGM_Channels]");
@@ -665,7 +701,9 @@ namespace VirtualRail
 
         public void PlaySFX2D(AudioClip clip, float volume = 1f, float pitch = 1f)
         {
-            if (clip == null || _sfxPool2D == null) return;
+            if (clip == null) return;
+            EnsureEngineInitialized();
+            if (_sfxPool2D == null || _sfxPool2D.Length == 0) return;
 
             AudioSource src = GetAvailable2DSource();
             if (src != null)
@@ -685,7 +723,9 @@ namespace VirtualRail
 
         public void PlaySFX3D(AudioClip clip, Vector3 worldPos, float volume = 1f, float pitch = 1f, float minDistance = 5f, float maxDistance = 250f)
         {
-            if (clip == null || _sfxPool3D == null) return;
+            if (clip == null) return;
+            EnsureEngineInitialized();
+            if (_sfxPool3D == null || _sfxPool3D.Length == 0) return;
 
             AudioSource src = GetAvailable3DSource();
             if (src != null)
@@ -702,37 +742,45 @@ namespace VirtualRail
 
         private AudioSource GetAvailable2DSource()
         {
+            EnsureEngineInitialized();
+            if (_sfxPool2D == null || _sfxPool2D.Length == 0) return null;
+
+            int poolLen = _sfxPool2D.Length;
             // 1. Tìm kênh đang rảnh
-            for (int i = 0; i < POOL_SIZE_2D; i++)
+            for (int i = 0; i < poolLen; i++)
             {
-                int idx = (_next2DIndex + i) % POOL_SIZE_2D;
-                if (!_sfxPool2D[idx].isPlaying)
+                int idx = (_next2DIndex + i) % poolLen;
+                if (_sfxPool2D[idx] != null && !_sfxPool2D[idx].isPlaying)
                 {
-                    _next2DIndex = (idx + 1) % POOL_SIZE_2D;
+                    _next2DIndex = (idx + 1) % poolLen;
                     return _sfxPool2D[idx];
                 }
             }
 
             // 2. Voice Stealing: mượn kênh vòng tròn Round-Robin
-            int stealIdx = _next2DIndex;
-            _next2DIndex = (_next2DIndex + 1) % POOL_SIZE_2D;
+            int stealIdx = _next2DIndex % poolLen;
+            _next2DIndex = (_next2DIndex + 1) % poolLen;
             return _sfxPool2D[stealIdx];
         }
 
         private AudioSource GetAvailable3DSource()
         {
-            for (int i = 0; i < POOL_SIZE_3D; i++)
+            EnsureEngineInitialized();
+            if (_sfxPool3D == null || _sfxPool3D.Length == 0) return null;
+
+            int poolLen = _sfxPool3D.Length;
+            for (int i = 0; i < poolLen; i++)
             {
-                int idx = (_next3DIndex + i) % POOL_SIZE_3D;
-                if (!_sfxPool3D[idx].isPlaying)
+                int idx = (_next3DIndex + i) % poolLen;
+                if (_sfxPool3D[idx] != null && !_sfxPool3D[idx].isPlaying)
                 {
-                    _next3DIndex = (idx + 1) % POOL_SIZE_3D;
+                    _next3DIndex = (idx + 1) % poolLen;
                     return _sfxPool3D[idx];
                 }
             }
 
-            int stealIdx = _next3DIndex;
-            _next3DIndex = (_next3DIndex + 1) % POOL_SIZE_3D;
+            int stealIdx = _next3DIndex % poolLen;
+            _next3DIndex = (_next3DIndex + 1) % poolLen;
             return _sfxPool3D[stealIdx];
         }
 
