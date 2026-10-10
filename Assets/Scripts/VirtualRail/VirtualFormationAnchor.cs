@@ -208,7 +208,8 @@ namespace VirtualRail
             FormationPattern pattern,
             VirtualRailAnchor railAnchor,
             Vector3 anchorStartPosition,
-            List<EnemyMovement> assignedEnemies)
+            List<EnemyMovement> assignedEnemies,
+            float overrideAssemblyTime = -1f)
         {
             if (pattern == null || pattern.slots == null || pattern.slots.Length == 0)
             {
@@ -218,7 +219,7 @@ namespace VirtualRail
 
             _activePattern = pattern;
             _railAnchor = railAnchor != null ? railAnchor : VirtualRailAnchor.Instance;
-            _assemblyTime = pattern.assemblyTime;
+            _assemblyTime = overrideAssemblyTime >= 0f ? overrideAssemblyTime : pattern.assemblyTime;
             _swaySpeed = pattern.swaySpeed;
             _swayAmplitudeX = pattern.swayAmplitudeX;
             _bankingAngle = pattern.bankingAngle;

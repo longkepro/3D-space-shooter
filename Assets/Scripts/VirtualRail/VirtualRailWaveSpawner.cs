@@ -729,7 +729,7 @@ namespace VirtualRail
         /// <summary>
         /// Kích hoạt một đợt bay đội hình theo Mẫu Data-Driven FormationPattern từ Timeline hoặc kịch bản.
         /// </summary>
-        public bool SpawnScriptedFormation(FormationPattern pattern, float customLeadDist = -1f)
+        public bool SpawnScriptedFormation(FormationPattern pattern, float customLeadDist = -1f, float overrideAssemblyTime = -1f)
         {
             if (pattern == null || pattern.slots == null || pattern.slots.Length == 0) return false;
             if (anchor == null) anchor = VirtualRailAnchor.Instance;
@@ -781,7 +781,7 @@ namespace VirtualRail
             _currentWaveMaxLifetime = pattern.maxLifetime > 1f ? pattern.maxLifetime : 14f;
             _isCurrentWaveTracking = true;
 
-            availableAnchor.InitializeFormation(pattern, anchor, startPos, enemies);
+            availableAnchor.InitializeFormation(pattern, anchor, startPos, enemies, overrideAssemblyTime);
             return true;
         }
 

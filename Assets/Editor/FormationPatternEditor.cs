@@ -27,6 +27,8 @@ namespace VirtualRail.EditorScripts
         private SerializedProperty _maxLifetimeProp;
         private SerializedProperty _leaderDeathReactionProp;
 
+        private static float _testLeadDistance = 120f;
+
         private bool _showSlotsFold = true;
         private bool _showDynamicsFold = true;
         private bool _showTacticalFold = true;
@@ -88,15 +90,38 @@ namespace VirtualRail.EditorScripts
                 {
                     EditorGUILayout.LabelField("🎮 LIVE PLAYMODE CONTROLLER", EditorStyles.boldLabel);
 
-                    GUI.backgroundColor = new Color(0.25f, 0.85f, 0.45f, 1f); // Màu xanh lá nổi bật
-                    if (GUILayout.Button("🚀 TRIỆU HỒI NGAY TRƯỚC MẶT (SPAWN TEST - 65M)", GUILayout.Height(32)))
+                    _testLeadDistance = EditorGUILayout.Slider("Cự ly xuất phát (m)", _testLeadDistance, 50f, 160f);
+
+                    GUI.backgroundColor = new Color(0.2f, 0.75f, 1.0f, 1f); // Cyan chuẩn điện ảnh
+                    if (GUILayout.Button($"🎬 TRIỆU HỒI CHUẨN ĐIỆN ẢNH (BÉZIER - {_testLeadDistance:F0}M)", GUILayout.Height(30)))
                     {
                         if (VirtualRailWaveSpawner.Instance != null)
                         {
-                            bool ok = VirtualRailWaveSpawner.Instance.SpawnScriptedFormation(pattern, 65f);
+                            bool ok = VirtualRailWaveSpawner.Instance.SpawnScriptedFormation(pattern, _testLeadDistance, -1f);
                             if (ok)
                             {
-                                Debug.Log($"<color=green><b>[TEST SPAWN]</b></color> Đã triệu hồi thành công đội hình [{pattern.patternName}] trước mặt tàu Arwing 65m!");
+                                Debug.Log($"<color=cyan><b>[TEST SPAWN BÉZIER]</b></color> Đã triệu hồi phi đội [{pattern.patternName}] từ cự ly xa {_testLeadDistance:F0}m (Thời gian ghép đội: {pattern.assemblyTime:F1}s)!");
+                            }
+                            else
+                            {
+                                Debug.LogWarning($"[TEST SPAWN] Không thể triệu hồi đội hình [{pattern.patternName}]! Kiểm tra xem object pool có đủ quái không.");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[TEST SPAWN] Không tìm thấy VirtualRailWaveSpawner trong scene!");
+                        }
+                    }
+
+                    GUI.backgroundColor = new Color(0.25f, 0.85f, 0.45f, 1f); // Xanh lá ngắm bắn ngay
+                    if (GUILayout.Button("⚡ TRIỆU HỒI BẮN NGAY (KHÓA SLOT 0S - 65M)", GUILayout.Height(30)))
+                    {
+                        if (VirtualRailWaveSpawner.Instance != null)
+                        {
+                            bool ok = VirtualRailWaveSpawner.Instance.SpawnScriptedFormation(pattern, 65f, 0f);
+                            if (ok)
+                            {
+                                Debug.Log($"<color=green><b>[TEST SPAWN INSTANT]</b></color> Đã triệu hồi tức thì phi đội [{pattern.patternName}] vào vị trí khóa Slot tại cự ly 65m để tập bắn!");
                             }
                             else
                             {

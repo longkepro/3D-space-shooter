@@ -129,6 +129,23 @@ namespace VirtualRail
             _formationAnchor = anchor;
             _slotLocalOffset = slotOffset;
             _spawnPos = spawnPosition;
+
+            // Chế độ Khóa Tức Thì (Instant Locked Slot - 0s Assembly): bỏ qua pha bổ nhào, vào vị trí chiến đấu ngay
+            if (assemblyTime <= 0.05f)
+            {
+                _state = WingmanState.LockedInSlot;
+                _assemblyDuration = 0f;
+                _assemblyTimer = 0f;
+                Vector3 instantPos = _formationAnchor != null ? _formationAnchor.GetSlotWorldPosition(_slotIndex, _slotLocalOffset) : _spawnPos;
+                transform.position = instantPos;
+                if (_formationAnchor != null) transform.rotation = _formationAnchor.transform.rotation;
+                if (_health == null) _health = GetComponent<EnemyHealth>();
+                if (_health != null) _health.SetShieldActive(!_isLeader);
+                if (_movement != null) _movement.enabled = false;
+                if (_collider != null) _collider.enabled = true;
+                return;
+            }
+
             _assemblyDuration = Mathf.Max(assemblyTime, 0.5f);
             _assemblyTimer = 0f;
             _state = WingmanState.Assembling;
