@@ -744,7 +744,7 @@ namespace VirtualRail
             }
 
 #if UNITY_EDITOR
-            if (customChargeHum == null || customChargeLockOn == null)
+            if (customChargeHum == null || customChargeLockOn == null || customChargeFire == null || customChargeSplash == null)
             {
                 AutoLoadStudioClipsIfEmpty();
             }
