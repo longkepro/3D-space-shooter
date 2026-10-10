@@ -46,11 +46,13 @@ namespace VirtualRail
             {
                 if (_overrideBoost) return true;
 
-                // 1. Thành viên phi đội: Bật khi chưa vào vị trí (Assembling) hoặc phân tán tháo chạy (PanicScatter)
+                // 1. Thành viên phi đội: Bật khi chưa vào vị trí (Assembling) hoặc phân tán tháo chạy / cảm tử / rút lui
                 if (_wingman != null && _wingman.enabled)
                 {
                     if (_wingman.State == FormationWingman.WingmanState.Assembling ||
-                        _wingman.State == FormationWingman.WingmanState.PanicScatter)
+                        _wingman.State == FormationWingman.WingmanState.PanicScatter ||
+                        _wingman.State == FormationWingman.WingmanState.RetreatWarp ||
+                        _wingman.State == FormationWingman.WingmanState.KamikazeCharge)
                     {
                         return true;
                     }

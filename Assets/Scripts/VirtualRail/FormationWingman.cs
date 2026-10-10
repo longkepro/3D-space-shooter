@@ -15,11 +15,13 @@ namespace VirtualRail
     {
         public enum WingmanState
         {
-            Assembling,   // Đang bay theo đường cong Bézier nhập đội
-            LockedInSlot, // Đã khóa cứng đồng điệu theo Slot của Anchor
-            PanicScatter, // Hoảng loạn phân rã khi mất chỉ huy
-            FreeCombat,   // Tự do chiến đấu khi mất chỉ huy và mất khiên (không tự hủy)
-            Exiting       // Đang thực hiện động tác thoát ly rời đi điện ảnh
+            Assembling,     // Đang bay theo đường cong Bézier nhập đội
+            LockedInSlot,   // Đã khóa cứng đồng điệu theo Slot của Anchor
+            PanicScatter,   // Hoảng loạn phân rã khi mất chỉ huy
+            RetreatWarp,    // Bứt tốc khẩn cấp thoát ly khỏi màn chơi khi mất chỉ huy
+            KamikazeCharge, // Khóa mũi lao thẳng cảm tử vào người chơi khi mất chỉ huy
+            FreeCombat,     // Tự do chiến đấu khi mất chỉ huy và mất khiên (không tự hủy)
+            Exiting         // Đang thực hiện động tác thoát ly rời đi điện ảnh
         }
 
         [Header("Wingman Info")]
@@ -40,6 +42,18 @@ namespace VirtualRail
         private float _panicTimer = 0f;
         private float _panicDuration = 1.5f;
         private float _panicRollDir = 1f;
+
+        // Retreat Warp kinematics state
+        private Vector3 _warpVelocity;
+        private float _warpTimer = 0f;
+        private float _warpDuration = 0.85f;
+
+        // Kamikaze Charge pursuit kinematics state
+        private Transform _kamikazeTarget;
+        private float _kamikazeTimer = 0f;
+        private float _kamikazeDuration = 2.5f;
+        private float _kamikazeSpeed = 48f;
+        private float _kamikazeTurnRate = 7.5f;
 
         // Cinematic Exit kinematics state
         private Vector3 _exitVelocity;
@@ -201,6 +215,23 @@ namespace VirtualRail
             // Trạng thái FreeCombat đã được bàn giao toàn bộ cho EnemyMovement, FormationWingman không can thiệp
             if (_state == WingmanState.FreeCombat) return;
 
+            // Các trạng thái phản ứng hậu chỉ huy (PanicScatter, RetreatWarp, KamikazeCharge)
+            // hoạt động độc lập không phụ thuộc vào _formationAnchor để đảm bảo hoàn thành hoạt ảnh
+            switch (_state)
+            {
+                case WingmanState.PanicScatter:
+                    UpdatePanicScatter();
+                    return;
+
+                case WingmanState.RetreatWarp:
+                    UpdateRetreatWarp();
+                    return;
+
+                case WingmanState.KamikazeCharge:
+                    UpdateKamikazeCharge();
+                    return;
+            }
+
             if (_formationAnchor == null) return;
 
             switch (_state)
@@ -211,10 +242,6 @@ namespace VirtualRail
 
                 case WingmanState.LockedInSlot:
                     UpdateLockedSlot();
-                    break;
-
-                case WingmanState.PanicScatter:
-                    UpdatePanicScatter();
                     break;
 
                 case WingmanState.Exiting:
@@ -316,6 +343,84 @@ namespace VirtualRail
             }
         }
 
+        private void UpdateRetreatWarp()
+        {
+            _warpTimer += Time.deltaTime;
+
+            // Tăng tốc lũy tiến theo thời gian (Warp Boost Accel)
+            float accel = 1.0f + (_warpTimer / Mathf.Max(_warpDuration, 0.1f)) * 1.5f;
+            transform.position += _warpVelocity * (accel * Time.deltaTime);
+
+            // Mũi tàu tự xoay xuôi theo hướng thoát hiểm (không bị lộn nhào vô lý)
+            if (_warpVelocity.sqrMagnitude > 0.01f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(_warpVelocity.normalized, Vector3.up);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, 10f * Time.deltaTime);
+            }
+
+            if (_warpTimer >= _warpDuration)
+            {
+                Recycle();
+            }
+        }
+
+        private void UpdateKamikazeCharge()
+        {
+            _kamikazeTimer += Time.deltaTime;
+
+            Transform target = _kamikazeTarget != null ? _kamikazeTarget : VirtualRailAnchor.PlayerShipTransform;
+            Vector3 toPlayer = target != null ? (target.position - transform.position) : transform.forward;
+            float sqrDist = toPlayer.sqrMagnitude;
+
+            // 1. Kiểm tra va chạm trực diện với Arwing trong cự ly nguy hiểm (< 3.5m)
+            if (sqrDist <= 12.25f && target != null)
+            {
+                var shield = target.GetComponentInChildren<Shield>();
+                if (shield == null) shield = target.GetComponentInParent<Shield>();
+                if (shield != null)
+                {
+                    shield.TakeDamage(2); // Cú húc cảm tử gây 2 điểm sát thương khiên
+                }
+
+                VirtualRailCameraRig.TriggerShake(0.35f);
+                AudioManager.Instance?.PlaySFX3D(AudioSFXType.ExplosionSmall, transform.position, 1.0f);
+
+                if (_movement != null)
+                {
+                    _movement.BlowUp();
+                }
+                else
+                {
+                    Recycle();
+                }
+                return;
+            }
+
+            // 2. Điều hướng bám đuổi Arwing thời gian thực (Dynamic Homing Pursuit)
+            if (sqrDist > 0.01f)
+            {
+                Vector3 desiredDir = toPlayer.normalized;
+                Quaternion targetRot = Quaternion.LookRotation(desiredDir, Vector3.up);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, _kamikazeTurnRate * Time.deltaTime);
+            }
+
+            // 3. Lao tới với vận tốc cao theo hướng mũi tàu
+            transform.position += transform.forward * (_kamikazeSpeed * Time.deltaTime);
+
+            // 4. Quá thời gian sinh tồn (bay trượt qua người chơi ra sau lưng): Tự nổ
+            if (_kamikazeTimer >= _kamikazeDuration)
+            {
+                if (_movement != null)
+                {
+                    _movement.BlowUp();
+                }
+                else
+                {
+                    Recycle();
+                }
+            }
+        }
+
         /// <summary>
         /// Kích hoạt cơ chế giữ nguyên đội hình (Maintain Formation) khi Tàu Chỉ Huy bị hạ gục.
         /// Đội hình KHÔNG tan rã, tàu cánh tiếp tục khóa vị trí theo Anchor, lá chắn dập tắt để tạo cửa sổ sát thương.
@@ -379,7 +484,10 @@ namespace VirtualRail
         /// </summary>
         public void TriggerPanicScatter(Vector3 leaderPos, Vector3 railForward, float railSpeed)
         {
-            if (_state == WingmanState.PanicScatter) return;
+            if (_state == WingmanState.PanicScatter ||
+                _state == WingmanState.RetreatWarp ||
+                _state == WingmanState.KamikazeCharge ||
+                _state == WingmanState.FreeCombat) return;
 
             _state = WingmanState.PanicScatter;
             _panicTimer = 0f;
@@ -411,17 +519,20 @@ namespace VirtualRail
         /// </summary>
         public void TriggerRetreatWarp(Vector3 railForward, float railSpeed)
         {
-            if (_state == WingmanState.PanicScatter) return;
+            if (_state == WingmanState.RetreatWarp ||
+                _state == WingmanState.PanicScatter ||
+                _state == WingmanState.KamikazeCharge ||
+                _state == WingmanState.FreeCombat) return;
 
-            _state = WingmanState.PanicScatter;
-            _panicTimer = 0f;
-            _panicDuration = 0.8f;
+            _state = WingmanState.RetreatWarp;
+            _warpTimer = 0f;
+            _warpDuration = 0.85f;
 
             if (_health == null) _health = GetComponent<EnemyHealth>();
             if (_health != null) _health.SetShieldActive(false);
 
-            _panicVelocity = -railForward * (railSpeed + 45f) + transform.up * 15f;
-            _panicRollDir = 0f;
+            Vector3 railUp = (_formationAnchor != null) ? _formationAnchor.transform.up : Vector3.up;
+            _warpVelocity = -railForward * (railSpeed + 45f) + railUp * 18f;
 
             Debug.Log($"<color=cyan><b>[RETREAT WARP]</b></color> Tàu cánh Slot {_slotIndex} tăng tốc thoát ly khẩn cấp!");
         }
@@ -431,20 +542,22 @@ namespace VirtualRail
         /// </summary>
         public void TriggerKamikazeCharge(Transform playerTarget)
         {
-            if (_state == WingmanState.PanicScatter) return;
+            if (_state == WingmanState.KamikazeCharge ||
+                _state == WingmanState.RetreatWarp ||
+                _state == WingmanState.PanicScatter ||
+                _state == WingmanState.FreeCombat) return;
 
-            _state = WingmanState.PanicScatter;
-            _panicTimer = 0f;
-            _panicDuration = 2.5f;
+            _state = WingmanState.KamikazeCharge;
+            _kamikazeTimer = 0f;
+            _kamikazeDuration = 2.5f;
+            _kamikazeSpeed = 48f;
+            _kamikazeTurnRate = 7.5f;
+            _kamikazeTarget = playerTarget != null ? playerTarget : VirtualRailAnchor.PlayerShipTransform;
 
             if (_health == null) _health = GetComponent<EnemyHealth>();
             if (_health != null) _health.SetShieldActive(false);
 
-            Vector3 toPlayer = (playerTarget != null) ? (playerTarget.position - transform.position).normalized : -transform.forward;
-            _panicVelocity = toPlayer * 45f;
-            _panicRollDir = 1f;
-
-            Debug.Log($"<color=red><b>[KAMIKAZE CHARGE]</b></color> Tàu cánh Slot {_slotIndex} lao thẳng cảm tử vào người chơi!");
+            Debug.Log($"<color=red><b>[KAMIKAZE CHARGE]</b></color> Tàu cánh Slot {_slotIndex} khóa ngắm và lao thẳng cảm tử vào người chơi!");
         }
 
         /// <summary>
@@ -458,7 +571,11 @@ namespace VirtualRail
             Vector3 railUp,
             float railSpeed)
         {
-            if (_state == WingmanState.Exiting || _state == WingmanState.PanicScatter) return;
+            if (_state == WingmanState.Exiting ||
+                _state == WingmanState.PanicScatter ||
+                _state == WingmanState.RetreatWarp ||
+                _state == WingmanState.KamikazeCharge ||
+                _state == WingmanState.FreeCombat) return;
 
             _state = WingmanState.Exiting;
             _exitTimer = 0f;
@@ -545,6 +662,10 @@ namespace VirtualRail
             _formationAnchor = null;
             _assemblyTimer = 0f;
             _panicTimer = 0f;
+            _warpTimer = 0f;
+            _warpVelocity = Vector3.zero;
+            _kamikazeTimer = 0f;
+            _kamikazeTarget = null;
             _exitTimer = 0f;
             _exitVelocity = Vector3.zero;
             _morphFromOffset = Vector3.zero;
