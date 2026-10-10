@@ -91,5 +91,5 @@ MonoBehaviour:
   holdDistance: 70
   maxClosingSpeed: 25
   maxLifetime: 14
-  leaderDeathReaction: 4
+  leaderDeathReaction: 1
   motionProfile: {fileID: 11400000, guid: a1000001b2c3d4e5f60718293a4b0001, type: 2}
