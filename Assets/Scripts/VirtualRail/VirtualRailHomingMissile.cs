@@ -321,7 +321,7 @@ namespace VirtualRail
             }
             else
             {
-                AudioManager.Instance?.PlaySFX3D(AudioSFXType.ChargeSplash, impactPoint, 0.9f);
+                // Loại bỏ âm nổ va chạm đạn tụ lực theo yêu cầu (chỉ giữ rung chấn camera và vfx)
                 VirtualRailCameraRig.TriggerShake(0.35f);
             }
 
