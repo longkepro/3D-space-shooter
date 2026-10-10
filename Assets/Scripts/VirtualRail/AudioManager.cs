@@ -24,7 +24,8 @@ namespace VirtualRail
         RadioChirp = 15,
         GrazePass = 16,
         ChargeFire = 17,
-        BombSupply = 18
+        BombSupply = 18,
+        RingGold = 19
     }
 
     public enum BgmContext
@@ -121,6 +122,7 @@ namespace VirtualRail
         public AudioClip customGrazePass;
         public AudioClip customChargeFire;
         public AudioClip customBombSupply;
+        public AudioClip customRingGold;
 
         [Header("Stage & Boss Music Playlists (Shuffle Supported)")]
         [Tooltip("Danh sách nhạc nền cho các màn chơi thông thường (hỗ trợ xáo trộn Shuffle)")]
@@ -311,6 +313,7 @@ namespace VirtualRail
             if (customGrazePass == null) customGrazePass = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_GrazePass.ogg");
             if (customChargeFire == null) customChargeFire = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ChargeFire.ogg");
             if (customBombSupply == null) customBombSupply = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_BombSupply.ogg");
+            if (customRingGold == null) customRingGold = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_RingGold.ogg");
         }
 #endif
 
@@ -841,6 +844,8 @@ namespace VirtualRail
                     return customChargeFire != null ? customChargeFire : _proceduralClips[(int)type];
                 case AudioSFXType.BombSupply:
                     return customBombSupply != null ? customBombSupply : _proceduralClips[(int)type];
+                case AudioSFXType.RingGold:
+                    return customRingGold != null ? customRingGold : _proceduralClips[(int)type];
                 default:
                     return null;
             }
@@ -1020,6 +1025,9 @@ namespace VirtualRail
 
             // 19. Bomb Supply: High-Tech Servo Lock & Munition Chambering Fallback (0.22s)
             _proceduralClips[(int)AudioSFXType.BombSupply] = SynthesizeHiss(SAMPLE_RATE, 0.22f);
+
+            // 20. Ring Gold: Resonant Plasma Energy Influx Harmonic Chime (0.35s)
+            _proceduralClips[(int)AudioSFXType.RingGold] = SynthesizeChime(SAMPLE_RATE, 0.35f);
         }
 
         private static AudioClip SynthesizeLaser(int sampleRate, float duration, float startFreq, float endFreq, float volume)

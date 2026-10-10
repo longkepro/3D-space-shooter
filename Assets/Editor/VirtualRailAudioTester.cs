@@ -90,12 +90,13 @@ namespace VirtualRail.Editor
             audioMgr.customGrazePass = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_GrazePass.ogg");
             audioMgr.customChargeFire = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_ChargeFire.ogg");
             audioMgr.customBombSupply = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_BombSupply.ogg");
+            audioMgr.customRingGold = AssetDatabase.LoadAssetAtPath<AudioClip>($"{STUDIO_DIR}/Studio_RingGold.ogg");
 
             EditorUtility.SetDirty(audioMgr);
             EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
             EditorSceneManager.SaveOpenScenes();
 
-            Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ KÍCH HOẠT BỘ ÂM THANH PHÒNG THU (STUDIO SFX PACK):</b></color> Toàn bộ 19 hiệu ứng âm thanh đã được gán file Studio Stereo Hi-Fi từ Assets/Audio/SFX_Studio/!");
+            Debug.Log("<color=green><b>[VirtualRail Audio] ĐÃ KÍCH HOẠT BỘ ÂM THANH PHÒNG THU (STUDIO SFX PACK):</b></color> Toàn bộ 20 hiệu ứng âm thanh đã được gán file Studio Stereo Hi-Fi từ Assets/Audio/SFX_Studio/!");
         }
 
         [MenuItem("Tools/Virtual Rail/56. Audio: Revert to Procedural SFX (Hoàn Nguyên Về Âm Thanh Thủ Tục - OFF)")]
@@ -124,6 +125,7 @@ namespace VirtualRail.Editor
                 audioMgr.customGrazePass = null;
                 audioMgr.customChargeFire = null;
                 audioMgr.customBombSupply = null;
+                audioMgr.customRingGold = null;
 
                 EditorUtility.SetDirty(audioMgr);
                 EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -215,7 +217,8 @@ namespace VirtualRail.Editor
             EditorGUILayout.Space(6);
             DrawSfxCategory("TƯƠNG TÁC & GIAO DIỆN (INTERACTION)", new[]
             {
-                (AudioSFXType.RingCollect, "Nhặt vòng Ring (Ring Collect)", "Studio_RingCollect.ogg"),
+                (AudioSFXType.RingCollect, "Nhặt vòng Bạc (Silver Ring)", "Studio_RingCollect.ogg"),
+                (AudioSFXType.RingGold, "Nhặt vòng Vàng (Gold Ring)", "Studio_RingGold.ogg"),
                 (AudioSFXType.BombSupply, "Gài đạn nạp bom (Bomb Supply)", "Studio_BombSupply.ogg"),
                 (AudioSFXType.RadioChirp, "Bộ đàm radio (Radio Chirp)", "Studio_RadioChirp.ogg")
             });

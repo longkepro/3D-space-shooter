@@ -164,13 +164,14 @@ namespace VirtualRail
                     break;
 
                 case RingType.GoldRing:
-                    AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 0.95f);
+                    // Phát âm thanh hấp thụ năng lượng viễn tưởng (Gold_Capture.mp3)
+                    AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingGold, 1.0f);
                     // Nạp tiến trình nâng cấp vũ khí
                     if (VirtualRailWeapon.Instance != null)
                     {
                         VirtualRailWeapon.Instance.CollectGoldRing();
                     }
-                    Debug.Log("<color=yellow><b>[GOLD RING]</b></color> Thu thập Vòng Vàng! Tiến độ nâng cấp vũ khí +1000 PTS");
+                    Debug.Log("<color=yellow><b>[GOLD RING]</b></color> Thu thập Vòng Vàng! Hấp thụ năng lượng nâng cấp laser +1000 PTS");
                     break;
 
                 case RingType.BombSupply:
