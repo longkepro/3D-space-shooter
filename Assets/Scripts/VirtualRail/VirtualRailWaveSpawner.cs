@@ -132,6 +132,14 @@ namespace VirtualRail
             }
         }
 
+        /// <summary>
+        /// Điều chỉnh tốc độ đạn quái vật phục vụ thuật toán DDA (Dynamic Difficulty Adjustment).
+        /// </summary>
+        public void SetStageBulletSpeed(float bulletSpeed)
+        {
+            _stageBulletSpeed = bulletSpeed;
+        }
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -735,6 +743,14 @@ namespace VirtualRail
         /// </summary>
         public bool SpawnScriptedFormation(FormationPattern pattern, float customLeadDist = -1f, float overrideAssemblyTime = -1f)
         {
+            return SpawnScriptedFormation(pattern, default, customLeadDist, overrideAssemblyTime);
+        }
+
+        /// <summary>
+        /// Kích hoạt một đợt bay đội hình theo Mẫu Data-Driven FormationPattern kèm tham số tùy biến (Endless DDA).
+        /// </summary>
+        public bool SpawnScriptedFormation(FormationPattern pattern, VirtualFormationAnchor.FormationCustomizationParams customParams, float customLeadDist = -1f, float overrideAssemblyTime = -1f)
+        {
             if (pattern == null || pattern.slots == null || pattern.slots.Length == 0) return false;
             if (anchor == null) anchor = VirtualRailAnchor.Instance;
             if (anchor == null) return false;
@@ -751,7 +767,11 @@ namespace VirtualRail
             for (int i = 0; i < neededCount; i++)
             {
                 var slot = pattern.slots[i];
-                EnemyMovement enemy = GetAvailableEnemyByArchetype(slot.preferredArchetype);
+                EnemyArchetype targetArch = (customParams.archetypeOverride.HasValue && !slot.isLeader)
+                    ? customParams.archetypeOverride.Value
+                    : slot.preferredArchetype;
+
+                EnemyMovement enemy = GetAvailableEnemyByArchetype(targetArch);
                 if (enemy == null) enemy = GetAvailableEnemy();
                 if (enemy != null && !enemies.Contains(enemy))
                 {
@@ -785,7 +805,7 @@ namespace VirtualRail
             _currentWaveMaxLifetime = pattern.maxLifetime > 1f ? pattern.maxLifetime : 14f;
             _isCurrentWaveTracking = true;
 
-            availableAnchor.InitializeFormation(pattern, anchor, startPos, enemies, overrideAssemblyTime);
+            availableAnchor.InitializeFormation(pattern, anchor, startPos, enemies, customParams, overrideAssemblyTime);
             return true;
         }
 

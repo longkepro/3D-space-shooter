@@ -17,7 +17,8 @@ MonoBehaviour:
   stageSubtitle: SECTOR ALPHA - INITIALIZE
   stageIndex: 1
   progressionSettings:
-    completionMode: 1
+    completionMode: 5
+    isEndlessSurvival: 1
     durationMinutes: 4.5
     targetDistanceZ: 34680
     baseForwardSpeed: 120
@@ -52,8 +53,8 @@ MonoBehaviour:
     - {fileID: 873890533011206334, guid: b4d0c8f23a565e90b123456789abcdef, type: 3}
     enablePeriodicWaves: 0
     waveInterval: 0
-    spawnLeadDistance: 220
-    formationIntervalWaves: 3
+    spawnLeadDistance: 280
+    formationIntervalWaves: 1
     enemyClosingSpeed: 20
     enemyHoldDistance: 60
     allowedVectors: 0000000001000000020000000300000004000000
@@ -71,6 +72,52 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 46c6ccceb7f04404ac8d528337d5273d, type: 2}
     - {fileID: 11400000, guid: 9b79e84d3e9e47e6908ca1f9bae79ae3, type: 2}
     - {fileID: 11400000, guid: 2ad9b613086c4ceab8b832af4c7c2af5, type: 2}
+    - {fileID: 11400000, guid: b1000001c2d3e4f5061728394a5b0001, type: 2}
+    - {fileID: 11400000, guid: b1000002c2d3e4f5061728394a5b0002, type: 2}
+    - {fileID: 11400000, guid: b1000003c2d3e4f5061728394a5b0003, type: 2}
+    - {fileID: 11400000, guid: b1000004c2d3e4f5061728394a5b0004, type: 2}
+    - {fileID: 11400000, guid: b1000005c2d3e4f5061728394a5b0005, type: 2}
+    - {fileID: 11400000, guid: b1000006c2d3e4f5061728394a5b0006, type: 2}
+    - {fileID: 11400000, guid: b1000007c2d3e4f5061728394a5b0007, type: 2}
+    - {fileID: 11400000, guid: b1000008c2d3e4f5061728394a5b0008, type: 2}
+    - {fileID: 11400000, guid: b1000009c2d3e4f5061728394a5b0009, type: 2}
+    - {fileID: 11400000, guid: b1000010c2d3e4f5061728394a5b0010, type: 2}
+    - {fileID: 11400000, guid: b1000011c2d3e4f5061728394a5b0011, type: 2}
+    - {fileID: 11400000, guid: b1000012c2d3e4f5061728394a5b0012, type: 2}
+    - {fileID: 11400000, guid: b1000013c2d3e4f5061728394a5b0013, type: 2}
+    - {fileID: 11400000, guid: b1000014c2d3e4f5061728394a5b0014, type: 2}
+    - {fileID: 11400000, guid: b1000015c2d3e4f5061728394a5b0015, type: 2}
+    - {fileID: 11400000, guid: b1000016c2d3e4f5061728394a5b0016, type: 2}
+    - {fileID: 11400000, guid: b1000017c2d3e4f5061728394a5b0017, type: 2}
+    - {fileID: 11400000, guid: b1000018c2d3e4f5061728394a5b0018, type: 2}
+    - {fileID: 11400000, guid: b1000019c2d3e4f5061728394a5b0019, type: 2}
+    - {fileID: 11400000, guid: b1000020c2d3e4f5061728394a5b0020, type: 2}
+    - {fileID: 11400000, guid: c1000001d2e3f405162738495a6b0001, type: 2}
+    - {fileID: 11400000, guid: c1000002d2e3f405162738495a6b0002, type: 2}
+    - {fileID: 11400000, guid: c1000003d2e3f405162738495a6b0003, type: 2}
+    - {fileID: 11400000, guid: c1000004d2e3f405162738495a6b0004, type: 2}
+    - {fileID: 11400000, guid: c1000005d2e3f405162738495a6b0005, type: 2}
+    - {fileID: 11400000, guid: c1000006d2e3f405162738495a6b0006, type: 2}
+    - {fileID: 11400000, guid: c1000007d2e3f405162738495a6b0007, type: 2}
+    - {fileID: 11400000, guid: c1000008d2e3f405162738495a6b0008, type: 2}
+    - {fileID: 11400000, guid: c1000009d2e3f405162738495a6b0009, type: 2}
+    - {fileID: 11400000, guid: c1000010d2e3f405162738495a6b0010, type: 2}
+    - {fileID: 11400000, guid: c1000011d2e3f405162738495a6b0011, type: 2}
+    - {fileID: 11400000, guid: c1000012d2e3f405162738495a6b0012, type: 2}
+    - {fileID: 11400000, guid: c1000013d2e3f405162738495a6b0013, type: 2}
+    - {fileID: 11400000, guid: c1000014d2e3f405162738495a6b0014, type: 2}
+    - {fileID: 11400000, guid: c1000015d2e3f405162738495a6b0015, type: 2}
+    - {fileID: 11400000, guid: c1000016d2e3f405162738495a6b0016, type: 2}
+    - {fileID: 11400000, guid: c1000017d2e3f405162738495a6b0017, type: 2}
+    - {fileID: 11400000, guid: c1000018d2e3f405162738495a6b0018, type: 2}
+    - {fileID: 11400000, guid: c1000019d2e3f405162738495a6b0019, type: 2}
+    - {fileID: 11400000, guid: c1000020d2e3f405162738495a6b0020, type: 2}
+    - {fileID: 11400000, guid: c1000021d2e3f405162738495a6b0021, type: 2}
+    - {fileID: 11400000, guid: c1000022d2e3f405162738495a6b0022, type: 2}
+    - {fileID: 11400000, guid: c1000023d2e3f405162738495a6b0023, type: 2}
+    - {fileID: 11400000, guid: c1000024d2e3f405162738495a6b0024, type: 2}
+    - {fileID: 11400000, guid: c1000025d2e3f405162738495a6b0025, type: 2}
+    - {fileID: 11400000, guid: c1000026d2e3f405162738495a6b0026, type: 2}
   hazardSettings:
     enableAsteroids: 1
     indestructibleChance: 0.2

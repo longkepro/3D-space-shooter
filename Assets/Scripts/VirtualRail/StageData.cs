@@ -9,7 +9,8 @@ namespace VirtualRail
         TimeDuration = 1,        // Hoàn thành theo thời lượng thực tế (phút)
         EliminationQuota = 2,    // Tiêu diệt đủ số lượng quái chỉ định
         DefeatBoss = 3,          // Chỉ hoàn thành khi Boss bị tiêu diệt
-        SurvivalUntilBoss = 4    // Hết thời gian/cự ly -> Chuyển sang kích hoạt trận đấu Boss
+        SurvivalUntilBoss = 4,   // Hết thời gian/cự ly -> Chuyển sang kích hoạt trận đấu Boss
+        EndlessSurvival = 5      // Chế độ Sinh tồn Vô Hạn (Endless Survival Mode)
     }
 
     public enum TimelineTriggerMode
@@ -46,8 +47,13 @@ namespace VirtualRail
     [Serializable]
     public struct StageProgressionSettings
     {
-        [Tooltip("Chế độ hoàn thành màn chơi (Thời gian, Cự ly, Diệt quái, Diệt Boss)")]
+        [Tooltip("Chế độ hoàn thành màn chơi (Thời gian, Cự ly, Diệt quái, Diệt Boss, Vô hạn)")]
         public StageCompletionMode completionMode;
+
+        [Tooltip("Bật chế độ Sinh tồn Vô hạn (Endless Survival Mode) cho màn chơi này")]
+        public bool isEndlessSurvival;
+
+        public bool IsEndlessMode => completionMode == StageCompletionMode.EndlessSurvival || isEndlessSurvival;
 
         [Range(0.5f, 60.0f)]
         [Tooltip("Thời lượng màn chơi tính theo PHÚT (VD: 15.0 cho màn 15 phút)")]

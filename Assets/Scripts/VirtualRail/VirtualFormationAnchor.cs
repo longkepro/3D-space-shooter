@@ -13,6 +13,27 @@ namespace VirtualRail
     /// </summary>
     public class VirtualFormationAnchor : MonoBehaviour, IPoolableEntity
     {
+        [Serializable]
+        public struct FormationCustomizationParams
+        {
+            public float spreadMultiplier;            // Dãn cách X, Y: kẹp an toàn [0.75, 1.4]
+            public bool mirrorHorizontal;             // Đảo ngược trục X (X -> -X)
+            public EnemyArchetype? archetypeOverride; // Nâng cấp loại quái toàn đội
+            public FormationMotionProfile motionProfileOverride; // Hoán đổi quỹ đạo bay
+            public FormationEntryStyle? entryStyleOverride;      // Hoán đổi kiểu xuất hiện
+            public LeaderDeathReaction? reactionOverride;        // Ghi đè phản ứng mất sếp (Kamikaze Charge)
+
+            public static FormationCustomizationParams Default => new FormationCustomizationParams
+            {
+                spreadMultiplier = 1.0f,
+                mirrorHorizontal = false,
+                archetypeOverride = null,
+                motionProfileOverride = null,
+                entryStyleOverride = null,
+                reactionOverride = null
+            };
+        }
+
         public enum FormationType
         {
             WedgeV = 0,       // Đội hình chữ V chuẩn Star Fox (5 tàu)
@@ -31,6 +52,7 @@ namespace VirtualRail
         private readonly List<FormationWingman> _activeWingmen = new List<FormationWingman>();
         private FormationWingman _leader;
         private FormationPattern _activePattern = null;
+        private FormationCustomizationParams _activeCustomParams = FormationCustomizationParams.Default;
         private float _lifetimeTimer = 0f;
         private float _maxFormationLifetime = 12f;
         private bool _isLeaderKilled = false;
@@ -80,6 +102,18 @@ namespace VirtualRail
                     float ry = slotLocalOffset.x * sinA + slotLocalOffset.y * cosA;
                     effectiveOffset = new Vector3(rx, ry, slotLocalOffset.z);
                 }
+            }
+
+            // Tùy biến Dãn cách (Spread) và Đảo gương (Mirror) động theo DDA
+            if (_activeCustomParams.spreadMultiplier > 0.01f && Mathf.Abs(_activeCustomParams.spreadMultiplier - 1.0f) > 0.001f)
+            {
+                effectiveOffset.x *= _activeCustomParams.spreadMultiplier;
+                effectiveOffset.y *= _activeCustomParams.spreadMultiplier;
+            }
+
+            if (_activeCustomParams.mirrorHorizontal)
+            {
+                effectiveOffset.x = -effectiveOffset.x;
             }
 
             if (_railAnchor != null)
@@ -211,6 +245,17 @@ namespace VirtualRail
             List<EnemyMovement> assignedEnemies,
             float overrideAssemblyTime = -1f)
         {
+            InitializeFormation(pattern, railAnchor, anchorStartPosition, assignedEnemies, FormationCustomizationParams.Default, overrideAssemblyTime);
+        }
+
+        public void InitializeFormation(
+            FormationPattern pattern,
+            VirtualRailAnchor railAnchor,
+            Vector3 anchorStartPosition,
+            List<EnemyMovement> assignedEnemies,
+            FormationCustomizationParams customParams,
+            float overrideAssemblyTime = -1f)
+        {
             if (pattern == null || pattern.slots == null || pattern.slots.Length == 0)
             {
                 InitializeFormation(FormationType.WedgeV, railAnchor, anchorStartPosition, assignedEnemies, 1.2f);
@@ -218,6 +263,7 @@ namespace VirtualRail
             }
 
             _activePattern = pattern;
+            _activeCustomParams = customParams;
             _railAnchor = railAnchor != null ? railAnchor : VirtualRailAnchor.Instance;
             _assemblyTime = overrideAssemblyTime >= 0f ? overrideAssemblyTime : pattern.assemblyTime;
             _swaySpeed = pattern.swaySpeed;
@@ -240,7 +286,10 @@ namespace VirtualRail
             transform.rotation = Quaternion.LookRotation(-_railAnchor.ForwardTangent);
 
             int countToAssign = Mathf.Min(pattern.slots.Length, assignedEnemies.Count);
-            FormationEntryStyle entryStyle = pattern.entryStyle;
+            FormationEntryStyle entryStyle = customParams.entryStyleOverride.HasValue
+                ? customParams.entryStyleOverride.Value
+                : pattern.entryStyle;
+
             Vector3 railUp = _railAnchor.transform.up;
             Vector3 railRight = _railAnchor.transform.right;
             Vector3 railFwd = _railAnchor.ForwardTangent;
@@ -269,10 +318,14 @@ namespace VirtualRail
                 float scale = slotDef.scaleMultiplier > 0.01f ? slotDef.scaleMultiplier : 1.0f;
                 enemy.transform.localScale = Vector3.one * scale;
 
-                // Áp dụng Archetype chỉ định cho slot nếu có
-                if (slotDef.preferredArchetype != EnemyArchetype.Scout || isLeader)
+                // Áp dụng Archetype chỉ định cho slot hoặc override theo DDA
+                EnemyArchetype targetArch = (customParams.archetypeOverride.HasValue && !isLeader)
+                    ? customParams.archetypeOverride.Value
+                    : slotDef.preferredArchetype;
+
+                if (targetArch != EnemyArchetype.Scout || isLeader)
                 {
-                    enemy.ApplyArchetype(EnemyData.CreateDefaultPreset(slotDef.preferredArchetype));
+                    enemy.ApplyArchetype(EnemyData.CreateDefaultPreset(targetArch));
                 }
 
                 // Điểm xuất phát tính theo FormationEntryStyle
@@ -385,7 +438,9 @@ namespace VirtualRail
             _baseRayPosition += _railAnchor.ForwardTangent * (actualSpeed * Time.deltaTime);
 
             // 2. Chuyển động uốn lượn / quỹ đạo độc lập thông qua FormationMotionEvaluator (0 GC Alloc)
-            FormationMotionProfile profile = (_activePattern != null) ? _activePattern.motionProfile : null;
+            FormationMotionProfile profile = _activeCustomParams.motionProfileOverride != null 
+                ? _activeCustomParams.motionProfileOverride 
+                : ((_activePattern != null) ? _activePattern.motionProfile : null);
             FormationMotionEvaluator.Evaluate(
                 profile,
                 _lifetimeTimer,
@@ -512,7 +567,9 @@ namespace VirtualRail
             {
                 _isLeaderKilled = true;
                 _isMorphing = false;
-                LeaderDeathReaction reaction = (_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.BreakShieldAndEngage;
+                LeaderDeathReaction reaction = _activeCustomParams.reactionOverride.HasValue
+                    ? _activeCustomParams.reactionOverride.Value
+                    : ((_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.BreakShieldAndEngage);
 
                 if (reaction == LeaderDeathReaction.MaintainFormation)
                 {
@@ -547,7 +604,9 @@ namespace VirtualRail
         /// </summary>
         private void TriggerLeaderDestroyed(Vector3 leaderPos)
         {
-            LeaderDeathReaction reaction = (_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.BreakShieldAndEngage;
+            LeaderDeathReaction reaction = _activeCustomParams.reactionOverride.HasValue
+                ? _activeCustomParams.reactionOverride.Value
+                : ((_activePattern != null) ? _activePattern.leaderDeathReaction : LeaderDeathReaction.BreakShieldAndEngage);
             Debug.Log($"<color=red><b>[LEADER KILLED!]</b></color> Chỉ huy Slot 0 đã bị tiêu diệt! Toàn bộ phi đội thực hiện phản ứng: {reaction}!");
 
             Vector3 railFwd = (_railAnchor != null) ? _railAnchor.ForwardTangent : Vector3.forward;

@@ -52,6 +52,11 @@ public class EnemyAttack : MonoBehaviour
         _burstRemaining = 0;
     }
 
+    public void SetBulletSpeedOverride(float speed)
+    {
+        _bulletSpeedOverride = speed;
+    }
+
     private void Update()
     {
         if (!TargetPlayer()) return;

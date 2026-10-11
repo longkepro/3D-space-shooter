@@ -84,6 +84,12 @@ namespace VirtualRail
                 var stage = CurrentStageData;
                 if (stage == null || anchor == null) return 0f;
 
+                if (stage.progressionSettings.IsEndlessMode)
+                {
+                    var endless = GetComponent<VirtualRailEndlessDirector>();
+                    return endless != null ? endless.ThreatLevelProgress01 : Mathf.Repeat(_stageTimer / 45f, 1f);
+                }
+
                 if (stage.progressionSettings.completionMode == StageCompletionMode.TimeDuration)
                 {
                     float targetSec = stage.GetTargetDurationSeconds();
@@ -350,6 +356,11 @@ namespace VirtualRail
                 Destroy(_activeBossInstance);
                 _activeBossInstance = null;
             }
+            var endlessDirector = GetComponent<VirtualRailEndlessDirector>();
+            if (endlessDirector != null)
+            {
+                endlessDirector.StopEndlessSession();
+            }
         }
 
         /// <summary>
@@ -428,6 +439,25 @@ namespace VirtualRail
                 _stagePaletteApplied = false;
             }
 
+            // 3.1. Kích hoạt VirtualRailEndlessDirector nếu đang chạy Endless Survival
+            var endlessDirector = GetComponent<VirtualRailEndlessDirector>();
+            if (stage.progressionSettings.IsEndlessMode)
+            {
+                if (endlessDirector == null)
+                {
+                    endlessDirector = gameObject.AddComponent<VirtualRailEndlessDirector>();
+                }
+                endlessDirector.enabled = true;
+                endlessDirector.InitializeEndlessSession(stage, anchor, waveSpawner, asteroidSpawner, this);
+            }
+            else
+            {
+                if (endlessDirector != null)
+                {
+                    endlessDirector.enabled = false;
+                }
+            }
+
             // 4. Áp dụng Thiên thạch & Chướng ngại vật
             if (asteroidSpawner != null)
             {
@@ -496,12 +526,20 @@ namespace VirtualRail
             switch (currentState)
             {
                 case StageState.InJourney:
-                    if (!_isWaveGated)
+                    if (CurrentStageData != null && CurrentStageData.progressionSettings.IsEndlessMode)
                     {
-                        _stageTimer += dt;
+                        // Endless Survival Mode: Được điều phối 100% độc quyền bởi VirtualRailEndlessDirector
+                        // Không chạy timeline tĩnh và không trigger Climax
                     }
-                    ProcessTimelineEvents(dt);
-                    UpdateJourneyState();
+                    else
+                    {
+                        if (!_isWaveGated)
+                        {
+                            _stageTimer += dt;
+                        }
+                        ProcessTimelineEvents(dt);
+                        UpdateJourneyState();
+                    }
                     break;
 
                 case StageState.Climax:
@@ -643,6 +681,7 @@ namespace VirtualRail
         {
             StageData stage = CurrentStageData;
             if (stage == null) return;
+            if (stage.progressionSettings.IsEndlessMode) return;
 
             bool reachedEnd = false;
             switch (stage.progressionSettings.completionMode)
