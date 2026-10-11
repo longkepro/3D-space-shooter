@@ -136,11 +136,11 @@ namespace VirtualRail
 
             if (other.CompareTag("Player") || other.GetComponentInParent<VirtualRailShip>() != null)
             {
-                Collect();
+                Collect(other);
             }
         }
 
-        public void Collect()
+        public void Collect(Collider collector = null)
         {
             if (_isCollected) return;
             _isCollected = true;
@@ -155,8 +155,20 @@ namespace VirtualRail
                 case RingType.SilverRing:
                     AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 0.95f);
                     // Hồi phục 25% Khiên
-                    var shield = other.GetComponentInParent<Shield>();
-                    if (shield == null) shield = other.GetComponentInChildren<Shield>();
+                    Shield shield = null;
+                    if (collector != null)
+                    {
+                        shield = collector.GetComponentInParent<Shield>();
+                        if (shield == null) shield = collector.GetComponentInChildren<Shield>();
+                    }
+                    if (shield == null)
+                    {
+                        var playerObj = VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform.gameObject : GameObject.FindGameObjectWithTag("Player");
+                        if (playerObj != null)
+                        {
+                            shield = playerObj.GetComponentInChildren<Shield>();
+                        }
+                    }
                     if (shield != null)
                     {
                         shield.Heal(3); // 3/10 ~ 30% máu

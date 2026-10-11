@@ -391,19 +391,39 @@ namespace VirtualRail
 
                 // Lấy entity chính (EnemyHealth hoặc EnemyMovement hoặc Asteroid)
                 var eh = c.GetComponentInParent<EnemyHealth>();
-                if (eh != null && eh.IsDead) continue;
+                if (eh != null && eh.IsDead)
+                {
+                    _scanColliders[i] = null;
+                    continue;
+                }
 
-                var em = c.GetComponentInParent<EnemyMovement>();
-                Transform enemyT = (eh != null) ? eh.transform : ((em != null) ? em.transform : c.transform.root);
-                if (enemyT == null || !enemyT.gameObject.activeInHierarchy) continue;
+                Transform enemyT;
+                if (eh != null)
+                {
+                    enemyT = eh.transform;
+                }
+                else
+                {
+                    var em = c.GetComponentInParent<EnemyMovement>();
+                    enemyT = (em != null) ? em.transform : c.transform.root;
+                }
+
+                if (enemyT == null || !enemyT.gameObject.activeInHierarchy)
+                {
+                    _scanColliders[i] = null;
+                    continue;
+                }
 
                 Vector3 enemyPos = enemyT.position;
                 Vector3 toEnemy = enemyPos - shipPos;
                 float dist = toEnemy.magnitude;
 
                 // Đảm bảo mục tiêu ở phía trước tàu theo trục tiến và trong tầm tối đa
-                if (dist < 5f || dist > cfg.lockMaxDistance) continue;
-                if (Vector3.Dot(toEnemy, railFwd) <= 1.0f) continue;
+                if (dist < 5f || dist > cfg.lockMaxDistance || Vector3.Dot(toEnemy, railFwd) <= 1.0f)
+                {
+                    _scanColliders[i] = null;
+                    continue;
+                }
 
                 // Tính góc giữa tia ngắm của Camera/Reticle và vị trí kẻ địch (Chuẩn Star Fox 64 View-Frustum Lock)
                 Vector3 toEnemyFromCam = (enemyPos - camPos).normalized;
@@ -414,6 +434,7 @@ namespace VirtualRail
                     bestCos = cosTheta;
                     bestTarget = enemyT;
                 }
+                _scanColliders[i] = null;
             }
 
             if (bestTarget != null)
@@ -601,6 +622,7 @@ namespace VirtualRail
                 {
                     ast.TakeDamage(100, ast.transform.position);
                 }
+                _scanColliders[i] = null;
             }
             if (killCount > 0 && ComboScoringEngine.Instance != null)
             {

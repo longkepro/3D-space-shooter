@@ -356,8 +356,15 @@ namespace VirtualRail
                     if (h.distance < closestDist)
                     {
                         closestDist = h.distance;
-                        var enemy = h.transform.GetComponentInParent<EnemyMovement>();
-                        dynamicTarget = enemy != null ? enemy.transform.position : h.point;
+                        if (h.transform.CompareTag("Enemy"))
+                        {
+                            dynamicTarget = h.transform.position;
+                        }
+                        else
+                        {
+                            var enemy = h.transform.GetComponentInParent<EnemyMovement>();
+                            dynamicTarget = enemy != null ? enemy.transform.position : h.point;
+                        }
                         foundTarget = true;
                     }
                 }

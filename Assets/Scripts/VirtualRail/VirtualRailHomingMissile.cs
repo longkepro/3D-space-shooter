@@ -31,6 +31,7 @@ namespace VirtualRail
         private float _age = 0f;
         private Vector3 _lastKnownPosition;
         private bool _hasTarget = false;
+        private EnemyHealth _cachedTargetHealth;
         private bool _isDetonated = false;
         private Vector3 _prevTargetPos;
         private bool _hasPrevTargetPos = false;
@@ -47,6 +48,7 @@ namespace VirtualRail
             _cachedConfig = cfg;
             target = lockedTarget;
             _hasTarget = (target != null);
+            _cachedTargetHealth = lockedTarget != null ? lockedTarget.GetComponentInParent<EnemyHealth>() : null;
 
             if (_hasTarget)
             {
@@ -73,6 +75,7 @@ namespace VirtualRail
             _isDetonated = false;
             _age = 0f;
             _hasPrevTargetPos = false;
+            _cachedTargetHealth = null;
 
             if (_trail == null) _trail = GetComponentInChildren<TrailRenderer>(true);
             if (_trail != null)
@@ -100,6 +103,7 @@ namespace VirtualRail
         public void Recycle()
         {
             _isDetonated = true;
+            _cachedTargetHealth = null;
             if (_trail != null)
             {
                 _trail.Clear();
@@ -157,8 +161,8 @@ namespace VirtualRail
 
             if (target != null && target.gameObject.activeInHierarchy)
             {
-                var eh = target.GetComponentInParent<EnemyHealth>();
-                if (eh == null || !eh.IsDead)
+                if (_cachedTargetHealth == null) _cachedTargetHealth = target.GetComponentInParent<EnemyHealth>();
+                if (_cachedTargetHealth == null || !_cachedTargetHealth.IsDead)
                 {
                     targetValid = true;
                     _lastKnownPosition = target.position;
@@ -257,9 +261,16 @@ namespace VirtualRail
                     // Bỏ qua thân tàu người chơi
                     if (col.CompareTag("Player") || col.transform.root == transform.root) continue;
 
-                    if (col.CompareTag("Enemy") || col.GetComponentInParent<EnemyHealth>() != null ||
-                        col.GetComponentInParent<EnemyMovement>() != null || col.GetComponentInParent<Asteroid>() != null ||
-                        (target != null && (col.transform == target || col.transform.IsChildOf(target))))
+                    bool isTargetOrEnemy = (target != null && (col.transform == target || col.transform.IsChildOf(target))) ||
+                                           col.CompareTag("Enemy") || col.CompareTag("Asteroid");
+                    if (!isTargetOrEnemy)
+                    {
+                        isTargetOrEnemy = col.GetComponentInParent<EnemyHealth>() != null ||
+                                          col.GetComponentInParent<EnemyMovement>() != null ||
+                                          col.GetComponentInParent<Asteroid>() != null;
+                    }
+
+                    if (isTargetOrEnemy)
                     {
                         transform.position = hit.point;
                         Detonate();

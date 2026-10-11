@@ -57,6 +57,7 @@ namespace VirtualRail
 
         // Kamikaze Charge pursuit kinematics state
         private Transform _kamikazeTarget;
+        private Shield _kamikazeTargetShield;
         private float _kamikazeTimer = 0f;
         private float _kamikazeDuration = 3.2f;
         private float _kamikazeTelegraphDuration = 0.45f;
@@ -466,8 +467,7 @@ namespace VirtualRail
             // 2. Kiểm tra va chạm trực diện với Arwing trong cự ly nguy hiểm (< 3.0m)
             if (sqrDist <= 9.0f && target != null)
             {
-                var shield = target.GetComponentInChildren<Shield>();
-                if (shield == null) shield = target.GetComponentInParent<Shield>();
+                var shield = _kamikazeTargetShield != null ? _kamikazeTargetShield : (target.GetComponentInChildren<Shield>() ?? target.GetComponentInParent<Shield>());
                 if (shield != null)
                 {
                     shield.TakeDamage(2); // Cú húc cảm tử gây 2 điểm sát thương khiên
@@ -678,6 +678,7 @@ namespace VirtualRail
             _kamikazeTelegraphDuration = 0.45f;
             _kamikazeTurnRate = 2.8f;
             _kamikazeTarget = playerTarget != null ? playerTarget : VirtualRailAnchor.PlayerShipTransform;
+            _kamikazeTargetShield = _kamikazeTarget != null ? (_kamikazeTarget.GetComponentInChildren<Shield>() ?? _kamikazeTarget.GetComponentInParent<Shield>()) : null;
 
             var rail = VirtualRailAnchor.Instance;
             _railForwardCached = (rail != null) ? rail.ForwardTangent : Vector3.forward;
@@ -795,6 +796,7 @@ namespace VirtualRail
             _warpVelocity = Vector3.zero;
             _kamikazeTimer = 0f;
             _kamikazeTarget = null;
+            _kamikazeTargetShield = null;
             _railForwardCached = Vector3.forward;
             _railSpeedCached = 30f;
             _exitTimer = 0f;
