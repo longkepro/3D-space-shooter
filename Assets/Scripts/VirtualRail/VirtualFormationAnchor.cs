@@ -22,6 +22,9 @@ namespace VirtualRail
             public FormationMotionProfile motionProfileOverride; // Hoán đổi quỹ đạo bay
             public FormationEntryStyle? entryStyleOverride;      // Hoán đổi kiểu xuất hiện
             public LeaderDeathReaction? reactionOverride;        // Ghi đè phản ứng mất sếp (Kamikaze Charge)
+            public FormationPattern morphTargetOverride;         // Đội hình đích biến hình chuyển tiếp
+            public float morphDelay;                             // Thời gian chờ trước khi biến hình
+            public float morphDuration;                          // Thời gian lướt đổi slot
 
             public static FormationCustomizationParams Default => new FormationCustomizationParams
             {
@@ -30,7 +33,10 @@ namespace VirtualRail
                 archetypeOverride = null,
                 motionProfileOverride = null,
                 entryStyleOverride = null,
-                reactionOverride = null
+                reactionOverride = null,
+                morphTargetOverride = null,
+                morphDelay = 4.0f,
+                morphDuration = 1.8f
             };
         }
 
@@ -483,12 +489,24 @@ namespace VirtualRail
 
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, 8f * Time.deltaTime);
 
-            // 3. Tự động kích hoạt biến hình đội hình (Dynamic Formation Morphing) nếu Pattern có cấu hình
-            if (_activePattern != null && _activePattern.nextMorphPattern != null && !_hasMorphed && !_isMorphing)
+            // 3. Tự động kích hoạt biến hình đội hình (Dynamic Formation Morphing)
+            FormationPattern nextPattern = _activeCustomParams.morphTargetOverride != null
+                ? _activeCustomParams.morphTargetOverride
+                : ((_activePattern != null) ? _activePattern.nextMorphPattern : null);
+
+            float delay = _activeCustomParams.morphDelay > 0.1f
+                ? _activeCustomParams.morphDelay
+                : ((_activePattern != null) ? _activePattern.morphDelay : 4.0f);
+
+            float dur = _activeCustomParams.morphDuration > 0.1f
+                ? _activeCustomParams.morphDuration
+                : ((_activePattern != null) ? _activePattern.morphDuration : 1.8f);
+
+            if (nextPattern != null && !_hasMorphed && !_isMorphing)
             {
-                if (_lifetimeTimer >= _activePattern.morphDelay)
+                if (_lifetimeTimer >= delay)
                 {
-                    StartMorphing(_activePattern.nextMorphPattern, _activePattern.morphDuration);
+                    StartMorphing(nextPattern, dur);
                 }
             }
 

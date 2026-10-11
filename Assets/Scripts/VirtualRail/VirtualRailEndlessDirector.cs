@@ -316,11 +316,47 @@ namespace VirtualRail
                 archOverride = (_currentWaveIndex % 2 == 0) ? EnemyArchetype.ShieldBearer : EnemyArchetype.Interceptor;
             }
 
-            // Phản ứng mất chỉ huy: Ở Threat Level 3+, 50% số đợt kích hoạt Kamikaze Charge
-            LeaderDeathReaction? reactOverride = null;
-            if (_threatLevel >= 3 && (_currentWaveIndex % 2 == 0))
+            // 4. Cơ chế Biến hình Đội hình (Dynamic Formation Morphing):
+            // 50% số đợt (các đợt lẻ) tự động kích hoạt biến hình sang mẫu kế tiếp sau 4 giây giao chiến
+            FormationPattern morphTarget = null;
+            float morphDelay = 4.0f;
+            float morphDuration = 1.8f;
+
+            if (_formationPool != null && _formationPool.Length > 1 && (_currentWaveIndex % 2 == 1))
             {
-                reactOverride = LeaderDeathReaction.KamikazeCharge;
+                int targetIdx = (_patternPoolIndex + 1) % _formationPool.Length;
+                morphTarget = _formationPool[targetIdx];
+            }
+
+            // 5. Phản ứng mất chỉ huy (Leader Death Reaction):
+            // Tỉ lệ MaintainFormation (Giữ vững đội hình kỷ luật thép) chiếm ĐA SỐ ÁP ĐẢO (60% tổng số đợt),
+            // cao hơn rõ rệt so với mọi cơ chế riêng lẻ khác (Kamikaze ~10-20%, BreakShield 10%, Panic 10%, Retreat 10%).
+            LeaderDeathReaction reactOverride;
+            int reactionCycle = _currentWaveIndex % 10;
+
+            switch (reactionCycle)
+            {
+                case 2:
+                    reactOverride = (_threatLevel >= 3) ? LeaderDeathReaction.KamikazeCharge : LeaderDeathReaction.BreakShieldAndEngage;
+                    break;
+                case 4:
+                    reactOverride = LeaderDeathReaction.BreakShieldAndEngage;
+                    break;
+                case 6:
+                    reactOverride = LeaderDeathReaction.PanicScatter;
+                    break;
+                case 8:
+                    reactOverride = (_threatLevel >= 3) ? LeaderDeathReaction.KamikazeCharge : LeaderDeathReaction.RetreatWarp;
+                    break;
+                case 0:
+                case 1:
+                case 3:
+                case 5:
+                case 7:
+                case 9:
+                default:
+                    reactOverride = LeaderDeathReaction.MaintainFormation; // 60% tỉ lệ
+                    break;
             }
 
             return new VirtualFormationAnchor.FormationCustomizationParams
@@ -330,7 +366,10 @@ namespace VirtualRail
                 archetypeOverride = archOverride,
                 motionProfileOverride = null,
                 entryStyleOverride = null,
-                reactionOverride = reactOverride
+                reactionOverride = reactOverride,
+                morphTargetOverride = morphTarget,
+                morphDelay = morphDelay,
+                morphDuration = morphDuration
             };
         }
 
