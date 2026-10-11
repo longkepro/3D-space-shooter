@@ -136,6 +136,7 @@ namespace VirtualRail
         public static event Action<StageData> OnStageClimaxReached;
         public static event Action<StageData, StageData> OnWarpTransitionStarted;
         public static event Action OnAllStagesCompleted;
+        public static event Action<string, string, float> OnRadioTransmission;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoEnsureDirectorInstance()
@@ -614,14 +615,16 @@ namespace VirtualRail
             switch (evt.eventType)
             {
                 case StageTimelineEventType.RadioTransmission:
+                    float duration = evt.messageDuration > 0.5f ? evt.messageDuration : 3.5f;
                     if (notificationUI != null)
                     {
-                        notificationUI.ShowNotification(evt.messageTitle, evt.messageSubtitle, evt.messageDuration > 0.5f ? evt.messageDuration : 3.5f);
+                        notificationUI.ShowNotification(evt.messageTitle, evt.messageSubtitle, duration);
                     }
                     if (AudioManager.Instance != null)
                     {
                         AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 0.75f);
                     }
+                    OnRadioTransmission?.Invoke(evt.messageTitle, evt.messageSubtitle, duration);
                     break;
 
                 case StageTimelineEventType.EnvironmentShift:
@@ -1004,6 +1007,18 @@ namespace VirtualRail
             {
                 spaceDust.SetDustSettings(env.spaceDustColor, env.spaceDustCount);
             }
+        }
+
+        /// <summary>
+        /// Kích hoạt thông điệp bộ đàm radio tác chiến từ bất kỳ hệ thống nào (0 GC Alloc).
+        /// </summary>
+        public static void TriggerRadioTransmission(string speaker, string message, float duration = 3.5f)
+        {
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 0.75f);
+            }
+            OnRadioTransmission?.Invoke(speaker, message, duration);
         }
     }
 }

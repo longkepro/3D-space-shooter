@@ -53,6 +53,8 @@ namespace VirtualRail
         public Vector3 CurrentGimbalDir => _currentGimbalDir;
         public bool IsGimbalClamped => _isGimbalClamped;
         public float GimbalDeviationAngle => _gimbalDeviationAngle;
+        public float WeaponCooldownRemaining => Mathf.Max(0f, _weaponCooldownUntil - Time.time);
+        public bool IsWeaponInCooldown => Time.time < _weaponCooldownUntil;
 
         // Bộ đệm RaycastHit dùng chung 0 GC Alloc cho Dynamic Depth Convergence
         private static readonly RaycastHit[] _depthScanHits = new RaycastHit[16];

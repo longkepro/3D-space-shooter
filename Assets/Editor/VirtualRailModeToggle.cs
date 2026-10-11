@@ -2192,4 +2192,291 @@ public class VirtualRailModeToggle
         return root;
     }
     #endregion
+
+    #region Modern Cockpit HUD System (Level 3 Undo Toggle)
+    [MenuItem("Tools/Virtual Rail/HUD/1. Switch to Modern Cockpit HUD (ON)")]
+    public static void SwitchToModernCockpitHUD()
+    {
+        Canvas canvas = Object.FindAnyObjectByType<Canvas>();
+        if (canvas == null)
+        {
+            GameObject canvasObj = new GameObject("Canvas");
+            canvas = canvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.matchWidthOrHeight = 0.5f;
+            canvasObj.AddComponent<GraphicRaycaster>();
+        }
+
+        Transform existingHUD = canvas.transform.Find("[ModernCockpitHUD]");
+        if (existingHUD != null)
+        {
+            Object.DestroyImmediate(existingHUD.gameObject);
+        }
+
+        BuildModernCockpitHUDHierarchy(canvas.transform);
+        ToggleLegacyGameUI(false);
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ KÍCH HOẠT MODERN COCKPIT HUD (ON):</b></color> 5 Cụm giao diện Hologram Sci-Fi đã sẵn sàng trên Canvas!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/HUD/2. Revert to Legacy UI (OFF - UNDO)")]
+    public static void RevertModernCockpitHUD()
+    {
+        Canvas canvas = Object.FindAnyObjectByType<Canvas>();
+        if (canvas != null)
+        {
+            Transform existingHUD = canvas.transform.Find("[ModernCockpitHUD]");
+            if (existingHUD != null)
+            {
+                Object.DestroyImmediate(existingHUD.gameObject);
+            }
+        }
+
+        ToggleLegacyGameUI(true);
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN LEGACY UI (UNDO):</b></color> Đã gỡ bỏ ModernCockpitHUD và khôi phục giao diện nguyên bản.");
+    }
+
+    private static void ToggleLegacyGameUI(bool enable)
+    {
+        GameObject gameUI = GameObject.Find("Game UI");
+        if (gameUI != null)
+        {
+            Transform healthBar = gameUI.transform.Find("Health Bar");
+            if (healthBar != null) healthBar.gameObject.SetActive(enable);
+
+            Transform shieldUI = gameUI.transform.Find("Shield UI");
+            if (shieldUI != null) shieldUI.gameObject.SetActive(enable);
+
+            Transform score = gameUI.transform.Find("Score");
+            if (score != null) score.gameObject.SetActive(enable);
+
+            Transform highScore = gameUI.transform.Find("High Score");
+            if (highScore != null) highScore.gameObject.SetActive(enable);
+
+            Transform timer = gameUI.transform.Find("Game Timer");
+            if (timer != null) timer.gameObject.SetActive(enable);
+        }
+    }
+
+    private static GameObject BuildModernCockpitHUDHierarchy(Transform canvasParent)
+    {
+        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+        GameObject hudRoot = new GameObject("[ModernCockpitHUD]");
+        hudRoot.transform.SetParent(canvasParent, false);
+
+        RectTransform rootRt = hudRoot.AddComponent<RectTransform>();
+        rootRt.anchorMin = Vector2.zero;
+        rootRt.anchorMax = Vector2.one;
+        rootRt.offsetMin = Vector2.zero;
+        rootRt.offsetMax = Vector2.zero;
+
+        ModernCockpitHUD hud = hudRoot.AddComponent<ModernCockpitHUD>();
+
+        Color bgPanelColor = new Color(0.02f, 0.08f, 0.14f, 0.82f);
+        Color borderCyan = new Color(0f, 0.95f, 1f, 0.95f);
+        Color amberColor = new Color(1f, 0.68f, 0.1f, 1f);
+
+        // -------------------------------------------------------------
+        // CỤM 1: TOP-LEFT (SHIP INTEGRITY & CHARGE METER & BOMBS)
+        // -------------------------------------------------------------
+        GameObject tlCluster = CreateUIPanel("Cluster_TopLeft", hudRoot.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(35f, -35f), new Vector2(360f, 160f), bgPanelColor);
+        hud.clusterTopLeftRoot = tlCluster.GetComponent<RectTransform>();
+
+        // Header Title
+        CreateUIText("Title", tlCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(16f, -10f), new Vector2(-16f, 22f), "SHIP INTEGRITY & CHARGE", font, 11, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+
+        // Shield Row
+        CreateUIText("ShieldLabel", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -38f), new Vector2(65f, 18f), "SHIELD", font, 12, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+        GameObject shieldBarObj = CreateUIProgressBar("ShieldBar", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(85f, -38f), new Vector2(200f, 16f), borderCyan);
+        hud.shieldBarFill = shieldBarObj.transform.Find("Fill").GetComponent<Image>();
+        hud.shieldPercentText = CreateUIText("ShieldPercent", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(295f, -38f), new Vector2(50f, 18f), "100%", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
+
+        // Charge Row (2.0s Cooldown)
+        CreateUIText("ChargeLabel", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -70f), new Vector2(65f, 18f), "CHARGE", font, 12, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
+        GameObject chargeBarObj = CreateUIProgressBar("ChargeBar", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(85f, -70f), new Vector2(200f, 16f), amberColor);
+        hud.chargeBarFill = chargeBarObj.transform.Find("Fill").GetComponent<Image>();
+        hud.chargeTimerText = CreateUIText("ChargeTimer", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(295f, -70f), new Vector2(50f, 18f), "100%", font, 13, FontStyle.Bold, amberColor, TextAnchor.MiddleRight);
+        hud.chargeStatusText = CreateUIText("ChargeStatus", tlCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(85f, -92f), new Vector2(-16f, 16f), "CHARGE READY (2.0s)", font, 10, FontStyle.Normal, amberColor, TextAnchor.MiddleLeft);
+
+        // Bombs Row
+        CreateUIText("BombsLabel", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -120f), new Vector2(65f, 22f), "BOMBS", font, 12, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+        hud.bombIconImages = new Image[3];
+        for (int b = 0; b < 3; b++)
+        {
+            GameObject bIcon = CreateUIImage("Bomb_" + b, tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(85f + (b * 26f), -120f), new Vector2(20f, 20f), borderCyan);
+            hud.bombIconImages[b] = bIcon.GetComponent<Image>();
+        }
+        hud.bombCountText = CreateUIText("BombCount", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(170f, -120f), new Vector2(50f, 22f), "x3", font, 13, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+
+        // -------------------------------------------------------------
+        // CỤM 2: TOP-RIGHT (ARCADE SCORE & HITS & COMBO)
+        // -------------------------------------------------------------
+        GameObject trCluster = CreateUIPanel("Cluster_TopRight", hudRoot.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-35f, -35f), new Vector2(330f, 130f), bgPanelColor);
+        hud.clusterTopRightRoot = trCluster.GetComponent<RectTransform>();
+
+        // Score
+        CreateUIText("ScoreLabel", trCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -12f), new Vector2(65f, 22f), "SCORE:", font, 12, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
+        hud.scoreValueText = CreateUIText("ScoreValue", trCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(85f, -10f), new Vector2(-16f, 32f), "000,000", font, 24, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
+
+        // Hits
+        CreateUIText("HitsLabel", trCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(16f, -48f), new Vector2(65f, 22f), "HITS:", font, 12, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+        hud.hitCountValueText = CreateUIText("HitsValue", trCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(85f, -46f), new Vector2(-16f, 28f), "000", font, 20, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
+
+        // Combo Badge
+        GameObject comboObj = CreateUIPanel("ComboBadge", trCluster.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(16f, 12f), new Vector2(130f, 40f), new Color(0.2f, 0.12f, 0f, 0.85f));
+        hud.comboBadgeRoot = comboObj.GetComponent<RectTransform>();
+        CreateUIText("ComboTag", comboObj.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(10f, 0f), new Vector2(55f, 24f), "COMBO", font, 11, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
+        hud.comboMultiplierText = CreateUIText("ComboMultiplier", comboObj.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-10f, 0f), new Vector2(55f, 28f), "x2", font, 20, FontStyle.Bold, Color.yellow, TextAnchor.MiddleRight);
+        comboObj.SetActive(false);
+
+        // -------------------------------------------------------------
+        // CỤM 4: BOTTOM-LEFT (RADIO COMMS TACTICAL BOX)
+        // -------------------------------------------------------------
+        GameObject blCluster = CreateUIPanel("Cluster_BottomLeft_Comms", hudRoot.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(35f, 35f), new Vector2(440f, 115f), bgPanelColor);
+        hud.clusterBottomLeftRoot = blCluster.GetComponent<RectTransform>();
+
+        CanvasGroup commsCg = blCluster.AddComponent<CanvasGroup>();
+        commsCg.alpha = 0f;
+
+        RadioCommsHUD radio = blCluster.AddComponent<RadioCommsHUD>();
+        radio.commsCanvasGroup = commsCg;
+        radio.commsRoot = hud.clusterBottomLeftRoot;
+        hud.radioComms = radio;
+
+        // Avatar Box (Vector Wireframe)
+        GameObject avatarObj = CreateUIImage("AvatarBox", blCluster.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(14f, 0f), new Vector2(80f, 85f), new Color(0f, 0.35f, 0.5f, 0.45f));
+        radio.avatarImage = avatarObj.GetComponent<Image>();
+        CreateUIText("AvatarGlyph", avatarObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(70f, 70f), "[COMMS\nICON]", font, 11, FontStyle.Bold, borderCyan, TextAnchor.MiddleCenter);
+
+        // Speaker Title & Message Box
+        radio.speakerText = CreateUIText("SpeakerText", blCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(108f, -14f), new Vector2(-16f, 22f), "[WING COMMAND]", font, 13, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
+        radio.messageText = CreateUIText("MessageText", blCluster.transform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(108f, 14f), new Vector2(-16f, -42f), "Plasma weapons online. Good hunting, Arwing team!", font, 12, FontStyle.Normal, Color.white, TextAnchor.UpperLeft);
+        radio.messageText.horizontalOverflow = HorizontalWrapMode.Wrap;
+
+        // Signal Wave bar
+        GameObject waveObj = CreateUIImage("SignalWave", blCluster.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(108f, 8f), new Vector2(-16f, 3f), borderCyan);
+        radio.signalWaveImage = waveObj.GetComponent<Image>();
+
+        // -------------------------------------------------------------
+        // CỤM 5: BOTTOM-RIGHT (FLIGHT TELEMETRY & WEAPON TIER)
+        // -------------------------------------------------------------
+        GameObject brCluster = CreateUIPanel("Cluster_BottomRight", hudRoot.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-35f, 35f), new Vector2(320f, 95f), bgPanelColor);
+        hud.clusterBottomRightRoot = brCluster.GetComponent<RectTransform>();
+
+        // Weapon Tier
+        hud.weaponTierText = CreateUIText("WeaponTier", brCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(16f, -12f), new Vector2(-16f, 22f), "TWIN LASER MK-II", font, 13, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+
+        // Speedometer
+        CreateUIText("SpeedLabel", brCluster.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(16f, 16f), new Vector2(65f, 24f), "SPEED", font, 11, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+        hud.speedometerValueText = CreateUIText("SpeedValue", brCluster.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-16f, 16f), new Vector2(120f, 32f), "140 m/s", font, 24, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
+        GameObject speedGaugeObj = CreateUIProgressBar("SpeedGauge", brCluster.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(16f, 48f), new Vector2(-32f, 8f), borderCyan);
+        hud.speedometerGaugeFill = speedGaugeObj.transform.Find("Fill").GetComponent<Image>();
+
+        return hudRoot;
+    }
+
+    private static GameObject CreateUIPanel(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, Color bgColor)
+    {
+        GameObject panel = new GameObject(name);
+        panel.transform.SetParent(parent, false);
+
+        RectTransform rt = panel.AddComponent<RectTransform>();
+        rt.anchorMin = anchorMin;
+        rt.anchorMax = anchorMax;
+        rt.pivot = pivot;
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+
+        Image img = panel.AddComponent<Image>();
+        img.color = bgColor;
+
+        // Border Outline (Holo Frame effect)
+        Outline outline = panel.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0.95f, 1f, 0.45f);
+        outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+        return panel;
+    }
+
+    private static GameObject CreateUIImage(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, Color color)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent, false);
+
+        RectTransform rt = obj.AddComponent<RectTransform>();
+        rt.anchorMin = anchorMin;
+        rt.anchorMax = anchorMax;
+        rt.pivot = pivot;
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+
+        Image img = obj.AddComponent<Image>();
+        img.color = color;
+        return obj;
+    }
+
+    private static GameObject CreateUIProgressBar(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, Color fillColor)
+    {
+        GameObject bgObj = new GameObject(name);
+        bgObj.transform.SetParent(parent, false);
+
+        RectTransform bgRt = bgObj.AddComponent<RectTransform>();
+        bgRt.anchorMin = anchorMin;
+        bgRt.anchorMax = anchorMax;
+        bgRt.pivot = pivot;
+        bgRt.anchoredPosition = pos;
+        bgRt.sizeDelta = size;
+
+        Image bgImg = bgObj.AddComponent<Image>();
+        bgImg.color = new Color(0.08f, 0.15f, 0.2f, 0.85f);
+
+        GameObject fillObj = new GameObject("Fill");
+        fillObj.transform.SetParent(bgObj.transform, false);
+
+        RectTransform fillRt = fillObj.AddComponent<RectTransform>();
+        fillRt.anchorMin = Vector2.zero;
+        fillRt.anchorMax = Vector2.one;
+        fillRt.offsetMin = Vector2.zero;
+        fillRt.offsetMax = Vector2.zero;
+
+        Image fillImg = fillObj.AddComponent<Image>();
+        fillImg.color = fillColor;
+        fillImg.type = Image.Type.Filled;
+        fillImg.fillMethod = Image.FillMethod.Horizontal;
+        fillImg.fillOrigin = 0;
+        fillImg.fillAmount = 1f;
+
+        return bgObj;
+    }
+
+    private static Text CreateUIText(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, string text, Font font, int fontSize, FontStyle fontStyle, Color color, TextAnchor alignment)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent, false);
+
+        RectTransform rt = obj.AddComponent<RectTransform>();
+        rt.anchorMin = anchorMin;
+        rt.anchorMax = anchorMax;
+        rt.pivot = pivot;
+        rt.anchoredPosition = pos;
+        rt.sizeDelta = size;
+
+        Text t = obj.AddComponent<Text>();
+        t.font = font;
+        t.fontSize = fontSize;
+        t.fontStyle = fontStyle;
+        t.color = color;
+        t.alignment = alignment;
+        t.text = text;
+        return t;
+    }
+    #endregion
 }

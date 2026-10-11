@@ -64,6 +64,14 @@ namespace VirtualRail
         [Tooltip("Tốc độ chuyển đổi kích thước tâm ngắm (Lerp speed)")]
         public float reticleScaleLerpSpeed = 12f;
 
+        [Header("2e. Modern Cockpit HUD & Tactical Comms (Hệ thống HUD Sci-Fi mới)")]
+        [Tooltip("Bật giao diện Modern Cockpit HUD 5 cụm thông tin toàn diện")]
+        public bool enableModernHUD = true;
+        [Tooltip("Bật khung đàm thoại tác chiến bộ đàm Radio Comms ở góc dưới bên trái")]
+        public bool enableRadioComms = true;
+        [Tooltip("Thời gian hiển thị thông điệp bộ đàm trên màn hình (giây)")]
+        public float radioCommsDuration = 3.5f;
+
         [Header("3. Viewport Frustum Ratios (Khung biên động theo Camera)")]
         [Tooltip("Bật tính toán khung biên tự động theo tỷ lệ Camera Frustum")]
         public bool useDynamicFrustumBounds = true;
@@ -189,16 +197,18 @@ namespace VirtualRail
         public LayerMask enemyLayer = ~0;
 
         [Header("10. Charge Shot & Homing")]
-        [Tooltip("Thời gian tụ lực để nạp đầy phát bắn Charge Shot (giây) - chuẩn Star Fox 64: 0.5s")]
-        public float chargeTime = 0.5f;
+        [Tooltip("Thời gian tụ lực để nạp đầy phát bắn Charge Shot (giây) - 2.0s theo yêu cầu cân bằng")]
+        public float chargeTime = 2.0f;
+        [Tooltip("Thời gian hồi của thanh tụ lực sau khi phóng đạn (giây)")]
+        public float chargeCooldown = 2.0f;
         public float lockConeAngle = 18f;
         public float lockMaxDistance = 250f;
         [Tooltip("Vận tốc bay cơ sở của quả cầu plasma tụ lực (m/s)")]
         public float chargeShotBaseSpeed = 240f;
         [Tooltip("Tốc độ bẻ lái tự dẫn của quả cầu plasma (độ/s) - chuẩn 420-450 để bo cua sắc bén")]
         public float chargeShotTurnRate = 420f;
-        [Tooltip("Thời gian làm nguội súng sau khi nhả tụ lực (giây) - chuẩn Star Fox 64 để chặn rò rỉ đạn thường")]
-        public float postChargeCooldown = 0.35f;
+        [Tooltip("Thời gian làm nguội súng sau khi nhả tụ lực (giây)")]
+        public float postChargeCooldown = 2.0f;
         [Tooltip("Bật thừa kế vận tốc tiến của tàu cho quả cầu plasma")]
         public bool enableChargeVelocityInheritance = true;
         [Tooltip("Bật/tắt hiệu ứng quả cầu plasma tích tụ và lớn dần tại mũi tàu trong lúc giữ phím tụ lực")]
