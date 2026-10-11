@@ -53,7 +53,7 @@ MonoBehaviour:
     - {fileID: 873890533011206334, guid: b4d0c8f23a565e90b123456789abcdef, type: 3}
     enablePeriodicWaves: 0
     waveInterval: 0
-    spawnLeadDistance: 280
+    spawnLeadDistance: 230
     formationIntervalWaves: 1
     enemyClosingSpeed: 20
     enemyHoldDistance: 60

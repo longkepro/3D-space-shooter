@@ -42,8 +42,9 @@ namespace VirtualRail
         [SerializeField] private int _currentWaveIndex = 0;
         public int CurrentWaveIndex => _currentWaveIndex;
 
-        [Header("Lead & Pacing Tuning")]
-        [SerializeField] private float _horizonLeadDistance = 280f;
+        [Header("Lead & Pacing Tuning (220m - 240m Horizon Range)")]
+        [SerializeField] private float _minLeadDistance = 220f;
+        [SerializeField] private float _maxLeadDistance = 240f;
         [SerializeField] private float _formationAssemblyTime = 2.2f;
 
         // Subsystem References
@@ -266,7 +267,9 @@ namespace VirtualRail
             // Sinh thông số biến dị thủ tục (Procedural Customization) theo DDA
             VirtualFormationAnchor.FormationCustomizationParams customParams = GenerateFormationParams();
 
-            float leadDist = _horizonLeadDistance > 50f ? _horizonLeadDistance : 280f;
+            // Cự ly xuất hiện biến thiên tự nhiên trong dải [220m, 240m] theo từng wave (0 GC Alloc)
+            float t = ((_currentWaveIndex % 5) / 4.0f);
+            float leadDist = Mathf.Lerp(_minLeadDistance, _maxLeadDistance, t);
             float assemblyTime = _formationAssemblyTime > 0.5f ? _formationAssemblyTime : 2.2f;
 
             bool spawned = _waveSpawner.SpawnScriptedFormation(pattern, customParams, leadDist, assemblyTime);

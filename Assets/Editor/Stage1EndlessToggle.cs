@@ -38,7 +38,7 @@ namespace VirtualRail.Editor
 
             stage.enemySettings.enableFormations = true;
             stage.enemySettings.formationIntervalWaves = 1;
-            stage.enemySettings.spawnLeadDistance = 280f; // Cự ly chân trời Horizon Lead Distance chuẩn
+            stage.enemySettings.spawnLeadDistance = 230f; // Cự ly chân trời chuẩn dải 220m - 240m
 
             EditorUtility.SetDirty(stage);
             AssetDatabase.SaveAssets();
@@ -49,7 +49,7 @@ namespace VirtualRail.Editor
                 VirtualRailModeToggle.SwitchToVirtualRail();
             }
 
-            Debug.Log($"<color=lime><b>[STAGE 1 ENDLESS MODE - ON]</b></color> Đã kích hoạt Endless Survival Mode cho Stage 1! Đã nạp {allFormations.Count} mẫu đội hình (20 Geometric + 26 Alphabet). Horizon Lead: 280m, DDA: Sẵn sàng!");
+            Debug.Log($"<color=lime><b>[STAGE 1 ENDLESS MODE - ON]</b></color> Đã kích hoạt Endless Survival Mode cho Stage 1! Đã nạp {allFormations.Count} mẫu đội hình (20 Geometric + 26 Alphabet). Horizon Lead: 220m-240m, DDA: Sẵn sàng!");
         }
 
         [MenuItem("Tools/Virtual Rail/Stage 1 Endless Mode/[2] Khôi phục Kịch bản Gốc Stage 1 (OFF - Undo)", false, 201)]
