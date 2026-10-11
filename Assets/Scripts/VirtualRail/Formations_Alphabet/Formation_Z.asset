@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
+  m_Name: Formation_Z
+  m_EditorClassIdentifier: 
+  patternName: Letter Z Formation (9 Ships)
+  slots:
+  - slotName: Top Center Leader
+    localOffset: {x: 0, y: 6, z: 0}
+    preferredArchetype: 3
+    isLeader: 1
+    scaleMultiplier: 1.25
+    customPrefabOverride: {fileID: 0}
+  - slotName: Top-Left End
+    localOffset: {x: -7, y: 6, z: -0.5}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Top-Right End
+    localOffset: {x: 7, y: 6, z: -0.5}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Diagonal Upper
+    localOffset: {x: 3.5, y: 2, z: -1}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Diagonal Center
+    localOffset: {x: 0, y: 0, z: -1}
+    preferredArchetype: 0
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Diagonal Lower
+    localOffset: {x: -3.5, y: -2, z: -1}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Bottom-Left End
+    localOffset: {x: -7, y: -6, z: -0.5}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Bottom Center
+    localOffset: {x: 0, y: -6, z: -0.5}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Bottom-Right End
+    localOffset: {x: 7, y: -6, z: -0.5}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  assemblyTime: 1.2
+  entryStyle: 2
+  exitStyle: 0
+  exitDuration: 1.8
+  attitudeMode: 0
+  swaySpeed: 1.5
+  swayAmplitudeX: 12
+  bankingAngle: 25
+  holdDistance: 65
+  maxClosingSpeed: 25
+  maxLifetime: 14
+  leaderDeathReaction: 0
+  motionProfile: {fileID: 11400000, guid: a1000004b2c3d4e5f60718293a4b0004, type: 2}

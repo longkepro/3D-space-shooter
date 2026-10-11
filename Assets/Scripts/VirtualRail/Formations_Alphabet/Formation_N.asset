@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
+  m_Name: Formation_N
+  m_EditorClassIdentifier: 
+  patternName: Letter N Formation (7 Ships)
+  slots:
+  - slotName: Left Top Leader
+    localOffset: {x: -7, y: 7, z: 0}
+    preferredArchetype: 3
+    isLeader: 1
+    scaleMultiplier: 1.25
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Mid
+    localOffset: {x: -7, y: 0, z: -0.5}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Left Foot
+    localOffset: {x: -7, y: -7, z: -0.5}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Diagonal Upper
+    localOffset: {x: -2.5, y: 2.5, z: -1}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Diagonal Lower
+    localOffset: {x: 2.5, y: -2.5, z: -1}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Top
+    localOffset: {x: 7, y: 7, z: -0.5}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Right Foot
+    localOffset: {x: 7, y: -7, z: 0}
+    preferredArchetype: 2
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  assemblyTime: 1.2
+  entryStyle: 2
+  exitStyle: 0
+  exitDuration: 1.8
+  attitudeMode: 0
+  swaySpeed: 1.5
+  swayAmplitudeX: 12
+  bankingAngle: 25
+  holdDistance: 65
+  maxClosingSpeed: 25
+  maxLifetime: 14
+  leaderDeathReaction: 1
+  motionProfile: {fileID: 11400000, guid: a1000005b2c3d4e5f60718293a4b0005, type: 2}
