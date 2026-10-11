@@ -38,6 +38,7 @@ namespace VirtualRail
 
         private DualReticleHUD hud;
         private AimAssistModule _aimAssist;
+        private VirtualRailWeapon _cachedWeapon;
         private Vector2 prevMousePos;
         private float autoFireTimer;
 
@@ -73,6 +74,9 @@ namespace VirtualRail
             {
                 ship = FindAnyObjectByType<VirtualRailShip>();
             }
+
+            if (_cachedWeapon == null && ship != null) _cachedWeapon = ship.GetComponent<VirtualRailWeapon>();
+            if (_cachedWeapon == null && anchor != null) _cachedWeapon = anchor.GetComponentInChildren<VirtualRailWeapon>();
 
             var cfg = anchor != null ? anchor.config : null;
 
@@ -338,11 +342,15 @@ namespace VirtualRail
                 if (nearCrosshairUI != null)
                 {
                     if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
-                    if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
+                    if (_cachedWeapon == null)
+                    {
+                        if (ship != null) _cachedWeapon = ship.GetComponent<VirtualRailWeapon>();
+                        else if (anchor != null) _cachedWeapon = anchor.GetComponentInChildren<VirtualRailWeapon>();
+                    }
 
                     Vector3 nearWorldPos;
                     float targetDist = (cfg.convergenceDistance > 10f) ? cfg.convergenceDistance : 150f;
-                    VirtualRailWeapon weapon = (ship != null) ? ship.GetComponent<VirtualRailWeapon>() : null;
+                    VirtualRailWeapon weapon = _cachedWeapon;
 
                     if (cfg.enableGimbalWeapon && weapon != null)
                     {

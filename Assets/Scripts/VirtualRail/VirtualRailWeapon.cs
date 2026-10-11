@@ -115,11 +115,17 @@ namespace VirtualRail
         private void Start()
         {
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
+            if (anchor == null) anchor = VirtualRailAnchor.Instance != null ? VirtualRailAnchor.Instance : FindAnyObjectByType<VirtualRailAnchor>();
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
+            if (reticle == null) reticle = FindAnyObjectByType<VirtualRailReticle>();
             if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
             if (ship == null) ship = FindAnyObjectByType<VirtualRailShip>();
             if (inputReader == null && anchor != null) inputReader = anchor.GetComponentInChildren<VirtualRailInputReader>();
-            if (_cachedCam == null) _cachedCam = Camera.main;
+            if (_cachedCam == null)
+            {
+                var camRig = anchor != null ? anchor.GetComponentInChildren<VirtualRailCameraRig>() : null;
+                _cachedCam = (camRig != null && camRig.targetCamera != null) ? camRig.targetCamera : Camera.main;
+            }
         }
 
         private void EnsureAimAssist()
@@ -300,9 +306,7 @@ namespace VirtualRail
         public Vector3 GetCurrentConvergencePoint(out bool foundTarget, out float closestDist)
         {
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
-            if (reticle == null) reticle = FindAnyObjectByType<VirtualRailReticle>();
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
-            if (anchor == null) anchor = FindAnyObjectByType<VirtualRailAnchor>();
 
             Vector3 aimWorld = (reticle != null) ? reticle.WorldPosition : (transform.position + transform.forward * 150f);
             var cfg = (anchor != null) ? anchor.config : null;
@@ -365,7 +369,6 @@ namespace VirtualRail
         public void FireAllMuzzles()
         {
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
-            if (anchor == null) anchor = FindAnyObjectByType<VirtualRailAnchor>();
             var cfg = (anchor != null) ? anchor.config : null;
 
             Vector3 aimWorld = GetCurrentConvergencePoint(out bool foundTarget, out float closestDist);

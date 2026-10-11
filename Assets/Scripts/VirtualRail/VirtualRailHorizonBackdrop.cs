@@ -49,6 +49,7 @@ namespace VirtualRail
         private Material _appliedMaterial = null;
         private float _appliedExposure = -1f;
         private Color _appliedTint = Color.clear;
+        private float _nextCameraRetryTime = 0f;
 
         public static Material GetOrCreateSharedBaseMaterial()
         {
@@ -210,8 +211,9 @@ namespace VirtualRail
         {
             if (_mr != null && !_mr.enabled) return;
 
-            if (targetCamera == null)
+            if (targetCamera == null && Time.time >= _nextCameraRetryTime)
             {
+                _nextCameraRetryTime = Time.time + 1.0f;
                 FindTargetCamera();
             }
 

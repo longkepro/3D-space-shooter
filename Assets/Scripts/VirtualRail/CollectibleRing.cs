@@ -155,7 +155,8 @@ namespace VirtualRail
                 case RingType.SilverRing:
                     AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 0.95f);
                     // Hồi phục 25% Khiên
-                    var shield = FindAnyObjectByType<Shield>();
+                    var shield = other.GetComponentInParent<Shield>();
+                    if (shield == null) shield = other.GetComponentInChildren<Shield>();
                     if (shield != null)
                     {
                         shield.Heal(3); // 3/10 ~ 30% máu

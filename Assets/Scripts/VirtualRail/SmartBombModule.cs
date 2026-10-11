@@ -26,7 +26,9 @@ namespace VirtualRail
         private int _currentBombs;
         private VirtualRailAnchor _anchor;
         private VirtualRailShip _ship;
+        private VirtualRailReticle _cachedReticle;
         private VirtualRailHomingMissile _activeBombInstance;
+        private static readonly Collider[] _bombColliders = new Collider[128];
 
         public int CurrentBombs => _currentBombs;
         public GameObject BombPrefab
@@ -74,6 +76,8 @@ namespace VirtualRail
         {
             if (_ship == null && _anchor != null) _ship = _anchor.GetComponentInChildren<VirtualRailShip>();
             if (_ship == null) _ship = FindAnyObjectByType<VirtualRailShip>();
+            if (_cachedReticle == null && _anchor != null) _cachedReticle = _anchor.GetComponentInChildren<VirtualRailReticle>();
+            if (_cachedReticle == null) _cachedReticle = FindAnyObjectByType<VirtualRailReticle>();
 
             EnsureBombPrefab();
             OnBombCountChanged?.Invoke(_currentBombs);
@@ -132,7 +136,7 @@ namespace VirtualRail
             }
             else
             {
-                VirtualRailReticle reticle = (_anchor != null) ? _anchor.GetComponentInChildren<VirtualRailReticle>() : FindAnyObjectByType<VirtualRailReticle>();
+                VirtualRailReticle reticle = _cachedReticle != null ? _cachedReticle : (_anchor != null ? _anchor.GetComponentInChildren<VirtualRailReticle>() : null);
                 if (reticle != null)
                 {
                     launchDir = (reticle.WorldPosition - nosePos).normalized;
@@ -199,26 +203,29 @@ namespace VirtualRail
                 EnemyProjectilePool.Instance.ClearAllActiveProjectiles();
             }
 
-            Collider[] colliders = Physics.OverlapSphere(centerPos, shockwaveRadius);
-            for (int i = 0; i < colliders.Length; i++)
+            int count = Physics.OverlapSphereNonAlloc(centerPos, shockwaveRadius, _bombColliders);
+            for (int i = 0; i < count; i++)
             {
-                if (colliders[i] == null) continue;
+                var col = _bombColliders[i];
+                if (col == null) continue;
 
-                var enemyHealth = colliders[i].GetComponentInParent<EnemyHealth>();
+                var enemyHealth = col.GetComponentInParent<EnemyHealth>();
                 if (enemyHealth != null && !enemyHealth.IsDead)
                 {
                     enemyHealth.TakeDamage(999, enemyHealth.transform.position, (enemyHealth.transform.position - centerPos).normalized);
+                    _bombColliders[i] = null;
                     continue;
                 }
 
-                var enemy = colliders[i].GetComponentInParent<EnemyMovement>();
+                var enemy = col.GetComponentInParent<EnemyMovement>();
                 if (enemy != null && enemy.gameObject.activeSelf)
                 {
                     enemy.BlowUp();
+                    _bombColliders[i] = null;
                     continue;
                 }
 
-                var asteroid = colliders[i].GetComponentInParent<Asteroid>();
+                var asteroid = col.GetComponentInParent<Asteroid>();
                 if (asteroid != null && asteroid.gameObject.activeSelf)
                 {
                     if (asteroid.HazardType == AsteroidHazardType.Destructible)
@@ -226,6 +233,7 @@ namespace VirtualRail
                         asteroid.TakeDamage(999, asteroid.transform.position);
                     }
                 }
+                _bombColliders[i] = null;
             }
         }
 

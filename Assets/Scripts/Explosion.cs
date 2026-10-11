@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -10,6 +11,8 @@ public class Explosion : MonoBehaviour
     [SerializeField] private Shield _shield;
     [SerializeField] private float _laserHitForce = 10f;
     [SerializeField] private float _explosionDuration = 6f;
+
+    private static readonly List<VirtualRail.IPoolableEntity> _poolableBuffer = new List<VirtualRail.IPoolableEntity>(8);
 
     private void OnCollisionEnter(Collision collision)
     {
@@ -53,13 +56,15 @@ public class Explosion : MonoBehaviour
     {
         SpawnBlowUpVFX();
 
-        var poolables = GetComponents<VirtualRail.IPoolableEntity>();
-        if (poolables != null && poolables.Length > 0)
+        _poolableBuffer.Clear();
+        GetComponents(_poolableBuffer);
+        if (_poolableBuffer.Count > 0)
         {
-            for (int i = 0; i < poolables.Length; i++)
+            for (int i = 0; i < _poolableBuffer.Count; i++)
             {
-                poolables[i].Recycle();
+                _poolableBuffer[i].Recycle();
             }
+            _poolableBuffer.Clear();
         }
         else if (CompareTag("Player"))
         {

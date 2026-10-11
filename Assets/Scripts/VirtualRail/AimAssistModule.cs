@@ -47,6 +47,7 @@ namespace VirtualRail
 
         private VirtualRailShip _ship;
         private VirtualRailWeapon _weapon;
+        private EnemyHealth _lockedTargetHealth;
         private AudioSource _chargeAudioSource;
         private float _nextAllowedLockSoundTime = 0f;
         private bool _hasPlayedChargeSpool = false;
@@ -424,6 +425,7 @@ namespace VirtualRail
                 else
                 {
                     lockedTarget = bestTarget;
+                    _lockedTargetHealth = bestTarget != null ? bestTarget.GetComponentInParent<EnemyHealth>() : null;
                     _lockTimer = dt;
                     if (Time.time >= _nextAllowedLockSoundTime)
                     {
@@ -435,6 +437,7 @@ namespace VirtualRail
             else
             {
                 lockedTarget = null;
+                _lockedTargetHealth = null;
                 _lockTimer = 0f;
             }
         }
@@ -627,15 +630,16 @@ namespace VirtualRail
                 if (!lockedTarget.gameObject.activeInHierarchy)
                 {
                     lockedTarget = null;
+                    _lockedTargetHealth = null;
                     _lockTimer = 0f;
                     lockMarkerUI.gameObject.SetActive(false);
                     return;
                 }
 
-                var eh = lockedTarget.GetComponentInParent<EnemyHealth>();
-                if (eh != null && eh.IsDead)
+                if (_lockedTargetHealth != null && _lockedTargetHealth.IsDead)
                 {
                     lockedTarget = null;
+                    _lockedTargetHealth = null;
                     _lockTimer = 0f;
                     lockMarkerUI.gameObject.SetActive(false);
                     return;
