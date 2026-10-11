@@ -583,12 +583,12 @@ Giải quyết: **M-01, M-03, M-04** (Instantiate trong gameplay)
 | 1 | Throttle fallback Find Player (1s) & ưu tiên VirtualRailAnchor | `EnemyAttack.cs`, `EnemyMovement.cs`, `FollowCam.cs` | 🔴 Critical | ✅ **ĐÃ HOÀN TẤT** |
 | 2 | Thêm throttle `_nextFindReferencesTime` (1s) trong `Tick()` | `VirtualRailStageDirector.cs` | 🔴 Critical | ✅ **ĐÃ HOÀN TẤT** |
 | 3 | Cache & throttle `_nextBindingRetryTime` / `_nextAimAssistRetryTime` | `DualReticleHUD.cs` | 🔴 Critical | ✅ **ĐÃ HOÀN TẤT** |
-| 4 | Tạo `EnemyRegistry` | Tạo mới + sửa ~8 file | 🟠 High | ⏳ Chờ triển khai |
-| 5 | Cache weapon/reticle/anchor trong `Awake` | 5 file VirtualRail | 🟠 High | ⏳ Chờ triển khai |
-| 6 | Đổi `OverlapSphere` → `NonAlloc` | `SmartBombModule.cs` | 🟠 High | ⏳ Chờ triển khai |
-| 7 | Đổi `GetComponents` → overload List | `Explosion.cs` | 🟠 High | ⏳ Chờ triển khai |
-| 8 | Cache Camera trong `Start` | `VirtualRailHorizonBackdrop.cs` | 🟠 High | ⏳ Chờ triển khai |
-| 9 | Lấy Shield từ collider thay vì Find | `CollectibleRing.cs` | 🟠 High | ⏳ Chờ triển khai |
+| 4 | Tối ưu Physics loop / Enemy Registry (H-02, H-03, H-04, H-07, H-12) | 5 file Combat & Physics | 🟠 High | ⏳ Chờ triển khai (Phần B) |
+| 5 | Cache weapon/reticle/anchor, xóa Find trong hot-path bắn đạn (H-01, H-05, H-06) | `VirtualRailWeapon.cs`, `VirtualRailReticle.cs`, `AimAssistModule.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
+| 6 | Đổi `OverlapSphere` → `NonAlloc` + static buffer (H-10) | `SmartBombModule.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
+| 7 | Đổi `GetComponents` → overload List không GC (H-11) | `Explosion.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
+| 8 | Cache Camera & throttle retry trong `LateUpdate` (H-08) | `VirtualRailHorizonBackdrop.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
+| 9 | Lấy Shield từ collider thay vì Find toàn scene (H-09) | `CollectibleRing.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
 | 10 | Xóa tất cả `Instantiate` fallback | 4 file Pool/Missile | 🟡 Medium | ⏳ Chờ triển khai |
 | 11 | Gắn component vào prefab, xóa `AddComponent` | 2 file Spawner | 🟡 Medium | ⏳ Chờ triển khai |
 | 12 | Shield visual vào prefab | `EnemyHealth.cs` | 🟡 Medium | ⏳ Chờ triển khai |
