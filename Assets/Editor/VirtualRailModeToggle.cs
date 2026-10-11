@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using VirtualRail;
@@ -17,12 +18,34 @@ public class VirtualRailModeToggle
     private const string SKYBOX_INIT_KEY = "VirtualRail_Skybox_Image1_Initialized";
     private const string BACKDROP_BAKED_KEY = "VirtualRail_Backdrop_Baked_v5";
     private const string GREEN_ORB_INIT_KEY = "VirtualRail_GreenOrb_ChargeShot_v1";
+    private const string MODERN_HUD_APPLIED_KEY = "VirtualRail_ModernHUD_Applied_Demo_v1";
 
     static VirtualRailModeToggle()
     {
         // Gỡ bỏ tự động cưỡng ép Cosmic Earth để cho phép Skybox gốc và StageData toàn quyền quyết định
         EditorApplication.delayCall += InitializeBackdropPrefabOnce;
         EditorApplication.delayCall += InitializeGreenOrbChargeShotOnce;
+        EditorApplication.delayCall += AutoApplyModernHUDToGameSceneOnce;
+    }
+
+    private static void AutoApplyModernHUDToGameSceneOnce()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+        if (EditorPrefs.GetBool(MODERN_HUD_APPLIED_KEY, false)) return;
+
+        string gameScenePath = "Assets/Scenes/Game.unity";
+        Scene activeScene = EditorSceneManager.GetActiveScene();
+        if (activeScene.path != gameScenePath)
+        {
+            if (activeScene.isDirty)
+            {
+                EditorSceneManager.SaveOpenScenes();
+            }
+            activeScene = EditorSceneManager.OpenScene(gameScenePath, OpenSceneMode.Single);
+        }
+
+        SwitchToModernCockpitHUD();
+        Debug.Log("<color=lime><b>[VirtualRail] ĐÃ TỰ ĐỘNG ÁP DỤNG VÀ LƯU MODERN COCKPIT HUD VÀO SCENE GAME.UNITY THÀNH CÔNG!</b></color>");
     }
 
     private static void InitializeBackdropPrefabOnce()
@@ -2219,8 +2242,11 @@ public class VirtualRailModeToggle
         BuildModernCockpitHUDHierarchy(canvas.transform);
         ToggleLegacyGameUI(false);
 
-        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ KÍCH HOẠT MODERN COCKPIT HUD (ON):</b></color> 5 Cụm giao diện Hologram Sci-Fi đã sẵn sàng trên Canvas!");
+        Scene activeScene = EditorSceneManager.GetActiveScene();
+        EditorSceneManager.MarkSceneDirty(activeScene);
+        EditorSceneManager.SaveScene(activeScene);
+        EditorPrefs.SetBool(MODERN_HUD_APPLIED_KEY, true);
+        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ KÍCH HOẠT MODERN COCKPIT HUD (ON):</b></color> 5 Cụm giao diện Hologram Sci-Fi đã sẵn sàng trên Canvas và đã lưu Scene!");
     }
 
     [MenuItem("Tools/Virtual Rail/HUD/2. Revert to Legacy UI (OFF - UNDO)")]
@@ -2238,8 +2264,11 @@ public class VirtualRailModeToggle
 
         ToggleLegacyGameUI(true);
 
-        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN LEGACY UI (UNDO):</b></color> Đã gỡ bỏ ModernCockpitHUD và khôi phục giao diện nguyên bản.");
+        Scene activeScene = EditorSceneManager.GetActiveScene();
+        EditorSceneManager.MarkSceneDirty(activeScene);
+        EditorSceneManager.SaveScene(activeScene);
+        EditorPrefs.DeleteKey(MODERN_HUD_APPLIED_KEY);
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN LEGACY UI (UNDO):</b></color> Đã gỡ bỏ ModernCockpitHUD, khôi phục giao diện nguyên bản và đã lưu Scene!");
     }
 
     private static void ToggleLegacyGameUI(bool enable)
