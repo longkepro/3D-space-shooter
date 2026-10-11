@@ -1,0 +1,83 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
+  m_Name: Formation_16_HinhTron
+  m_EditorClassIdentifier: 
+  patternName: Hình Tròn (Orbital Halo Swarm - 9 Ships)
+  slots:
+  - slotName: Halo Core Leader
+    localOffset: {x: 0, y: 0, z: 0}
+    preferredArchetype: 3
+    isLeader: 1
+    scaleMultiplier: 1.25
+    customPrefabOverride: {fileID: 0}
+  - slotName: Halo (90 deg)
+    localOffset: {x: 0, y: 9, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Halo (45 deg)
+    localOffset: {x: 6.36, y: 6.36, z: -1}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Halo (0 deg)
+    localOffset: {x: 9, y: 0, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Halo (-45 deg)
+    localOffset: {x: 6.36, y: -6.36, z: -1}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Halo (-90 deg)
+    localOffset: {x: 0, y: -9, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Halo (-135 deg)
+    localOffset: {x: -6.36, y: -6.36, z: -1}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  - slotName: Halo (180 deg)
+    localOffset: {x: -9, y: 0, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1
+    customPrefabOverride: {fileID: 0}
+  - slotName: Halo (135 deg)
+    localOffset: {x: -6.36, y: 6.36, z: -1}
+    preferredArchetype: 1
+    isLeader: 0
+    scaleMultiplier: 0.95
+    customPrefabOverride: {fileID: 0}
+  assemblyTime: 1.2
+  entryStyle: 2
+  exitStyle: 0
+  exitDuration: 1.8
+  attitudeMode: 0
+  swaySpeed: 1.5
+  swayAmplitudeX: 12
+  bankingAngle: 25
+  holdDistance: 65
+  maxClosingSpeed: 25
+  maxLifetime: 14
+  leaderDeathReaction: 2
+  motionProfile: {fileID: 11400000, guid: a1000001b2c3d4e5f60718293a4b0001, type: 2}

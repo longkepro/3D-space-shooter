@@ -1,0 +1,71 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 056b013cafab5b04080f28b47becdf2b, type: 3}
+  m_Name: Formation_12_LucGiacDeu
+  m_EditorClassIdentifier: 
+  patternName: Lục Giác Đều (Hexagonal Hive - 7 Ships)
+  slots:
+  - slotName: Hive Queen Leader
+    localOffset: {x: 0, y: 0, z: 0}
+    preferredArchetype: 3
+    isLeader: 1
+    scaleMultiplier: 1.3
+    customPrefabOverride: {fileID: 0}
+  - slotName: Peak North (90 deg)
+    localOffset: {x: 0, y: 10, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1.05
+    customPrefabOverride: {fileID: 0}
+  - slotName: East-North (30 deg)
+    localOffset: {x: 8.66, y: 5, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1.05
+    customPrefabOverride: {fileID: 0}
+  - slotName: East-South (-30 deg)
+    localOffset: {x: 8.66, y: -5, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1.05
+    customPrefabOverride: {fileID: 0}
+  - slotName: Peak South (-90 deg)
+    localOffset: {x: 0, y: -10, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1.05
+    customPrefabOverride: {fileID: 0}
+  - slotName: West-South (-150 deg)
+    localOffset: {x: -8.66, y: -5, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1.05
+    customPrefabOverride: {fileID: 0}
+  - slotName: West-North (150 deg)
+    localOffset: {x: -8.66, y: 5, z: -1}
+    preferredArchetype: 4
+    isLeader: 0
+    scaleMultiplier: 1.05
+    customPrefabOverride: {fileID: 0}
+  assemblyTime: 1.2
+  entryStyle: 1
+  exitStyle: 0
+  exitDuration: 1.8
+  attitudeMode: 0
+  swaySpeed: 1.5
+  swayAmplitudeX: 12
+  bankingAngle: 25
+  holdDistance: 65
+  maxClosingSpeed: 25
+  maxLifetime: 14
+  leaderDeathReaction: 4
+  motionProfile: {fileID: 11400000, guid: a1000007b2c3d4e5f60718293a4b0007, type: 2}
