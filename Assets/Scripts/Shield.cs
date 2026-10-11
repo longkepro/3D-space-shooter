@@ -11,10 +11,29 @@ public class Shield : MonoBehaviour
     public int CurrentHealth => _currentHealth;
     public int MaxHealth => _maxHealth;
 
+    private Explosion _cachedExplosion;
+    private VirtualRail.VirtualRailShip _cachedShip;
+    private float _nextRegenTime;
+
+    private void Awake()
+    {
+        _cachedExplosion = GetComponent<Explosion>();
+        _cachedShip = GetComponentInParent<VirtualRail.VirtualRailShip>();
+    }
+
     private void Start()
     {
         _currentHealth = _maxHealth;
-        InvokeRepeating("Regenerate", _regenerationRate, _regenerationRate);
+        _nextRegenTime = Time.time + _regenerationRate;
+    }
+
+    private void Update()
+    {
+        if (Time.time >= _nextRegenTime)
+        {
+            _nextRegenTime = Time.time + _regenerationRate;
+            Regenerate();
+        }
     }
 
     private void Regenerate()
@@ -61,16 +80,14 @@ public class Shield : MonoBehaviour
         VirtualRail.AudioManager.Instance?.PlaySFX2D(VirtualRail.AudioSFXType.ExplosionLarge, 1.0f);
         VirtualRail.VirtualRailCameraRig.TriggerShake(0.85f);
 
-        var exp = GetComponent<Explosion>();
-        if (exp != null)
+        if (_cachedExplosion != null)
         {
-            exp.SpawnBlowUpVFX();
+            _cachedExplosion.SpawnBlowUpVFX();
         }
 
-        var ship = GetComponentInParent<VirtualRail.VirtualRailShip>();
-        if (ship != null)
+        if (_cachedShip != null)
         {
-            ship.OnPlayerDefeated();
+            _cachedShip.OnPlayerDefeated();
         }
         else
         {
@@ -89,10 +106,9 @@ public class Shield : MonoBehaviour
 
     public void ResetHealth()
     {
-        CancelInvoke("Regenerate");
         _currentHealth = _maxHealth;
+        _nextRegenTime = Time.time + _regenerationRate;
         GameEventManager.UpdateHealthBar(100);
-        InvokeRepeating("Regenerate", _regenerationRate, _regenerationRate);
     }
 
     public void Heal(int healAmount)

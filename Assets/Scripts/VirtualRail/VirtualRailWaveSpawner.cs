@@ -442,9 +442,11 @@ namespace VirtualRail
                 if (useFSM)
                 {
                     var fsm = availableEnemy.GetComponent<EnemyLifecycleFSM>();
-                    if (fsm == null) fsm = availableEnemy.gameObject.AddComponent<EnemyLifecycleFSM>();
-                    fsm.enabled = true;
-                    fsm.InitializeTrajectory(trajectory, anchor);
+                    if (fsm != null)
+                    {
+                        fsm.enabled = true;
+                        fsm.InitializeTrajectory(trajectory, anchor);
+                    }
                 }
                 else
                 {
@@ -717,9 +719,11 @@ namespace VirtualRail
                 if (attack != null) attack.enabled = _allowShooting;
 
                 var fsm = enemy.GetComponent<EnemyLifecycleFSM>();
-                if (fsm == null) fsm = enemy.gameObject.AddComponent<EnemyLifecycleFSM>();
-                fsm.enabled = true;
-                fsm.InitializeTrajectory(trajectory, anchor);
+                if (fsm != null)
+                {
+                    fsm.enabled = true;
+                    fsm.InitializeTrajectory(trajectory, anchor);
+                }
 
                 enemy.gameObject.SetActive(true);
                 _activeWaveEnemies.Add(enemy);

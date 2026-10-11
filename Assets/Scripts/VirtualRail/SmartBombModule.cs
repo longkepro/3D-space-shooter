@@ -157,17 +157,9 @@ namespace VirtualRail
 
             if (bombPrefab != null)
             {
-                VirtualRailHomingMissile missile = null;
-                if (VirtualRailMissilePool.Instance != null)
-                {
-                    missile = VirtualRailMissilePool.Instance.SpawnMissile(bombPrefab, nosePos, spawnRot);
-                }
-                else
-                {
-                    GameObject obj = Instantiate(bombPrefab, nosePos, spawnRot);
-                    missile = obj.GetComponent<VirtualRailHomingMissile>();
-                    if (missile == null) missile = obj.AddComponent<VirtualRailHomingMissile>();
-                }
+                VirtualRailHomingMissile missile = (VirtualRailMissilePool.Instance != null)
+                    ? VirtualRailMissilePool.Instance.SpawnMissile(bombPrefab, nosePos, spawnRot)
+                    : null;
 
                 if (missile != null)
                 {

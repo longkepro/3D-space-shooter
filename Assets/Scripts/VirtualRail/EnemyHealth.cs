@@ -119,6 +119,49 @@ namespace VirtualRail
             }
         }
 
+        private static Mesh _sharedQuadMesh;
+        private static Material _sharedShieldMat;
+
+        private static Mesh GetOrCreateQuadMesh()
+        {
+            if (_sharedQuadMesh != null) return _sharedQuadMesh;
+            _sharedQuadMesh = new Mesh
+            {
+                name = "Procedural_ShieldQuad",
+                vertices = new Vector3[]
+                {
+                    new Vector3(-0.5f, -0.5f, 0f),
+                    new Vector3(0.5f, -0.5f, 0f),
+                    new Vector3(-0.5f, 0.5f, 0f),
+                    new Vector3(0.5f, 0.5f, 0f)
+                },
+                uv = new Vector2[]
+                {
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0f),
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f)
+                },
+                triangles = new int[] { 0, 2, 1, 2, 3, 1 }
+            };
+            _sharedQuadMesh.RecalculateNormals();
+            return _sharedQuadMesh;
+        }
+
+        private static Material GetOrCreateShieldMaterial()
+        {
+            if (_sharedShieldMat != null) return _sharedShieldMat;
+#if UNITY_EDITOR
+            _sharedShieldMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexShield_ElectricCyan.mat");
+#endif
+            if (_sharedShieldMat == null)
+            {
+                Shader shader = Shader.Find("Sprites/Default");
+                if (shader != null) _sharedShieldMat = new Material(shader);
+            }
+            return _sharedShieldMat;
+        }
+
         private void EnsureShieldVisual()
         {
             if (_hexShield != null) return;
@@ -141,19 +184,11 @@ namespace VirtualRail
             _shieldVisualObj.transform.localScale = new Vector3(5.6f, 3.2f, 1.0f);
 
             var mf = _shieldVisualObj.AddComponent<MeshFilter>();
-            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            mf.sharedMesh = quad.GetComponent<MeshFilter>().sharedMesh;
-            Destroy(quad);
+            mf.sharedMesh = GetOrCreateQuadMesh();
 
             var mr = _shieldVisualObj.AddComponent<MeshRenderer>();
             _shieldRenderer = mr;
-#if UNITY_EDITOR
-            Material shieldMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/HexShield_ElectricCyan.mat");
-            if (shieldMat != null)
-            {
-                _shieldRenderer.sharedMaterial = shieldMat;
-            }
-#endif
+            _shieldRenderer.sharedMaterial = GetOrCreateShieldMaterial();
             _shieldRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _shieldRenderer.receiveShadows = false;
 

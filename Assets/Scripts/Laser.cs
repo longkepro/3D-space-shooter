@@ -12,6 +12,7 @@ public class Laser : MonoBehaviour
     private LineRenderer _laserBeam;
     private Light _laserLight;
     private bool _canFire = true;
+    private float _nextFireTime;
 
     private void Awake()
     {
@@ -28,7 +29,10 @@ public class Laser : MonoBehaviour
 
     private void Update()
     {
-        // Đã triệt tiêu Debug.DrawRay màu vàng để tránh ô nhiễm thị giác và tối ưu hiệu năng
+        if (!_canFire && Time.time >= _nextFireTime)
+        {
+            _canFire = true;
+        }
     }
 
     private Vector3 CastRay()
@@ -111,7 +115,7 @@ public class Laser : MonoBehaviour
             if (_laserBeam != null) _laserBeam.enabled = false;
             if (_laserLight != null) _laserLight.enabled = false;
             _canFire = false;
-            Invoke("CanFire", _fireDelay);
+            _nextFireTime = Time.time + _fireDelay;
         }
     }
 

@@ -39,6 +39,7 @@ namespace VirtualRail
 
         private Vector3 _velocity;
         private float _spawnTime;
+        private float _deflectRecycleTime = -1f;
         private bool _isDeflected = false;
         private Transform _playerTransform;
         private VirtualRailAnchor _anchor;
@@ -84,6 +85,7 @@ namespace VirtualRail
             _isDeflected = false;
             HasGrazed = false;
             _spawnTime = Time.time;
+            _deflectRecycleTime = -1f;
 
             if (sphereCollider != null)
             {
@@ -128,6 +130,13 @@ namespace VirtualRail
                 float dist = Vector3.Distance(transform.position, _playerTransform.position);
                 float scale = Mathf.Clamp(1.0f + (dist / 120f) * 1.2f, 1.0f, 3.5f);
                 visualTransform.localScale = Vector3.one * (visualBaseRadius * scale);
+            }
+
+            // Kiểm tra thu hồi sau khi bị Barrel Roll bẻ văng
+            if (_deflectRecycleTime > 0f && Time.time >= _deflectRecycleTime)
+            {
+                Recycle();
+                return;
             }
 
             // Kiểm tra vòng đời hoặc trôi quá xa về sau lưng tàu
@@ -227,9 +236,8 @@ namespace VirtualRail
                 sphereCollider.enabled = false; // Đạn đã bị hất văng, không gây sát thương nữa
             }
 
-            // Tự thu hồi sau 0.8s khi đã văng ra ngoài
-            CancelInvoke(nameof(Recycle));
-            Invoke(nameof(Recycle), 0.8f);
+            // Tự thu hồi sau 0.8s khi đã văng ra ngoài (0 GC Alloc, 0 Reflection)
+            _deflectRecycleTime = Time.time + 0.8f;
         }
 
         public void DestroyByBomb()
@@ -253,7 +261,7 @@ namespace VirtualRail
 
         public void Recycle()
         {
-            CancelInvoke(nameof(Recycle));
+            _deflectRecycleTime = -1f;
             if (sparkParticles != null)
             {
                 sparkParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);

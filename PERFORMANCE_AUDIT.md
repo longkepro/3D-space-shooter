@@ -589,10 +589,10 @@ Giải quyết: **M-01, M-03, M-04** (Instantiate trong gameplay)
 | 7 | Đổi `GetComponents` → overload List không GC (H-11) | `Explosion.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
 | 8 | Cache Camera & throttle retry trong `LateUpdate` (H-08) | `VirtualRailHorizonBackdrop.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
 | 9 | Lấy Shield từ collider thay vì Find toàn scene (H-09) | `CollectibleRing.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
-| 10 | Xóa tất cả `Instantiate` fallback | 4 file Pool/Missile | 🟡 Medium | ⏳ Chờ triển khai |
-| 11 | Gắn component vào prefab, xóa `AddComponent` | 2 file Spawner | 🟡 Medium | ⏳ Chờ triển khai |
-| 12 | Shield visual vào prefab | `EnemyHealth.cs` | 🟡 Medium | ⏳ Chờ triển khai |
-| 13 | Thay `Invoke` bằng timer float | `Laser.cs` | 🟢 Low | ⏳ Chờ triển khai |
+| 10 | Xóa tất cả `Instantiate` fallback & nâng pool size | `AimAssistModule.cs`, `SmartBombModule.cs`, `VirtualRailLaserPool.cs`, `EnemyProjectilePool.cs`, `VirtualRailHomingMissile.cs` | 🟡 Medium | ✅ **ĐÃ HOÀN TẤT** |
+| 11 | Gắn component vào prefab, xóa `AddComponent` | `VirtualRailWaveSpawner.cs` | 🟡 Medium | ✅ **ĐÃ HOÀN TẤT** |
+| 12 | Shield visual dùng procedural mesh/cache, cache Shield components | `EnemyHealth.cs`, `Shield.cs` | 🟡 Medium | ✅ **ĐÃ HOÀN TẤT** |
+| 13 | Thay `Invoke` / `InvokeRepeating` bằng timer float | `Laser.cs`, `Shield.cs`, `EnemyProjectile.cs` | 🟢 Low | ✅ **ĐÃ HOÀN TẤT** |
 
 ---
 

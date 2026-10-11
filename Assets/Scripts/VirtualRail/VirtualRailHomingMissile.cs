@@ -400,20 +400,9 @@ namespace VirtualRail
 
             // 3. Tạo hiệu ứng nổ qua VFXPool (0 GC)
             var vfxPool = VirtualRailVFXPool.Instance;
-            if (explosionPrefab == null)
-            {
-#if UNITY_EDITOR
-                explosionPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/UnityTechnologies/ParticlePack/EffectExamples/Fire & Explosion Effects/Prefabs/BigExplosion.prefab");
-#endif
-            }
-
             if (vfxPool != null && explosionPrefab != null)
             {
                 vfxPool.SpawnVFX(explosionPrefab, impactPoint, Quaternion.identity, null, 3f);
-            }
-            else if (explosionPrefab != null)
-            {
-                Instantiate(explosionPrefab, impactPoint, Quaternion.identity);
             }
 
             // Thu hồi về Object Pool (0 GC Alloc, không dùng Destroy)

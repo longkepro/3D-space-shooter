@@ -27,10 +27,11 @@ namespace VirtualRail
             }
         }
 
-        [SerializeField] private int initialPoolSize = 36;
+        [SerializeField] private int initialPoolSize = 72;
         private readonly List<VirtualRailLaserBolt> _pool = new List<VirtualRailLaserBolt>();
         private Material _defaultMaterial;
         private bool _isInitialized = false;
+        private int _recycleIndex = 0;
 
         private void Awake()
         {
@@ -125,10 +126,18 @@ namespace VirtualRail
                 }
             }
 
-            // 2. Nếu cường độ bắn cực cao và hết đạn rảnh, sinh thêm hoặc tái sử dụng
+            // 2. Nếu cường độ bắn cực cao và hết đạn rảnh, tái sử dụng đạn cũ nhất (0 GC Alloc, không sinh GameObject mới)
             if (selectedBolt == null)
             {
-                selectedBolt = CreateNewBolt();
+                if (_pool.Count > 0)
+                {
+                    selectedBolt = _pool[_recycleIndex];
+                    _recycleIndex = (_recycleIndex + 1) % _pool.Count;
+                }
+                else
+                {
+                    selectedBolt = CreateNewBolt();
+                }
             }
 
             // 3. Cấu hình vật liệu và màu sắc

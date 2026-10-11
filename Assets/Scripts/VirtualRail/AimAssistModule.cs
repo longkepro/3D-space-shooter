@@ -497,17 +497,10 @@ namespace VirtualRail
             }
 
             Quaternion spawnRot = Quaternion.LookRotation(launchDir);
-            VirtualRailHomingMissile missile = null;
-            if (VirtualRailMissilePool.Instance != null)
-            {
-                missile = VirtualRailMissilePool.Instance.SpawnMissile(missilePrefab, nosePos, spawnRot);
-            }
-            else
-            {
-                GameObject missileObj = Instantiate(missilePrefab, nosePos, spawnRot);
-                missile = missileObj.GetComponent<VirtualRailHomingMissile>();
-                if (missile == null) missile = missileObj.AddComponent<VirtualRailHomingMissile>();
-            }
+            VirtualRailHomingMissile missile = (VirtualRailMissilePool.Instance != null)
+                ? VirtualRailMissilePool.Instance.SpawnMissile(missilePrefab, nosePos, spawnRot)
+                : null;
+            if (missile == null) return;
 
             float shipSpeed = (anchor != null) ? anchor.CurrentSpeed : 120f;
             float baseSpeed = (cfg != null && cfg.chargeShotBaseSpeed > 10f) ? cfg.chargeShotBaseSpeed : 240f;
@@ -548,17 +541,10 @@ namespace VirtualRail
             }
 
             Quaternion spawnRot = Quaternion.LookRotation(launchDir);
-            VirtualRailHomingMissile missile = null;
-            if (VirtualRailMissilePool.Instance != null)
-            {
-                missile = VirtualRailMissilePool.Instance.SpawnMissile(missilePrefab, nosePos, spawnRot);
-            }
-            else
-            {
-                GameObject missileObj = Instantiate(missilePrefab, nosePos, spawnRot);
-                missile = missileObj.GetComponent<VirtualRailHomingMissile>();
-                if (missile == null) missile = missileObj.AddComponent<VirtualRailHomingMissile>();
-            }
+            VirtualRailHomingMissile missile = (VirtualRailMissilePool.Instance != null)
+                ? VirtualRailMissilePool.Instance.SpawnMissile(missilePrefab, nosePos, spawnRot)
+                : null;
+            if (missile == null) return;
 
             var cfg = (anchor != null) ? anchor.config : null;
             float shipSpeed = (anchor != null) ? anchor.CurrentSpeed : 120f;

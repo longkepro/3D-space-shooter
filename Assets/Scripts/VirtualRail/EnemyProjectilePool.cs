@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace VirtualRail
@@ -31,13 +31,14 @@ namespace VirtualRail
         }
 
         [Header("Pool Configuration")]
-        [SerializeField] private int initialCapacity = 40;
+        [SerializeField] private int initialCapacity = 64;
         [SerializeField] private GameObject projectilePrefab;
         [SerializeField] private GameObject impactVFXPrefab;
         [SerializeField] private Material bulletMaterial;
 
         private readonly List<EnemyProjectile> _pool = new List<EnemyProjectile>();
         private bool _isInitialized = false;
+        private int _recycleIndex = 0;
 
         public GameObject ProjectilePrefab => projectilePrefab;
         public GameObject ImpactVFXPrefab => impactVFXPrefab;
@@ -268,18 +269,26 @@ namespace VirtualRail
                 }
             }
 
-            // Neu thieu dan thi tu dong mo rong them 1 vien
+            // Neu thieu dan thi tai su dung vien dan cu nhat theo ring buffer (0 GC Alloc, khong Instantiate)
             if (available == null)
             {
-                if (projectilePrefab == null) projectilePrefab = CreateDefaultPlasmaOrbTemplate();
-                GameObject obj = Instantiate(projectilePrefab, transform);
-                available = obj.GetComponent<EnemyProjectile>();
-                if (available == null) available = obj.AddComponent<EnemyProjectile>();
-                if (impactVFXPrefab != null)
+                if (_pool.Count >= initialCapacity)
                 {
-                    available.SetImpactVFXPrefab(impactVFXPrefab);
+                    available = _pool[_recycleIndex];
+                    _recycleIndex = (_recycleIndex + 1) % _pool.Count;
                 }
-                _pool.Add(available);
+                else
+                {
+                    if (projectilePrefab == null) projectilePrefab = CreateDefaultPlasmaOrbTemplate();
+                    GameObject obj = Instantiate(projectilePrefab, transform);
+                    available = obj.GetComponent<EnemyProjectile>();
+                    if (available == null) available = obj.AddComponent<EnemyProjectile>();
+                    if (impactVFXPrefab != null)
+                    {
+                        available.SetImpactVFXPrefab(impactVFXPrefab);
+                    }
+                    _pool.Add(available);
+                }
             }
 
             available.Initialize(startPosition, direction, speed, isHeadOn, VirtualRailAnchor.Instance);
