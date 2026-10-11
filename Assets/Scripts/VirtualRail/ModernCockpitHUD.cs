@@ -162,6 +162,8 @@ namespace VirtualRail
             UpdateScoreUI(_cachedScore);
             UpdateHitsUI(_cachedHits);
 
+            EnsureBossClusterCreated();
+
             if (clusterBossRoot != null)
             {
                 clusterBossRoot.gameObject.SetActive(false);
@@ -537,6 +539,126 @@ namespace VirtualRail
             {
                 clusterBossRoot.gameObject.SetActive(false);
             }
+        }
+
+        private void EnsureBossClusterCreated()
+        {
+            if (clusterBossRoot != null) return;
+
+            Transform existing = transform.Find("Cluster_Boss");
+            if (existing != null)
+            {
+                clusterBossRoot = existing.GetComponent<RectTransform>();
+                if (bossNameText == null) bossNameText = existing.Find("BossName")?.GetComponent<Text>();
+                if (bossHealthBarFill == null) bossHealthBarFill = existing.Find("HealthBar/Fill")?.GetComponent<Image>();
+                if (bossGhostBarFill == null) bossGhostBarFill = existing.Find("HealthBar/GhostFill")?.GetComponent<Image>();
+                if (bossPhaseText == null) bossPhaseText = existing.Find("PhaseText")?.GetComponent<Text>();
+                return;
+            }
+
+            GameObject bossPanel = new GameObject("Cluster_Boss");
+            bossPanel.transform.SetParent(transform, false);
+
+            RectTransform rt = bossPanel.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 1f);
+            rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(0f, -22f);
+            rt.sizeDelta = new Vector2(540f, 62f);
+
+            Image panelBg = bossPanel.AddComponent<Image>();
+            panelBg.color = new Color(0.02f, 0.08f, 0.14f, 0.88f);
+
+            Outline outline = bossPanel.AddComponent<Outline>();
+            outline.effectColor = new Color(0.9f, 0.2f, 0.2f, 0.65f);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // 1. Tên Boss
+            GameObject nameObj = new GameObject("BossName");
+            nameObj.transform.SetParent(bossPanel.transform, false);
+            RectTransform nameRt = nameObj.AddComponent<RectTransform>();
+            nameRt.anchorMin = new Vector2(0f, 1f);
+            nameRt.anchorMax = new Vector2(1f, 1f);
+            nameRt.pivot = new Vector2(0.5f, 1f);
+            nameRt.anchoredPosition = new Vector2(0f, -6f);
+            nameRt.sizeDelta = new Vector2(-24f, 18f);
+
+            bossNameText = nameObj.AddComponent<Text>();
+            bossNameText.font = font;
+            bossNameText.fontSize = 12;
+            bossNameText.fontStyle = FontStyle.Bold;
+            bossNameText.alignment = TextAnchor.MiddleCenter;
+            bossNameText.color = new Color(1f, 0.75f, 0.2f, 1f);
+            bossNameText.text = "FEDERATION CORVETTE F3 // CRIMSON TITAN";
+
+            // 2. Thanh Máu (Track + Ghost Fill + Main Fill)
+            GameObject barObj = new GameObject("HealthBar");
+            barObj.transform.SetParent(bossPanel.transform, false);
+            RectTransform barRt = barObj.AddComponent<RectTransform>();
+            barRt.anchorMin = new Vector2(0f, 0.5f);
+            barRt.anchorMax = new Vector2(1f, 0.5f);
+            barRt.pivot = new Vector2(0.5f, 0.5f);
+            barRt.anchoredPosition = new Vector2(0f, -3f);
+            barRt.sizeDelta = new Vector2(-28f, 14f);
+
+            Image trackImg = barObj.AddComponent<Image>();
+            trackImg.color = new Color(0.12f, 0.14f, 0.18f, 0.95f);
+
+            // Ghost Fill
+            GameObject ghostObj = new GameObject("GhostFill");
+            ghostObj.transform.SetParent(barObj.transform, false);
+            RectTransform ghostRt = ghostObj.AddComponent<RectTransform>();
+            ghostRt.anchorMin = Vector2.zero;
+            ghostRt.anchorMax = Vector2.one;
+            ghostRt.offsetMin = Vector2.zero;
+            ghostRt.offsetMax = Vector2.zero;
+
+            bossGhostBarFill = ghostObj.AddComponent<Image>();
+            bossGhostBarFill.type = Image.Type.Filled;
+            bossGhostBarFill.fillMethod = Image.FillMethod.Horizontal;
+            bossGhostBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            bossGhostBarFill.fillAmount = 1f;
+            bossGhostBarFill.color = new Color(1f, 0.85f, 0.35f, 0.7f);
+
+            // Main Fill
+            GameObject fillObj = new GameObject("Fill");
+            fillObj.transform.SetParent(barObj.transform, false);
+            RectTransform fillRt = fillObj.AddComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.offsetMin = Vector2.zero;
+            fillRt.offsetMax = Vector2.zero;
+
+            bossHealthBarFill = fillObj.AddComponent<Image>();
+            bossHealthBarFill.type = Image.Type.Filled;
+            bossHealthBarFill.fillMethod = Image.FillMethod.Horizontal;
+            bossHealthBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            bossHealthBarFill.fillAmount = 1f;
+            bossHealthBarFill.color = new Color(1f, 0.22f, 0.15f, 1f);
+
+            // 3. Phase Subtitle Text
+            GameObject phaseObj = new GameObject("PhaseText");
+            phaseObj.transform.SetParent(bossPanel.transform, false);
+            RectTransform phaseRt = phaseObj.AddComponent<RectTransform>();
+            phaseRt.anchorMin = new Vector2(0f, 0f);
+            phaseRt.anchorMax = new Vector2(1f, 0f);
+            phaseRt.pivot = new Vector2(0.5f, 0f);
+            phaseRt.anchoredPosition = new Vector2(0f, 5f);
+            phaseRt.sizeDelta = new Vector2(-24f, 14f);
+
+            bossPhaseText = phaseObj.AddComponent<Text>();
+            bossPhaseText.font = font;
+            bossPhaseText.fontSize = 10;
+            bossPhaseText.fontStyle = FontStyle.Normal;
+            bossPhaseText.alignment = TextAnchor.MiddleCenter;
+            bossPhaseText.color = new Color(0.85f, 0.88f, 0.95f, 0.9f);
+            bossPhaseText.text = "WARNING: COLOSSAL BATTLECRUISER BENEATH";
+
+            clusterBossRoot = rt;
+            bossPanel.SetActive(false);
         }
 
         #endregion

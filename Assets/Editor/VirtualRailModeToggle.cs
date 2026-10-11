@@ -18,7 +18,7 @@ public class VirtualRailModeToggle
     private const string SKYBOX_INIT_KEY = "VirtualRail_Skybox_Image1_Initialized";
     private const string BACKDROP_BAKED_KEY = "VirtualRail_Backdrop_Baked_v5";
     private const string GREEN_ORB_INIT_KEY = "VirtualRail_GreenOrb_ChargeShot_v1";
-    private const string MODERN_HUD_APPLIED_KEY = "VirtualRail_ModernHUD_Applied_Demo_v4_PixelPerfect";
+    private const string MODERN_HUD_APPLIED_KEY = "VirtualRail_ModernHUD_Applied_Demo_v5_ResponsiveSciFi";
 
     static VirtualRailModeToggle()
     {
@@ -2229,8 +2229,20 @@ public class VirtualRailModeToggle
             CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
             canvasObj.AddComponent<GraphicRaycaster>();
+        }
+        else
+        {
+            CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
+            if (scaler != null)
+            {
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
+                scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+                scaler.matchWidthOrHeight = 0.5f;
+            }
         }
 
         Transform existingHUD = canvas.transform.Find("[ModernCockpitHUD]");
@@ -2337,8 +2349,8 @@ public class VirtualRailModeToggle
                 Vector4 targetBorder = Vector4.zero;
                 if (file == "hud_frame_bracket.png") targetBorder = new Vector4(36, 36, 36, 36);
                 else if (file == "hud_bar_segmented_bg.png" || file == "hud_bar_segmented_fill.png") targetBorder = new Vector4(16, 6, 16, 6);
-                else if (file == "hud_panel_score_red.png" || file == "hud_panel_hits_cyan.png") targetBorder = new Vector4(24, 24, 24, 24);
-                else if (file == "hud_bar_capsule_track.png" || file == "hud_bar_capsule_fill.png") targetBorder = new Vector4(24, 12, 24, 12);
+                else if (file == "hud_panel_score_red.png" || file == "hud_panel_hits_cyan.png") targetBorder = new Vector4(28, 28, 28, 28);
+                else if (file == "hud_bar_capsule_track.png" || file == "hud_bar_capsule_fill.png") targetBorder = new Vector4(24, 16, 24, 16);
 
                 if (importer.spriteBorder != targetBorder)
                 {
@@ -2364,7 +2376,8 @@ public class VirtualRailModeToggle
     {
         EnsureHUDSpritesConfigured();
 
-        Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Bahnschrift.ttf");
+        if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
         // Load Pixel-Perfect Sci-Fi Sprites matching 100% User Reference
@@ -2463,7 +2476,12 @@ public class VirtualRailModeToggle
         comboRt.sizeDelta = new Vector2(92f, 92f);
         hud.comboBadgeRoot = comboRt;
 
+        AspectRatioFitter arf = comboDialObj.AddComponent<AspectRatioFitter>();
+        arf.aspectMode = AspectRatioFitter.AspectMode.HeightControlsWidth;
+        arf.aspectRatio = 1.0f;
+
         GameObject dialFrame = CreateUIImage("DialFrame", comboDialObj.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white, comboDialSprite);
+        dialFrame.GetComponent<Image>().preserveAspect = true;
         RectTransform dialFrameRt = dialFrame.GetComponent<RectTransform>();
         dialFrameRt.offsetMin = Vector2.zero;
         dialFrameRt.offsetMax = Vector2.zero;
@@ -2528,6 +2546,61 @@ public class VirtualRailModeToggle
         hud.speedometerValueText = CreateUIText("SpeedValue", brCluster.transform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-18f, 18f), new Vector2(120f, 32f), "140 m/s", font, 24, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
         GameObject speedGaugeObj = CreateUIProgressBar("SpeedGauge", brCluster.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(18f, 52f), new Vector2(-36f, 10f), borderCyan, null, barFillSprite);
         hud.speedometerGaugeFill = speedGaugeObj.transform.Find("Fill").GetComponent<Image>();
+
+        // -------------------------------------------------------------
+        // CỤM 6: TOP-CENTER (CLIMAX BOSS HEALTH BAR & PHASE SUBTITLE)
+        // -------------------------------------------------------------
+        GameObject bossCluster = CreateUIPanel("Cluster_Boss", hudRoot.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -22f), new Vector2(540f, 62f), bgPanelColor, frameSprite);
+        hud.clusterBossRoot = bossCluster.GetComponent<RectTransform>();
+
+        // Boss Name
+        hud.bossNameText = CreateUIText("BossName", bossCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -6f), new Vector2(-24f, 18f), "FEDERATION CORVETTE F3 // CRIMSON TITAN", font, 12, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
+
+        // Boss Health Bar (Track + Ghost Fill + Main Fill)
+        GameObject bossBarObj = new GameObject("HealthBar");
+        bossBarObj.transform.SetParent(bossCluster.transform, false);
+        RectTransform barRt = bossBarObj.AddComponent<RectTransform>();
+        barRt.anchorMin = new Vector2(0f, 0.5f);
+        barRt.anchorMax = new Vector2(1f, 0.5f);
+        barRt.pivot = new Vector2(0.5f, 0.5f);
+        barRt.anchoredPosition = new Vector2(0f, -3f);
+        barRt.sizeDelta = new Vector2(-28f, 14f);
+
+        Image trackImg = bossBarObj.AddComponent<Image>();
+        trackImg.color = new Color(0.12f, 0.14f, 0.18f, 0.95f);
+
+        GameObject ghostObj = new GameObject("GhostFill");
+        ghostObj.transform.SetParent(bossBarObj.transform, false);
+        RectTransform ghostRt = ghostObj.AddComponent<RectTransform>();
+        ghostRt.anchorMin = Vector2.zero;
+        ghostRt.anchorMax = Vector2.one;
+        ghostRt.offsetMin = Vector2.zero;
+        ghostRt.offsetMax = Vector2.zero;
+        hud.bossGhostBarFill = ghostObj.AddComponent<Image>();
+        hud.bossGhostBarFill.type = Image.Type.Filled;
+        hud.bossGhostBarFill.fillMethod = Image.FillMethod.Horizontal;
+        hud.bossGhostBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+        hud.bossGhostBarFill.fillAmount = 1f;
+        hud.bossGhostBarFill.color = new Color(1f, 0.85f, 0.35f, 0.7f);
+
+        GameObject fillObj = new GameObject("Fill");
+        fillObj.transform.SetParent(bossBarObj.transform, false);
+        RectTransform fillRt = fillObj.AddComponent<RectTransform>();
+        fillRt.anchorMin = Vector2.zero;
+        fillRt.anchorMax = Vector2.one;
+        fillRt.offsetMin = Vector2.zero;
+        fillRt.offsetMax = Vector2.zero;
+        hud.bossHealthBarFill = fillObj.AddComponent<Image>();
+        hud.bossHealthBarFill.type = Image.Type.Filled;
+        hud.bossHealthBarFill.fillMethod = Image.FillMethod.Horizontal;
+        hud.bossHealthBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+        hud.bossHealthBarFill.fillAmount = 1f;
+        hud.bossHealthBarFill.color = new Color(1f, 0.22f, 0.15f, 1f);
+
+        // Phase Text
+        hud.bossPhaseText = CreateUIText("PhaseText", bossCluster.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 5f), new Vector2(-24f, 14f), "WARNING: COLOSSAL BATTLECRUISER BENEATH", font, 10, FontStyle.Normal, new Color(0.85f, 0.88f, 0.95f, 0.9f), TextAnchor.MiddleCenter);
+
+        bossCluster.SetActive(false);
 
         return hudRoot;
     }
@@ -2643,7 +2716,7 @@ public class VirtualRailModeToggle
         return bgObj;
     }
 
-    private static Text CreateUIText(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, string text, Font font, int fontSize, FontStyle fontStyle, Color color, TextAnchor alignment)
+    private static Text CreateUIText(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, string text, Font font, int fontSize, FontStyle fontStyle, Color color, TextAnchor alignment, bool addShadow = true)
     {
         GameObject obj = new GameObject(name);
         obj.transform.SetParent(parent, false);
@@ -2662,6 +2735,15 @@ public class VirtualRailModeToggle
         t.color = color;
         t.alignment = alignment;
         t.text = text;
+
+        if (addShadow)
+        {
+            Shadow shadow = obj.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.85f);
+            shadow.effectDistance = new Vector2(1.2f, -1.2f);
+            shadow.useGraphicAlpha = true;
+        }
+
         return t;
     }
     #endregion
