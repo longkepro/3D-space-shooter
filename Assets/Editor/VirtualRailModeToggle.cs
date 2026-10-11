@@ -18,7 +18,7 @@ public class VirtualRailModeToggle
     private const string SKYBOX_INIT_KEY = "VirtualRail_Skybox_Image1_Initialized";
     private const string BACKDROP_BAKED_KEY = "VirtualRail_Backdrop_Baked_v5";
     private const string GREEN_ORB_INIT_KEY = "VirtualRail_GreenOrb_ChargeShot_v1";
-    private const string MODERN_HUD_APPLIED_KEY = "VirtualRail_ModernHUD_Applied_Demo_v2";
+    private const string MODERN_HUD_APPLIED_KEY = "VirtualRail_ModernHUD_Applied_Demo_v4_PixelPerfect";
 
     static VirtualRailModeToggle()
     {
@@ -2306,7 +2306,15 @@ public class VirtualRailModeToggle
             "hud_icon_twin_laser.png",
             "hud_avatar_pilot.png",
             "hud_speed_gauge_arc.png",
-            "hud_scanline_overlay.png"
+            "hud_scanline_overlay.png",
+            "hud_panel_left_chamfered.png",
+            "hud_panel_score_red.png",
+            "hud_panel_hits_cyan.png",
+            "hud_bar_capsule_track.png",
+            "hud_bar_capsule_fill.png",
+            "hud_icon_classic_bomb.png",
+            "hud_combo_radial_dial.png",
+            "hud_combo_radial_fill.png"
         };
 
         bool reimportedAny = false;
@@ -2326,14 +2334,15 @@ public class VirtualRailModeToggle
                     dirty = true;
                 }
 
-                if (file == "hud_frame_bracket.png" && importer.spriteBorder != new Vector4(36, 36, 36, 36))
+                Vector4 targetBorder = Vector4.zero;
+                if (file == "hud_frame_bracket.png") targetBorder = new Vector4(36, 36, 36, 36);
+                else if (file == "hud_bar_segmented_bg.png" || file == "hud_bar_segmented_fill.png") targetBorder = new Vector4(16, 6, 16, 6);
+                else if (file == "hud_panel_score_red.png" || file == "hud_panel_hits_cyan.png") targetBorder = new Vector4(24, 24, 24, 24);
+                else if (file == "hud_bar_capsule_track.png" || file == "hud_bar_capsule_fill.png") targetBorder = new Vector4(24, 12, 24, 12);
+
+                if (importer.spriteBorder != targetBorder)
                 {
-                    importer.spriteBorder = new Vector4(36, 36, 36, 36);
-                    dirty = true;
-                }
-                else if ((file == "hud_bar_segmented_bg.png" || file == "hud_bar_segmented_fill.png") && importer.spriteBorder != new Vector4(16, 6, 16, 6))
-                {
-                    importer.spriteBorder = new Vector4(16, 6, 16, 6);
+                    importer.spriteBorder = targetBorder;
                     dirty = true;
                 }
 
@@ -2358,15 +2367,21 @@ public class VirtualRailModeToggle
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-        // Load Sci-Fi HD Sprites
+        // Load Pixel-Perfect Sci-Fi Sprites matching 100% User Reference
+        Sprite leftChamferedSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_panel_left_chamfered.png");
+        Sprite scoreRedSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_panel_score_red.png");
+        Sprite hitsCyanSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_panel_hits_cyan.png");
+        Sprite capsuleTrackSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_bar_capsule_track.png");
+        Sprite capsuleFillSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_bar_capsule_fill.png");
+        Sprite classicBombSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_icon_classic_bomb.png");
+        Sprite comboDialSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_combo_radial_dial.png");
+        Sprite comboFillSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_combo_radial_fill.png");
+
+        // Legacy / Secondary Clusters Sprites
         Sprite frameSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_frame_bracket.png");
-        Sprite barBgSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_bar_segmented_bg.png");
         Sprite barFillSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_bar_segmented_fill.png");
-        Sprite bombSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_icon_smartbomb.png");
-        Sprite shieldIconSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_icon_shield.png");
         Sprite laserIconSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_icon_twin_laser.png");
         Sprite pilotSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_avatar_pilot.png");
-        Sprite speedGaugeSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_speed_gauge_arc.png");
 
         GameObject hudRoot = new GameObject("[ModernCockpitHUD]");
         hudRoot.transform.SetParent(canvasParent, false);
@@ -2377,68 +2392,96 @@ public class VirtualRailModeToggle
         rootRt.offsetMin = Vector2.zero;
         rootRt.offsetMax = Vector2.zero;
 
+        CanvasGroup hudCg = hudRoot.AddComponent<CanvasGroup>();
         ModernCockpitHUD hud = hudRoot.AddComponent<ModernCockpitHUD>();
 
         Color bgPanelColor = new Color(0.02f, 0.08f, 0.14f, 0.88f);
-        Color borderCyan = new Color(0f, 0.95f, 1f, 0.95f);
+        Color borderCyan = new Color(0f, 0.95f, 1f, 1f);
         Color amberColor = new Color(1f, 0.68f, 0.1f, 1f);
+        Color pinkScoreColor = new Color(1f, 0.2f, 0.45f, 1f);
+        Color goldComboColor = new Color(1f, 0.84f, 0f, 1f);
 
         // -------------------------------------------------------------
-        // CỤM 1: TOP-LEFT (SHIP INTEGRITY & CHARGE METER & BOMBS)
+        // CỤM 1: TOP-LEFT (CHAMFERED PANEL: SHIELD & CHARGE METER & 3 BOMBS)
         // -------------------------------------------------------------
-        GameObject tlCluster = CreateUIPanel("Cluster_TopLeft", hudRoot.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(35f, -35f), new Vector2(380f, 175f), bgPanelColor, frameSprite);
+        GameObject tlCluster = CreateUIPanel("Cluster_TopLeft", hudRoot.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(35f, -30f), new Vector2(370f, 150f), bgPanelColor, leftChamferedSprite, Image.Type.Simple);
         hud.clusterTopLeftRoot = tlCluster.GetComponent<RectTransform>();
 
-        // Header Title
-        CreateUIText("Title", tlCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(20f, -12f), new Vector2(-20f, 22f), "SHIP INTEGRITY & CHARGE", font, 11, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
-
-        // Shield Row (Icon + Label + Segmented Bar + %)
-        if (shieldIconSprite != null)
-        {
-            CreateUIImage("ShieldIcon", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(18f, -40f), new Vector2(20f, 20f), Color.white, shieldIconSprite);
-        }
-        CreateUIText("ShieldLabel", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(42f, -40f), new Vector2(55f, 20f), "SHIELD", font, 11, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
-        GameObject shieldBarObj = CreateUIProgressBar("ShieldBar", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(100f, -40f), new Vector2(210f, 20f), borderCyan, barBgSprite, barFillSprite);
+        // Row 1: Shield (Title above bar + Capsule Bar + 85% on right)
+        CreateUIText("ShieldLabel", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -14f), new Vector2(80f, 18f), "SHIELD", font, 11, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+        GameObject shieldBarObj = CreateUIProgressBar("ShieldBar", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -34f), new Vector2(240f, 22f), borderCyan, capsuleTrackSprite, capsuleFillSprite);
         hud.shieldBarFill = shieldBarObj.transform.Find("Fill").GetComponent<Image>();
-        hud.shieldPercentText = CreateUIText("ShieldPercent", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(318f, -40f), new Vector2(50f, 20f), "100%", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
+        hud.shieldPercentText = CreateUIText("ShieldPercent", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(272f, -34f), new Vector2(65f, 22f), "85%", font, 18, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
 
-        // Charge Row (2.0s Cooldown) (Segmented Bar + Status + Timer)
-        CreateUIText("ChargeLabel", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(42f, -74f), new Vector2(55f, 20f), "CHARGE", font, 11, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
-        GameObject chargeBarObj = CreateUIProgressBar("ChargeBar", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(100f, -74f), new Vector2(210f, 20f), amberColor, barBgSprite, barFillSprite);
+        // Row 2: Charge (2.0s Cooldown) (Capsule Bar + Label Inside + Subtext)
+        GameObject chargeBarObj = CreateUIProgressBar("ChargeBar", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -68f), new Vector2(240f, 22f), amberColor, capsuleTrackSprite, capsuleFillSprite);
         hud.chargeBarFill = chargeBarObj.transform.Find("Fill").GetComponent<Image>();
-        hud.chargeTimerText = CreateUIText("ChargeTimer", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(318f, -74f), new Vector2(50f, 20f), "100%", font, 13, FontStyle.Bold, amberColor, TextAnchor.MiddleRight);
-        hud.chargeStatusText = CreateUIText("ChargeStatus", tlCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(100f, -98f), new Vector2(-20f, 16f), "CHARGE READY (2.0s)", font, 10, FontStyle.Normal, amberColor, TextAnchor.MiddleLeft);
+        CreateUIText("ChargeLabel", chargeBarObj.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(10f, 0f), new Vector2(75f, 20f), "CHARGE", font, 11, FontStyle.Bold, new Color(1f, 0.94f, 0.8f, 1f), TextAnchor.MiddleLeft);
+        hud.chargeTimerText = CreateUIText("ChargeTimer", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(272f, -68f), new Vector2(65f, 22f), "100%", font, 16, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
+        hud.chargeStatusText = CreateUIText("ChargeStatus", tlCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(24f, -92f), new Vector2(240f, 16f), "CHARGE READY (2.0s)", font, 10, FontStyle.Normal, new Color(1f, 0.68f, 0.1f, 0.9f), TextAnchor.MiddleLeft);
 
-        // Bombs Row (Smart Bomb Icons + Count)
-        CreateUIText("BombsLabel", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(42f, -128f), new Vector2(55f, 24f), "BOMBS", font, 11, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+        // Row 3: Bombs (3 Classic Glowing Spherical Warheads)
         hud.bombIconImages = new Image[3];
         for (int b = 0; b < 3; b++)
         {
-            GameObject bIcon = CreateUIImage("Bomb_" + b, tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(100f + (b * 28f), -128f), new Vector2(24f, 24f), Color.white, bombSprite);
+            GameObject bIcon = CreateUIImage("Bomb_" + b, tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f + (b * 40f), -114f), new Vector2(32f, 32f), Color.white, classicBombSprite);
             hud.bombIconImages[b] = bIcon.GetComponent<Image>();
         }
-        hud.bombCountText = CreateUIText("BombCount", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(190f, -128f), new Vector2(50f, 24f), "x3", font, 13, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
+        hud.bombCountText = CreateUIText("BombCount", tlCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(150f, -114f), new Vector2(45f, 32f), "", font, 13, FontStyle.Bold, new Color(1f, 0.85f, 0.2f, 1f), TextAnchor.MiddleLeft);
 
         // -------------------------------------------------------------
-        // CỤM 2: TOP-RIGHT (ARCADE SCORE & HITS & COMBO)
+        // CỤM 2: TOP-RIGHT (STACKED PANELS: SCORE BOX + HITS BOX + COMBO DIAL)
         // -------------------------------------------------------------
-        GameObject trCluster = CreateUIPanel("Cluster_TopRight", hudRoot.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-35f, -35f), new Vector2(340f, 135f), bgPanelColor, frameSprite);
-        hud.clusterTopRightRoot = trCluster.GetComponent<RectTransform>();
+        GameObject trCluster = new GameObject("Cluster_TopRight");
+        trCluster.transform.SetParent(hudRoot.transform, false);
+        RectTransform trRt = trCluster.AddComponent<RectTransform>();
+        trRt.anchorMin = new Vector2(1f, 1f);
+        trRt.anchorMax = new Vector2(1f, 1f);
+        trRt.pivot = new Vector2(1f, 1f);
+        trRt.anchoredPosition = new Vector2(-35f, -30f);
+        trRt.sizeDelta = new Vector2(245f, 260f);
+        hud.clusterTopRightRoot = trRt;
 
-        // Score
-        CreateUIText("ScoreLabel", trCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -14f), new Vector2(65f, 22f), "SCORE:", font, 12, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
-        hud.scoreValueText = CreateUIText("ScoreValue", trCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(85f, -12f), new Vector2(-20f, 32f), "000,000", font, 24, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
+        // Box 1: Score Box (Neon Pink/Red Border Frame)
+        GameObject scoreBox = CreateUIPanel("ScoreBox", trCluster.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(245f, 48f), Color.clear, scoreRedSprite, Image.Type.Sliced);
+        CreateUIText("ScoreLabel", scoreBox.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(16f, 0f), new Vector2(65f, 26f), "SCORE", font, 14, FontStyle.Bold, pinkScoreColor, TextAnchor.MiddleLeft);
+        hud.scoreValueText = CreateUIText("ScoreValue", scoreBox.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-16f, 0f), new Vector2(145f, 32f), "024,500", font, 24, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
 
-        // Hits
-        CreateUIText("HitsLabel", trCluster.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -50f), new Vector2(65f, 22f), "HITS:", font, 12, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
-        hud.hitCountValueText = CreateUIText("HitsValue", trCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 1f), new Vector2(85f, -48f), new Vector2(-20f, 28f), "000", font, 20, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
+        // Box 2: Hits Box (Neon Cyan Border Frame)
+        GameObject hitsBox = CreateUIPanel("HitsBox", trCluster.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(0f, -56f), new Vector2(245f, 48f), Color.clear, hitsCyanSprite, Image.Type.Sliced);
+        CreateUIText("HitsLabel", hitsBox.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(16f, 0f), new Vector2(65f, 26f), "HITS", font, 14, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+        hud.hitCountValueText = CreateUIText("HitsValue", hitsBox.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-16f, 0f), new Vector2(145f, 32f), "156", font, 24, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
 
-        // Combo Badge
-        GameObject comboObj = CreateUIPanel("ComboBadge", trCluster.transform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(20f, 12f), new Vector2(130f, 38f), new Color(0.25f, 0.15f, 0f, 0.9f));
-        hud.comboBadgeRoot = comboObj.GetComponent<RectTransform>();
-        CreateUIText("ComboTag", comboObj.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(10f, 0f), new Vector2(55f, 24f), "COMBO", font, 11, FontStyle.Bold, amberColor, TextAnchor.MiddleLeft);
-        hud.comboMultiplierText = CreateUIText("ComboMultiplier", comboObj.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-10f, 0f), new Vector2(55f, 28f), "x2", font, 20, FontStyle.Bold, Color.yellow, TextAnchor.MiddleRight);
-        comboObj.SetActive(false);
+        // Box 3: Combo Radial Dial (Circular Golden Gauge with 360 Arc Decay) positioned directly under right side of Hits box
+        GameObject comboDialObj = new GameObject("ComboRadialDial");
+        comboDialObj.transform.SetParent(trCluster.transform, false);
+        RectTransform comboRt = comboDialObj.AddComponent<RectTransform>();
+        comboRt.anchorMin = new Vector2(1f, 1f);
+        comboRt.anchorMax = new Vector2(1f, 1f);
+        comboRt.pivot = new Vector2(1f, 1f);
+        comboRt.anchoredPosition = new Vector2(0f, -114f);
+        comboRt.sizeDelta = new Vector2(92f, 92f);
+        hud.comboBadgeRoot = comboRt;
+
+        GameObject dialFrame = CreateUIImage("DialFrame", comboDialObj.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white, comboDialSprite);
+        RectTransform dialFrameRt = dialFrame.GetComponent<RectTransform>();
+        dialFrameRt.offsetMin = Vector2.zero;
+        dialFrameRt.offsetMax = Vector2.zero;
+
+        GameObject dialFill = CreateUIImage("DecayFill", comboDialObj.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, goldComboColor, comboFillSprite);
+        RectTransform dialFillRt = dialFill.GetComponent<RectTransform>();
+        dialFillRt.offsetMin = Vector2.zero;
+        dialFillRt.offsetMax = Vector2.zero;
+        Image decayImg = dialFill.GetComponent<Image>();
+        decayImg.type = Image.Type.Filled;
+        decayImg.fillMethod = Image.FillMethod.Radial360;
+        decayImg.fillOrigin = (int)Image.Origin360.Top;
+        decayImg.fillClockwise = true;
+        decayImg.fillAmount = 1f;
+        hud.comboDecayRadial = decayImg;
+
+        CreateUIText("ComboTag", comboDialObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 14f), new Vector2(65f, 18f), "COMBO", font, 11, FontStyle.Bold, goldComboColor, TextAnchor.MiddleCenter);
+        hud.comboMultiplierText = CreateUIText("ComboMultiplier", comboDialObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -10f), new Vector2(65f, 26f), "x3", font, 20, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
 
         // -------------------------------------------------------------
         // CỤM 4: BOTTOM-LEFT (RADIO COMMS TACTICAL BOX)
@@ -2489,7 +2532,7 @@ public class VirtualRailModeToggle
         return hudRoot;
     }
 
-    private static GameObject CreateUIPanel(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, Color bgColor, Sprite sprite = null)
+    private static GameObject CreateUIPanel(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, Color bgColor, Sprite sprite = null, Image.Type imageType = Image.Type.Sliced)
     {
         GameObject panel = new GameObject(name);
         panel.transform.SetParent(parent, false);
@@ -2505,7 +2548,7 @@ public class VirtualRailModeToggle
         if (sprite != null)
         {
             img.sprite = sprite;
-            img.type = Image.Type.Sliced;
+            img.type = imageType;
             img.color = Color.white;
         }
         else
@@ -2518,6 +2561,7 @@ public class VirtualRailModeToggle
 
         return panel;
     }
+
 
     private static GameObject CreateUIImage(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, Color color, Sprite sprite = null)
     {

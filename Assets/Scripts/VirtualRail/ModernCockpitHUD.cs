@@ -58,6 +58,13 @@ namespace VirtualRail
         public Text speedometerValueText;
         public Image speedometerGaugeFill;
 
+        [Header("Cluster 6: Climax Boss Health Bar (Top-Center)")]
+        public RectTransform clusterBossRoot;
+        public Image bossHealthBarFill;
+        public Image bossGhostBarFill;
+        public Text bossNameText;
+        public Text bossPhaseText;
+
         // 0 GC String Lookup Tables (Triệt tiêu 100% Heap Allocation)
         private static readonly string[] PERCENT_STRINGS = PrecomputePercentStrings();
         private static readonly string[] SPEED_STRINGS = PrecomputeSpeedStrings();
@@ -121,6 +128,10 @@ namespace VirtualRail
             ComboScoringEngine.OnMultiplierDecayed += HandleMultiplierDecayed;
             ComboScoringEngine.OnMultiplierReset += HandleMultiplierReset;
             ComboScoringEngine.OnComboScored += HandleComboScored;
+
+            BossF3CorvetteController.OnBossSpawned += HandleBossSpawned;
+            BossF3CorvetteController.OnBossHealthChanged += HandleBossHealthChanged;
+            BossF3CorvetteController.OnBossDefeated += HandleBossDefeated;
         }
 
         private void OnDisable()
@@ -136,6 +147,10 @@ namespace VirtualRail
             ComboScoringEngine.OnMultiplierDecayed -= HandleMultiplierDecayed;
             ComboScoringEngine.OnMultiplierReset -= HandleMultiplierReset;
             ComboScoringEngine.OnComboScored -= HandleComboScored;
+
+            BossF3CorvetteController.OnBossSpawned -= HandleBossSpawned;
+            BossF3CorvetteController.OnBossHealthChanged -= HandleBossHealthChanged;
+            BossF3CorvetteController.OnBossDefeated -= HandleBossDefeated;
         }
 
         private void Start()
@@ -146,6 +161,11 @@ namespace VirtualRail
             UpdateHealthUI(_cachedHealthPercent);
             UpdateScoreUI(_cachedScore);
             UpdateHitsUI(_cachedHits);
+
+            if (clusterBossRoot != null)
+            {
+                clusterBossRoot.gameObject.SetActive(false);
+            }
 
             // Kiểm tra trạng thái Menu chính để ẩn HUD khi ngoài game
             GameObject mainMenu = GameObject.Find("Main Menu");
@@ -204,6 +224,24 @@ namespace VirtualRail
             UpdateChargeMeterUI(cfg);
             UpdateSpeedometerUI();
             UpdateShieldAlertPulsing();
+            UpdateComboDecayUI();
+            UpdateBossGhostBar();
+        }
+
+        private void UpdateBossGhostBar()
+        {
+            if (bossGhostBarFill != null && bossHealthBarFill != null && bossGhostBarFill.fillAmount > bossHealthBarFill.fillAmount)
+            {
+                bossGhostBarFill.fillAmount = Mathf.MoveTowards(bossGhostBarFill.fillAmount, bossHealthBarFill.fillAmount, Time.deltaTime * 0.35f);
+            }
+        }
+
+        private void UpdateComboDecayUI()
+        {
+            if (comboDecayRadial != null && ComboScoringEngine.Instance != null)
+            {
+                comboDecayRadial.fillAmount = ComboScoringEngine.Instance.DecayRatio;
+            }
         }
 
         #region CLUSTER 1: SHIP INTEGRITY & PLASMA CHARGE
@@ -357,7 +395,7 @@ namespace VirtualRail
         {
             if (scoreValueText != null)
             {
-                scoreValueText.text = score.ToString("D6");
+                scoreValueText.text = score.ToString("000,000");
             }
         }
 
@@ -373,12 +411,12 @@ namespace VirtualRail
         {
             if (comboBadgeRoot != null)
             {
-                comboBadgeRoot.gameObject.SetActive(multiplier > 1);
+                comboBadgeRoot.gameObject.SetActive(true);
             }
 
-            if (comboMultiplierText != null && multiplier > 1)
+            if (comboMultiplierText != null)
             {
-                comboMultiplierText.text = "x" + multiplier;
+                comboMultiplierText.text = "x" + Mathf.Max(1, multiplier);
             }
         }
 
@@ -389,9 +427,9 @@ namespace VirtualRail
 
         private void HandleMultiplierReset()
         {
-            if (comboBadgeRoot != null)
+            if (comboMultiplierText != null)
             {
-                comboBadgeRoot.gameObject.SetActive(false);
+                comboMultiplierText.text = "x1";
             }
         }
 
@@ -431,6 +469,73 @@ namespace VirtualRail
             if (speedometerGaugeFill != null)
             {
                 speedometerGaugeFill.fillAmount = Mathf.Clamp01(speed / 240f);
+            }
+        }
+
+        #endregion
+
+        #region CLUSTER 6: CLIMAX BOSS HEALTH BAR
+
+        private void HandleBossSpawned(BossF3CorvetteController boss)
+        {
+            if (clusterBossRoot != null)
+            {
+                clusterBossRoot.gameObject.SetActive(true);
+            }
+            if (bossNameText != null)
+            {
+                bossNameText.text = "FEDERATION CORVETTE F3 // CRIMSON TITAN";
+            }
+            if (bossHealthBarFill != null) bossHealthBarFill.fillAmount = 1f;
+            if (bossGhostBarFill != null) bossGhostBarFill.fillAmount = 1f;
+            if (bossPhaseText != null)
+            {
+                bossPhaseText.text = "WARNING: COLOSSAL BATTLECRUISER BENEATH";
+            }
+        }
+
+        private void HandleBossHealthChanged(int current, int max, BossBattlePhase phase)
+        {
+            if (clusterBossRoot != null && !clusterBossRoot.gameObject.activeSelf)
+            {
+                clusterBossRoot.gameObject.SetActive(true);
+            }
+
+            float ratio = (max > 0) ? Mathf.Clamp01((float)current / max) : 0f;
+            if (bossHealthBarFill != null)
+            {
+                bossHealthBarFill.fillAmount = ratio;
+            }
+
+            if (bossPhaseText != null)
+            {
+                switch (phase)
+                {
+                    case BossBattlePhase.IntroBreach:
+                        bossPhaseText.text = "WARNING: SIGNATURE DETECTED";
+                        break;
+                    case BossBattlePhase.Phase1_DeckStrafe:
+                        bossPhaseText.text = "PHASE 1: DORSAL SHIELD ONLINE";
+                        break;
+                    case BossBattlePhase.Phase2_ReactorTrench:
+                        bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
+                        break;
+                    case BossBattlePhase.Phase3_MeltdownOverdrive:
+                        bossPhaseText.text = "PHASE 3: MELTDOWN OVERDRIVE";
+                        break;
+                    case BossBattlePhase.Defeated:
+                        bossPhaseText.text = "TARGET DESTROYED // WARP ENGAGED";
+                        break;
+                }
+            }
+        }
+
+        private void HandleBossDefeated()
+        {
+            if (bossHealthBarFill != null) bossHealthBarFill.fillAmount = 0f;
+            if (clusterBossRoot != null)
+            {
+                clusterBossRoot.gameObject.SetActive(false);
             }
         }
 
