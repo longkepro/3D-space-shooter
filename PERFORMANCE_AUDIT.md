@@ -583,7 +583,7 @@ Giải quyết: **M-01, M-03, M-04** (Instantiate trong gameplay)
 | 1 | Throttle fallback Find Player (1s) & ưu tiên VirtualRailAnchor | `EnemyAttack.cs`, `EnemyMovement.cs`, `FollowCam.cs` | 🔴 Critical | ✅ **ĐÃ HOÀN TẤT** |
 | 2 | Thêm throttle `_nextFindReferencesTime` (1s) trong `Tick()` | `VirtualRailStageDirector.cs` | 🔴 Critical | ✅ **ĐÃ HOÀN TẤT** |
 | 3 | Cache & throttle `_nextBindingRetryTime` / `_nextAimAssistRetryTime` | `DualReticleHUD.cs` | 🔴 Critical | ✅ **ĐÃ HOÀN TẤT** |
-| 4 | Tối ưu Physics loop / Enemy Registry (H-02, H-03, H-04, H-07, H-12) | 5 file Combat & Physics | 🟠 High | ⏳ Chờ triển khai (Phần B) |
+| 4 | Tối ưu Physics loop / Component Resolution (H-02, H-03, H-04, H-07, H-12) | 5 file Combat & Physics | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
 | 5 | Cache weapon/reticle/anchor, xóa Find trong hot-path bắn đạn (H-01, H-05, H-06) | `VirtualRailWeapon.cs`, `VirtualRailReticle.cs`, `AimAssistModule.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
 | 6 | Đổi `OverlapSphere` → `NonAlloc` + static buffer (H-10) | `SmartBombModule.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
 | 7 | Đổi `GetComponents` → overload List không GC (H-11) | `Explosion.cs` | 🟠 High | ✅ **ĐÃ HOÀN TẤT** |
