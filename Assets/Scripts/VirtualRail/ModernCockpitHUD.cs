@@ -99,9 +99,13 @@ namespace VirtualRail
         private readonly Color COLOR_GOLD = new Color(1f, 0.84f, 0f, 1f);
         private readonly Color COLOR_CRITICAL_RED = new Color(1f, 0.22f, 0.15f, 1f);
 
+        private CanvasGroup _hudCanvasGroup;
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
+            _hudCanvasGroup = GetComponent<CanvasGroup>();
+            if (_hudCanvasGroup == null) _hudCanvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
         private void OnEnable()
@@ -109,6 +113,8 @@ namespace VirtualRail
             GameEventManager.OnUpdateHealthBar += HandleHealthBarUpdated;
             GameEventManager.OnIncrementScore += HandleScoreIncremented;
             GameEventManager.OnStartGame += HandleGameStarted;
+            GameEventManager.OnPlayerDestroyed += HandlePlayerDestroyed;
+            GameEventManager.OnRespawnPickup += HandleRespawnPickup;
 
             SmartBombModule.OnBombCountChanged += HandleBombCountChanged;
             ComboScoringEngine.OnMultiplierChanged += HandleMultiplierChanged;
@@ -122,6 +128,8 @@ namespace VirtualRail
             GameEventManager.OnUpdateHealthBar -= HandleHealthBarUpdated;
             GameEventManager.OnIncrementScore -= HandleScoreIncremented;
             GameEventManager.OnStartGame -= HandleGameStarted;
+            GameEventManager.OnPlayerDestroyed -= HandlePlayerDestroyed;
+            GameEventManager.OnRespawnPickup -= HandleRespawnPickup;
 
             SmartBombModule.OnBombCountChanged -= HandleBombCountChanged;
             ComboScoringEngine.OnMultiplierChanged -= HandleMultiplierChanged;
@@ -138,6 +146,31 @@ namespace VirtualRail
             UpdateHealthUI(_cachedHealthPercent);
             UpdateScoreUI(_cachedScore);
             UpdateHitsUI(_cachedHits);
+
+            // Kiểm tra trạng thái Menu chính để ẩn HUD khi ngoài game
+            GameObject mainMenu = GameObject.Find("Main Menu");
+            bool isMenuOpen = (mainMenu != null && mainMenu.activeInHierarchy);
+            SetHUDVisible(!isMenuOpen);
+        }
+
+        public void SetHUDVisible(bool visible)
+        {
+            if (_hudCanvasGroup != null)
+            {
+                _hudCanvasGroup.alpha = visible ? 1f : 0f;
+                _hudCanvasGroup.interactable = visible;
+                _hudCanvasGroup.blocksRaycasts = visible;
+            }
+        }
+
+        private void HandlePlayerDestroyed()
+        {
+            SetHUDVisible(false);
+        }
+
+        private void HandleRespawnPickup()
+        {
+            SetHUDVisible(true);
         }
 
         private void FindReferences()
@@ -156,6 +189,8 @@ namespace VirtualRail
 
         private void LateUpdate()
         {
+            if (_hudCanvasGroup != null && _hudCanvasGroup.alpha <= 0.001f) return;
+
             // Kiểm tra và retry binding định kỳ nếu đối tượng xuất hiện muộn
             if ((anchor == null || weapon == null || aimAssist == null) && Time.time >= _bindingRetryTime)
             {
@@ -298,6 +333,7 @@ namespace VirtualRail
 
         private void HandleGameStarted()
         {
+            SetHUDVisible(true);
             _cachedScore = 0;
             _cachedHits = 0;
             UpdateScoreUI(_cachedScore);
