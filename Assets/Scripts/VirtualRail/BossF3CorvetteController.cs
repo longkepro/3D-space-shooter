@@ -556,31 +556,63 @@ namespace VirtualRail
             OnBossHealthChanged?.Invoke(_currentHealth, _maxHealth, _currentPhase);
         }
 
+        private Vector3 GetPlayerAimTarget()
+        {
+            if (VirtualRailAnchor.PlayerShipTransform != null)
+            {
+                return VirtualRailAnchor.PlayerShipTransform.position;
+            }
+            if (_anchor != null)
+            {
+                return _anchor.transform.position;
+            }
+            return transform.position - transform.forward * _leadDistanceZ;
+        }
+
         private void FireUpwardFlakBurst()
         {
             if (EnemyProjectilePool.Instance == null) return;
 
-            // Ban nguoc tu duoi len troi (Upward Flak) huong vao Arwing
-            Vector3 upwardDir = (transform.up * 1.5f + -transform.forward * 0.8f).normalized;
+            Vector3 targetPos = GetPlayerAimTarget();
 
+            // Tháp pháo Flak mạn trái: ngắm Arwing kèm độ tản mát phòng không
             if (_turretLeft != null && !_turretLeft.IsDestroyed && _flakMuzzlesLeft != null)
             {
-                for (int i = 0; i < _flakMuzzlesLeft.Length; i++)
+                int count = _flakMuzzlesLeft.Length;
+                for (int i = 0; i < count; i++)
                 {
                     if (_flakMuzzlesLeft[i] != null)
                     {
-                        EnemyProjectilePool.Instance.SpawnProjectile(_flakMuzzlesLeft[i].position, upwardDir, 36f, false);
+                        Vector3 spreadOffset = count > 1
+                            ? (transform.right * ((i - (count - 1) * 0.5f) * 1.6f) + transform.up * (i % 2 == 0 ? 0.6f : -0.6f))
+                            : Vector3.zero;
+                        Vector3 toTarget = (targetPos + spreadOffset) - _flakMuzzlesLeft[i].position;
+                        Vector3 fireDir = toTarget.sqrMagnitude > 0.01f
+                            ? toTarget.normalized
+                            : (-transform.forward * 2.0f + transform.up * 0.65f).normalized;
+
+                        EnemyProjectilePool.Instance.SpawnProjectile(_flakMuzzlesLeft[i].position, fireDir, 38f, false);
                     }
                 }
             }
 
+            // Tháp pháo Flak mạn phải: ngắm Arwing kèm độ tản mát phòng không
             if (_turretRight != null && !_turretRight.IsDestroyed && _flakMuzzlesRight != null)
             {
-                for (int i = 0; i < _flakMuzzlesRight.Length; i++)
+                int count = _flakMuzzlesRight.Length;
+                for (int i = 0; i < count; i++)
                 {
                     if (_flakMuzzlesRight[i] != null)
                     {
-                        EnemyProjectilePool.Instance.SpawnProjectile(_flakMuzzlesRight[i].position, upwardDir, 36f, false);
+                        Vector3 spreadOffset = count > 1
+                            ? (transform.right * ((i - (count - 1) * 0.5f) * 1.6f) + transform.up * (i % 2 == 0 ? 0.6f : -0.6f))
+                            : Vector3.zero;
+                        Vector3 toTarget = (targetPos + spreadOffset) - _flakMuzzlesRight[i].position;
+                        Vector3 fireDir = toTarget.sqrMagnitude > 0.01f
+                            ? toTarget.normalized
+                            : (-transform.forward * 2.0f + transform.up * 0.65f).normalized;
+
+                        EnemyProjectilePool.Instance.SpawnProjectile(_flakMuzzlesRight[i].position, fireDir, 38f, false);
                     }
                 }
             }
@@ -591,11 +623,14 @@ namespace VirtualRail
             if (_vlsMissileSilos == null || _vlsMissileSilos.Length == 0) return;
             if (EnemyProjectilePool.Instance == null) return;
 
-            for (int i = 0; i < _vlsMissileSilos.Length; i++)
+            // VLS Missiles: phóng vút lên cao từ silo boong tàu rồi chúc vòm cung về vùng trời Arwing
+            int siloCount = _vlsMissileSilos.Length;
+            for (int i = 0; i < siloCount; i++)
             {
                 if (_vlsMissileSilos[i] != null)
                 {
-                    Vector3 launchDir = (transform.up * 2.2f + transform.forward * 0.5f).normalized;
+                    float lateralOffset = (i - (siloCount - 1) * 0.5f) * 0.28f;
+                    Vector3 launchDir = (-transform.forward * 2.0f + transform.up * 0.75f + transform.right * lateralOffset).normalized;
                     EnemyProjectilePool.Instance.SpawnProjectile(_vlsMissileSilos[i].position, launchDir, 42f, false);
                 }
             }
@@ -611,10 +646,10 @@ namespace VirtualRail
                 _reactorVisual.TriggerVentEruption(_explosionPrefab);
             }
 
-            // Xa chùm đạn nhiệt thẳng đứng
+            // Xả chùm đạn nhiệt nan quạt 5 tia tràn về phía sau qua hành lang bay của Arwing (Hazard Wall)
             for (int i = -2; i <= 2; i++)
             {
-                Vector3 spreadDir = (transform.up * 2.0f + transform.right * (i * 0.35f)).normalized;
+                Vector3 spreadDir = (-transform.forward * 2.0f + transform.up * 0.60f + transform.right * (i * 0.38f)).normalized;
                 EnemyProjectilePool.Instance.SpawnProjectile(ventPos, spreadDir, 45f, false);
             }
         }
@@ -636,11 +671,11 @@ namespace VirtualRail
 
             VirtualRailCameraRig.TriggerShake(0.5f);
 
-            // 11 tia đạn Hyper Laser quét ngang từ X = -18m đến +18m ở tốc độ 55 m/s
+            // 11 tia đạn Hyper Laser quét ngang từ X = -26m đến +26m ở đúng cao độ tầm mắt của Arwing
             for (int i = -5; i <= 5; i++)
             {
-                float lateralOffset = i * 0.16f;
-                Vector3 blastDir = (transform.up * 1.8f + -transform.forward * 0.6f + transform.right * lateralOffset).normalized;
+                float lateralOffset = i * 0.18f;
+                Vector3 blastDir = (-transform.forward * 2.2f + transform.up * 0.50f + transform.right * lateralOffset).normalized;
                 EnemyProjectilePool.Instance.SpawnProjectile(muzzlePos, blastDir, 55f, false);
             }
         }
