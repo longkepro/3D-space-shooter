@@ -98,7 +98,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _hardpointType: 4
-  _maxHealth: 1000
+  _maxHealth: 2000
   _isWeakSpot: 0
   _weakSpotDamageMultiplier: 1
   _controller: {fileID: 0}
@@ -211,8 +211,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _currentPhase: 0
-  _maxHealth: 1000
-  _currentHealth: 1000
+  _maxHealth: 2000
+  _currentHealth: 2000
   _isDefeated: 0
   _leadDistanceZ: 68
   _baseElevationY: -22
@@ -285,8 +285,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _isActive: 1
-  _maxShieldHealth: 300
-  _currentShieldHealth: 300
+  _maxShieldHealth: 600
+  _currentShieldHealth: 600
   _overloadVfxPrefab: {fileID: 1968112836262100, guid: a7a88e99e2a440445a49bf3076ff2a77, type: 3}
   _shieldRenderer: {fileID: 0}
   _shieldCollider: {fileID: 0}
@@ -465,7 +465,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _hardpointType: 0
-  _maxHealth: 150
+  _maxHealth: 300
   _isWeakSpot: 0
   _weakSpotDamageMultiplier: 1
   _controller: {fileID: 0}
@@ -540,7 +540,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _hardpointType: 1
-  _maxHealth: 150
+  _maxHealth: 300
   _isWeakSpot: 0
   _weakSpotDamageMultiplier: 1
   _controller: {fileID: 0}
@@ -615,7 +615,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _hardpointType: 2
-  _maxHealth: 300
+  _maxHealth: 600
   _isWeakSpot: 1
   _weakSpotDamageMultiplier: 2
   _controller: {fileID: 0}
@@ -720,7 +720,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _hardpointType: 3
-  _maxHealth: 200
+  _maxHealth: 400
   _isWeakSpot: 0
   _weakSpotDamageMultiplier: 1
   _controller: {fileID: 0}

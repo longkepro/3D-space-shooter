@@ -23,7 +23,7 @@ namespace VirtualRail
     {
         [Header("Configuration")]
         [SerializeField] private BossHardpointType _hardpointType;
-        [SerializeField] private int _maxHealth = 150;
+        [SerializeField] private int _maxHealth = 300;
         [SerializeField] private bool _isWeakSpot = false;
         [SerializeField] private float _weakSpotDamageMultiplier = 2.0f;
 
@@ -90,6 +90,17 @@ namespace VirtualRail
         public void SetController(BossF3CorvetteController controller)
         {
             _controller = controller;
+        }
+
+        public void SetMaxHealth(int maxHealth)
+        {
+            _maxHealth = Mathf.Max(1, maxHealth);
+            if (_health != null)
+            {
+                var preset = EnemyData.CreateDefaultPreset(EnemyArchetype.SquadLeader);
+                preset.maxHealth = _maxHealth;
+                _health.ApplyData(preset);
+            }
         }
 
         public void SetHardpointColliderActive(bool active)

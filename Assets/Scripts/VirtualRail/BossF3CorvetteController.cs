@@ -26,8 +26,8 @@ namespace VirtualRail
 
         [Header("State & Health")]
         [SerializeField] private BossBattlePhase _currentPhase = BossBattlePhase.IntroBreach;
-        [SerializeField] private int _maxHealth = 1000;
-        [SerializeField] private int _currentHealth = 1000;
+        [SerializeField] private int _maxHealth = 2000;
+        [SerializeField] private int _currentHealth = 2000;
         [SerializeField] private bool _isDefeated = false;
 
         [Header("DDA Dynamic Difficulty Adjustment")]
@@ -187,19 +187,25 @@ namespace VirtualRail
             _threatLevel = Mathf.Max(1, threatLevel);
             _incursionIndex = Mathf.Max(1, incursionIndex);
 
-            // 1. Leo thang Máu tối đa: Mỗi lần chạm trán Boss tăng +20% HP
+            // 1. Leo thang Máu tối đa: Mỗi lần chạm trán Boss tăng +20% HP (Base khởi đầu 2000 HP)
             float hpMultiplier = 1.0f + 0.20f * (_incursionIndex - 1);
-            _maxHealth = Mathf.RoundToInt(1000 * hpMultiplier);
+            _maxHealth = Mathf.RoundToInt(2000 * hpMultiplier);
             _currentHealth = _maxHealth;
 
-            // Đồng bộ nâng cấp dung lượng khiên Hex-Shield tương ứng
+            // Đồng bộ nâng cấp dung lượng khiên Hex-Shield tương ứng (Base khởi đầu 600 HP)
             if (_hexShield == null) AutoBindHardpoints();
             if (_hexShield != null)
             {
-                int scaledShieldHp = Mathf.RoundToInt(300 * hpMultiplier);
+                int scaledShieldHp = Mathf.RoundToInt(600 * hpMultiplier);
                 _hexShield.SetMaxHealth(scaledShieldHp);
                 OnBossShieldChanged?.Invoke(_hexShield.CurrentShieldHealth, _hexShield.MaxShieldHealth);
             }
+
+            // Đồng bộ nâng cấp máu các linh kiện (Hướng A: Tháp pháo 300, Buồng lái 400, Rãnh lò 600)
+            if (_turretLeft != null) _turretLeft.SetMaxHealth(Mathf.RoundToInt(300 * hpMultiplier));
+            if (_turretRight != null) _turretRight.SetMaxHealth(Mathf.RoundToInt(300 * hpMultiplier));
+            if (_mainBridge != null) _mainBridge.SetMaxHealth(Mathf.RoundToInt(400 * hpMultiplier));
+            if (_reactorTrench != null) _reactorTrench.SetMaxHealth(Mathf.RoundToInt(600 * hpMultiplier));
 
             // 2. Leo thang Tần suất xả đạn: Cooldown giảm 5% mỗi Threat Level (Trần hãm tối đa giảm 40% -> scale 0.60f)
             _fireCooldownScale = Mathf.Max(0.60f, 1.0f - (_threatLevel - 1) * 0.05f);
@@ -228,10 +234,26 @@ namespace VirtualRail
                 }
             }
 
-            if (_turretLeft != null) _turretLeft.SetController(this);
-            if (_turretRight != null) _turretRight.SetController(this);
-            if (_reactorTrench != null) _reactorTrench.SetController(this);
-            if (_mainBridge != null) _mainBridge.SetController(this);
+            if (_turretLeft != null)
+            {
+                _turretLeft.SetController(this);
+                _turretLeft.SetMaxHealth(300);
+            }
+            if (_turretRight != null)
+            {
+                _turretRight.SetController(this);
+                _turretRight.SetMaxHealth(300);
+            }
+            if (_reactorTrench != null)
+            {
+                _reactorTrench.SetController(this);
+                _reactorTrench.SetMaxHealth(600);
+            }
+            if (_mainBridge != null)
+            {
+                _mainBridge.SetController(this);
+                _mainBridge.SetMaxHealth(400);
+            }
         }
 
         private BossHardpoint FindHardpoint(BossHardpointType type)

@@ -19,8 +19,8 @@ namespace VirtualRail
         [SerializeField] private bool _isActive = true;
 
         [Header("Shield Durability")]
-        [SerializeField] private int _maxShieldHealth = 300;
-        [SerializeField] private int _currentShieldHealth = 300;
+        [SerializeField] private int _maxShieldHealth = 600;
+        [SerializeField] private int _currentShieldHealth = 600;
         [SerializeField] private GameObject _overloadVfxPrefab;
 
         [Header("References")]
