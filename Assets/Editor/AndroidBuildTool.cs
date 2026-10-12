@@ -23,19 +23,36 @@ namespace VirtualRail.Editor
         }
 
         private static bool _isBuilding = false;
+        private static bool _isWaitingForCompile = false;
+        private static int _settleFrames = 0;
 
         private static void CheckAutoBuildTrigger()
         {
             if (_isBuilding) return;
+
             if (File.Exists(FLAG_FILE))
             {
-                _isBuilding = true;
-                try
-                {
-                    File.Delete(FLAG_FILE);
-                }
-                catch { }
+                try { File.Delete(FLAG_FILE); } catch { }
+                AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+                _isWaitingForCompile = true;
+                _settleFrames = 25;
+                File.WriteAllText(STATUS_FILE, $"WAITING: Waiting for domain reload at {DateTime.Now:HH:mm:ss}");
+                return;
+            }
 
+            if (_isWaitingForCompile)
+            {
+                if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+                {
+                    _settleFrames = 25;
+                    return;
+                }
+
+                _settleFrames--;
+                if (_settleFrames > 0) return;
+
+                _isWaitingForCompile = false;
+                _isBuilding = true;
                 try
                 {
                     BuildAndroidAPK();

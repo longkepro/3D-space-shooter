@@ -34,7 +34,7 @@ namespace VirtualRail
         [Tooltip("Nút Lộn vòng sang phải phản xạ đạn (Barrel Roll Right) - Legacy")]
         public VirtualTouchButton btnRollRight;
         [Tooltip("Nút Lộn vòng phản xạ đạn thông minh duy nhất (Smart Single Barrel Roll)")]
-        public VirtualTouchButton btnRoll;
+        [System.NonSerialized] public VirtualTouchButton btnRoll;
 
         [Header("Config & UI References")]
         public VirtualRailConfig config;
