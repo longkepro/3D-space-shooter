@@ -846,34 +846,40 @@ namespace VirtualRail
             string rankTitle;
             string medalTitle;
             Color rankColor;
+            PilotRankTier rankTier;
 
             if (finalScore >= 100000 || finalDistance >= 10000f)
             {
+                rankTier = PilotRankTier.RankS;
                 rankTitle = "RANK S - COSMIC ACE";
                 medalTitle = "★ GOLD ACE MEDAL AWARDED ★";
                 rankColor = new Color(1.0f, 0.82f, 0.12f, 1f); // #FFD21E Solar Gold
             }
             else if (finalScore >= 60000 || finalDistance >= 6000f)
             {
+                rankTier = PilotRankTier.RankA;
                 rankTitle = "RANK A - ELITE WING";
                 medalTitle = "★ SILVER ACE MEDAL AWARDED ★";
                 rankColor = new Color(0.85f, 0.95f, 1.0f, 1f); // #D9F2FF Silver Cyan
             }
             else if (finalScore >= 30000 || finalDistance >= 3000f)
             {
+                rankTier = PilotRankTier.RankB;
                 rankTitle = "RANK B - VETERAN PILOT";
                 medalTitle = "★ BRONZE ACE MEDAL AWARDED ★";
                 rankColor = new Color(1.0f, 0.55f, 0.20f, 1f); // #FF8C33 Bronze Orange
             }
             else if (finalScore >= 15000 || finalDistance >= 1500f)
             {
+                rankTier = PilotRankTier.RankC;
                 rankTitle = "RANK C - SURVIVOR PILOT";
                 medalTitle = "SURVIVOR RIBBON";
                 rankColor = new Color(0.45f, 0.85f, 1.0f, 1f); // #73D9FF Standard Cyan
             }
             else
             {
-                rankTitle = "RANK D - FLIGHT CADET";
+                rankTier = PilotRankTier.RankD;
+                rankTitle = "RANK D - FLIGHT Cadet";
                 medalTitle = "NO MEDAL EARNED";
                 rankColor = new Color(0.55f, 0.60f, 0.65f, 1f); // Dim Slate
             }
@@ -889,7 +895,14 @@ namespace VirtualRail
                 txtDebriefMedal.color = rankColor;
             }
 
-            // 4. Kiểm tra và cập nhật Bảng vinh danh (Hall of Fame Leaderboard)
+            // 4. Lưu trữ dữ liệu bền vững qua SaveDataManager (Task 3.5)
+            bool isSavedNewRecord = false;
+            if (SaveDataManager.Instance != null && (finalScore > 0 || finalDistance > 0))
+            {
+                isSavedNewRecord = SaveDataManager.Instance.RecordRunResult(finalScore, finalDistance, maxThreat, totalHits, totalGrazes, peakMultiplier, rankTier);
+            }
+
+            // 5. Kiểm tra và cập nhật Bảng vinh danh (Hall of Fame Leaderboard)
             int currentStage = maxThreat;
             string pilotName = "FOX McCLOUD";
             if (SettingsManager.Instance != null && !string.IsNullOrEmpty(SettingsManager.Instance.pilotCallsign))
@@ -901,15 +914,17 @@ namespace VirtualRail
                 pilotName = inputPilotCallsign.text.ToUpper();
             }
 
-            bool isNewRecord = false;
+            bool isLeaderboardRecord = false;
             if (LeaderboardManager.Instance != null && finalScore > 0)
             {
-                isNewRecord = LeaderboardManager.Instance.IsHighScore(finalScore);
+                isLeaderboardRecord = LeaderboardManager.Instance.IsHighScore(finalScore);
                 LeaderboardManager.Instance.AddEntry(pilotName, finalScore, currentStage, "ENDLESS");
                 PopulateHallOfFameRows();
             }
 
-            // 5. Phản hồi kỷ lục mới (New Record Badge & SFX)
+            bool isNewRecord = isSavedNewRecord || isLeaderboardRecord;
+
+            // 6. Phản hồi kỷ lục mới (New Record Badge & SFX)
             if (txtDebriefNewRecord != null)
             {
                 txtDebriefNewRecord.gameObject.SetActive(isNewRecord);

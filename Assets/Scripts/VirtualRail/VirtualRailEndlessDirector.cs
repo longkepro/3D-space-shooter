@@ -596,6 +596,10 @@ namespace VirtualRail
             if (!_isActive) return;
 
             _bossIncursionsDefeatedCount++;
+            if (SaveDataManager.Instance != null)
+            {
+                SaveDataManager.Instance.RecordBossDefeated();
+            }
             _activeBossInstance = null;
 
             _threatLevelBonus++;

@@ -134,6 +134,40 @@ namespace VirtualRail.Editor
             Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN GIAO DIỆN CŨ (UNDO)!</b></color>");
         }
 
+        [MenuItem("Tools/Virtual Rail/Data Management/1. Open Save Data Folder")]
+        public static void OpenSaveDataFolder()
+        {
+            string path = Application.persistentDataPath;
+            if (System.IO.Directory.Exists(path))
+            {
+                EditorUtility.RevealInFinder(path);
+            }
+            else
+            {
+                Debug.LogWarning("[SaveDataManager] Thư mục lưu trữ chưa tồn tại: " + path);
+            }
+        }
+
+        [MenuItem("Tools/Virtual Rail/Data Management/2. Reset All Save Data (Clear Records)")]
+        public static void ResetAllSaveData()
+        {
+            if (EditorUtility.DisplayDialog("Reset All Save Data", "Bạn có chắc chắn muốn xóa toàn bộ kỷ lục, quãng đường và huân chương Endless không?", "Xóa sạch (Reset)", "Hủy bỏ"))
+            {
+                if (SaveDataManager.Instance != null)
+                {
+                    SaveDataManager.Instance.ResetSaveData();
+                }
+                else
+                {
+                    string filePath = System.IO.Path.Combine(Application.persistentDataPath, "starfox_endless_save.json");
+                    if (System.IO.File.Exists(filePath)) System.IO.File.Delete(filePath);
+                    PlayerPrefs.DeleteKey("StarFox_Endless_Save_Backup_v1");
+                    PlayerPrefs.Save();
+                }
+                Debug.Log("<color=yellow><b>[SaveDataManager] ĐÃ XÓA SẠCH VÀ ĐẶT LẠI DỮ LIỆU LƯU VỀ MẶC ĐỊNH!</b></color>");
+            }
+        }
+
         private static void EnsureManagersExist()
         {
             if (Object.FindAnyObjectByType<SettingsManager>() == null)
@@ -145,6 +179,11 @@ namespace VirtualRail.Editor
             {
                 GameObject lm = new GameObject("[LeaderboardManager]");
                 lm.AddComponent<LeaderboardManager>();
+            }
+            if (Object.FindAnyObjectByType<SaveDataManager>() == null)
+            {
+                GameObject sdm = new GameObject("[SaveDataManager]");
+                sdm.AddComponent<SaveDataManager>();
             }
         }
 

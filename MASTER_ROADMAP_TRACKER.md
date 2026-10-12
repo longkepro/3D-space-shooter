@@ -137,7 +137,7 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 - [x] **3.4.3** Trao tặng Huân Chương Sinh Tồn Vô Hạn (Endless Ace Medals) theo các cột mốc điểm số và quãng đường.
 
 ### Task 3.5: Hệ Thống Lưu Trữ Dữ Liệu Bền Vững (SaveDataManager)
-- [ ] **3.5.1** Xây dựng [`SaveDataManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/SaveDataManager.cs) lưu trữ độc lập điểm cao kỷ lục, quãng đường xa nhất, danh sách huân chương và cấu hình người chơi.
+- [x] **3.5.1** Xây dựng [`SaveDataManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/SaveDataManager.cs) lưu trữ độc lập điểm cao kỷ lục, quãng đường xa nhất, danh sách huân chương và cấu hình người chơi.
 
 ---
 
