@@ -425,7 +425,12 @@ namespace VirtualRail
             promptTxt.alignment = TextAnchor.MiddleCenter;
             promptTxt.color = new Color(0.2f, 0.95f, 1f, 1f);
             promptTxt.text = "PRESS ANY KEY OR CLICK TO LAUNCH";
+            promptTxt.raycastTarget = false; // Triệt tiêu raycast target để không cản trở click chuột vào nút bấm
             controller.txtPrompt = promptTxt;
+
+            // Đăng ký sự kiện Click cho Button và kích hoạt sẵn sàng nhận Input
+            controller.SetupButtons();
+            controller.StartTitleScreen();
 
             titleScreenPanel = panelRt;
             titleScreenController = controller;
@@ -593,6 +598,10 @@ namespace VirtualRail
             _currentState = newState;
 
             SetGroupVisible(_cgTitleScreen, newState == UIViewState.TitleScreen);
+            if (newState == UIViewState.TitleScreen && titleScreenPanel != null)
+            {
+                titleScreenPanel.SetAsLastSibling();
+            }
             SetGroupVisible(_cgMainMenu, newState == UIViewState.MainMenu);
             SetGroupVisible(_cgSettings, newState == UIViewState.Settings);
             SetGroupVisible(_cgHallOfFame, newState == UIViewState.HallOfFame);
