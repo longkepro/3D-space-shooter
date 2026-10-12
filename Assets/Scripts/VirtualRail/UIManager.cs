@@ -70,6 +70,7 @@ namespace VirtualRail
         public Slider sliderVolMaster;
         public Slider sliderVolMusic;
         public Slider sliderVolSFX;
+        public InputField inputPilotCallsign;
 
         public Button btnSettingsApply;
         public Button btnSettingsDefaults;
@@ -477,6 +478,13 @@ namespace VirtualRail
                 sliderVolSFX.value = mgr.volumeSFX;
                 sliderVolSFX.onValueChanged.AddListener(val => mgr.volumeSFX = val);
             }
+
+            // Pilot Callsign
+            if (inputPilotCallsign != null)
+            {
+                inputPilotCallsign.text = mgr.pilotCallsign;
+                inputPilotCallsign.onValueChanged.AddListener(val => mgr.pilotCallsign = val.ToUpper());
+            }
         }
 
         private string FormatFloat(float val)
@@ -537,6 +545,10 @@ namespace VirtualRail
         {
             if (SettingsManager.Instance != null)
             {
+                if (inputPilotCallsign != null && !string.IsNullOrEmpty(inputPilotCallsign.text))
+                {
+                    SettingsManager.Instance.pilotCallsign = inputPilotCallsign.text.ToUpper();
+                }
                 SettingsManager.Instance.SaveSettings();
             }
             OnSettingsExitClicked();
@@ -698,11 +710,21 @@ namespace VirtualRail
                 currentStage = Mathf.Max(1, VirtualRailStageDirector.Instance.currentStageIndex + 1);
             }
 
+            string pilotName = "FOX McCLOUD";
+            if (SettingsManager.Instance != null && !string.IsNullOrEmpty(SettingsManager.Instance.pilotCallsign))
+            {
+                pilotName = SettingsManager.Instance.pilotCallsign;
+            }
+            else if (inputPilotCallsign != null && !string.IsNullOrEmpty(inputPilotCallsign.text))
+            {
+                pilotName = inputPilotCallsign.text.ToUpper();
+            }
+
             bool isNewRecord = false;
             if (LeaderboardManager.Instance != null && _sessionScore > 0)
             {
                 isNewRecord = LeaderboardManager.Instance.IsHighScore(_sessionScore);
-                LeaderboardManager.Instance.AddEntry("PLAYER", _sessionScore, currentStage, "NORMAL");
+                LeaderboardManager.Instance.AddEntry(pilotName, _sessionScore, currentStage, "NORMAL");
                 PopulateHallOfFameRows();
             }
 

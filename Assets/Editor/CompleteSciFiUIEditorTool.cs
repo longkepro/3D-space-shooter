@@ -238,18 +238,18 @@ namespace VirtualRail.Editor
             // -------------------------------------------------------------
             // 1. MAIN MENU PANEL (Matching UI COMPONENTS 02)
             // -------------------------------------------------------------
-            GameObject mmObj = CreatePanel("MainMenuPanel", root.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -20f), new Vector2(300f, 440f), spMenuCol, Image.Type.Sliced);
+            GameObject mmObj = CreatePanel("MainMenuPanel", root.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -20f), new Vector2(300f, 380f), spMenuCol, Image.Type.Sliced);
             uiMgr.mainMenuPanel = mmObj.GetComponent<RectTransform>();
 
             // Header Title
             CreateText("HeaderTitle", mmObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -28f), new Vector2(260f, 32f), "MISSION COMMAND", font, 16, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
 
-            // 5 Pill Buttons Stack
-            uiMgr.btnSinglePlayer = CreatePillButton("Btn_SinglePlayer", mmObj.transform, new Vector2(0f, -80f), "SINGLE PLAYER", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnMultiplayer = CreatePillButton("Btn_Multiplayer", mmObj.transform, new Vector2(0f, -145f), "MULTIPLAYER", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnOptions = CreatePillButton("Btn_Options", mmObj.transform, new Vector2(0f, -210f), "OPTIONS", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnHallOfFame = CreatePillButton("Btn_HallOfFame", mmObj.transform, new Vector2(0f, -275f), "HALL OF FAME", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnQuit = CreatePillButton("Btn_Quit", mmObj.transform, new Vector2(0f, -340f), "QUIT GAME", font, spBtn, spBtnHover, spBtnPressed);
+            // 4 Pill Buttons Stack (Clean, focused 4-button layout for Endless Arcade)
+            uiMgr.btnSinglePlayer = CreatePillButton("Btn_StartGame", mmObj.transform, new Vector2(0f, -80f), "LAUNCH MISSION", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.btnMultiplayer = null;
+            uiMgr.btnOptions = CreatePillButton("Btn_Options", mmObj.transform, new Vector2(0f, -145f), "OPTIONS", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.btnHallOfFame = CreatePillButton("Btn_HallOfFame", mmObj.transform, new Vector2(0f, -210f), "HALL OF FAME", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.btnQuit = CreatePillButton("Btn_Quit", mmObj.transform, new Vector2(0f, -275f), "QUIT GAME", font, spBtn, spBtnHover, spBtnPressed);
 
             // -------------------------------------------------------------
             // 2. SETTINGS / OPTIONS MODAL (Matching UI COMPONENTS 01)
@@ -360,7 +360,7 @@ namespace VirtualRail.Editor
             float pY = -70f;
             float pStep = 36f;
             CreateText("P_Callsign", playersContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, pY), new Vector2(300f, 28f), "PILOT CALLSIGN:", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            CreateText("P_Callsign_Val", playersContent.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, pY), new Vector2(300f, 28f), "FOX McCLOUD [LEADER]", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
+            uiMgr.inputPilotCallsign = CreateInputField("P_Callsign_Input", playersContent.transform, new Vector2(1f, 1f), new Vector2(-20f, pY + 4f), new Vector2(260f, 32f), "FOX McCLOUD", font, spDropdown);
 
             pY -= pStep;
             CreateText("P_Craft", playersContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, pY), new Vector2(300f, 28f), "ASSIGNED CRAFT:", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
@@ -784,6 +784,67 @@ namespace VirtualRail.Editor
             template.SetActive(false);
 
             return dropdown;
+        }
+
+        private static InputField CreateInputField(string name, Transform parent, Vector2 aMin, Vector2 pos, Vector2 size, string defaultText, Font font, Sprite spFrame)
+        {
+            GameObject obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+            RectTransform rt = obj.AddComponent<RectTransform>();
+            rt.anchorMin = aMin;
+            rt.anchorMax = aMin;
+            rt.pivot = new Vector2(1f, 1f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+
+            Image img = obj.AddComponent<Image>();
+            img.sprite = spFrame;
+            img.type = Image.Type.Sliced;
+            img.color = new Color(0.12f, 0.22f, 0.35f, 0.9f);
+
+            InputField inputField = obj.AddComponent<InputField>();
+            inputField.targetGraphic = img;
+
+            // Text
+            GameObject textObj = new GameObject("Text");
+            textObj.transform.SetParent(obj.transform, false);
+            RectTransform textRt = textObj.AddComponent<RectTransform>();
+            textRt.anchorMin = Vector2.zero;
+            textRt.anchorMax = Vector2.one;
+            textRt.offsetMin = new Vector2(10f, 0f);
+            textRt.offsetMax = new Vector2(-10f, 0f);
+
+            Text text = textObj.AddComponent<Text>();
+            text.font = font;
+            text.fontSize = 13;
+            text.fontStyle = FontStyle.Bold;
+            text.color = Color.white;
+            text.alignment = TextAnchor.MiddleLeft;
+            text.supportRichText = false;
+
+            // Placeholder
+            GameObject phObj = new GameObject("Placeholder");
+            phObj.transform.SetParent(obj.transform, false);
+            RectTransform phRt = phObj.AddComponent<RectTransform>();
+            phRt.anchorMin = Vector2.zero;
+            phRt.anchorMax = Vector2.one;
+            phRt.offsetMin = new Vector2(10f, 0f);
+            phRt.offsetMax = new Vector2(-10f, 0f);
+
+            Text phText = phObj.AddComponent<Text>();
+            phText.font = font;
+            phText.fontSize = 13;
+            phText.fontStyle = FontStyle.Italic;
+            phText.color = new Color(0.5f, 0.7f, 0.9f, 0.5f);
+            phText.alignment = TextAnchor.MiddleLeft;
+            phText.text = "ENTER CALLSIGN...";
+
+            inputField.textComponent = text;
+            inputField.placeholder = phText;
+            inputField.text = defaultText;
+            inputField.characterLimit = 16;
+
+            return inputField;
         }
 
         #endregion

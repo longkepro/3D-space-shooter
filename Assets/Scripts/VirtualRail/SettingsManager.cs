@@ -23,6 +23,7 @@ namespace VirtualRail
         public const string PREF_VOL_MASTER = "Settings_VolumeMaster";
         public const string PREF_VOL_MUSIC = "Settings_VolumeMusic";
         public const string PREF_VOL_SFX = "Settings_VolumeSFX";
+        public const string PREF_PILOT_CALLSIGN = "Settings_PilotCallsign";
 
         [Header("Runtime State")]
         public int resolutionIndex;
@@ -36,6 +37,7 @@ namespace VirtualRail
         public float volumeMaster = 1.0f;
         public float volumeMusic = 0.8f;
         public float volumeSFX = 0.9f;
+        public string pilotCallsign = "FOX McCLOUD";
 
         public event Action OnSettingsChanged;
 
@@ -67,6 +69,7 @@ namespace VirtualRail
             volumeMaster = PlayerPrefs.GetFloat(PREF_VOL_MASTER, 1.0f);
             volumeMusic = PlayerPrefs.GetFloat(PREF_VOL_MUSIC, 0.8f);
             volumeSFX = PlayerPrefs.GetFloat(PREF_VOL_SFX, 0.9f);
+            pilotCallsign = PlayerPrefs.GetString(PREF_PILOT_CALLSIGN, "FOX McCLOUD");
         }
 
         public void SaveSettings()
@@ -82,6 +85,7 @@ namespace VirtualRail
             PlayerPrefs.SetFloat(PREF_VOL_MASTER, volumeMaster);
             PlayerPrefs.SetFloat(PREF_VOL_MUSIC, volumeMusic);
             PlayerPrefs.SetFloat(PREF_VOL_SFX, volumeSFX);
+            PlayerPrefs.SetString(PREF_PILOT_CALLSIGN, string.IsNullOrEmpty(pilotCallsign) ? "FOX McCLOUD" : pilotCallsign);
             PlayerPrefs.Save();
 
             ApplyAllSettings();
@@ -101,6 +105,7 @@ namespace VirtualRail
             volumeMaster = 1.0f;
             volumeMusic = 0.8f;
             volumeSFX = 0.9f;
+            pilotCallsign = "FOX McCLOUD";
 
             SaveSettings();
         }
