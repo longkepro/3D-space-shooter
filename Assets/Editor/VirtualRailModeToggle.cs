@@ -3378,4 +3378,38 @@ public class VirtualRailModeToggle
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT HIỂN THỊ NÚT CẢM ỨNG TRÊN PC (OFF - LEGACY):</b></color> Mobile UI chỉ hiển thị khi chạy trên thiết bị di động.");
     }
     #endregion
+
+    #region Charge Shot Audio Balancing Toggles (Task: Balance Charge Shot Audio)
+    [MenuItem("Tools/Virtual Rail/Audio/1. Balance Charge Shot Audio (ON - Spec)")]
+    public static void EnableBalancedChargeShotAudio()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.chargeHumVolumeMin = 0.28f;
+            cfg.chargeHumVolumeMax = 0.45f;
+            cfg.chargeFireVolume = 0.60f;
+            cfg.chargeLockOnVolume = 0.55f;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ CÂN BẰNG ÂM LƯỢNG SẠC & PHÓNG ĐẠN (ON - SPEC):</b></color> Hum: 0.28-0.45, Fire: 0.60, Lock-on: 0.55.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Audio/2. Revert Charge Shot Audio to Loud (OFF - Legacy)")]
+    public static void RevertChargeShotAudioToLegacyLoud()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.chargeHumVolumeMin = 0.75f;
+            cfg.chargeHumVolumeMax = 0.95f;
+            cfg.chargeFireVolume = 1.00f;
+            cfg.chargeLockOnVolume = 0.95f;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN ÂM LƯỢNG SẠC ĐẠN CŨ (OFF - LEGACY):</b></color> Trở lại mức âm lượng lớn nguyên bản.");
+    }
+    #endregion
 }

@@ -232,6 +232,13 @@ namespace VirtualRail
         {
             if (_chargeAudioSource == null) InitializeChargeAudio();
 
+            var cfg = (anchor != null) ? anchor.config : null;
+            float volMin = (cfg != null) ? cfg.chargeHumVolumeMin : 0.28f;
+            float volMax = (cfg != null) ? cfg.chargeHumVolumeMax : 0.45f;
+            float sfxMultiplier = (AudioManager.Instance != null)
+                ? (AudioManager.Instance.SfxVolume * AudioManager.Instance.MasterVolume)
+                : 1.0f;
+
             if (isCharging)
             {
                 if (!_hasPlayedChargeSpool)
@@ -240,7 +247,7 @@ namespace VirtualRail
                     if (clip != null)
                     {
                         _chargeAudioSource.clip = clip;
-                        _chargeAudioSource.volume = 0.85f;
+                        _chargeAudioSource.volume = volMin * sfxMultiplier;
                         _chargeAudioSource.pitch = 1.0f;
                         _chargeAudioSource.loop = false;
                         _chargeAudioSource.Play();
@@ -252,7 +259,7 @@ namespace VirtualRail
                 {
                     float progress = ChargeProgress;
                     _chargeAudioSource.pitch = Mathf.Lerp(0.98f, 1.04f, progress);
-                    _chargeAudioSource.volume = Mathf.Lerp(0.75f, 0.95f, progress);
+                    _chargeAudioSource.volume = Mathf.Lerp(volMin, volMax, progress) * sfxMultiplier;
                 }
             }
             else
@@ -450,7 +457,8 @@ namespace VirtualRail
                     _lockTimer = dt;
                     if (Time.time >= _nextAllowedLockSoundTime)
                     {
-                        AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeLockOn, 0.95f);
+                        float lockVol = (cfg != null) ? cfg.chargeLockOnVolume : 0.55f;
+                        AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeLockOn, lockVol);
                         _nextAllowedLockSoundTime = Time.time + 0.35f;
                     }
                 }
@@ -510,7 +518,8 @@ namespace VirtualRail
             float splashR = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             missile.splashRadius = splashR;
 
-            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeFire, 1.0f);
+            float fireVol = (cfg != null) ? cfg.chargeFireVolume : 0.60f;
+            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeFire, fireVol);
             VirtualRailCameraRig.TriggerShake(0.18f);
         }
 
@@ -555,7 +564,8 @@ namespace VirtualRail
             float splashRDumb = (cfg != null && cfg.chargeShotSplashRadius > 0.1f) ? cfg.chargeShotSplashRadius : 10f;
             missile.splashRadius = splashRDumb;
 
-            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeFire, 1.0f);
+            float fireVol = (cfg != null) ? cfg.chargeFireVolume : 0.60f;
+            AudioManager.Instance?.PlaySFX2D(AudioSFXType.ChargeFire, fireVol);
             VirtualRailCameraRig.TriggerShake(0.18f);
         }
 

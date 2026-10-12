@@ -449,6 +449,20 @@ namespace VirtualRail
         [Range(0f, 1f)]
         public float enemyWhiteOrbDropChance = 0.20f;
 
+        [Header("27. Charge Shot Audio Balancing")]
+        [Tooltip("Âm lượng tối thiểu khi bắt đầu sạc đạn tụ lực (Charge Hum)")]
+        [Range(0f, 1f)]
+        public float chargeHumVolumeMin = 0.28f;
+        [Tooltip("Âm lượng tối đa khi sạc đầy đạn tụ lực (Charge Hum)")]
+        [Range(0f, 1f)]
+        public float chargeHumVolumeMax = 0.45f;
+        [Tooltip("Âm lượng khi phóng đạn tụ lực (Charge Fire)")]
+        [Range(0f, 1f)]
+        public float chargeFireVolume = 0.60f;
+        [Tooltip("Âm lượng tiếng bíp khóa mục tiêu (Charge Lock-On)")]
+        [Range(0f, 1f)]
+        public float chargeLockOnVolume = 0.55f;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>
