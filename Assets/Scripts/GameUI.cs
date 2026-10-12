@@ -40,7 +40,13 @@ public class GameUI : MonoBehaviour
     private void ShowGameUI()
     {
         _mainMenu.SetActive(false);
-        _gameUI.SetActive(true);
+
+        // Chặn hoàn toàn Game UI cũ khi ModernCockpitHUD đang hiện diện
+        bool hasModernHUD = (VirtualRail.ModernCockpitHUD.Instance != null || FindAnyObjectByType<VirtualRail.ModernCockpitHUD>() != null);
+        if (_gameUI != null)
+        {
+            _gameUI.SetActive(!hasModernHUD);
+        }
 
         if (VirtualRail.VirtualRailAnchor.Instance != null)
         {

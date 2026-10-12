@@ -169,10 +169,31 @@ namespace VirtualRail
                 clusterBossRoot.gameObject.SetActive(false);
             }
 
+            // Đảm bảo triệt tiêu toàn bộ cụm không thuộc ảnh mẫu thiết kế
+            if (clusterBottomLeftRoot != null)
+            {
+                clusterBottomLeftRoot.gameObject.SetActive(false);
+            }
+            if (clusterBottomRightRoot != null)
+            {
+                clusterBottomRightRoot.gameObject.SetActive(false);
+            }
+
+            SuppressLegacyGameUI();
+
             // Kiểm tra trạng thái Menu chính để ẩn HUD khi ngoài game
             GameObject mainMenu = GameObject.Find("Main Menu");
             bool isMenuOpen = (mainMenu != null && mainMenu.activeInHierarchy);
             SetHUDVisible(!isMenuOpen);
+        }
+
+        public static void SuppressLegacyGameUI()
+        {
+            GameObject gameUI = GameObject.Find("Game UI");
+            if (gameUI != null)
+            {
+                gameUI.SetActive(false);
+            }
         }
 
         public void SetHUDVisible(bool visible)
@@ -373,6 +394,7 @@ namespace VirtualRail
 
         private void HandleGameStarted()
         {
+            SuppressLegacyGameUI();
             SetHUDVisible(true);
             _cachedScore = 0;
             _cachedHits = 0;
