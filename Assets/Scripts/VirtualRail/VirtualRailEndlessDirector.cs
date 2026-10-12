@@ -32,6 +32,9 @@ namespace VirtualRail
         [SerializeField] private int _threatLevel = 1;
         public int ThreatLevel => _threatLevel;
 
+        [SerializeField] private float _currentShooterRatio = 0.25f;
+        public float CurrentShooterRatio => _currentShooterRatio;
+
         [SerializeField] private float _threatLevelProgress01 = 0f;
         public float ThreatLevelProgress01 => _threatLevelProgress01;
 
@@ -130,11 +133,14 @@ namespace VirtualRail
             _patternPoolIndex = 0;
             _lastWarpZ = (_anchor != null) ? _anchor.transform.position.z : 0f;
 
+            _currentShooterRatio = 0.25f;
+
             // Khóa cứng Wave Spawner về ScriptedDirectorOnly để triệt tiêu sinh ngẫu nhiên hỗn loạn
             if (_waveSpawner != null)
             {
                 _waveSpawner.ControlMode = SpawnerControlMode.ScriptedDirectorOnly;
                 _waveSpawner.SetStageFireCooldownScale(1.0f);
+                _waveSpawner.SetStageShooterRatio(0.25f);
                 _waveSpawner.SetStageBulletSpeed(20f);
             }
 
@@ -167,11 +173,13 @@ namespace VirtualRail
             _stateTimer = 0f;
             _waveTimer = 0f;
             _threatLevelBonus = 0;
+            _currentShooterRatio = 1.0f;
 
             if (_waveSpawner != null)
             {
                 _waveSpawner.ForceRetreatCurrentWave();
                 _waveSpawner.SetStageFireCooldownScale(1.0f);
+                _waveSpawner.SetStageShooterRatio(1.0f);
                 _waveSpawner.SetStageBulletSpeed(20f);
             }
 
@@ -196,12 +204,15 @@ namespace VirtualRail
             _threatLevel = 1 + Mathf.FloorToInt(_sessionTimer / 45f) + _threatLevelBonus;
             _threatLevelProgress01 = Mathf.Repeat(_sessionTimer, 45f) / 45f;
 
-            // 2. Cập nhật tần suất bắn của quái vật theo DDA Threat Level (Đạn nhiều hơn, không tăng tốc độ đạn)
+            // 2. Cập nhật tần suất bắn & số lượng quái vật nổ súng theo DDA Threat Level (Đạn nhiều hơn, không tăng tốc độ đạn)
             // Mỗi bậc Threat Level giảm thời gian chờ giữa các loạt bắn (-8% mỗi bậc), có trần hãm an toàn tối thiểu 50%
             float cooldownScale = Mathf.Max(0.50f, 1.0f - (_threatLevel - 1) * 0.08f);
+            // Tỉ lệ số lượng tàu địch được phép bắn trong đội hình tăng dần theo Threat Level (Level 1: 25% -> Level 5+: 100%)
+            _currentShooterRatio = Mathf.Clamp01(0.25f + (_threatLevel - 1) * 0.20f);
             if (_waveSpawner != null)
             {
                 _waveSpawner.SetStageFireCooldownScale(cooldownScale);
+                _waveSpawner.SetStageShooterRatio(_currentShooterRatio);
                 // Giữ tốc độ đạn ở mức cơ sở chuẩn 20m/s (không tăng theo Threat Level)
                 _waveSpawner.SetStageBulletSpeed(20f);
             }

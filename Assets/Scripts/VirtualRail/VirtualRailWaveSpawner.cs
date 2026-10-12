@@ -84,6 +84,8 @@ namespace VirtualRail
         private bool _allowShooting = true;
         private float _stageBulletSpeed = 22f;
         private float _stageFireCooldownScale = 1.0f;
+        private float _stageShooterRatio = 1.0f;
+        public float StageShooterRatio => _stageShooterRatio;
         private bool _stageEnableFormations = true;
         private float _stageWaveInterval = -1f;
         private int _stageFormationInterval = -1;
@@ -107,6 +109,8 @@ namespace VirtualRail
             _stageFormationPatterns = (settings.stageFormationPool != null && settings.stageFormationPool.Length > 0) ? settings.stageFormationPool : null;
             _allowShooting = settings.allowShooting;
             _stageBulletSpeed = settings.bulletSpeed > 1f ? settings.bulletSpeed : 22f;
+            _stageFireCooldownScale = 1.0f;
+            _stageShooterRatio = 1.0f;
             _stageEnableFormations = settings.enableFormations && (settings.formationIntervalWaves > 0);
 
             // Chế độ ScriptedDirectorOnly: KHÓA CỨNG 100% việc sinh đợt quái tuần hoàn ngẫu nhiên
@@ -169,6 +173,15 @@ namespace VirtualRail
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Điều chỉnh tỉ lệ số lượng tàu địch được phép bắn trong một đợt quái (Shooter Quota) theo DDA Threat Level.
+        /// Giá trị trong dải [0.20, 1.0] (0 GC Alloc).
+        /// </summary>
+        public void SetStageShooterRatio(float ratio)
+        {
+            _stageShooterRatio = Mathf.Clamp(ratio, 0.20f, 1.0f);
         }
 
         private void Awake()
@@ -441,6 +454,7 @@ namespace VirtualRail
 
             Camera mainCam = _mainCam != null ? _mainCam : Camera.main;
             int countInWave = Random.Range(2, 4);
+            int allowedShooters = Mathf.Max(1, Mathf.RoundToInt(countInWave * _stageShooterRatio));
 
             for (int i = 0; i < countInWave; i++)
             {
@@ -468,7 +482,7 @@ namespace VirtualRail
                 var attackComp = availableEnemy.GetComponent<EnemyAttack>();
                 if (attackComp != null)
                 {
-                    attackComp.enabled = _allowShooting;
+                    attackComp.enabled = _allowShooting && (i < allowedShooters);
                     attackComp.SetFireCooldownScale(_stageFireCooldownScale);
                     if (_stageBulletSpeed > 5f)
                     {
@@ -608,6 +622,21 @@ namespace VirtualRail
                 }
             }
 
+            int allowedShooters = Mathf.Max(1, Mathf.RoundToInt(enemies.Count * _stageShooterRatio));
+            for (int k = 0; k < enemies.Count; k++)
+            {
+                var atk = enemies[k].GetComponent<EnemyAttack>();
+                if (atk != null)
+                {
+                    atk.enabled = _allowShooting && (k < allowedShooters);
+                    atk.SetFireCooldownScale(_stageFireCooldownScale);
+                    if (_stageBulletSpeed > 5f)
+                    {
+                        atk.SetBulletSpeedOverride(_stageBulletSpeed);
+                    }
+                }
+            }
+
             availableAnchor.InitializeFormation(fType, anchor, startPos, enemies, assemblyTime);
             return true;
         }
@@ -735,6 +764,7 @@ namespace VirtualRail
             Camera mainCam = _mainCam != null ? _mainCam : Camera.main;
             float leadDist = _stageLeadDistance > 10f ? _stageLeadDistance : spawnLeadDistance;
             int actualCount = Mathf.Clamp(count, 1, 6);
+            int allowedShooters = Mathf.Max(1, Mathf.RoundToInt(actualCount * _stageShooterRatio));
 
             _activeWaveEnemies.Clear();
             _activeWaveFormationAnchor = null;
@@ -762,7 +792,7 @@ namespace VirtualRail
                 var attack = enemy.GetComponent<EnemyAttack>();
                 if (attack != null)
                 {
-                    attack.enabled = _allowShooting;
+                    attack.enabled = _allowShooting && (i < allowedShooters);
                     attack.SetFireCooldownScale(_stageFireCooldownScale);
                     if (_stageBulletSpeed > 5f)
                     {
@@ -840,6 +870,7 @@ namespace VirtualRail
             Vector3 startPos = anchor.transform.position + anchor.ForwardTangent * formDist + anchor.transform.up * 4f;
 
             _activeWaveEnemies.Clear();
+            int allowedShooters = Mathf.Max(1, Mathf.RoundToInt(enemies.Count * _stageShooterRatio));
             for (int i = 0; i < enemies.Count; i++)
             {
                 if (enemies[i] != null)
@@ -848,7 +879,7 @@ namespace VirtualRail
                     var atk = enemies[i].GetComponent<EnemyAttack>();
                     if (atk != null)
                     {
-                        atk.enabled = _allowShooting;
+                        atk.enabled = _allowShooting && (i < allowedShooters);
                         atk.SetFireCooldownScale(_stageFireCooldownScale);
                         if (_stageBulletSpeed > 5f)
                         {
