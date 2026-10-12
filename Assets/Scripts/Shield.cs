@@ -7,6 +7,7 @@ public class Shield : MonoBehaviour
     [SerializeField] private int _currentHealth;
     [SerializeField] private int _regenerationAmount = 1;
     [Tooltip("Time in seconds")][SerializeField] private float _regenerationRate = 2f;
+    [Tooltip("Bật cơ chế tự động hồi máu theo thời gian (false = chỉ hồi máu khi nhặt Orb trắng)")][SerializeField] private bool _enableAutoRegen = false;
     [Tooltip("Thời gian bất tử sau khi nhận sát thương (giây)")][SerializeField] private float _invulnerabilityDuration = 0.8f;
 
     public int CurrentHealth => _currentHealth;
@@ -45,7 +46,13 @@ public class Shield : MonoBehaviour
 
     private void Update()
     {
-        if (Time.time >= _nextRegenTime)
+        bool allowAutoRegen = _enableAutoRegen;
+        if (VirtualRail.VirtualRailAnchor.Instance != null && VirtualRail.VirtualRailAnchor.Instance.config != null)
+        {
+            allowAutoRegen = VirtualRail.VirtualRailAnchor.Instance.config.enablePlayerAutoRegeneration;
+        }
+
+        if (allowAutoRegen && Time.time >= _nextRegenTime)
         {
             _nextRegenTime = Time.time + _regenerationRate;
             Regenerate();
@@ -173,6 +180,7 @@ public class Shield : MonoBehaviour
 
     public void Heal(int healAmount)
     {
+        if (_currentHealth <= 0) return;
         _currentHealth = Mathf.Min(_maxHealth, _currentHealth + healAmount);
         GameEventManager.UpdateHealthBar(Mathf.RoundToInt(_currentHealth / (float)_maxHealth * 100));
     }

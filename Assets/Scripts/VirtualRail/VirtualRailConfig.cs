@@ -440,6 +440,15 @@ namespace VirtualRail
         [Tooltip("Chu kỳ quãng đường kích hoạt dịch chuyển ngược về gốc tọa độ (m - chuẩn 4,000m)")]
         public float originShiftThreshold = 4000f;
 
+        [Header("26. Player Health & Recovery Mechanics")]
+        [Tooltip("Bật cơ chế tự động hồi máu theo thời gian của tàu người chơi (false = chỉ hồi phục khi nhặt Orb trắng)")]
+        public bool enablePlayerAutoRegeneration = false;
+        [Tooltip("Lượng máu hồi phục khi nhặt được Orb trắng (White Orb / Silver Ring)")]
+        public int whiteOrbHealAmount = 3;
+        [Tooltip("Xác suất kẻ địch rơi ra Orb Trắng hồi máu khi bị tiêu diệt (0.0 đến 1.0)")]
+        [Range(0f, 1f)]
+        public float enemyWhiteOrbDropChance = 0.20f;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

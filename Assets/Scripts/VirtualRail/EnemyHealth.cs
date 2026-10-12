@@ -364,6 +364,19 @@ namespace VirtualRail
             {
                 _movement.BlowUp();
             }
+
+            TryDropWhiteOrb();
+        }
+
+        private void TryDropWhiteOrb()
+        {
+            if (VirtualRailCollectiblePool.Instance == null) return;
+            var cfg = (VirtualRailAnchor.Instance != null) ? VirtualRailAnchor.Instance.config : null;
+            float dropChance = (cfg != null) ? cfg.enemyWhiteOrbDropChance : 0.20f;
+            if (dropChance > 0f && UnityEngine.Random.value <= dropChance)
+            {
+                VirtualRailCollectiblePool.Instance.SpawnRing(RingType.SilverRing, transform.position);
+            }
         }
 
         public void Recycle()

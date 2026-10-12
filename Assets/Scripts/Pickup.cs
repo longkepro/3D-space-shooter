@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(MeshCollider))]
@@ -14,6 +14,14 @@ public class Pickup : MonoBehaviour
         {
             if (!_isCollected)
             {
+                var shield = other.GetComponentInParent<Shield>() ?? other.GetComponentInChildren<Shield>();
+                if (shield != null)
+                {
+                    int healAmount = (VirtualRail.VirtualRailAnchor.Instance != null && VirtualRail.VirtualRailAnchor.Instance.config != null)
+                        ? VirtualRail.VirtualRailAnchor.Instance.config.whiteOrbHealAmount
+                        : 3;
+                    shield.Heal(healAmount);
+                }
                 Collect();
             }
         }

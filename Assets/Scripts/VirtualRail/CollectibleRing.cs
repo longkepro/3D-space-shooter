@@ -78,7 +78,7 @@ namespace VirtualRail
             switch (_type)
             {
                 case RingType.SilverRing:
-                    baseColor = new Color(0.4f, 0.9f, 1.0f); // Bạc ánh lam (Hồi phục)
+                    baseColor = new Color(1.0f, 1.0f, 1.0f); // Orb Trắng rực rỡ (Hồi phục máu)
                     _scoreValue = 500;
                     break;
                 case RingType.GoldRing:
@@ -154,7 +154,7 @@ namespace VirtualRail
             {
                 case RingType.SilverRing:
                     AudioManager.Instance?.PlaySFX2D(AudioSFXType.RingCollect, 0.95f);
-                    // Hồi phục 25% Khiên
+                    // Hồi phục Máu bằng Orb Trắng
                     Shield shield = null;
                     if (collector != null)
                     {
@@ -169,11 +169,14 @@ namespace VirtualRail
                             shield = playerObj.GetComponentInChildren<Shield>();
                         }
                     }
+                    int healAmount = (VirtualRailAnchor.Instance != null && VirtualRailAnchor.Instance.config != null)
+                        ? VirtualRailAnchor.Instance.config.whiteOrbHealAmount
+                        : 3;
                     if (shield != null)
                     {
-                        shield.Heal(3); // 3/10 ~ 30% máu
+                        shield.Heal(healAmount);
                     }
-                    Debug.Log("<color=cyan><b>[SILVER RING]</b></color> Thu thập Vòng Bạc! Hồi phục khiên +500 PTS");
+                    Debug.Log($"<color=white><b>[WHITE ORB]</b></color> Thu thập Orb Trắng! Hồi phục máu +{healAmount} HP");
                     break;
 
                 case RingType.GoldRing:

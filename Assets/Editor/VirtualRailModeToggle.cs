@@ -3228,4 +3228,32 @@ public class VirtualRailModeToggle
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỆT ĐUÔI ĐẠN VỀ WORLD SPACE NGUYÊN BẢN (OFF - LEGACY):</b></color> Tắt bù trừ dịch chuyển đỉnh trail.");
     }
     #endregion
+
+    #region Player Health & Auto-Regen Toggles (Task: White Orb Only)
+    [MenuItem("Tools/Virtual Rail/Player/1. Disable Auto Health Regen - White Orb Only (ON - Spec)")]
+    public static void DisablePlayerAutoRegenWhiteOrbOnly()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.enablePlayerAutoRegeneration = false;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ LOẠI BỎ CƠ CHẾ TỰ HỒI MÁU (ON - SPEC):</b></color> Người chơi chỉ có thể hồi máu khi thu thập Orb Trắng (White Orb).");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Player/2. Enable Auto Health Regen (OFF - Legacy)")]
+    public static void EnablePlayerAutoRegenLegacy()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.enablePlayerAutoRegeneration = true;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ BẬT LẠI TỰ HỒI MÁU THEO THỜI GIAN (OFF - LEGACY):</b></color> Trở lại cơ chế tự hồi 1 HP mỗi 2 giây.");
+    }
+    #endregion
 }
