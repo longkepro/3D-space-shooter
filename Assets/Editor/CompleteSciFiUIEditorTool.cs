@@ -40,9 +40,13 @@ namespace VirtualRail.Editor
                 if (EditorPrefs.GetBool(PREF_AUTO_SETUP, true))
                 {
                     Canvas canvas = Object.FindAnyObjectByType<Canvas>();
-                    if (canvas != null && canvas.transform.Find(COMPLETE_UI_ROOT_NAME) == null)
+                    if (canvas != null)
                     {
-                        SwitchToCompleteSciFiUI();
+                        Transform existing = canvas.transform.Find(COMPLETE_UI_ROOT_NAME);
+                        if (existing == null || existing.Find("FullScreenMenuBackdrop") == null)
+                        {
+                            SwitchToCompleteSciFiUI();
+                        }
                     }
                 }
             }
@@ -181,6 +185,47 @@ namespace VirtualRail.Editor
             rootRt.offsetMax = Vector2.zero;
 
             UIManager uiMgr = root.AddComponent<UIManager>();
+
+            // -------------------------------------------------------------
+            // FULL-SCREEN BACKDROP (Che kín 100% demo 3D khi ở Menu, fade out mượt mà khi vào Gameplay)
+            // -------------------------------------------------------------
+            GameObject backdropObj = new GameObject("FullScreenMenuBackdrop");
+            backdropObj.transform.SetParent(root.transform, false);
+            RectTransform bdRt = backdropObj.AddComponent<RectTransform>();
+            bdRt.anchorMin = Vector2.zero;
+            bdRt.anchorMax = Vector2.one;
+            bdRt.offsetMin = Vector2.zero;
+            bdRt.offsetMax = Vector2.zero;
+
+            Image bdImg = backdropObj.AddComponent<Image>();
+            bdImg.color = new Color(0.015f, 0.025f, 0.045f, 1f); // Deep Space Dark Navy (#04060C)
+            bdImg.raycastTarget = false;
+
+            CanvasGroup bdCg = backdropObj.AddComponent<CanvasGroup>();
+            bdCg.alpha = 1f;
+            bdCg.interactable = false;
+            bdCg.blocksRaycasts = false;
+
+            // Lớp phủ vân lưới công nghệ scanline mờ tạo chiều sâu Sci-Fi sang trọng
+            Sprite spScanline = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_scanline_overlay.png");
+            if (spScanline != null)
+            {
+                GameObject scanlineObj = new GameObject("ScanlineOverlay");
+                scanlineObj.transform.SetParent(backdropObj.transform, false);
+                RectTransform slRt = scanlineObj.AddComponent<RectTransform>();
+                slRt.anchorMin = Vector2.zero;
+                slRt.anchorMax = Vector2.one;
+                slRt.offsetMin = Vector2.zero;
+                slRt.offsetMax = Vector2.zero;
+                Image slImg = scanlineObj.AddComponent<Image>();
+                slImg.sprite = spScanline;
+                slImg.type = Image.Type.Tiled;
+                slImg.color = new Color(0f, 0.85f, 1f, 0.035f);
+                slImg.raycastTarget = false;
+            }
+
+            uiMgr.fullScreenBackdrop = bdCg;
+            uiMgr.backdropImage = bdImg;
 
             // -------------------------------------------------------------
             // 0. FPS DISPLAY (Top-Center)

@@ -19,8 +19,15 @@ namespace VirtualRail
 
         [Header("Runtime State")]
         [SerializeField] private float currentSpeed;
+        [SerializeField] private bool _isGameActive = false;
         private bool isBoosting = false;
         private float _overrideSpeed = -1f;
+
+        public bool IsGameActive
+        {
+            get => _isGameActive;
+            set => _isGameActive = value;
+        }
 
         public float CurrentSpeed
         {
@@ -54,8 +61,41 @@ namespace VirtualRail
             if (Instance == this) Instance = null;
         }
 
+        private void OnEnable()
+        {
+            GameEventManager.OnStartGame += HandleGameStarted;
+            GameEventManager.OnPlayerDestroyed += HandlePlayerDestroyed;
+        }
+
+        private void OnDisable()
+        {
+            GameEventManager.OnStartGame -= HandleGameStarted;
+            GameEventManager.OnPlayerDestroyed -= HandlePlayerDestroyed;
+        }
+
+        private void HandleGameStarted()
+        {
+            _isGameActive = true;
+            if (config != null) currentSpeed = config.forwardSpeed;
+        }
+
+        private void HandlePlayerDestroyed()
+        {
+            _isGameActive = false;
+        }
+
         private void Start()
         {
+            if (UIManager.Instance != null && UIManager.Instance.CurrentState != UIViewState.Gameplay)
+            {
+                _isGameActive = false;
+                currentSpeed = 0f;
+            }
+            else
+            {
+                _isGameActive = true;
+                currentSpeed = (config != null) ? config.forwardSpeed : 28f;
+            }
             if (config != null && config.useRailWaveSpawner)
             {
                 if (GetComponentInChildren<VirtualRailWaveSpawner>() == null)
@@ -94,6 +134,12 @@ namespace VirtualRail
 
         private void Update()
         {
+            if (!_isGameActive)
+            {
+                currentSpeed = 0f;
+                return;
+            }
+
             // Kiểm tra boost
             float boostInput = Input.GetAxis("Fire3") > 0 ? Input.GetAxis("Fire3") : (Input.GetKey(KeyCode.LeftShift) ? 1f : 0f);
             isBoosting = boostInput > 0.1f;

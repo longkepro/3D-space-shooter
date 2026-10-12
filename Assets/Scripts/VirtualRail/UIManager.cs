@@ -32,6 +32,12 @@ namespace VirtualRail
         public RectTransform debriefingModal;
         public RectTransform fpsDisplayRoot;
 
+        [Header("Full-Screen Backdrop (Covers 3D Demo in Menus)")]
+        public CanvasGroup fullScreenBackdrop;
+        public Image backdropImage;
+        private float _backdropTargetAlpha = 1f;
+        private const float BACKDROP_FADE_SPEED = 2.8f;
+
         [Header("Main Menu Controls")]
         public Button btnSinglePlayer;
         public Button btnMultiplayer;
@@ -90,6 +96,8 @@ namespace VirtualRail
 
         private UIViewState _currentState = UIViewState.MainMenu;
         private UIViewState _previousState = UIViewState.MainMenu;
+        public UIViewState CurrentState => _currentState;
+        public UIViewState PreviousState => _previousState;
 
         // Cache CanvasGroups for smooth zero-allocation fading
         private CanvasGroup _cgMainMenu;
@@ -120,6 +128,39 @@ namespace VirtualRail
             _cgHallOfFame = EnsureCanvasGroup(hallOfFameModal);
             _cgPause = EnsureCanvasGroup(pauseModal);
             _cgDebriefing = EnsureCanvasGroup(debriefingModal);
+
+            if (fullScreenBackdrop == null)
+            {
+                Transform bdTr = transform.Find("FullScreenMenuBackdrop");
+                if (bdTr != null)
+                {
+                    fullScreenBackdrop = bdTr.GetComponent<CanvasGroup>();
+                    if (backdropImage == null) backdropImage = bdTr.GetComponent<Image>();
+                }
+                else
+                {
+                    GameObject backdropObj = new GameObject("FullScreenMenuBackdrop");
+                    backdropObj.transform.SetParent(transform, false);
+                    backdropObj.transform.SetAsFirstSibling();
+                    RectTransform bdRt = backdropObj.AddComponent<RectTransform>();
+                    bdRt.anchorMin = Vector2.zero;
+                    bdRt.anchorMax = Vector2.one;
+                    bdRt.offsetMin = Vector2.zero;
+                    bdRt.offsetMax = Vector2.zero;
+
+                    Image bdImg = backdropObj.AddComponent<Image>();
+                    bdImg.color = new Color(0.015f, 0.025f, 0.045f, 1f);
+                    bdImg.raycastTarget = false;
+
+                    CanvasGroup bdCg = backdropObj.AddComponent<CanvasGroup>();
+                    bdCg.alpha = 1f;
+                    bdCg.interactable = false;
+                    bdCg.blocksRaycasts = false;
+
+                    fullScreenBackdrop = bdCg;
+                    backdropImage = bdImg;
+                }
+            }
         }
 
         private void Start()
@@ -146,6 +187,29 @@ namespace VirtualRail
 
         private void Update()
         {
+            // Smooth zero-allocation fade for full-screen backdrop (0 GC Alloc)
+            if (fullScreenBackdrop != null)
+            {
+                if (Mathf.Abs(fullScreenBackdrop.alpha - _backdropTargetAlpha) > 0.005f)
+                {
+                    fullScreenBackdrop.alpha = Mathf.MoveTowards(fullScreenBackdrop.alpha, _backdropTargetAlpha, Time.unscaledDeltaTime * BACKDROP_FADE_SPEED);
+                    bool isVisible = fullScreenBackdrop.alpha > 0.01f;
+                    if (fullScreenBackdrop.gameObject.activeSelf != isVisible)
+                    {
+                        fullScreenBackdrop.gameObject.SetActive(isVisible);
+                    }
+                }
+                else if (fullScreenBackdrop.alpha != _backdropTargetAlpha)
+                {
+                    fullScreenBackdrop.alpha = _backdropTargetAlpha;
+                    bool isVisible = _backdropTargetAlpha > 0.01f;
+                    if (fullScreenBackdrop.gameObject.activeSelf != isVisible)
+                    {
+                        fullScreenBackdrop.gameObject.SetActive(isVisible);
+                    }
+                }
+            }
+
             // Xử lý phím Escape / P để bật Pause Menu trong trận
             if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
             {
@@ -195,6 +259,36 @@ namespace VirtualRail
             SetGroupVisible(_cgHallOfFame, newState == UIViewState.HallOfFame);
             SetGroupVisible(_cgPause, newState == UIViewState.Pause);
             SetGroupVisible(_cgDebriefing, newState == UIViewState.Debriefing);
+
+            // Cập nhật độ trong suốt mục tiêu cho màn che toàn màn hình (Full-Screen Backdrop)
+            if (newState == UIViewState.MainMenu || newState == UIViewState.HallOfFame)
+            {
+                _backdropTargetAlpha = 1.0f;
+                if (fullScreenBackdrop != null) fullScreenBackdrop.gameObject.SetActive(true);
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlayMenuMusic();
+                }
+            }
+            else if (newState == UIViewState.Settings)
+            {
+                _backdropTargetAlpha = (_previousState == UIViewState.Gameplay || _previousState == UIViewState.Pause) ? 0.75f : 1.0f;
+                if (fullScreenBackdrop != null) fullScreenBackdrop.gameObject.SetActive(true);
+            }
+            else if (newState == UIViewState.Pause)
+            {
+                _backdropTargetAlpha = 0.75f;
+                if (fullScreenBackdrop != null) fullScreenBackdrop.gameObject.SetActive(true);
+            }
+            else if (newState == UIViewState.Debriefing)
+            {
+                _backdropTargetAlpha = 0.85f;
+                if (fullScreenBackdrop != null) fullScreenBackdrop.gameObject.SetActive(true);
+            }
+            else if (newState == UIViewState.Gameplay)
+            {
+                _backdropTargetAlpha = 0.0f; // Mờ dần biến mất để lộ thế giới 3D buồng lái
+            }
 
             if (newState == UIViewState.Settings)
             {
@@ -249,7 +343,7 @@ namespace VirtualRail
             if (btnPauseMainMenu != null) btnPauseMainMenu.onClick.AddListener(OnPauseMainMenuClicked);
 
             if (btnDebriefRestart != null) btnDebriefRestart.onClick.AddListener(OnSinglePlayerClicked);
-            if (btnDebriefMainMenu != null) btnDebriefMainMenu.onClick.AddListener(() => ShowState(UIViewState.MainMenu));
+            if (btnDebriefMainMenu != null) btnDebriefMainMenu.onClick.AddListener(OnPauseMainMenuClicked);
 
             // Tabs
             if (tabVideo != null) tabVideo.onClick.AddListener(() => SwitchSettingsTab(0));
@@ -389,6 +483,12 @@ namespace VirtualRail
             _isPaused = false;
             ShowState(UIViewState.Gameplay);
 
+            // Tái thiết lập thế giới màn chơi sạch sẽ từ điểm xuất phát (0 GC Alloc)
+            if (VirtualRailAnchor.Instance != null)
+            {
+                VirtualRailAnchor.Instance.Respawn(Vector3.zero, Quaternion.identity);
+            }
+
             // Bắt đầu game thông qua hệ thống GameEventManager
             GameEventManager.StartGame();
         }
@@ -475,6 +575,15 @@ namespace VirtualRail
         {
             Time.timeScale = 1.0f;
             _isPaused = false;
+            if (VirtualRailAnchor.Instance != null)
+            {
+                VirtualRailAnchor.Instance.IsGameActive = false;
+                VirtualRailAnchor.Instance.CurrentSpeed = 0f;
+                VirtualRailAnchor.Instance.transform.position = Vector3.zero;
+            }
+            if (VirtualRailWaveSpawner.Instance != null) VirtualRailWaveSpawner.Instance.RecycleAll();
+            if (VirtualRailAsteroidSpawner.Instance != null) VirtualRailAsteroidSpawner.Instance.RecycleAll();
+            if (EnemyProjectilePool.Instance != null) EnemyProjectilePool.Instance.ClearAllActiveProjectiles();
             ShowState(UIViewState.MainMenu);
         }
 

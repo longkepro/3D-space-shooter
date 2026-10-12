@@ -155,6 +155,7 @@ namespace VirtualRail
             }
 
             if (ship != null && ship.IsDead) return;
+            if (UIManager.Instance != null && UIManager.Instance.CurrentState != UIViewState.Gameplay) return;
 
             EnsureAimAssist();
 

@@ -106,6 +106,7 @@ namespace VirtualRail
         private void Update()
         {
             if (_isDead) return;
+            if (UIManager.Instance != null && UIManager.Instance.CurrentState != UIViewState.Gameplay) return;
             if (anchor == null || anchor.config == null) return;
 
             var cfg = anchor.config;
