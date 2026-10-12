@@ -16,6 +16,8 @@ namespace VirtualRail.EditorTools
         public const string BOSS_PREFAB_PATH = "Assets/Prefabs/Boss_F3_Corvette.prefab";
         public const string F3_RED_FBX_PATH = "Assets/F3_Corvette/Meshes/F3_Red.FBX";
         public const string F3_RED_MAT_PATH = "Assets/F3_Corvette/Meshes/Materials/F3_Red.mat";
+        public const string F3_RED_TEX_PATH = "Assets/F3_Corvette/Textures/F3_Red.tif";
+        public const string F3_PURPLE_TEX_PATH = "Assets/F3_Corvette/Textures/F3_Purple.png";
         public const string SHIELD_MAT_PATH = "Assets/Materials/HexShield_ElectricCyan.mat";
         public const string EXPLOSION_VFX_PATH = "Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX3_Fire_Explosion.prefab";
         public const string SPARKS_VFX_PATH = "Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX3_Hit_Electric_C_Air.prefab";
@@ -542,5 +544,110 @@ namespace VirtualRail.EditorTools
 
             Debug.Log("<color=lime><b>[BossTool] Đã gắn thành công Cụm 6 Boss Health Bar vào ModernCockpitHUD trong Scene và đã lưu!</b></color>");
         }
+
+        #region BOSS HULL COLOR ACCENT SWITCHER (DARK PURPLE & CRIMSON RED)
+        [MenuItem("Tools/Virtual Rail/Boss/[10] Switch Boss Hull Accent to Dark Purple (ON)", false, 110)]
+        [MenuItem("Tools/Virtual Rail/Boss Corvette/1. Switch Hull Accent to Dark Purple (ON)")]
+        public static void SwitchBossHullAccentToDarkPurple()
+        {
+            Texture2D purpleTex = AssetDatabase.LoadAssetAtPath<Texture2D>(F3_PURPLE_TEX_PATH);
+            if (purpleTex == null)
+            {
+                purpleTex = GenerateDarkPurpleTexture();
+            }
+
+            if (purpleTex == null)
+            {
+                Debug.LogError($"[BossEditorTool] Khong the tai hoac tao texture F3_Purple tai {F3_PURPLE_TEX_PATH}!");
+                return;
+            }
+
+            Material bossMat = AssetDatabase.LoadAssetAtPath<Material>(F3_RED_MAT_PATH);
+            if (bossMat != null)
+            {
+                bossMat.SetTexture("_MainTex", purpleTex);
+                EditorUtility.SetDirty(bossMat);
+                AssetDatabase.SaveAssets();
+                Debug.Log("<color=magenta><b>[BossEditorTool] ĐÃ CHUYỂN MÀU SƠN BOSS THÀNH TÍM THẪM (DARK PURPLE - ON):</b></color> Đã gán F3_Purple.png vào Material F3_Red.mat thành công!");
+            }
+        }
+
+        [MenuItem("Tools/Virtual Rail/Boss/[11] Revert Boss Hull Accent to Crimson Red (OFF - Legacy)", false, 111)]
+        [MenuItem("Tools/Virtual Rail/Boss Corvette/2. Revert Hull Accent to Crimson Red (OFF - Legacy)")]
+        public static void RevertBossHullAccentToCrimsonRed()
+        {
+            Texture2D redTex = AssetDatabase.LoadAssetAtPath<Texture2D>(F3_RED_TEX_PATH);
+            if (redTex == null)
+            {
+                Debug.LogError($"[BossEditorTool] Khong tim thay texture goc tai {F3_RED_TEX_PATH}!");
+                return;
+            }
+
+            Material bossMat = AssetDatabase.LoadAssetAtPath<Material>(F3_RED_MAT_PATH);
+            if (bossMat != null)
+            {
+                bossMat.SetTexture("_MainTex", redTex);
+                EditorUtility.SetDirty(bossMat);
+                AssetDatabase.SaveAssets();
+                Debug.Log("<color=yellow><b>[BossEditorTool] ĐÃ HOÀN NGUYÊN MÀU SƠN BOSS VỀ ĐỎ THẪM (CRIMSON RED - OFF):</b></color> Đã khôi phục F3_Red.tif gốc thành công!");
+            }
+        }
+
+        private static Texture2D GenerateDarkPurpleTexture()
+        {
+            TextureImporter importer = AssetImporter.GetAtPath(F3_RED_TEX_PATH) as TextureImporter;
+            if (importer == null) return null;
+            bool wasReadable = importer.isReadable;
+            if (!wasReadable)
+            {
+                importer.isReadable = true;
+                importer.SaveAndReimport();
+            }
+
+            Texture2D src = AssetDatabase.LoadAssetAtPath<Texture2D>(F3_RED_TEX_PATH);
+            if (src == null) return null;
+
+            Color32[] pixels = src.GetPixels32();
+            int len = pixels.Length;
+            for (int i = 0; i < len; i++)
+            {
+                Color32 c = pixels[i];
+                if (c.r > c.g + 5 && c.r > c.b + 5)
+                {
+                    float r = c.r / 255f;
+                    float g = c.g / 255f;
+                    float b = c.b / 255f;
+                    float maxC = Mathf.Max(r, Mathf.Max(g, b));
+                    float minC = Mathf.Min(r, Mathf.Min(g, b));
+                    float delta = maxC - minC;
+                    float s = maxC > 0.001f ? delta / maxC : 0f;
+
+                    if (s >= 0.35f)
+                    {
+                        byte newB = (byte)Mathf.Clamp(Mathf.RoundToInt(maxC * 255f), 0, 255);
+                        byte newG = (byte)Mathf.Clamp(Mathf.RoundToInt(minC * 255f), 0, 255);
+                        byte newR = (byte)Mathf.Clamp(Mathf.RoundToInt((minC + (2f / 3f) * delta) * 255f), 0, 255);
+                        pixels[i] = new Color32(newR, newG, newB, c.a);
+                    }
+                }
+            }
+
+            Texture2D purple = new Texture2D(src.width, src.height, TextureFormat.RGB24, true);
+            purple.SetPixels32(pixels);
+            purple.Apply();
+
+            byte[] pngData = purple.EncodeToPNG();
+            System.IO.File.WriteAllBytes(F3_PURPLE_TEX_PATH, pngData);
+            AssetDatabase.ImportAsset(F3_PURPLE_TEX_PATH, ImportAssetOptions.ForceUpdate);
+
+            if (!wasReadable)
+            {
+                importer.isReadable = false;
+                importer.SaveAndReimport();
+            }
+
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(F3_PURPLE_TEX_PATH);
+        }
+        #endregion
     }
 }
