@@ -2464,7 +2464,7 @@ public class VirtualRailModeToggle
         trRt.anchorMax = new Vector2(1f, 1f);
         trRt.pivot = new Vector2(1f, 1f);
         trRt.anchoredPosition = new Vector2(-50f, -40f);
-        trRt.sizeDelta = new Vector2(355f, 320f);
+        trRt.sizeDelta = new Vector2(355f, 335f);
         hud.clusterTopRightRoot = trRt;
 
         // Box 1: Score Box (Neon Pink/Red Border Frame + Cyan Value)
@@ -2477,15 +2477,63 @@ public class VirtualRailModeToggle
         CreateUIText("HitsLabel", hitsBox.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(24f, 0f), new Vector2(90f, 32f), "HITS", font, 18, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
         hud.hitCountValueText = CreateUIText("HitsValue", hitsBox.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 0f), new Vector2(210f, 38f), "156", font, 30, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
 
-        // Box 3: Combo Radial Dial (Circular Golden Gauge with 360 Arc Decay) positioned directly under right side of Hits box
+        // Box 3: Endless Telemetry Box (Sector Threat Level & Distance Tracker)
+        GameObject telemetryBox = CreateUIPanel("TelemetryBox", trCluster.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(0f, -148f), new Vector2(355f, 44f), new Color(0.02f, 0.08f, 0.14f, 0.88f));
+        // Sub 3a: Threat Badge
+        GameObject threatBadge = new GameObject("ThreatBadge");
+        threatBadge.transform.SetParent(telemetryBox.transform, false);
+        RectTransform tbRt = threatBadge.AddComponent<RectTransform>();
+        tbRt.anchorMin = new Vector2(0f, 0f);
+        tbRt.anchorMax = new Vector2(0.5f, 1f);
+        tbRt.offsetMin = Vector2.zero;
+        tbRt.offsetMax = Vector2.zero;
+        hud.threatLevelText = CreateUIText("ThreatLabel", threatBadge.transform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0f, 0.5f), new Vector2(16f, 6f), new Vector2(-20f, 20f), "THREAT LV.01", font, 13, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+
+        GameObject tpObj = new GameObject("ThreatProgress");
+        tpObj.transform.SetParent(threatBadge.transform, false);
+        RectTransform tpRt = tpObj.AddComponent<RectTransform>();
+        tpRt.anchorMin = new Vector2(0f, 0.5f);
+        tpRt.anchorMax = new Vector2(1f, 0.5f);
+        tpRt.pivot = new Vector2(0f, 0.5f);
+        tpRt.anchoredPosition = new Vector2(16f, -10f);
+        tpRt.sizeDelta = new Vector2(-32f, 4f);
+        Image tpTrack = tpObj.AddComponent<Image>();
+        tpTrack.color = new Color(0.04f, 0.16f, 0.22f, 0.85f);
+
+        GameObject tpFillObj = new GameObject("Fill");
+        tpFillObj.transform.SetParent(tpObj.transform, false);
+        RectTransform tpfRt = tpFillObj.AddComponent<RectTransform>();
+        tpfRt.anchorMin = Vector2.zero;
+        tpfRt.anchorMax = Vector2.one;
+        tpfRt.offsetMin = Vector2.zero;
+        tpfRt.offsetMax = Vector2.zero;
+        hud.threatProgressFill = tpFillObj.AddComponent<Image>();
+        hud.threatProgressFill.type = Image.Type.Filled;
+        hud.threatProgressFill.fillMethod = Image.FillMethod.Horizontal;
+        hud.threatProgressFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+        hud.threatProgressFill.fillAmount = 0.25f;
+        hud.threatProgressFill.color = borderCyan;
+
+        // Sub 3b: Distance Tracker
+        GameObject distTracker = new GameObject("DistanceTracker");
+        distTracker.transform.SetParent(telemetryBox.transform, false);
+        RectTransform dtRt = distTracker.AddComponent<RectTransform>();
+        dtRt.anchorMin = new Vector2(0.5f, 0f);
+        dtRt.anchorMax = new Vector2(1f, 1f);
+        dtRt.offsetMin = Vector2.zero;
+        dtRt.offsetMax = Vector2.zero;
+        CreateUIText("DistLabel", distTracker.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(10f, 0f), new Vector2(45f, 22f), "DIST:", font, 12, FontStyle.Bold, new Color(0.6f, 0.78f, 0.88f, 0.85f), TextAnchor.MiddleLeft);
+        hud.distanceTrackerText = CreateUIText("DistanceValue", distTracker.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-16f, 0f), new Vector2(120f, 24f), "00,000 m", font, 14, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
+
+        // Box 4: Combo Radial Dial (Circular Golden Gauge with 360 Arc Decay) positioned directly under right side of Telemetry box
         GameObject comboDialObj = new GameObject("ComboRadialDial");
         comboDialObj.transform.SetParent(trCluster.transform, false);
         RectTransform comboRt = comboDialObj.AddComponent<RectTransform>();
         comboRt.anchorMin = new Vector2(1f, 1f);
         comboRt.anchorMax = new Vector2(1f, 1f);
         comboRt.pivot = new Vector2(1f, 1f);
-        comboRt.anchoredPosition = new Vector2(0f, -152f);
-        comboRt.sizeDelta = new Vector2(128f, 128f);
+        comboRt.anchoredPosition = new Vector2(0f, -200f);
+        comboRt.sizeDelta = new Vector2(118f, 118f);
         hud.comboBadgeRoot = comboRt;
 
         AspectRatioFitter arf = comboDialObj.AddComponent<AspectRatioFitter>();
@@ -2619,6 +2667,46 @@ public class VirtualRailModeToggle
         hud.bossPhaseText = CreateUIText("PhaseText", bossCluster.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 5f), new Vector2(-24f, 14f), "WARNING: COLOSSAL BATTLECRUISER BENEATH", font, 10, FontStyle.Normal, new Color(0.85f, 0.88f, 0.95f, 0.9f), TextAnchor.MiddleCenter);
 
         bossCluster.SetActive(false);
+
+        // -------------------------------------------------------------
+        // CỤM GRAZE FLOATING COMBAT TEXT (0 GC ALLOC OBJECT POOL)
+        // -------------------------------------------------------------
+        GameObject grazeContainer = new GameObject("GrazeFloatingContainer");
+        grazeContainer.transform.SetParent(hudRoot.transform, false);
+        RectTransform grazeRt = grazeContainer.AddComponent<RectTransform>();
+        grazeRt.anchorMin = new Vector2(0.5f, 0.5f);
+        grazeRt.anchorMax = new Vector2(0.5f, 0.5f);
+        grazeRt.pivot = new Vector2(0.5f, 0.5f);
+        grazeRt.anchoredPosition = Vector2.zero;
+        grazeRt.sizeDelta = new Vector2(400f, 300f);
+        hud.grazeFloatingRoot = grazeRt;
+
+        hud.grazePopupTexts = new Text[3];
+        for (int gp = 0; gp < 3; gp++)
+        {
+            GameObject gTextObj = new GameObject($"GrazePopup_{gp}");
+            gTextObj.transform.SetParent(grazeContainer.transform, false);
+            RectTransform gtRt = gTextObj.AddComponent<RectTransform>();
+            gtRt.anchorMin = new Vector2(0.5f, 0.5f);
+            gtRt.anchorMax = new Vector2(0.5f, 0.5f);
+            gtRt.pivot = new Vector2(0.5f, 0.5f);
+            gtRt.sizeDelta = new Vector2(250f, 40f);
+
+            Text gTxt = gTextObj.AddComponent<Text>();
+            gTxt.font = font;
+            gTxt.fontSize = 24;
+            gTxt.fontStyle = FontStyle.Bold;
+            gTxt.alignment = TextAnchor.MiddleCenter;
+            gTxt.color = borderCyan;
+            gTxt.text = "+500 [GRAZE!]";
+
+            Outline gOutline = gTextObj.AddComponent<Outline>();
+            gOutline.effectColor = new Color(0f, 0.35f, 0.55f, 0.85f);
+            gOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            gTextObj.SetActive(false);
+            hud.grazePopupTexts[gp] = gTxt;
+        }
 
         return hudRoot;
     }

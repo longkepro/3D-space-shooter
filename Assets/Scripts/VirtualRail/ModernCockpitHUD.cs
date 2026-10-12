@@ -49,6 +49,15 @@ namespace VirtualRail
         public Text comboMultiplierText;
         public Image comboDecayRadial;
 
+        [Header("Cluster 2 Endless Telemetry: Threat & Distance Tracker")]
+        public Text threatLevelText;
+        public Image threatProgressFill;
+        public Text distanceTrackerText;
+
+        [Header("Graze Indicator: Screen-Space Floating Numbers")]
+        public RectTransform grazeFloatingRoot;
+        public Text[] grazePopupTexts;
+
         [Header("Cluster 4: Tactical Comms Box (Bottom-Left)")]
         public RectTransform clusterBottomLeftRoot;
 
@@ -71,6 +80,17 @@ namespace VirtualRail
         private static readonly string[] PERCENT_STRINGS = PrecomputePercentStrings();
         private static readonly string[] SPEED_STRINGS = PrecomputeSpeedStrings();
         private static readonly string[] HITS_STRINGS = PrecomputeHitsStrings();
+        private static readonly string[] THREAT_STRINGS = PrecomputeThreatStrings();
+        private static readonly string[] DIST_STRINGS = PrecomputeDistanceStrings();
+        private static readonly string[] GRAZE_STRINGS = new string[]
+        {
+            "+500 [GRAZE!]",
+            "+1,000 [GRAZE!]",
+            "+2,000 [GRAZE!]",
+            "+4,000 [GRAZE!]",
+            "+8,000 [GRAZE!]",
+            "+16,000 [GRAZE!]"
+        };
 
         private static string[] PrecomputePercentStrings()
         {
@@ -93,6 +113,39 @@ namespace VirtualRail
             return table;
         }
 
+        private static string[] PrecomputeThreatStrings()
+        {
+            string[] table = new string[31];
+            for (int i = 0; i <= 30; i++)
+            {
+                table[i] = (i < 10) ? $"THREAT LV.0{i}" : $"THREAT LV.{i}";
+            }
+            return table;
+        }
+
+        private static string[] PrecomputeDistanceStrings()
+        {
+            string[] table = new string[3001];
+            for (int i = 0; i <= 3000; i++)
+            {
+                int meters = i * 10;
+                table[i] = meters.ToString("00,000") + " m";
+            }
+            return table;
+        }
+
+        private struct GrazePopupSlot
+        {
+            public Text textObj;
+            public RectTransform rectTransform;
+            public float timer;
+            public bool active;
+        }
+
+        private GrazePopupSlot[] _grazeSlots;
+        private int _nextGrazeSlot = 0;
+        private Camera _mainCamera;
+
         // Cache trạng thái nội bộ để tránh ghi đè UI thừa thãi
         private int _cachedHealthPercent = 100;
         private int _cachedScore = 0;
@@ -101,6 +154,8 @@ namespace VirtualRail
         public int CurrentHits => _cachedHits;
         private int _cachedBombs = 3;
         private int _lastSpeedInt = -1;
+        private int _lastThreatLevel = -1;
+        private int _lastDistanceStep = -1;
         private float _bindingRetryTime = 0f;
 
         // Màu sắc Sci-Fi Neon
@@ -132,6 +187,7 @@ namespace VirtualRail
             ComboScoringEngine.OnMultiplierDecayed += HandleMultiplierDecayed;
             ComboScoringEngine.OnMultiplierReset += HandleMultiplierReset;
             ComboScoringEngine.OnComboScored += HandleComboScored;
+            ComboScoringEngine.OnGrazeTriggered += HandleGrazeTriggered;
 
             BossF3CorvetteController.OnBossSpawned += HandleBossSpawned;
             BossF3CorvetteController.OnBossHealthChanged += HandleBossHealthChanged;
@@ -156,6 +212,7 @@ namespace VirtualRail
             ComboScoringEngine.OnMultiplierDecayed -= HandleMultiplierDecayed;
             ComboScoringEngine.OnMultiplierReset -= HandleMultiplierReset;
             ComboScoringEngine.OnComboScored -= HandleComboScored;
+            ComboScoringEngine.OnGrazeTriggered -= HandleGrazeTriggered;
 
             BossF3CorvetteController.OnBossSpawned -= HandleBossSpawned;
             BossF3CorvetteController.OnBossHealthChanged -= HandleBossHealthChanged;
@@ -170,6 +227,7 @@ namespace VirtualRail
         private void Start()
         {
             FindReferences();
+            EnsureGrazePoolInitialized();
             UpdateWeaponTierText();
             UpdateBombDisplay(_cachedBombs);
             UpdateHealthUI(_cachedHealthPercent);
@@ -177,6 +235,7 @@ namespace VirtualRail
             UpdateHitsUI(_cachedHits);
 
             EnsureBossClusterCreated();
+            EnsureTelemetryAndGrazeCreated();
 
             if (clusterBossRoot != null)
             {
@@ -242,6 +301,34 @@ namespace VirtualRail
             if (smartBomb == null && anchor != null) smartBomb = anchor.GetComponentInChildren<SmartBombModule>();
             if (smartBomb == null) smartBomb = FindAnyObjectByType<SmartBombModule>();
             if (radioComms == null) radioComms = GetComponentInChildren<RadioCommsHUD>();
+
+            if (_mainCamera == null)
+            {
+                var camRig = (anchor != null) ? anchor.GetComponentInChildren<VirtualRailCameraRig>() : null;
+                _mainCamera = (camRig != null && camRig.targetCamera != null) ? camRig.targetCamera : Camera.main;
+            }
+
+            if (grazeFloatingRoot == null)
+            {
+                Transform gRoot = transform.Find("GrazeFloatingContainer");
+                if (gRoot != null) grazeFloatingRoot = gRoot.GetComponent<RectTransform>();
+            }
+            if ((grazePopupTexts == null || grazePopupTexts.Length == 0) && grazeFloatingRoot != null)
+            {
+                grazePopupTexts = grazeFloatingRoot.GetComponentsInChildren<Text>(true);
+            }
+            if (threatLevelText == null && clusterTopRightRoot != null)
+            {
+                threatLevelText = clusterTopRightRoot.Find("TelemetryBox/ThreatBadge/ThreatLabel")?.GetComponent<Text>();
+            }
+            if (threatProgressFill == null && clusterTopRightRoot != null)
+            {
+                threatProgressFill = clusterTopRightRoot.Find("TelemetryBox/ThreatBadge/ThreatProgress/Fill")?.GetComponent<Image>();
+            }
+            if (distanceTrackerText == null && clusterTopRightRoot != null)
+            {
+                distanceTrackerText = clusterTopRightRoot.Find("TelemetryBox/DistanceTracker/DistanceValue")?.GetComponent<Text>();
+            }
         }
 
         private void LateUpdate()
@@ -263,6 +350,8 @@ namespace VirtualRail
             UpdateShieldAlertPulsing();
             UpdateComboDecayUI();
             UpdateBossGhostBar();
+            UpdateEndlessTelemetryUI();
+            UpdateGrazeFloatingCombatText();
         }
 
         private void UpdateBossGhostBar()
@@ -279,9 +368,40 @@ namespace VirtualRail
 
         private void UpdateComboDecayUI()
         {
-            if (comboDecayRadial != null && ComboScoringEngine.Instance != null)
+            var engine = ComboScoringEngine.Instance;
+            if (engine == null) return;
+
+            int mult = engine.CurrentMultiplier;
+            int multIdx = Mathf.Clamp(engine.MultiplierIndex, 0, ComboScoringEngine.MULTIPLIER_COLORS.Length - 1);
+
+            if (comboBadgeRoot != null)
             {
-                comboDecayRadial.fillAmount = ComboScoringEngine.Instance.DecayRatio;
+                bool showBadge = mult > 1;
+                if (comboBadgeRoot.gameObject.activeSelf != showBadge)
+                {
+                    comboBadgeRoot.gameObject.SetActive(showBadge);
+                }
+            }
+
+            if (comboDecayRadial != null)
+            {
+                float ratio = engine.DecayRatio;
+                comboDecayRadial.fillAmount = ratio;
+
+                if (mult > 1)
+                {
+                    Color baseCol = ComboScoringEngine.MULTIPLIER_COLORS[multIdx];
+                    if (engine.MultiplierDecayTimer <= 1.0f && engine.MultiplierDecayTimer > 0f)
+                    {
+                        // Hiệu ứng nhịp đập cảnh báo sắp tụt bậc hệ số nhân
+                        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 16f);
+                        comboDecayRadial.color = Color.Lerp(COLOR_CRITICAL_RED, baseCol, pulse);
+                    }
+                    else
+                    {
+                        comboDecayRadial.color = baseCol;
+                    }
+                }
             }
         }
 
@@ -453,12 +573,22 @@ namespace VirtualRail
         {
             if (comboBadgeRoot != null)
             {
-                comboBadgeRoot.gameObject.SetActive(true);
+                comboBadgeRoot.gameObject.SetActive(multiplier > 1);
             }
+
+            var engine = ComboScoringEngine.Instance;
+            int idx = (engine != null) ? engine.MultiplierIndex : 0;
+            idx = Mathf.Clamp(idx, 0, ComboScoringEngine.MULTIPLIER_TEXTS.Length - 1);
 
             if (comboMultiplierText != null)
             {
-                comboMultiplierText.text = "x" + Mathf.Max(1, multiplier);
+                comboMultiplierText.text = ComboScoringEngine.MULTIPLIER_TEXTS[idx];
+                comboMultiplierText.color = ComboScoringEngine.MULTIPLIER_COLORS[idx];
+            }
+
+            if (comboDecayRadial != null)
+            {
+                comboDecayRadial.color = ComboScoringEngine.MULTIPLIER_COLORS[idx];
             }
         }
 
@@ -469,9 +599,174 @@ namespace VirtualRail
 
         private void HandleMultiplierReset()
         {
+            if (comboBadgeRoot != null)
+            {
+                comboBadgeRoot.gameObject.SetActive(false);
+            }
+
             if (comboMultiplierText != null)
             {
                 comboMultiplierText.text = "x1";
+                comboMultiplierText.color = ComboScoringEngine.MULTIPLIER_COLORS[0];
+            }
+
+            if (comboDecayRadial != null)
+            {
+                comboDecayRadial.fillAmount = 0f;
+            }
+        }
+
+        #endregion
+
+        #region ENDLESS TELEMETRY & GRAZE COMBAT TEXT (0 GC ALLOC)
+
+        private void EnsureGrazePoolInitialized()
+        {
+            if (_grazeSlots != null && _grazeSlots.Length > 0) return;
+            if (grazePopupTexts != null && grazePopupTexts.Length > 0)
+            {
+                _grazeSlots = new GrazePopupSlot[grazePopupTexts.Length];
+                for (int i = 0; i < grazePopupTexts.Length; i++)
+                {
+                    _grazeSlots[i] = new GrazePopupSlot
+                    {
+                        textObj = grazePopupTexts[i],
+                        rectTransform = grazePopupTexts[i].GetComponent<RectTransform>(),
+                        timer = 0f,
+                        active = false
+                    };
+                    grazePopupTexts[i].gameObject.SetActive(false);
+                }
+            }
+        }
+
+        private void HandleGrazeTriggered(Vector3 worldPos, int points)
+        {
+            EnsureGrazePoolInitialized();
+            if (_grazeSlots == null || _grazeSlots.Length == 0) return;
+
+            int slotIdx = _nextGrazeSlot;
+            _nextGrazeSlot = (_nextGrazeSlot + 1) % _grazeSlots.Length;
+
+            ref var slot = ref _grazeSlots[slotIdx];
+
+            int strIdx = 0;
+            if (points >= 16000) strIdx = 5;
+            else if (points >= 8000) strIdx = 4;
+            else if (points >= 4000) strIdx = 3;
+            else if (points >= 2000) strIdx = 2;
+            else if (points >= 1000) strIdx = 1;
+            else strIdx = 0;
+
+            slot.textObj.text = GRAZE_STRINGS[strIdx];
+
+            Vector2 localPoint = Vector2.zero;
+            if (_mainCamera != null)
+            {
+                Vector3 screenPos = _mainCamera.WorldToScreenPoint(worldPos);
+                if (screenPos.z > 0)
+                {
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                        grazeFloatingRoot != null ? grazeFloatingRoot : (RectTransform)transform,
+                        screenPos,
+                        null,
+                        out localPoint
+                    );
+                }
+            }
+
+            slot.rectTransform.anchoredPosition = localPoint + new Vector2(0f, 25f);
+            slot.rectTransform.localScale = new Vector3(1.3f, 1.3f, 1f);
+            slot.timer = 0.75f;
+            slot.active = true;
+
+            Color col = COLOR_CYAN;
+            col.a = 1f;
+            slot.textObj.color = col;
+            slot.textObj.gameObject.SetActive(true);
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.GrazePass, 1.0f);
+            }
+        }
+
+        private void UpdateGrazeFloatingCombatText()
+        {
+            if (_grazeSlots == null) return;
+
+            for (int i = 0; i < _grazeSlots.Length; i++)
+            {
+                if (!_grazeSlots[i].active) continue;
+
+                _grazeSlots[i].timer -= Time.deltaTime;
+                if (_grazeSlots[i].timer <= 0f)
+                {
+                    _grazeSlots[i].active = false;
+                    _grazeSlots[i].textObj.gameObject.SetActive(false);
+                    continue;
+                }
+
+                Vector2 pos = _grazeSlots[i].rectTransform.anchoredPosition;
+                pos.y += 50f * Time.deltaTime;
+                _grazeSlots[i].rectTransform.anchoredPosition = pos;
+
+                float progress = 1f - (_grazeSlots[i].timer / 0.75f);
+                float alpha = Mathf.Clamp01(_grazeSlots[i].timer / 0.75f);
+                float scale = Mathf.Lerp(1.3f, 1.0f, progress);
+                _grazeSlots[i].rectTransform.localScale = new Vector3(scale, scale, 1f);
+
+                Color c = _grazeSlots[i].textObj.color;
+                c.a = alpha;
+                _grazeSlots[i].textObj.color = c;
+            }
+        }
+
+        private void UpdateEndlessTelemetryUI()
+        {
+            // 1. Cập nhật Threat Level & Progress Fill (DDA)
+            var endlessDirector = VirtualRailEndlessDirector.Instance;
+            if (endlessDirector != null)
+            {
+                int threat = Mathf.Clamp(endlessDirector.ThreatLevel, 1, 30);
+                if (threat != _lastThreatLevel)
+                {
+                    _lastThreatLevel = threat;
+                    if (threatLevelText != null)
+                    {
+                        threatLevelText.text = THREAT_STRINGS[threat];
+                        if (threat <= 2)
+                            threatLevelText.color = COLOR_CYAN;
+                        else if (threat <= 5)
+                            threatLevelText.color = COLOR_AMBER;
+                        else
+                            threatLevelText.color = COLOR_CRITICAL_RED;
+                    }
+                }
+
+                if (threatProgressFill != null)
+                {
+                    threatProgressFill.fillAmount = endlessDirector.ThreatLevelProgress01;
+                    if (threat <= 2)
+                        threatProgressFill.color = COLOR_CYAN;
+                    else if (threat <= 5)
+                        threatProgressFill.color = COLOR_AMBER;
+                    else
+                        threatProgressFill.color = COLOR_CRITICAL_RED;
+                }
+            }
+
+            // 2. Cập nhật Distance Tracker (Z-position theo mốc 10m)
+            if (distanceTrackerText != null)
+            {
+                float currentZ = (anchor != null) ? anchor.transform.position.z : 0f;
+                int distMeters = Mathf.Max(0, Mathf.RoundToInt(currentZ));
+                int step = Mathf.Clamp(distMeters / 10, 0, DIST_STRINGS.Length - 1);
+                if (step != _lastDistanceStep)
+                {
+                    _lastDistanceStep = step;
+                    distanceTrackerText.text = DIST_STRINGS[step];
+                }
             }
         }
 
@@ -892,6 +1187,197 @@ namespace VirtualRail
                     hbRt.sizeDelta = new Vector2(-28f, 11f);
                 }
             }
+        }
+
+        private void EnsureTelemetryAndGrazeCreated()
+        {
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // 1. Tự động sinh hoặc cấu hình TelemetryBox nếu chưa tồn tại
+            if (clusterTopRightRoot != null && threatLevelText == null)
+            {
+                Transform existingBox = clusterTopRightRoot.Find("TelemetryBox");
+                if (existingBox == null)
+                {
+                    clusterTopRightRoot.sizeDelta = new Vector2(355f, 335f);
+
+                    GameObject telBox = new GameObject("TelemetryBox");
+                    telBox.transform.SetParent(clusterTopRightRoot, false);
+                    RectTransform tbRt = telBox.AddComponent<RectTransform>();
+                    tbRt.anchorMin = new Vector2(1f, 1f);
+                    tbRt.anchorMax = new Vector2(1f, 1f);
+                    tbRt.pivot = new Vector2(1f, 1f);
+                    tbRt.anchoredPosition = new Vector2(0f, -148f);
+                    tbRt.sizeDelta = new Vector2(355f, 44f);
+
+                    Image telBg = telBox.AddComponent<Image>();
+                    telBg.color = new Color(0.02f, 0.08f, 0.14f, 0.88f);
+                    Outline telOutline = telBox.AddComponent<Outline>();
+                    telOutline.effectColor = new Color(0f, 0.95f, 1f, 0.45f);
+                    telOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+                    // Threat Badge
+                    GameObject tb = new GameObject("ThreatBadge");
+                    tb.transform.SetParent(telBox.transform, false);
+                    RectTransform tbChildRt = tb.AddComponent<RectTransform>();
+                    tbChildRt.anchorMin = new Vector2(0f, 0f);
+                    tbChildRt.anchorMax = new Vector2(0.5f, 1f);
+                    tbChildRt.offsetMin = Vector2.zero;
+                    tbChildRt.offsetMax = Vector2.zero;
+
+                    GameObject tlObj = new GameObject("ThreatLabel");
+                    tlObj.transform.SetParent(tb.transform, false);
+                    RectTransform tlRt = tlObj.AddComponent<RectTransform>();
+                    tlRt.anchorMin = new Vector2(0f, 0.5f);
+                    tlRt.anchorMax = new Vector2(1f, 0.5f);
+                    tlRt.pivot = new Vector2(0f, 0.5f);
+                    tlRt.anchoredPosition = new Vector2(16f, 6f);
+                    tlRt.sizeDelta = new Vector2(-20f, 20f);
+                    threatLevelText = tlObj.AddComponent<Text>();
+                    threatLevelText.font = font;
+                    threatLevelText.fontSize = 13;
+                    threatLevelText.fontStyle = FontStyle.Bold;
+                    threatLevelText.color = COLOR_CYAN;
+                    threatLevelText.text = "THREAT LV.01";
+                    threatLevelText.alignment = TextAnchor.MiddleLeft;
+
+                    GameObject tpObj = new GameObject("ThreatProgress");
+                    tpObj.transform.SetParent(tb.transform, false);
+                    RectTransform tpRt = tpObj.AddComponent<RectTransform>();
+                    tpRt.anchorMin = new Vector2(0f, 0.5f);
+                    tpRt.anchorMax = new Vector2(1f, 0.5f);
+                    tpRt.pivot = new Vector2(0f, 0.5f);
+                    tpRt.anchoredPosition = new Vector2(16f, -10f);
+                    tpRt.sizeDelta = new Vector2(-32f, 4f);
+                    Image tpTrack = tpObj.AddComponent<Image>();
+                    tpTrack.color = new Color(0.04f, 0.16f, 0.22f, 0.85f);
+
+                    GameObject tpFillObj = new GameObject("Fill");
+                    tpFillObj.transform.SetParent(tpObj.transform, false);
+                    RectTransform tpfRt = tpFillObj.AddComponent<RectTransform>();
+                    tpfRt.anchorMin = Vector2.zero;
+                    tpfRt.anchorMax = Vector2.one;
+                    tpfRt.offsetMin = Vector2.zero;
+                    tpfRt.offsetMax = Vector2.zero;
+                    threatProgressFill = tpFillObj.AddComponent<Image>();
+                    threatProgressFill.type = Image.Type.Filled;
+                    threatProgressFill.fillMethod = Image.FillMethod.Horizontal;
+                    threatProgressFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+                    threatProgressFill.fillAmount = 0.25f;
+                    threatProgressFill.color = COLOR_CYAN;
+
+                    // Distance Tracker
+                    GameObject dt = new GameObject("DistanceTracker");
+                    dt.transform.SetParent(telBox.transform, false);
+                    RectTransform dtChildRt = dt.AddComponent<RectTransform>();
+                    dtChildRt.anchorMin = new Vector2(0.5f, 0f);
+                    dtChildRt.anchorMax = new Vector2(1f, 1f);
+                    dtChildRt.offsetMin = Vector2.zero;
+                    dtChildRt.offsetMax = Vector2.zero;
+
+                    GameObject dlObj = new GameObject("DistLabel");
+                    dlObj.transform.SetParent(dt.transform, false);
+                    RectTransform dlRt = dlObj.AddComponent<RectTransform>();
+                    dlRt.anchorMin = new Vector2(0f, 0.5f);
+                    dlRt.anchorMax = new Vector2(0f, 0.5f);
+                    dlRt.pivot = new Vector2(0f, 0.5f);
+                    dlRt.anchoredPosition = new Vector2(10f, 0f);
+                    dlRt.sizeDelta = new Vector2(45f, 22f);
+                    Text dlTxt = dlObj.AddComponent<Text>();
+                    dlTxt.font = font;
+                    dlTxt.fontSize = 12;
+                    dlTxt.fontStyle = FontStyle.Bold;
+                    dlTxt.color = new Color(0.6f, 0.78f, 0.88f, 0.85f);
+                    dlTxt.text = "DIST:";
+                    dlTxt.alignment = TextAnchor.MiddleLeft;
+
+                    GameObject dvObj = new GameObject("DistanceValue");
+                    dvObj.transform.SetParent(dt.transform, false);
+                    RectTransform dvRt = dvObj.AddComponent<RectTransform>();
+                    dvRt.anchorMin = new Vector2(1f, 0.5f);
+                    dvRt.anchorMax = new Vector2(1f, 0.5f);
+                    dvRt.pivot = new Vector2(1f, 0.5f);
+                    dvRt.anchoredPosition = new Vector2(-16f, 0f);
+                    dvRt.sizeDelta = new Vector2(120f, 24f);
+                    distanceTrackerText = dvObj.AddComponent<Text>();
+                    distanceTrackerText.font = font;
+                    distanceTrackerText.fontSize = 14;
+                    distanceTrackerText.fontStyle = FontStyle.Bold;
+                    distanceTrackerText.color = COLOR_CYAN;
+                    distanceTrackerText.text = "00,000 m";
+                    distanceTrackerText.alignment = TextAnchor.MiddleRight;
+
+                    // Điều chỉnh vị trí Combo Dial
+                    Transform cd = clusterTopRightRoot.Find("ComboRadialDial");
+                    if (cd != null)
+                    {
+                        RectTransform cdRt = cd.GetComponent<RectTransform>();
+                        if (cdRt != null)
+                        {
+                            cdRt.anchoredPosition = new Vector2(0f, -200f);
+                            cdRt.sizeDelta = new Vector2(118f, 118f);
+                        }
+                    }
+                }
+                else
+                {
+                    threatLevelText = existingBox.Find("ThreatBadge/ThreatLabel")?.GetComponent<Text>();
+                    threatProgressFill = existingBox.Find("ThreatBadge/ThreatProgress/Fill")?.GetComponent<Image>();
+                    distanceTrackerText = existingBox.Find("DistanceTracker/DistanceValue")?.GetComponent<Text>();
+                }
+            }
+
+            // 2. Tự động sinh GrazeFloatingContainer nếu chưa tồn tại
+            if (grazeFloatingRoot == null)
+            {
+                Transform existingG = transform.Find("GrazeFloatingContainer");
+                if (existingG == null)
+                {
+                    GameObject gContainer = new GameObject("GrazeFloatingContainer");
+                    gContainer.transform.SetParent(transform, false);
+                    grazeFloatingRoot = gContainer.AddComponent<RectTransform>();
+                    grazeFloatingRoot.anchorMin = new Vector2(0.5f, 0.5f);
+                    grazeFloatingRoot.anchorMax = new Vector2(0.5f, 0.5f);
+                    grazeFloatingRoot.pivot = new Vector2(0.5f, 0.5f);
+                    grazeFloatingRoot.anchoredPosition = Vector2.zero;
+                    grazeFloatingRoot.sizeDelta = new Vector2(400f, 300f);
+
+                    grazePopupTexts = new Text[3];
+                    for (int gp = 0; gp < 3; gp++)
+                    {
+                        GameObject gTextObj = new GameObject($"GrazePopup_{gp}");
+                        gTextObj.transform.SetParent(grazeFloatingRoot, false);
+                        RectTransform gtRt = gTextObj.AddComponent<RectTransform>();
+                        gtRt.anchorMin = new Vector2(0.5f, 0.5f);
+                        gtRt.anchorMax = new Vector2(0.5f, 0.5f);
+                        gtRt.pivot = new Vector2(0.5f, 0.5f);
+                        gtRt.sizeDelta = new Vector2(250f, 40f);
+
+                        Text gTxt = gTextObj.AddComponent<Text>();
+                        gTxt.font = font;
+                        gTxt.fontSize = 24;
+                        gTxt.fontStyle = FontStyle.Bold;
+                        gTxt.alignment = TextAnchor.MiddleCenter;
+                        gTxt.color = COLOR_CYAN;
+                        gTxt.text = "+500 [GRAZE!]";
+
+                        Outline gOutline = gTextObj.AddComponent<Outline>();
+                        gOutline.effectColor = new Color(0f, 0.35f, 0.55f, 0.85f);
+                        gOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+                        gTextObj.SetActive(false);
+                        grazePopupTexts[gp] = gTxt;
+                    }
+                }
+                else
+                {
+                    grazeFloatingRoot = existingG.GetComponent<RectTransform>();
+                    grazePopupTexts = existingG.GetComponentsInChildren<Text>(true);
+                }
+            }
+
+            EnsureGrazePoolInitialized();
         }
 
         #endregion

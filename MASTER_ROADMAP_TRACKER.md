@@ -117,10 +117,10 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 - [ ] **3.1.2** Tích hợp cảnh tàu Arwing bay tuần tra 3D làm phông nền menu động.
 
 ### Task 3.2: HUD Sinh Tồn Săn Điểm Chuyên Sâu (Endless Scoring HUD)
-- [ ] **3.2.1** **Thanh Multiplier Gauge ($1\times \to 32\times$):** Hiển thị hệ số nhân hiện tại và thanh tụt năng lượng trong $3.5\text{s}$.
-- [ ] **3.2.2** **Hiệu Ứng Lướt Cận Kề (Graze Indicator):** Báo hiệu tia lửa điện dọc cánh kèm chữ số nổi $+500 \times \mathbf{M}$ khi lướt sát đạn.
-- [ ] **3.2.3** **Huy Hiệu Threat Level & Distance Tracker:** Hiển thị cấp độ đe dọa chu kỳ hiện tại và số mét đã chinh phục theo thời gian thực.
-- [ ] **3.2.4** **Thanh Máu Boss Đa Phân Đoạn:** Tự động trượt vào đáy màn hình khi Boss Incursion xuất hiện và hiển thị rõ 3 pha máu.
+- [x] **3.2.1** **Thanh Multiplier Gauge ($1\times \to 32\times$):** Hiển thị hệ số nhân hiện tại và thanh tụt năng lượng trong $3.5\text{s}$, đồng bộ màu sắc 6 bậc và hiệu ứng nhịp đập cảnh báo khi sắp cạn giờ.
+- [x] **3.2.2** **Hiệu Ứng Lướt Cận Kề (Graze Indicator):** Báo hiệu tia lửa điện dọc cánh kèm chữ số nổi $+500 \times \mathbf{M}$ khi lướt sát đạn qua Object Pool 0 GC Alloc.
+- [x] **3.2.3** **Huy Hiệu Threat Level & Distance Tracker:** Hiển thị cấp độ đe dọa chu kỳ hiện tại kèm thanh tiến độ DDA và số mét đã chinh phục theo thời gian thực (0 GC lookup table).
+- [x] **3.2.4** **Thanh Máu Boss Đa Phân Đoạn:** Hiển thị và đồng bộ đa tầng Giáp + Máu (kèm Ghost Bar và text cảnh báo 3 pha) khi Boss F3 Corvette xuất hiện.
 
 ### Task 3.3: Menu Tạm Dừng Trong Trận (Pause Menu - ESC / P)
 - [ ] **3.3.1** Tạm dừng trò chơi (`Time.timeScale = 0`), làm mờ nền màn hình, cung cấp tùy chọn Tiếp tục, Xuất kích lại, Cài đặt, Thoát về Menu.
