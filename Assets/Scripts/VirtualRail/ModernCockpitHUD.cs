@@ -255,9 +255,17 @@ namespace VirtualRail
             SuppressLegacyGameUI();
 
             // Kiểm tra trạng thái Menu chính để ẩn HUD khi ngoài game
-            GameObject mainMenu = GameObject.Find("Main Menu");
-            bool isMenuOpen = (mainMenu != null && mainMenu.activeInHierarchy);
-            SetHUDVisible(!isMenuOpen);
+            if (UIManager.Instance != null)
+            {
+                bool isGame = (UIManager.Instance.CurrentState == UIViewState.Gameplay || UIManager.Instance.CurrentState == UIViewState.Pause);
+                SetHUDVisible(isGame);
+            }
+            else
+            {
+                GameObject mainMenu = GameObject.Find("Main Menu");
+                bool isMenuOpen = (mainMenu != null && mainMenu.activeInHierarchy);
+                SetHUDVisible(!isMenuOpen);
+            }
         }
 
         public static void SuppressLegacyGameUI()
@@ -266,6 +274,14 @@ namespace VirtualRail
             if (gameUI != null)
             {
                 gameUI.SetActive(false);
+            }
+            if (UIManager.Instance != null)
+            {
+                GameObject mainMenu = GameObject.Find("Main Menu");
+                if (mainMenu != null)
+                {
+                    mainMenu.SetActive(false);
+                }
             }
         }
 

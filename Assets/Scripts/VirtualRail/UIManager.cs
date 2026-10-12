@@ -193,6 +193,12 @@ namespace VirtualRail
             SetupSettingsBindings();
             PopulateHallOfFameRows();
 
+            // Vô hiệu hóa Main Menu và Game UI legacy của scene gốc nếu còn tồn tại
+            GameObject oldMainMenu = GameObject.Find("Main Menu");
+            if (oldMainMenu != null) oldMainMenu.SetActive(false);
+            GameObject oldGameUI = GameObject.Find("Game UI");
+            if (oldGameUI != null) oldGameUI.SetActive(false);
+
             // Khởi đầu ở Main Menu
             ShowState(UIViewState.MainMenu);
         }
@@ -335,10 +341,14 @@ namespace VirtualRail
                 PopulateHallOfFameRows();
             }
 
-            // Tự động đồng bộ HUD buồng lái
+            // Tự động đồng bộ HUD buồng lái và tâm ngắm bắn
             if (ModernCockpitHUD.Instance != null)
             {
                 ModernCockpitHUD.Instance.SetHUDVisible(newState == UIViewState.Gameplay || newState == UIViewState.Pause);
+            }
+            if (DualReticleHUD.Instance != null)
+            {
+                DualReticleHUD.Instance.SetHUDVisible(newState == UIViewState.Gameplay || newState == UIViewState.Pause);
             }
 
             // Ẩn các UI phụ trợ chặng bay khi không ở Gameplay

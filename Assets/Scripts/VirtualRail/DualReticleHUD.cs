@@ -80,17 +80,54 @@ namespace VirtualRail
         private float _nextBindingRetryTime = 0f;
         private float _nextAimAssistRetryTime = 0f;
 
+        public static DualReticleHUD Instance { get; private set; }
+
+        private Canvas _canvas;
+        private CanvasGroup _canvasGroup;
+
         public bool IsMouseHovering => isMouseHovering;
         public float CurrentScale => currentScale;
 
+        private void Awake()
+        {
+            if (Instance == null) Instance = this;
+            _canvas = GetComponent<Canvas>();
+            _canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        public void SetHUDVisible(bool visible)
+        {
+            if (_canvas != null)
+            {
+                _canvas.enabled = visible;
+            }
+            else if (_canvasGroup != null)
+            {
+                _canvasGroup.alpha = visible ? 1f : 0f;
+                _canvasGroup.interactable = visible;
+                _canvasGroup.blocksRaycasts = visible;
+            }
+            else
+            {
+                if (farCrosshairUI != null) farCrosshairUI.gameObject.SetActive(visible);
+                if (nearCrosshairUI != null) nearCrosshairUI.gameObject.SetActive(visible);
+            }
+        }
+
         private void OnEnable()
         {
+            if (Instance == null) Instance = this;
             ComboScoringEngine.OnGrazeTriggered += HandleGrazeTriggered;
         }
 
         private void OnDisable()
         {
             ComboScoringEngine.OnGrazeTriggered -= HandleGrazeTriggered;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
 
         private void HandleGrazeTriggered(Vector3 worldPos, int points)
@@ -104,6 +141,7 @@ namespace VirtualRail
 
         private void Start()
         {
+            if (Instance == null) Instance = this;
             if (anchor == null) anchor = GetComponentInParent<VirtualRailAnchor>();
             if (reticle == null && anchor != null) reticle = anchor.GetComponentInChildren<VirtualRailReticle>();
             if (ship == null && anchor != null) ship = anchor.GetComponentInChildren<VirtualRailShip>();
@@ -120,10 +158,23 @@ namespace VirtualRail
 
             var cfg = anchor != null ? anchor.config : null;
             EnsureCrosshairStyling(cfg);
+
+            // Kiểm tra trạng thái UIManager (ẩn tâm ngắm khi ở Menu chính / Cutscene)
+            if (UIManager.Instance != null)
+            {
+                bool isGame = (UIManager.Instance.CurrentState == UIViewState.Gameplay || UIManager.Instance.CurrentState == UIViewState.Pause);
+                SetHUDVisible(isGame);
+            }
         }
 
         private void LateUpdate()
         {
+            // 0. Nếu UIManager đang ở Menu / Cutscene / Debriefing -> Không render tâm ngắm
+            if (UIManager.Instance != null && UIManager.Instance.CurrentState != UIViewState.Gameplay && UIManager.Instance.CurrentState != UIViewState.Pause)
+            {
+                return;
+            }
+
             if (mainCamera == null || !mainCamera.gameObject.activeInHierarchy)
             {
                 if (Time.time >= _nextBindingRetryTime)
@@ -431,9 +482,28 @@ namespace VirtualRail
         /// <summary>
         /// Cập nhật hệ thống hiển thị Multiplier Badge và thanh Multiplier Decay (TDD v2.0.0 Phần III).
         /// Hoàn toàn 0 GC Allocation trong LateUpdate.
+        /// Khi ModernCockpitHUD đang hoạt động, cụm Combo Multiplier và Graze Floating Text chuẩn được
+        /// ModernCockpitHUD hiển thị toàn diện, triệt tiêu hoàn toàn trùng lặp UI trên VirtualRailCanvas.
         /// </summary>
         private void UpdateMultiplierAndGrazeHUD()
         {
+            var cfg = (anchor != null) ? anchor.config : null;
+            bool modernHUDActive = (ModernCockpitHUD.Instance != null || (cfg != null && cfg.enableModernHUD));
+
+            // Triệt tiêu MultiplierBadge và GrazePopup phụ khi ModernCockpitHUD đang hoạt động
+            if (modernHUDActive)
+            {
+                if (multiplierBadgeRoot != null && multiplierBadgeRoot.gameObject.activeSelf)
+                {
+                    multiplierBadgeRoot.gameObject.SetActive(false);
+                }
+                if (grazePopupText != null && grazePopupText.gameObject.activeSelf)
+                {
+                    grazePopupText.gameObject.SetActive(false);
+                }
+                return;
+            }
+
             var engine = ComboScoringEngine.Instance;
             if (engine == null) return;
 
@@ -568,132 +638,17 @@ namespace VirtualRail
 
         private void EnsureMultiplierBadgeHUD()
         {
-            if (multiplierBadgeRoot != null) return;
-
+            // Triệt tiêu hoàn toàn MultiplierBadge phụ trên VirtualRailCanvas.
+            // Cụm Combo Multiplier chuẩn được hiển thị duy nhất bởi ModernCockpitHUD (ComboRadialDial ở Top-Right).
             Transform existingBadge = transform.Find("MultiplierBadge");
             if (existingBadge != null)
             {
-                multiplierBadgeRoot = existingBadge.GetComponent<RectTransform>();
-                multiplierBadgeText = existingBadge.Find("MultiplierValue")?.GetComponent<Text>();
-                multiplierDecayFill = existingBadge.Find("DecayTrack/DecayFill")?.GetComponent<Image>();
-                grazePopupText = existingBadge.Find("GrazePopupBanner")?.GetComponent<Text>();
-                return;
+                existingBadge.gameObject.SetActive(false);
             }
-
-            Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
-
-            // 1. Badge Root Panel (Góc trên bên trái, dưới thanh máu/điểm)
-            GameObject badgeObj = new GameObject("MultiplierBadge");
-            badgeObj.transform.SetParent(transform, false);
-            RectTransform rt = badgeObj.AddComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0f, 1f);
-            rt.anchorMax = new Vector2(0f, 1f);
-            rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(25f, -80f);
-            rt.sizeDelta = new Vector2(130f, 52f);
-
-            Image bgImg = badgeObj.AddComponent<Image>();
-            bgImg.color = new Color(0.04f, 0.08f, 0.12f, 0.82f);
-            bgImg.raycastTarget = false;
-
-            Outline badgeOutline = badgeObj.AddComponent<Outline>();
-            badgeOutline.effectColor = new Color(0.15f, 0.6f, 0.9f, 0.5f);
-            badgeOutline.effectDistance = new Vector2(1f, -1f);
-            multiplierBadgeRoot = rt;
-
-            // 2. Sub-Label ("COMBO MULTIPLIER")
-            GameObject labelObj = new GameObject("ComboLabel");
-            labelObj.transform.SetParent(badgeObj.transform, false);
-            RectTransform labelRt = labelObj.AddComponent<RectTransform>();
-            labelRt.anchorMin = new Vector2(0f, 1f);
-            labelRt.anchorMax = new Vector2(1f, 1f);
-            labelRt.pivot = new Vector2(0.5f, 1f);
-            labelRt.anchoredPosition = new Vector2(0f, -4f);
-            labelRt.sizeDelta = new Vector2(120f, 14f);
-            Text lbl = labelObj.AddComponent<Text>();
-            lbl.font = defaultFont;
-            lbl.fontSize = 10;
-            lbl.fontStyle = FontStyle.Bold;
-            lbl.alignment = TextAnchor.MiddleCenter;
-            lbl.color = new Color(0.6f, 0.8f, 0.9f, 0.8f);
-            lbl.text = "COMBO MULTIPLIER";
-            lbl.raycastTarget = false;
-
-            // 3. Multiplier Value Text
-            GameObject valObj = new GameObject("MultiplierValue");
-            valObj.transform.SetParent(badgeObj.transform, false);
-            RectTransform valRt = valObj.AddComponent<RectTransform>();
-            valRt.anchorMin = new Vector2(0f, 0.5f);
-            valRt.anchorMax = new Vector2(1f, 0.5f);
-            valRt.pivot = new Vector2(0.5f, 0.5f);
-            valRt.anchoredPosition = new Vector2(0f, 2f);
-            valRt.sizeDelta = new Vector2(120f, 26f);
-            multiplierBadgeText = valObj.AddComponent<Text>();
-            multiplierBadgeText.font = defaultFont;
-            multiplierBadgeText.fontSize = 22;
-            multiplierBadgeText.fontStyle = FontStyle.Bold;
-            multiplierBadgeText.alignment = TextAnchor.MiddleCenter;
-            multiplierBadgeText.color = ComboScoringEngine.MULTIPLIER_COLORS[0];
-            multiplierBadgeText.text = ComboScoringEngine.MULTIPLIER_TEXTS[0];
-            multiplierBadgeText.raycastTarget = false;
-
-            Outline valOutline = valObj.AddComponent<Outline>();
-            valOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
-            valOutline.effectDistance = new Vector2(1.5f, -1.5f);
-
-            // 4. Decay Bar Track
-            GameObject trackObj = new GameObject("DecayTrack");
-            trackObj.transform.SetParent(badgeObj.transform, false);
-            RectTransform trackRt = trackObj.AddComponent<RectTransform>();
-            trackRt.anchorMin = new Vector2(0.5f, 0f);
-            trackRt.anchorMax = new Vector2(0.5f, 0f);
-            trackRt.pivot = new Vector2(0.5f, 0f);
-            trackRt.anchoredPosition = new Vector2(0f, 5f);
-            trackRt.sizeDelta = new Vector2(116f, 5f);
-            Image trackImg = trackObj.AddComponent<Image>();
-            trackImg.color = new Color(0.1f, 0.15f, 0.22f, 0.85f);
-            trackImg.raycastTarget = false;
-
-            // 5. Decay Bar Fill
-            GameObject fillObj = new GameObject("DecayFill");
-            fillObj.transform.SetParent(trackObj.transform, false);
-            RectTransform fillRt = fillObj.AddComponent<RectTransform>();
-            fillRt.anchorMin = Vector2.zero;
-            fillRt.anchorMax = Vector2.one;
-            fillRt.sizeDelta = Vector2.zero;
-            fillRt.offsetMin = Vector2.zero;
-            fillRt.offsetMax = Vector2.zero;
-            multiplierDecayFill = fillObj.AddComponent<Image>();
-            multiplierDecayFill.type = Image.Type.Filled;
-            multiplierDecayFill.fillMethod = Image.FillMethod.Horizontal;
-            multiplierDecayFill.fillOrigin = (int)Image.OriginHorizontal.Left;
-            multiplierDecayFill.color = ComboScoringEngine.MULTIPLIER_COLORS[0];
-            multiplierDecayFill.fillAmount = 0f;
-            multiplierDecayFill.raycastTarget = false;
-
-            // 6. Graze Banner Popup
-            GameObject grazeObj = new GameObject("GrazePopupBanner");
-            grazeObj.transform.SetParent(badgeObj.transform, false);
-            RectTransform grazeRt = grazeObj.AddComponent<RectTransform>();
-            grazeRt.anchorMin = new Vector2(0.5f, 1f);
-            grazeRt.anchorMax = new Vector2(0.5f, 1f);
-            grazeRt.pivot = new Vector2(0.5f, 0f);
-            grazeRt.anchoredPosition = new Vector2(0f, 4f);
-            grazeRt.sizeDelta = new Vector2(140f, 20f);
-            grazePopupText = grazeObj.AddComponent<Text>();
-            grazePopupText.font = defaultFont;
-            grazePopupText.fontSize = 13;
-            grazePopupText.fontStyle = FontStyle.Bold;
-            grazePopupText.alignment = TextAnchor.MiddleCenter;
-            grazePopupText.color = new Color(0.2f, 1f, 0.85f, 1.0f);
-            grazePopupText.text = "GRAZE +500!";
-            grazePopupText.raycastTarget = false;
-
-            Outline gOutline = grazeObj.AddComponent<Outline>();
-            gOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
-            gOutline.effectDistance = new Vector2(1f, -1f);
-            grazeObj.SetActive(false);
+            if (multiplierBadgeRoot != null)
+            {
+                multiplierBadgeRoot.gameObject.SetActive(false);
+            }
         }
 
         private void CacheBorderImages()
@@ -790,14 +745,30 @@ namespace VirtualRail
 
         private void EnsureChargeMeterHUD(float farSize)
         {
+            var cfg = (anchor != null) ? anchor.config : null;
+            bool modernHUDActive = (ModernCockpitHUD.Instance != null || (cfg != null && cfg.enableModernHUD));
+
+            // Khi ModernCockpitHUD đang hoạt động, thanh nạp tụ lực chính được hiển thị tại Cluster 1 (Top-Left).
+            // Triệt tiêu thanh tụ lực phụ dưới tâm ngắm để tránh trùng lặp giao diện.
+            if (modernHUDActive)
+            {
+                if (farCrosshairUI != null)
+                {
+                    Transform existingMeter = farCrosshairUI.Find("ChargeMeter");
+                    if (existingMeter != null) existingMeter.gameObject.SetActive(false);
+                }
+                if (chargeMeterRoot != null) chargeMeterRoot.gameObject.SetActive(false);
+                return;
+            }
+
             if (chargeMeterRoot != null || farCrosshairUI == null) return;
 
-            Transform existingMeter = farCrosshairUI.Find("ChargeMeter");
-            if (existingMeter != null)
+            Transform existingMeterObj = farCrosshairUI.Find("ChargeMeter");
+            if (existingMeterObj != null)
             {
-                chargeMeterRoot = existingMeter.GetComponent<RectTransform>();
-                chargeMeterFill = existingMeter.Find("ChargeTrack/ChargeFill")?.GetComponent<Image>();
-                chargeStatusText = existingMeter.Find("ChargeStatus")?.GetComponent<Text>();
+                chargeMeterRoot = existingMeterObj.GetComponent<RectTransform>();
+                chargeMeterFill = existingMeterObj.Find("ChargeTrack/ChargeFill")?.GetComponent<Image>();
+                chargeStatusText = existingMeterObj.Find("ChargeStatus")?.GetComponent<Text>();
                 return;
             }
 
@@ -880,6 +851,50 @@ namespace VirtualRail
                 _nextAimAssistRetryTime = Time.time + 1.0f;
                 aimAssist = (anchor != null) ? anchor.GetComponentInChildren<AimAssistModule>() : null;
                 if (aimAssist == null) aimAssist = FindAnyObjectByType<AimAssistModule>();
+            }
+
+            var cfg = (anchor != null) ? anchor.config : null;
+            bool modernHUDActive = (ModernCockpitHUD.Instance != null || (cfg != null && cfg.enableModernHUD));
+
+            // Khi ModernCockpitHUD đang hoạt động, thanh tụ lực chính nằm tại Cluster 1 (Top-Left).
+            // Triệt tiêu thanh tụ lực phụ dưới tâm ngắm để giữ màn hình thông thoáng.
+            if (modernHUDActive)
+            {
+                if (chargeMeterRoot != null && chargeMeterRoot.gameObject.activeSelf)
+                {
+                    chargeMeterRoot.gameObject.SetActive(false);
+                }
+
+                // Vẫn giữ hiệu ứng phát sáng viền tâm ngắm theo nhịp tụ lực (Reticle charging glow)
+                if (aimAssist != null && aimAssist.IsCharging)
+                {
+                    float progress = aimAssist.ChargeProgress;
+                    Color chargeColor;
+                    if (aimAssist.IsFullyCharged)
+                    {
+                        if (aimAssist.IsHardLocked)
+                        {
+                            float pulse = 0.75f + 0.25f * Mathf.PingPong(Time.time * 12f, 1f);
+                            chargeColor = new Color(1f, 0.2f, 0.2f, pulse);
+                        }
+                        else
+                        {
+                            float pulse = 0.5f + 0.5f * Mathf.PingPong(Time.time * 6f, 1f);
+                            chargeColor = Color.Lerp(new Color(1f, 0.75f, 0.1f), new Color(1f, 0.35f, 0.05f), pulse);
+                        }
+                    }
+                    else if (progress >= 0.70f)
+                    {
+                        float pulse = 0.6f + 0.4f * Mathf.PingPong(Time.time * 14f, 1f);
+                        chargeColor = new Color(1f, 0.70f, 0.1f, pulse);
+                    }
+                    else
+                    {
+                        chargeColor = Color.Lerp(new Color(0.1f, 0.95f, 1f), new Color(0.2f, 1f, 0.8f), progress / 0.7f);
+                    }
+                    SetBorderColors(chargeColor);
+                }
+                return;
             }
 
             if (aimAssist == null || chargeMeterRoot == null) return;
