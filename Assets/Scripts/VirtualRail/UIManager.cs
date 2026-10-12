@@ -94,7 +94,12 @@ namespace VirtualRail
         public Text txtDebriefScore;
         public Text txtDebriefHits;
         public Text txtDebriefRank;
+        public Text txtDebriefMedal;
         public Text txtDebriefNewRecord;
+        public Text txtDebriefDistance;
+        public Text txtDebriefThreat;
+        public Text txtDebriefGraze;
+        public Text txtDebriefPeakMultiplier;
         public Button btnDebriefRestart;
         public Button btnDebriefMainMenu;
 
@@ -357,7 +362,7 @@ namespace VirtualRail
             if (btnPauseRestart != null) btnPauseRestart.onClick.AddListener(OnPauseRestartClicked);
             if (btnPauseMainMenu != null) btnPauseMainMenu.onClick.AddListener(OnPauseMainMenuClicked);
 
-            if (btnDebriefRestart != null) btnDebriefRestart.onClick.AddListener(OnSinglePlayerClicked);
+            if (btnDebriefRestart != null) btnDebriefRestart.onClick.AddListener(OnDebriefRestartClicked);
             if (btnDebriefMainMenu != null) btnDebriefMainMenu.onClick.AddListener(OnPauseMainMenuClicked);
 
             // Tabs
@@ -646,6 +651,18 @@ namespace VirtualRail
             OnSinglePlayerClicked();
         }
 
+        private void OnDebriefRestartClicked()
+        {
+            Time.timeScale = 1.0f;
+            _isPaused = false;
+            if (VirtualRailEndlessDirector.Instance != null) VirtualRailEndlessDirector.Instance.StopEndlessSession();
+            if (VirtualRailWaveSpawner.Instance != null) VirtualRailWaveSpawner.Instance.RecycleAll();
+            if (VirtualRailAsteroidSpawner.Instance != null) VirtualRailAsteroidSpawner.Instance.RecycleAll();
+            if (EnemyProjectilePool.Instance != null) EnemyProjectilePool.Instance.ClearAllActiveProjectiles();
+            if (BossF3CorvetteController.Instance != null) Destroy(BossF3CorvetteController.Instance.gameObject);
+            OnSinglePlayerClicked();
+        }
+
         private void OnPauseMainMenuClicked()
         {
             Time.timeScale = 1.0f;
@@ -699,9 +716,61 @@ namespace VirtualRail
             ShowState(UIViewState.Debriefing);
         }
 
+        private void EnsureDebriefingUIElements()
+        {
+            if (debriefingModal == null) return;
+
+            if (txtDebriefDistance == null)
+            {
+                var t = debriefingModal.Find("TelemetryGrid/DebriefDistance") ?? debriefingModal.Find("DebriefDistance");
+                if (t != null) txtDebriefDistance = t.GetComponent<Text>();
+            }
+            if (txtDebriefThreat == null)
+            {
+                var t = debriefingModal.Find("TelemetryGrid/DebriefThreat") ?? debriefingModal.Find("DebriefThreat");
+                if (t != null) txtDebriefThreat = t.GetComponent<Text>();
+            }
+            if (txtDebriefGraze == null)
+            {
+                var t = debriefingModal.Find("TelemetryGrid/DebriefGraze") ?? debriefingModal.Find("DebriefGraze");
+                if (t != null) txtDebriefGraze = t.GetComponent<Text>();
+            }
+            if (txtDebriefPeakMultiplier == null)
+            {
+                var t = debriefingModal.Find("TelemetryGrid/DebriefPeakMultiplier") ?? debriefingModal.Find("DebriefPeakMultiplier");
+                if (t != null) txtDebriefPeakMultiplier = t.GetComponent<Text>();
+            }
+            if (txtDebriefMedal == null)
+            {
+                var t = debriefingModal.Find("RankBox/DebriefMedal") ?? debriefingModal.Find("DebriefMedal");
+                if (t != null) txtDebriefMedal = t.GetComponent<Text>();
+            }
+            if (txtDebriefRank == null)
+            {
+                var t = debriefingModal.Find("RankBox/DebriefRank") ?? debriefingModal.Find("DebriefRank");
+                if (t != null) txtDebriefRank = t.GetComponent<Text>();
+            }
+
+            if (txtDebriefDistance == null || txtDebriefThreat == null || txtDebriefGraze == null || txtDebriefPeakMultiplier == null || txtDebriefMedal == null)
+            {
+                var allTexts = debriefingModal.GetComponentsInChildren<Text>(true);
+                for (int i = 0; i < allTexts.Length; i++)
+                {
+                    if (txtDebriefDistance == null && allTexts[i].name == "DebriefDistance") txtDebriefDistance = allTexts[i];
+                    else if (txtDebriefThreat == null && allTexts[i].name == "DebriefThreat") txtDebriefThreat = allTexts[i];
+                    else if (txtDebriefGraze == null && allTexts[i].name == "DebriefGraze") txtDebriefGraze = allTexts[i];
+                    else if (txtDebriefPeakMultiplier == null && allTexts[i].name == "DebriefPeakMultiplier") txtDebriefPeakMultiplier = allTexts[i];
+                    else if (txtDebriefMedal == null && allTexts[i].name == "DebriefMedal") txtDebriefMedal = allTexts[i];
+                    else if (txtDebriefRank == null && allTexts[i].name == "DebriefRank") txtDebriefRank = allTexts[i];
+                }
+            }
+        }
+
         public void UpdateDebriefingResults()
         {
-            // Đồng bộ fallback từ ModernCockpitHUD nếu có
+            EnsureDebriefingUIElements();
+
+            // 1. Đồng bộ và tổng hợp dữ liệu viễn trắc từ các hệ thống chuyên sâu (0 GC Alloc)
             if (ModernCockpitHUD.Instance != null)
             {
                 if (ModernCockpitHUD.Instance.CurrentScore > _sessionScore)
@@ -714,53 +783,114 @@ namespace VirtualRail
                 }
             }
 
-            // 1. Hiển thị Final Score và Total Hits
+            int finalScore = _sessionScore;
+            int totalHits = _sessionHits;
+            int totalGrazes = 0;
+            int peakMultiplier = 1;
+            if (ComboScoringEngine.Instance != null)
+            {
+                totalGrazes = ComboScoringEngine.Instance.TotalSessionGrazes;
+                peakMultiplier = Mathf.Max(1, ComboScoringEngine.Instance.PeakMultiplier);
+                if (ComboScoringEngine.Instance.TotalSessionHits > totalHits)
+                {
+                    totalHits = ComboScoringEngine.Instance.TotalSessionHits;
+                }
+            }
+
+            float finalDistance = 0f;
+            int maxThreat = 1;
+            int wavesCleared = 0;
+            if (VirtualRailEndlessDirector.Instance != null)
+            {
+                finalDistance = VirtualRailEndlessDirector.Instance.MaxDistanceReached;
+                maxThreat = Mathf.Max(1, VirtualRailEndlessDirector.Instance.MaxThreatLevel);
+                wavesCleared = VirtualRailEndlessDirector.Instance.WavesCleared;
+            }
+            if (finalDistance <= 0.1f && VirtualRailAnchor.Instance != null)
+            {
+                finalDistance = Mathf.Max(0f, VirtualRailAnchor.Instance.transform.position.z);
+            }
+
+            // 2. Cập nhật 6 chỉ số viễn trắc (Endless Telemetry Grid)
             if (txtDebriefScore != null)
             {
-                txtDebriefScore.text = "FINAL SCORE: " + _sessionScore.ToString("N0");
+                txtDebriefScore.text = finalScore.ToString("N0") + " PTS";
             }
-
             if (txtDebriefHits != null)
             {
-                txtDebriefHits.text = "TOTAL HITS: " + _sessionHits.ToString("D3");
+                txtDebriefHits.text = totalHits.ToString("N0") + " HITS";
+            }
+            if (txtDebriefDistance != null)
+            {
+                txtDebriefDistance.text = Mathf.RoundToInt(finalDistance).ToString("N0") + " m";
+            }
+            if (txtDebriefThreat != null)
+            {
+                txtDebriefThreat.text = $"THREAT LV.{maxThreat:D2} ({wavesCleared} WAVES)";
+            }
+            if (txtDebriefGraze != null)
+            {
+                txtDebriefGraze.text = totalGrazes.ToString("N0") + " GRAZES";
+            }
+            if (txtDebriefPeakMultiplier != null)
+            {
+                txtDebriefPeakMultiplier.text = "x" + peakMultiplier + (peakMultiplier >= 32 ? " (MAX)" : "");
             }
 
-            // 2. Phân loại Huân chương Rank (Star Fox 64 Arcade Standard)
-            // Class S (Gold Medal): Score >= 100,000 hoặc Hits >= 120
-            // Class A (Silver Medal): Score >= 60,000 hoặc Hits >= 70
-            // Class B (Bronze Medal): Score >= 30,000 hoặc Hits >= 35
-            // Class C (Mission Incomplete): Còn lại
+            // 3. Phân loại Huân chương Rank (Task 3.4.2 & 3.4.3: Chuẩn Endless Ace Medals)
+            // - Rank S (Cosmic Ace): Score >= 100,000 OR Distance >= 10,000m
+            // - Rank A (Elite Wing): Score >= 60,000 OR Distance >= 6,000m
+            // - Rank B (Veteran Pilot): Score >= 30,000 OR Distance >= 3,000m
+            // - Rank C (Survivor Pilot): Score >= 15,000 OR Distance >= 1,500m
+            // - Rank D (Flight Cadet): Score < 15,000 AND Distance < 1,500m
+            string rankTitle;
+            string medalTitle;
+            Color rankColor;
+
+            if (finalScore >= 100000 || finalDistance >= 10000f)
+            {
+                rankTitle = "RANK S - COSMIC ACE";
+                medalTitle = "★ GOLD ACE MEDAL AWARDED ★";
+                rankColor = new Color(1.0f, 0.82f, 0.12f, 1f); // #FFD21E Solar Gold
+            }
+            else if (finalScore >= 60000 || finalDistance >= 6000f)
+            {
+                rankTitle = "RANK A - ELITE WING";
+                medalTitle = "★ SILVER ACE MEDAL AWARDED ★";
+                rankColor = new Color(0.85f, 0.95f, 1.0f, 1f); // #D9F2FF Silver Cyan
+            }
+            else if (finalScore >= 30000 || finalDistance >= 3000f)
+            {
+                rankTitle = "RANK B - VETERAN PILOT";
+                medalTitle = "★ BRONZE ACE MEDAL AWARDED ★";
+                rankColor = new Color(1.0f, 0.55f, 0.20f, 1f); // #FF8C33 Bronze Orange
+            }
+            else if (finalScore >= 15000 || finalDistance >= 1500f)
+            {
+                rankTitle = "RANK C - SURVIVOR PILOT";
+                medalTitle = "SURVIVOR RIBBON";
+                rankColor = new Color(0.45f, 0.85f, 1.0f, 1f); // #73D9FF Standard Cyan
+            }
+            else
+            {
+                rankTitle = "RANK D - FLIGHT CADET";
+                medalTitle = "NO MEDAL EARNED";
+                rankColor = new Color(0.55f, 0.60f, 0.65f, 1f); // Dim Slate
+            }
+
             if (txtDebriefRank != null)
             {
-                if (_sessionScore >= 100000 || _sessionHits >= 120)
-                {
-                    txtDebriefRank.text = "RANK: CLASS S (GOLD MEDAL)";
-                    txtDebriefRank.color = new Color(1.0f, 0.82f, 0.12f, 1f); // #FFD21E Solar Gold
-                }
-                else if (_sessionScore >= 60000 || _sessionHits >= 70)
-                {
-                    txtDebriefRank.text = "RANK: CLASS A (SILVER MEDAL)";
-                    txtDebriefRank.color = new Color(0.85f, 0.95f, 1.0f, 1f); // #D9F2FF Silver Cyan
-                }
-                else if (_sessionScore >= 30000 || _sessionHits >= 35)
-                {
-                    txtDebriefRank.text = "RANK: CLASS B (BRONZE MEDAL)";
-                    txtDebriefRank.color = new Color(1.0f, 0.55f, 0.20f, 1f); // #FF8C33 Bronze Orange
-                }
-                else
-                {
-                    txtDebriefRank.text = "RANK: CLASS C (MISSION INCOMPLETE)";
-                    txtDebriefRank.color = new Color(0.45f, 0.85f, 1.0f, 1f); // #73D9FF Standard Cyan
-                }
+                txtDebriefRank.text = rankTitle;
+                txtDebriefRank.color = rankColor;
             }
-
-            // 3. Kiểm tra và cập nhật Bảng vinh danh (Hall of Fame Leaderboard)
-            int currentStage = 1;
-            if (VirtualRailStageDirector.Instance != null)
+            if (txtDebriefMedal != null)
             {
-                currentStage = Mathf.Max(1, VirtualRailStageDirector.Instance.currentStageIndex + 1);
+                txtDebriefMedal.text = medalTitle;
+                txtDebriefMedal.color = rankColor;
             }
 
+            // 4. Kiểm tra và cập nhật Bảng vinh danh (Hall of Fame Leaderboard)
+            int currentStage = maxThreat;
             string pilotName = "FOX McCLOUD";
             if (SettingsManager.Instance != null && !string.IsNullOrEmpty(SettingsManager.Instance.pilotCallsign))
             {
@@ -772,14 +902,14 @@ namespace VirtualRail
             }
 
             bool isNewRecord = false;
-            if (LeaderboardManager.Instance != null && _sessionScore > 0)
+            if (LeaderboardManager.Instance != null && finalScore > 0)
             {
-                isNewRecord = LeaderboardManager.Instance.IsHighScore(_sessionScore);
-                LeaderboardManager.Instance.AddEntry(pilotName, _sessionScore, currentStage, "NORMAL");
+                isNewRecord = LeaderboardManager.Instance.IsHighScore(finalScore);
+                LeaderboardManager.Instance.AddEntry(pilotName, finalScore, currentStage, "ENDLESS");
                 PopulateHallOfFameRows();
             }
 
-            // 4. Phản hồi kỷ lục mới (New Record Badge & SFX)
+            // 5. Phản hồi kỷ lục mới (New Record Badge & SFX)
             if (txtDebriefNewRecord != null)
             {
                 txtDebriefNewRecord.gameObject.SetActive(isNewRecord);

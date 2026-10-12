@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace VirtualRail
@@ -43,6 +43,7 @@ namespace VirtualRail
         private int _grazeStreak = 0;
         private int _totalSessionHits = 0;
         private int _totalSessionGrazes = 0;
+        private int _peakMultiplier = 1;
 
         public int MultiplierIndex => _multiplierIndex;
         public int CurrentMultiplier => _currentMultiplier;
@@ -52,6 +53,7 @@ namespace VirtualRail
         public int GrazeStreak => _grazeStreak;
         public int TotalSessionHits => _totalSessionHits;
         public int TotalSessionGrazes => _totalSessionGrazes;
+        public int PeakMultiplier => _peakMultiplier;
 
         private void Awake()
         {
@@ -93,6 +95,7 @@ namespace VirtualRail
             _grazeStreak = 0;
             _multiplierIndex = 0;
             _currentMultiplier = 1;
+            _peakMultiplier = 1;
             _multiplierDecayTimer = 0f;
             OnMultiplierChanged?.Invoke(_currentMultiplier);
         }
@@ -107,6 +110,10 @@ namespace VirtualRail
             {
                 _multiplierIndex++;
                 _currentMultiplier = MULTIPLIERS[_multiplierIndex];
+                if (_currentMultiplier > _peakMultiplier)
+                {
+                    _peakMultiplier = _currentMultiplier;
+                }
                 _multiplierDecayTimer = maxDecayTime;
                 OnMultiplierChanged?.Invoke(_currentMultiplier);
                 Debug.Log($"<color=cyan><b>[MULTIPLIER LEVEL UP]</b></color> Hệ số nhân tăng lên: <b>{_currentMultiplier}x!</b> (Decay: {maxDecayTime}s)");

@@ -32,6 +32,10 @@ namespace VirtualRail
         [Header("Dynamic Difficulty Adjustment (DDA)")]
         [SerializeField] private int _threatLevel = 1;
         public int ThreatLevel => _threatLevel;
+        private int _maxThreatLevelReached = 1;
+        public int MaxThreatLevel => _maxThreatLevelReached;
+        private float _maxDistanceReached = 0f;
+        public float MaxDistanceReached => _maxDistanceReached;
 
         [SerializeField] private float _currentShooterRatio = 0.25f;
         public float CurrentShooterRatio => _currentShooterRatio;
@@ -139,6 +143,8 @@ namespace VirtualRail
             _sessionTimer = 0f;
             _threatLevelBonus = 0;
             _threatLevel = 1;
+            _maxThreatLevelReached = 1;
+            _maxDistanceReached = 0f;
             _threatLevelProgress01 = 0f;
             _wavesCleared = 0;
             _currentWaveIndex = 0;
@@ -238,6 +244,18 @@ namespace VirtualRail
             // 1. Cập nhật đồng hồ phiên & Thuật toán DDA (Mỗi 45s tăng 1 bậc Threat Level + Bonus từ diệt Boss)
             _sessionTimer += Time.deltaTime;
             _threatLevel = 1 + Mathf.FloorToInt(_sessionTimer / 45f) + _threatLevelBonus;
+            if (_threatLevel > _maxThreatLevelReached)
+            {
+                _maxThreatLevelReached = _threatLevel;
+            }
+            if (_anchor != null)
+            {
+                float dist = Mathf.Max(0f, _anchor.transform.position.z);
+                if (dist > _maxDistanceReached)
+                {
+                    _maxDistanceReached = dist;
+                }
+            }
             _threatLevelProgress01 = Mathf.Repeat(_sessionTimer, 45f) / 45f;
 
             // 2. Cập nhật tần suất bắn & số lượng quái vật nổ súng theo DDA Threat Level (Đạn nhiều hơn, không tăng tốc độ đạn)
@@ -582,6 +600,10 @@ namespace VirtualRail
 
             _threatLevelBonus++;
             _threatLevel = 1 + Mathf.FloorToInt(_sessionTimer / 45f) + _threatLevelBonus;
+            if (_threatLevel > _maxThreatLevelReached)
+            {
+                _maxThreatLevelReached = _threatLevel;
+            }
             _wavesCleared++;
 
             // 1. Thực hiện Hyperspace Sector Warp: Thưởng +10,000 điểm và làm mới mốc đo Z 15,000m

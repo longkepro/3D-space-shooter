@@ -126,15 +126,15 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 - [x] **3.3.1** Tạm dừng trò chơi (`Time.timeScale = 0`), làm mờ nền buồng lái 75%, cung cấp tùy chọn Tiếp tục (Resume), Xuất kích lại (Restart Run), Cài đặt (Options), Thoát về Menu (Abort to Menu) kèm âm thanh phản hồi và dọn dẹp thực thể sạch sẽ.
 
 ### Task 3.4: Bảng Tổng Kết & Xếp Hạng Kỷ Lục (Run Debriefing & High Score)
-- [ ] **3.4.1** Màn hình kết thúc lượt chạy hiển thị chi tiết:
+- [x] **3.4.1** Màn hình kết thúc lượt chạy hiển thị chi tiết:
   - Tổng quãng đường bay được ($\text{Distance Reached}$).
   - Cấp độ đe dọa tối đa vượt qua ($\text{Max Threat Level / Cycles Survived}$).
   - Tổng số mục tiêu bị tiêu diệt ($\text{Enemy Hit Count}$).
   - Số lần kích hoạt Graze thành công ($\text{Graze Count}$).
   - Hệ số nhân cực đại chạm tới ($\text{Peak Multiplier}$).
   - Tổng điểm số cuối cùng ($\text{Final Score}$).
-- [ ] **3.4.2** Thuật toán xếp hạng kỹ năng: **Rank D, Rank C, Rank B, Rank A, Rank S**.
-- [ ] **3.4.3** Trao tặng Huân Chương Sinh Tồn Vô Hạn (Endless Ace Medals) theo các cột mốc điểm số và quãng đường.
+- [x] **3.4.2** Thuật toán xếp hạng kỹ năng: **Rank D, Rank C, Rank B, Rank A, Rank S**.
+- [x] **3.4.3** Trao tặng Huân Chương Sinh Tồn Vô Hạn (Endless Ace Medals) theo các cột mốc điểm số và quãng đường.
 
 ### Task 3.5: Hệ Thống Lưu Trữ Dữ Liệu Bền Vững (SaveDataManager)
 - [ ] **3.5.1** Xây dựng [`SaveDataManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/SaveDataManager.cs) lưu trữ độc lập điểm cao kỷ lục, quãng đường xa nhất, danh sách huân chương và cấu hình người chơi.

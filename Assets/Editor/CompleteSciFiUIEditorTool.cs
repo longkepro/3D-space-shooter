@@ -358,23 +358,52 @@ namespace VirtualRail.Editor
             uiMgr.btnPauseMainMenu = CreatePillButton("Btn_MainMenu", pauseObj.transform, new Vector2(0f, -290f), "ABORT TO MENU", font, spBtn, spBtnHover, spBtnPressed);
 
             // -------------------------------------------------------------
-            // 5. MISSION DEBRIEFING / GAME OVER MODAL
+            // 5. MISSION DEBRIEFING / GAME OVER MODAL (TASK 3.4)
             // -------------------------------------------------------------
-            GameObject debriefObj = CreatePanel("DebriefingModal", root.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560f, 400f), spWindow, Image.Type.Sliced);
+            GameObject debriefObj = CreatePanel("DebriefingModal", root.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(620f, 520f), spWindow, Image.Type.Sliced);
             uiMgr.debriefingModal = debriefObj.GetComponent<RectTransform>();
 
-            CreateText("DebriefTitle", debriefObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -32f), new Vector2(400f, 36f), "MISSION DEBRIEFING", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
+            CreateText("DebriefTitle", debriefObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -28f), new Vector2(500f, 32f), "ENDLESS MISSION DEBRIEFING", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
+            CreateText("DebriefSubtitle", debriefObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -52f), new Vector2(400f, 20f), "-- PILOT PERFORMANCE TELEMETRY --", font, 11, FontStyle.Bold, new Color(0.65f, 0.85f, 0.95f, 0.75f), TextAnchor.MiddleCenter);
 
-            GameObject newRecordObj = CreateText("DebriefNewRecord", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 75f), new Vector2(400f, 28f), "★ NEW HIGH SCORE RECORD! ★", font, 14, FontStyle.Bold, new Color(1f, 0.84f, 0f, 1f), TextAnchor.MiddleCenter);
+            GameObject newRecordObj = CreateText("DebriefNewRecord", debriefObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -76f), new Vector2(500f, 22f), "★ NEW HIGH SCORE RECORD! ★", font, 13, FontStyle.Bold, new Color(1f, 0.84f, 0f, 1f), TextAnchor.MiddleCenter);
             newRecordObj.SetActive(false);
             uiMgr.txtDebriefNewRecord = newRecordObj.GetComponent<Text>();
 
-            uiMgr.txtDebriefScore = CreateText("DebriefScore", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 35f), new Vector2(400f, 32f), "FINAL SCORE: 000,000", font, 16, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter).GetComponent<Text>();
-            uiMgr.txtDebriefHits = CreateText("DebriefHits", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(400f, 32f), "TOTAL HITS: 000", font, 16, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter).GetComponent<Text>();
-            uiMgr.txtDebriefRank = CreateText("DebriefRank", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -35f), new Vector2(400f, 36f), "RANK: CLASS S (GOLD MEDAL)", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter).GetComponent<Text>();
+            // Rank & Medal Box (Top Banner)
+            GameObject rankBox = CreatePanel("RankBox", debriefObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -104f), new Vector2(540f, 54f), spDropdown, Image.Type.Sliced);
+            rankBox.GetComponent<Image>().color = new Color(0.04f, 0.08f, 0.14f, 0.9f);
 
-            uiMgr.btnDebriefRestart = CreatePillButton("Btn_Retry", debriefObj.transform, new Vector2(0f, -270f), "RETRY MISSION", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnDebriefMainMenu = CreatePillButton("Btn_MainMenu", debriefObj.transform, new Vector2(0f, -335f), "MAIN MENU", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.txtDebriefRank = CreateText("DebriefRank", rankBox.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 11f), new Vector2(520f, 26f), "RANK S - COSMIC ACE", font, 17, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter).GetComponent<Text>();
+            uiMgr.txtDebriefMedal = CreateText("DebriefMedal", rankBox.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -12f), new Vector2(520f, 20f), "★ GOLD ACE MEDAL AWARDED ★", font, 12, FontStyle.Bold, new Color(1f, 0.84f, 0.2f, 1f), TextAnchor.MiddleCenter).GetComponent<Text>();
+
+            // Telemetry Grid (6 Metrics in 2 Columns)
+            GameObject gridBox = CreatePanel("TelemetryGrid", debriefObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -166f), new Vector2(540f, 195f), spDropdown, Image.Type.Sliced);
+            gridBox.GetComponent<Image>().color = new Color(0.03f, 0.06f, 0.10f, 0.85f);
+
+            // Left Column (Col 1: Distance, Threat Level, Peak Multiplier)
+            CreateText("Label_Dist", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-135f, -14f), new Vector2(240f, 16f), "DISTANCE REACHED", font, 10, FontStyle.Bold, new Color(0.5f, 0.7f, 0.8f, 0.8f), TextAnchor.MiddleCenter);
+            uiMgr.txtDebriefDistance = CreateText("DebriefDistance", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-135f, -34f), new Vector2(240f, 24f), "00,000 m", font, 15, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter).GetComponent<Text>();
+
+            CreateText("Label_Threat", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-135f, -74f), new Vector2(240f, 16f), "MAX THREAT / CYCLES", font, 10, FontStyle.Bold, new Color(0.5f, 0.7f, 0.8f, 0.8f), TextAnchor.MiddleCenter);
+            uiMgr.txtDebriefThreat = CreateText("DebriefThreat", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-135f, -94f), new Vector2(240f, 24f), "THREAT LV.01 (00 WAVES)", font, 13, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter).GetComponent<Text>();
+
+            CreateText("Label_Mult", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-135f, -134f), new Vector2(240f, 16f), "PEAK MULTIPLIER", font, 10, FontStyle.Bold, new Color(0.5f, 0.7f, 0.8f, 0.8f), TextAnchor.MiddleCenter);
+            uiMgr.txtDebriefPeakMultiplier = CreateText("DebriefPeakMultiplier", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-135f, -154f), new Vector2(240f, 24f), "x1", font, 15, FontStyle.Bold, new Color(0.2f, 1.0f, 0.45f, 1f), TextAnchor.MiddleCenter).GetComponent<Text>();
+
+            // Right Column (Col 2: Enemy Hits, Grazes, Final Score)
+            CreateText("Label_Hits", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(135f, -14f), new Vector2(240f, 16f), "ENEMIES DESTROYED", font, 10, FontStyle.Bold, new Color(0.5f, 0.7f, 0.8f, 0.8f), TextAnchor.MiddleCenter);
+            uiMgr.txtDebriefHits = CreateText("DebriefHits", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(135f, -34f), new Vector2(240f, 24f), "000 HITS", font, 15, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter).GetComponent<Text>();
+
+            CreateText("Label_Graze", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(135f, -74f), new Vector2(240f, 16f), "NEAR-MISS GRAZES", font, 10, FontStyle.Bold, new Color(0.5f, 0.7f, 0.8f, 0.8f), TextAnchor.MiddleCenter);
+            uiMgr.txtDebriefGraze = CreateText("DebriefGraze", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(135f, -94f), new Vector2(240f, 24f), "000 GRAZES", font, 15, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter).GetComponent<Text>();
+
+            CreateText("Label_Score", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(135f, -134f), new Vector2(240f, 16f), "FINAL ACCUMULATED SCORE", font, 10, FontStyle.Bold, new Color(0.5f, 0.7f, 0.8f, 0.8f), TextAnchor.MiddleCenter);
+            uiMgr.txtDebriefScore = CreateText("DebriefScore", gridBox.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(135f, -154f), new Vector2(240f, 24f), "000,000 PTS", font, 15, FontStyle.Bold, new Color(1.0f, 0.82f, 0.12f, 1f), TextAnchor.MiddleCenter).GetComponent<Text>();
+
+            // Action Buttons (Side-by-side at bottom)
+            uiMgr.btnDebriefRestart = CreatePillButton("Btn_Retry", debriefObj.transform, new Vector2(-130f, -440f), "RETRY RUN", font, spBtn, spBtnHover, spBtnPressed, new Vector2(230f, 48f));
+            uiMgr.btnDebriefMainMenu = CreatePillButton("Btn_MainMenu", debriefObj.transform, new Vector2(130f, -440f), "MAIN MENU", font, spBtn, spBtnHover, spBtnPressed, new Vector2(230f, 48f));
         }
 
         #region HELPER BUILDERS
@@ -418,7 +447,7 @@ namespace VirtualRail.Editor
             return obj;
         }
 
-        private static Button CreatePillButton(string name, Transform parent, Vector2 pos, string label, Font font, Sprite spNorm, Sprite spHover, Sprite spPressed)
+        private static Button CreatePillButton(string name, Transform parent, Vector2 pos, string label, Font font, Sprite spNorm, Sprite spHover, Sprite spPressed, Vector2? sizeDelta = null)
         {
             GameObject obj = new GameObject(name);
             obj.transform.SetParent(parent, false);
@@ -427,7 +456,7 @@ namespace VirtualRail.Editor
             rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
             rt.anchoredPosition = pos;
-            rt.sizeDelta = new Vector2(240f, 52f);
+            rt.sizeDelta = sizeDelta ?? new Vector2(240f, 52f);
 
             Image img = obj.AddComponent<Image>();
             img.sprite = spNorm;
