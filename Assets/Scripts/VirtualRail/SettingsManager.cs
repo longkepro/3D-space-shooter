@@ -112,13 +112,16 @@ namespace VirtualRail
 
         public void ApplyAllSettings()
         {
-            // 1. Resolution & Fullscreen
-            Resolution[] resList = Screen.resolutions;
-            if (resList != null && resList.Length > 0)
+            // 1. Resolution & Fullscreen (Chỉ áp dụng trên Desktop PC/Mac, tuyệt đối không ép độ phân giải trên Mobile để chống kéo dãn màn hình)
+            if (!Application.isMobilePlatform)
             {
-                int idx = Mathf.Clamp(resolutionIndex, 0, resList.Length - 1);
-                Resolution r = resList[idx];
-                Screen.SetResolution(r.width, r.height, isFullscreen);
+                Resolution[] resList = Screen.resolutions;
+                if (resList != null && resList.Length > 0)
+                {
+                    int idx = Mathf.Clamp(resolutionIndex, 0, resList.Length - 1);
+                    Resolution r = resList[idx];
+                    Screen.SetResolution(r.width, r.height, isFullscreen);
+                }
             }
 
             // 2. VSync & Framerate

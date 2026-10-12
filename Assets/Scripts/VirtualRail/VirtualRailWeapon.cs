@@ -173,9 +173,18 @@ namespace VirtualRail
             bool isBtnFireHeld = (inputReader != null && inputReader.btnFire != null && inputReader.btnFire.IsHeld);
             bool isBtnFireUp = (inputReader != null && inputReader.btnFire != null && inputReader.btnFire.WasReleasedThisFrame);
 
-            bool isPcFireDown = Input.GetButtonDown("Fire1") || Input.GetKeyDown(KeyCode.Space);
-            bool isPcFireHeld = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
-            bool isPcFireUp = Input.GetButtonUp("Fire1") || Input.GetKeyUp(KeyCode.Space);
+            // Trên Mobile, chạm màn hình (kể cả cần gạt ngắm phải) bị Unity ánh xạ nhầm thành mouse 0 (Fire1).
+            // Do đó chỉ đọc phím chuột/bàn phím PC khi không phải nền tảng di động.
+            bool isPcFireDown = false;
+            bool isPcFireHeld = false;
+            bool isPcFireUp = false;
+
+            if (!Application.isMobilePlatform)
+            {
+                isPcFireDown = Input.GetButtonDown("Fire1") || Input.GetKeyDown(KeyCode.Space);
+                isPcFireHeld = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
+                isPcFireUp = Input.GetButtonUp("Fire1") || Input.GetKeyUp(KeyCode.Space);
+            }
 
             bool isLegacyFireDown = isPcFireDown || isBtnFireDown;
             bool isLegacyFireHeld = isPcFireHeld || isBtnFireHeld;

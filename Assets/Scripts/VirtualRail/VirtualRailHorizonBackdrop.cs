@@ -259,7 +259,17 @@ namespace VirtualRail
                 float frustumHeight = 2.0f * distanceZ * Mathf.Tan(fovRad * 0.5f);
                 float frustumWidth = frustumHeight * currentAspect;
 
-                transform.localScale = new Vector3(frustumWidth * overscan, frustumHeight * overscan, 1.0f);
+                // Bảo toàn tỉ lệ 16:9 nguyên bản của Trái Đất & Mặt Trăng không bị kéo dãn bẹt ngang trên màn hình dài (20:9, 21:9)
+                // Áp dụng cơ chế Aspect Cover: Khi màn hình dài hơn 16:9, scale Y tương ứng để giữ vững tỉ lệ tròn 1:1 của các thiên thể
+                float baseAspect = 16f / 9f;
+                float scaleX = frustumWidth;
+                float scaleY = frustumHeight;
+                if (currentAspect > baseAspect)
+                {
+                    scaleY = frustumWidth / baseAspect;
+                }
+
+                transform.localScale = new Vector3(scaleX * overscan, scaleY * overscan, 1.0f);
             }
 
             // Neo màn chiếu thẳng tắp trước mặt Camera
