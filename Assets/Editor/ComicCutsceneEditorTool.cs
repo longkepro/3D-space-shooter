@@ -11,6 +11,7 @@ namespace VirtualRail.Editor
     /// Tuân thủ nghiêm ngặt Quy tắc An toàn 3 Tầng (AGENTS.md / GEMINI.md Điều 3):
     /// Cung cấp cặp MenuItem 1-Click đối xứng Bật [ON] / Hoàn nguyên [OFF].
     /// </summary>
+    [InitializeOnLoad]
     public static class ComicCutsceneEditorTool
     {
         public const string COMIC_P1_PATH = "Assets/Textures/Comic/comic_page_1.png";
@@ -19,11 +20,39 @@ namespace VirtualRail.Editor
         public const string COMIC_P4_PATH = "Assets/Textures/Comic/comic_page_4.png";
 
         public const string COMIC_PANEL_NAME = "ComicCutscenePanel";
+        private const string PREF_AUTO_SETUP = "VirtualRail_ComicCutscene_Enabled";
+
+        static ComicCutsceneEditorTool()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        }
+
+        private static void OnPlayModeChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode)
+            {
+                if (EditorPrefs.GetBool(PREF_AUTO_SETUP, true))
+                {
+                    UIManager uiMgr = Object.FindAnyObjectByType<UIManager>();
+                    if (uiMgr != null)
+                    {
+                        Transform existing = uiMgr.transform.Find(COMIC_PANEL_NAME);
+                        if (existing == null || uiMgr.comicCutscenePanel == null)
+                        {
+                            SetupComicCutsceneSystem();
+                        }
+                    }
+                }
+            }
+        }
 
         [MenuItem("Tools/Virtual Rail/Cutscene/1. Setup Comic Cutscene System (ON)", false, 60)]
         [MenuItem("Tools/Virtual Rail/60. Setup Comic Cutscene System (ON)", false, 60)]
         public static void SetupComicCutsceneSystem()
         {
+            EditorPrefs.SetBool(PREF_AUTO_SETUP, true);
+
             // Đảm bảo các Sprite đã được cấu hình TextureImporter sang SpriteMode.Single
             ConfigureComicTextureImporter(COMIC_P1_PATH);
             ConfigureComicTextureImporter(COMIC_P2_PATH);
@@ -153,14 +182,23 @@ namespace VirtualRail.Editor
             EditorUtility.SetDirty(uiMgr);
             EditorUtility.SetDirty(panelObj);
             EditorSceneManager.MarkSceneDirty(uiMgr.gameObject.scene);
+            EditorSceneManager.SaveScene(uiMgr.gameObject.scene);
+            AssetDatabase.SaveAssets();
 
-            Debug.Log("<color=#00FF99><b>[ComicCutscene] Đã thiết lập hoàn tất Hệ Thống Truyện Tranh Dẫn Nhập vào UIManager!</b></color>");
+            if (!System.IO.Directory.Exists("Assets/Prefabs")) System.IO.Directory.CreateDirectory("Assets/Prefabs");
+            if (!System.IO.Directory.Exists("Assets/Resources")) System.IO.Directory.CreateDirectory("Assets/Resources");
+            PrefabUtility.SaveAsPrefabAsset(panelObj, "Assets/Prefabs/ComicCutscenePanel.prefab");
+            PrefabUtility.SaveAsPrefabAsset(panelObj, "Assets/Resources/ComicCutscenePanel.prefab");
+
+            Debug.Log("<color=#00FF99><b>[ComicCutscene] Đã thiết lập hoàn tất Hệ Thống Truyện Tranh Dẫn Nhập vào UIManager và lưu Scene/Prefab!</b></color>");
         }
 
         [MenuItem("Tools/Virtual Rail/Cutscene/2. Remove Comic Cutscene System (OFF - Undo)", false, 61)]
         [MenuItem("Tools/Virtual Rail/61. Remove Comic Cutscene System (OFF - Undo)", false, 61)]
         public static void RemoveComicCutsceneSystem()
         {
+            EditorPrefs.SetBool(PREF_AUTO_SETUP, false);
+
             UIManager uiMgr = Object.FindAnyObjectByType<UIManager>();
             if (uiMgr != null)
             {
@@ -175,6 +213,8 @@ namespace VirtualRail.Editor
                 }
 
                 EditorSceneManager.MarkSceneDirty(uiMgr.gameObject.scene);
+                EditorSceneManager.SaveScene(uiMgr.gameObject.scene);
+                AssetDatabase.SaveAssets();
                 Debug.Log("<color=#FF9900><b>[ComicCutscene] Đã hoàn nguyên loại bỏ Comic Cutscene System khỏi UIManager.</b></color>");
             }
         }

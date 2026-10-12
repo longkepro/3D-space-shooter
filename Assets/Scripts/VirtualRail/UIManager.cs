@@ -6,6 +6,7 @@ namespace VirtualRail
 {
     public enum UIViewState
     {
+        TitleScreen,
         MainMenu,
         Gameplay,
         Settings,
@@ -17,7 +18,7 @@ namespace VirtualRail
 
     /// <summary>
     /// Bộ Điều Phối Giao Diện Trung Tâm (Complete Sci-Fi UI Manager).
-    /// Quản lý toàn bộ vòng đời màn hình: Main Menu, Settings, Hall of Fame, In-Game Pause, Debriefing.
+    /// Quản lý toàn bộ vòng đời màn hình: Title Screen, Main Menu, Settings, Hall of Fame, In-Game Pause, Debriefing.
     /// Thiết kế theo kiến trúc 1 chiều, 0 GC Heap Allocation trong Game Loop.
     /// </summary>
     [DisallowMultipleComponent]
@@ -26,6 +27,8 @@ namespace VirtualRail
         public static UIManager Instance { get; private set; }
 
         [Header("Views / Panels")]
+        public RectTransform titleScreenPanel;
+        public TitleScreenController titleScreenController;
         public RectTransform mainMenuPanel;
         public RectTransform settingsModal;
         public RectTransform hallOfFameModal;
@@ -122,6 +125,7 @@ namespace VirtualRail
         private CanvasGroup _cgPause;
         private CanvasGroup _cgDebriefing;
         private CanvasGroup _cgComicCutscene;
+        private CanvasGroup _cgTitleScreen;
 
         private bool _isPaused = false;
         private static readonly string[] FLOAT_STRINGS = PrecomputeFloatStrings();
@@ -145,16 +149,27 @@ namespace VirtualRail
             _cgHallOfFame = EnsureCanvasGroup(hallOfFameModal);
             _cgPause = EnsureCanvasGroup(pauseModal);
             _cgDebriefing = EnsureCanvasGroup(debriefingModal);
+
             if (comicCutscenePanel == null)
             {
                 EnsureComicCutscenePanelRuntime();
             }
-
             _cgComicCutscene = EnsureCanvasGroup(comicCutscenePanel);
 
             if (comicCutsceneController != null)
             {
                 comicCutsceneController.OnComicCompleted += HandleComicCutsceneCompleted;
+            }
+
+            if (titleScreenPanel == null)
+            {
+                EnsureTitleScreenPanelRuntime();
+            }
+            _cgTitleScreen = EnsureCanvasGroup(titleScreenPanel);
+
+            if (titleScreenController != null)
+            {
+                titleScreenController.OnTitleCompleted += HandleTitleScreenCompleted;
             }
 
             if (fullScreenBackdrop == null)
@@ -215,8 +230,21 @@ namespace VirtualRail
                 if (btnQuit != null) ((RectTransform)btnQuit.transform).anchoredPosition = new Vector2(0f, -275f);
             }
 
-            // Khởi đầu ở Main Menu
+            // Khởi đầu ở Màn hình Bìa ngoài cùng (Title Screen)
+            ShowState(UIViewState.TitleScreen);
+            if (titleScreenController != null)
+            {
+                titleScreenController.StartTitleScreen();
+            }
+        }
+
+        private void HandleTitleScreenCompleted()
+        {
             ShowState(UIViewState.MainMenu);
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayMenuMusic();
+            }
         }
 
         private void OnEnable()
@@ -239,6 +267,11 @@ namespace VirtualRail
             if (comicCutsceneController != null)
             {
                 comicCutsceneController.OnComicCompleted -= HandleComicCutsceneCompleted;
+            }
+
+            if (titleScreenController != null)
+            {
+                titleScreenController.OnTitleCompleted -= HandleTitleScreenCompleted;
             }
         }
 
@@ -295,6 +328,107 @@ namespace VirtualRail
             CanvasGroup cg = rt.GetComponent<CanvasGroup>();
             if (cg == null) cg = rt.gameObject.AddComponent<CanvasGroup>();
             return cg;
+        }
+
+        private void EnsureTitleScreenPanelRuntime()
+        {
+            Transform existing = transform.Find("TitleScreenPanel");
+            if (existing != null)
+            {
+                titleScreenPanel = existing.GetComponent<RectTransform>();
+                if (titleScreenController == null) titleScreenController = existing.GetComponent<TitleScreenController>();
+                return;
+            }
+
+            GameObject prefab = Resources.Load<GameObject>("TitleScreenPanel");
+            if (prefab != null)
+            {
+                GameObject inst = Instantiate(prefab, transform, false);
+                inst.name = "TitleScreenPanel";
+                titleScreenPanel = inst.GetComponent<RectTransform>();
+                titleScreenController = inst.GetComponent<TitleScreenController>();
+                return;
+            }
+
+            // Tự động dựng TitleScreenPanel runtime
+            GameObject panelObj = new GameObject("TitleScreenPanel", typeof(RectTransform), typeof(CanvasGroup));
+            panelObj.transform.SetParent(transform, false);
+            panelObj.transform.SetAsLastSibling();
+
+            RectTransform panelRt = panelObj.GetComponent<RectTransform>();
+            panelRt.anchorMin = Vector2.zero;
+            panelRt.anchorMax = Vector2.one;
+            panelRt.offsetMin = Vector2.zero;
+            panelRt.offsetMax = Vector2.zero;
+
+            CanvasGroup panelCg = panelObj.GetComponent<CanvasGroup>();
+            panelCg.alpha = 1f;
+            panelCg.interactable = true;
+            panelCg.blocksRaycasts = true;
+
+            TitleScreenController controller = panelObj.AddComponent<TitleScreenController>();
+            controller.titleCanvasGroup = panelCg;
+
+            // 1. Ảnh bìa toàn màn hình (TitleCoverDisplay)
+            GameObject coverObj = new GameObject("TitleCoverDisplay", typeof(RectTransform), typeof(Image), typeof(AspectRatioFitter));
+            coverObj.transform.SetParent(panelRt, false);
+            RectTransform coverRt = coverObj.GetComponent<RectTransform>();
+            coverRt.anchorMin = Vector2.zero;
+            coverRt.anchorMax = Vector2.one;
+            coverRt.offsetMin = Vector2.zero;
+            coverRt.offsetMax = Vector2.zero;
+
+            Image coverImg = coverObj.GetComponent<Image>();
+            coverImg.preserveAspect = true;
+            coverImg.raycastTarget = false;
+            Sprite coverSp = Resources.Load<Sprite>("UI/title_screen_cover");
+            if (coverSp != null)
+            {
+                coverImg.sprite = coverSp;
+                controller.coverSprite = coverSp;
+            }
+            controller.coverDisplayImage = coverImg;
+
+            AspectRatioFitter arf = coverObj.GetComponent<AspectRatioFitter>();
+            arf.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            arf.aspectRatio = 1376f / 768f;
+
+            // 2. Nút tương tác bấm toàn màn hình (Full Screen Click Trigger)
+            GameObject btnObj = new GameObject("BtnStartTrigger", typeof(RectTransform), typeof(Image), typeof(Button));
+            btnObj.transform.SetParent(panelRt, false);
+            RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+            btnRt.anchorMin = Vector2.zero;
+            btnRt.anchorMax = Vector2.one;
+            btnRt.offsetMin = Vector2.zero;
+            btnRt.offsetMax = Vector2.zero;
+            Image btnImg = btnObj.GetComponent<Image>();
+            btnImg.color = new Color(0f, 0f, 0f, 0f);
+            btnImg.raycastTarget = true;
+            Button btn = btnObj.GetComponent<Button>();
+            controller.btnStart = btn;
+
+            // 3. Dòng chữ nhấp nháy phát sáng phía dưới (TxtPressStartPrompt)
+            GameObject promptObj = new GameObject("TxtPressStartPrompt", typeof(RectTransform), typeof(Text));
+            promptObj.transform.SetParent(panelRt, false);
+            RectTransform promptRt = promptObj.GetComponent<RectTransform>();
+            promptRt.anchorMin = new Vector2(0.5f, 0.08f);
+            promptRt.anchorMax = new Vector2(0.5f, 0.08f);
+            promptRt.anchoredPosition = Vector2.zero;
+            promptRt.sizeDelta = new Vector2(650f, 40f);
+
+            Text promptTxt = promptObj.GetComponent<Text>();
+            Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            promptTxt.font = font;
+            promptTxt.fontSize = 21;
+            promptTxt.fontStyle = FontStyle.Bold;
+            promptTxt.alignment = TextAnchor.MiddleCenter;
+            promptTxt.color = new Color(0.2f, 0.95f, 1f, 1f);
+            promptTxt.text = "PRESS ANY KEY OR CLICK TO LAUNCH";
+            controller.txtPrompt = promptTxt;
+
+            titleScreenPanel = panelRt;
+            titleScreenController = controller;
         }
 
         private void EnsureComicCutscenePanelRuntime()
@@ -458,6 +592,7 @@ namespace VirtualRail
             _previousState = _currentState;
             _currentState = newState;
 
+            SetGroupVisible(_cgTitleScreen, newState == UIViewState.TitleScreen);
             SetGroupVisible(_cgMainMenu, newState == UIViewState.MainMenu);
             SetGroupVisible(_cgSettings, newState == UIViewState.Settings);
             SetGroupVisible(_cgHallOfFame, newState == UIViewState.HallOfFame);
@@ -466,11 +601,11 @@ namespace VirtualRail
             SetGroupVisible(_cgComicCutscene, newState == UIViewState.ComicCutscene);
 
             // Cập nhật độ trong suốt mục tiêu cho màn che toàn màn hình (Full-Screen Backdrop)
-            if (newState == UIViewState.MainMenu || newState == UIViewState.HallOfFame || newState == UIViewState.ComicCutscene)
+            if (newState == UIViewState.TitleScreen || newState == UIViewState.MainMenu || newState == UIViewState.HallOfFame || newState == UIViewState.ComicCutscene)
             {
                 _backdropTargetAlpha = 1.0f;
                 if (fullScreenBackdrop != null) fullScreenBackdrop.gameObject.SetActive(true);
-                if (AudioManager.Instance != null && newState != UIViewState.ComicCutscene)
+                if (AudioManager.Instance != null && newState != UIViewState.ComicCutscene && newState != UIViewState.TitleScreen)
                 {
                     AudioManager.Instance.PlayMenuMusic();
                 }

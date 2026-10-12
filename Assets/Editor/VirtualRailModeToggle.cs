@@ -2616,21 +2616,64 @@ public class VirtualRailModeToggle
         // -------------------------------------------------------------
         // CỤM 6: TOP-CENTER (CLIMAX BOSS HEALTH BAR & PHASE SUBTITLE)
         // -------------------------------------------------------------
-        GameObject bossCluster = CreateUIPanel("Cluster_Boss", hudRoot.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -22f), new Vector2(540f, 62f), bgPanelColor, frameSprite);
+        GameObject bossCluster = CreateUIPanel("Cluster_Boss", hudRoot.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -22f), new Vector2(540f, 74f), bgPanelColor, frameSprite);
         hud.clusterBossRoot = bossCluster.GetComponent<RectTransform>();
 
         // Boss Name
-        hud.bossNameText = CreateUIText("BossName", bossCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -6f), new Vector2(-24f, 18f), "FEDERATION CORVETTE F3 // CRIMSON TITAN", font, 12, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
+        hud.bossNameText = CreateUIText("BossName", bossCluster.transform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -4f), new Vector2(-24f, 16f), "FEDERATION CORVETTE F3 // CRIMSON TITAN", font, 12, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
 
-        // Boss Health Bar (Track + Ghost Fill + Main Fill)
+        // 1. Boss Shield Bar (Tầng trên)
+        GameObject bossShieldObj = new GameObject("ShieldBar");
+        bossShieldObj.transform.SetParent(bossCluster.transform, false);
+        RectTransform sRt = bossShieldObj.AddComponent<RectTransform>();
+        sRt.anchorMin = new Vector2(0f, 0.5f);
+        sRt.anchorMax = new Vector2(1f, 0.5f);
+        sRt.pivot = new Vector2(0.5f, 0.5f);
+        sRt.anchoredPosition = new Vector2(0f, 6f);
+        sRt.sizeDelta = new Vector2(-28f, 9f);
+
+        Image sTrack = bossShieldObj.AddComponent<Image>();
+        sTrack.color = new Color(0.04f, 0.10f, 0.16f, 0.95f);
+
+        GameObject sGhost = new GameObject("GhostFill");
+        sGhost.transform.SetParent(bossShieldObj.transform, false);
+        RectTransform sGhostRt = sGhost.AddComponent<RectTransform>();
+        sGhostRt.anchorMin = Vector2.zero;
+        sGhostRt.anchorMax = Vector2.one;
+        sGhostRt.offsetMin = Vector2.zero;
+        sGhostRt.offsetMax = Vector2.zero;
+        hud.bossShieldGhostBarFill = sGhost.AddComponent<Image>();
+        hud.bossShieldGhostBarFill.sprite = capsuleFillSprite;
+        hud.bossShieldGhostBarFill.type = Image.Type.Filled;
+        hud.bossShieldGhostBarFill.fillMethod = Image.FillMethod.Horizontal;
+        hud.bossShieldGhostBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+        hud.bossShieldGhostBarFill.fillAmount = 1f;
+        hud.bossShieldGhostBarFill.color = new Color(0.2f, 0.85f, 1f, 0.55f);
+
+        GameObject sFill = new GameObject("Fill");
+        sFill.transform.SetParent(bossShieldObj.transform, false);
+        RectTransform sFillRt = sFill.AddComponent<RectTransform>();
+        sFillRt.anchorMin = Vector2.zero;
+        sFillRt.anchorMax = Vector2.one;
+        sFillRt.offsetMin = Vector2.zero;
+        sFillRt.offsetMax = Vector2.zero;
+        hud.bossShieldBarFill = sFill.AddComponent<Image>();
+        hud.bossShieldBarFill.sprite = capsuleFillSprite;
+        hud.bossShieldBarFill.type = Image.Type.Filled;
+        hud.bossShieldBarFill.fillMethod = Image.FillMethod.Horizontal;
+        hud.bossShieldBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+        hud.bossShieldBarFill.fillAmount = 1f;
+        hud.bossShieldBarFill.color = borderCyan;
+
+        // 2. Boss Health Bar (Tầng dưới)
         GameObject bossBarObj = new GameObject("HealthBar");
         bossBarObj.transform.SetParent(bossCluster.transform, false);
         RectTransform barRt = bossBarObj.AddComponent<RectTransform>();
         barRt.anchorMin = new Vector2(0f, 0.5f);
         barRt.anchorMax = new Vector2(1f, 0.5f);
         barRt.pivot = new Vector2(0.5f, 0.5f);
-        barRt.anchoredPosition = new Vector2(0f, -3f);
-        barRt.sizeDelta = new Vector2(-28f, 14f);
+        barRt.anchoredPosition = new Vector2(0f, -7f);
+        barRt.sizeDelta = new Vector2(-28f, 11f);
 
         Image trackImg = bossBarObj.AddComponent<Image>();
         trackImg.color = new Color(0.12f, 0.14f, 0.18f, 0.95f);
@@ -2643,6 +2686,7 @@ public class VirtualRailModeToggle
         ghostRt.offsetMin = Vector2.zero;
         ghostRt.offsetMax = Vector2.zero;
         hud.bossGhostBarFill = ghostObj.AddComponent<Image>();
+        hud.bossGhostBarFill.sprite = capsuleFillSprite;
         hud.bossGhostBarFill.type = Image.Type.Filled;
         hud.bossGhostBarFill.fillMethod = Image.FillMethod.Horizontal;
         hud.bossGhostBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
@@ -2657,14 +2701,15 @@ public class VirtualRailModeToggle
         fillRt.offsetMin = Vector2.zero;
         fillRt.offsetMax = Vector2.zero;
         hud.bossHealthBarFill = fillObj.AddComponent<Image>();
+        hud.bossHealthBarFill.sprite = capsuleFillSprite;
         hud.bossHealthBarFill.type = Image.Type.Filled;
         hud.bossHealthBarFill.fillMethod = Image.FillMethod.Horizontal;
         hud.bossHealthBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
         hud.bossHealthBarFill.fillAmount = 1f;
         hud.bossHealthBarFill.color = new Color(1f, 0.22f, 0.15f, 1f);
 
-        // Phase Text
-        hud.bossPhaseText = CreateUIText("PhaseText", bossCluster.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 5f), new Vector2(-24f, 14f), "WARNING: COLOSSAL BATTLECRUISER BENEATH", font, 10, FontStyle.Normal, new Color(0.85f, 0.88f, 0.95f, 0.9f), TextAnchor.MiddleCenter);
+        // 3. Phase Text
+        hud.bossPhaseText = CreateUIText("PhaseText", bossCluster.transform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 4f), new Vector2(-24f, 14f), "PHASE 1: DORSAL SHIELD ONLINE", font, 10, FontStyle.Normal, new Color(0.85f, 0.88f, 0.95f, 0.9f), TextAnchor.MiddleCenter);
 
         bossCluster.SetActive(false);
 

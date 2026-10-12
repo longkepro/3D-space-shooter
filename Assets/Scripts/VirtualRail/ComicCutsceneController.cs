@@ -55,6 +55,16 @@ namespace VirtualRail
                 cutsceneCanvasGroup = GetComponent<CanvasGroup>();
             }
 
+            // Tự động nạp Sprite từ Resources/Comic nếu mảng bị trống
+            if (comicPages == null || comicPages.Length < 4 || comicPages[0] == null)
+            {
+                comicPages = new Sprite[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    comicPages[i] = Resources.Load<Sprite>("Comic/comic_page_" + (i + 1));
+                }
+            }
+
             SetupButtons();
         }
 
@@ -83,19 +93,10 @@ namespace VirtualRail
         {
             if (!_isActive) return;
 
-            // Phím tắt điều hướng mượt mà: Next (Space, Enter, Mũi tên phải, Chuột trái)
-            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.RightArrow) || Input.GetMouseButtonDown(0))
+            // Phím tắt điều hướng mượt mà: Next (Space, Enter, Mũi tên phải)
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.RightArrow))
             {
-                // Kiểm tra xem chuột có đang click vào các nút UI khác không (EventSystem)
-                if (Input.GetMouseButtonDown(0))
-                {
-                    // Cho phép click chuột bất kỳ đâu trên màn hình để chuyển trang
-                    OnNextClicked();
-                }
-                else
-                {
-                    OnNextClicked();
-                }
+                OnNextClicked();
             }
             // Lùi trang (Backspace, Mũi tên trái)
             else if (Input.GetKeyDown(KeyCode.Backspace) || Input.GetKeyDown(KeyCode.LeftArrow))
@@ -106,6 +107,14 @@ namespace VirtualRail
             else if (Input.GetKeyDown(KeyCode.Escape))
             {
                 OnSkipClicked();
+            }
+            // Click chuột trái vào màn hình (chỉ khi không trúng các nút UI riêng biệt)
+            else if (Input.GetMouseButtonDown(0))
+            {
+                if (UnityEngine.EventSystems.EventSystem.current == null || !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+                {
+                    OnNextClicked();
+                }
             }
         }
 

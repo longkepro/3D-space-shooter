@@ -237,7 +237,17 @@ namespace VirtualRail
             EnsureBossClusterCreated();
             EnsureTelemetryAndGrazeCreated();
 
-            if (clusterBossRoot != null)
+            if (BossF3CorvetteController.Instance != null && BossF3CorvetteController.Instance.CurrentPhase != BossBattlePhase.Defeated)
+            {
+                HandleBossSpawned(BossF3CorvetteController.Instance);
+                HandleBossHealthChanged(BossF3CorvetteController.Instance.CurrentHealth, BossF3CorvetteController.Instance.MaxHealth, BossF3CorvetteController.Instance.CurrentPhase);
+                if (BossF3CorvetteController.Instance.IsShieldOnline)
+                {
+                    var s = BossF3CorvetteController.Instance.GetComponentInChildren<VirtualRailHexShield>();
+                    if (s != null) HandleBossShieldChanged(s.CurrentShieldHealth, s.MaxShieldHealth);
+                }
+            }
+            else if (clusterBossRoot != null)
             {
                 clusterBossRoot.gameObject.SetActive(false);
             }
@@ -833,6 +843,7 @@ namespace VirtualRail
 
         private void HandleBossSpawned(BossF3CorvetteController boss)
         {
+            EnsureBarSpritesAssigned();
             if (clusterBossRoot != null)
             {
                 clusterBossRoot.gameObject.SetActive(true);
@@ -913,6 +924,7 @@ namespace VirtualRail
         private void HandleBossShieldBroken()
         {
             if (bossShieldBarFill != null) bossShieldBarFill.fillAmount = 0f;
+            if (bossShieldGhostBarFill != null) bossShieldGhostBarFill.fillAmount = 0f;
             if (bossPhaseText != null)
             {
                 bossPhaseText.text = "PHASE 2: SHIELD DESTROYED // REACTOR EXPOSED";
@@ -1001,10 +1013,55 @@ namespace VirtualRail
         private void HandleBossDefeated()
         {
             if (bossHealthBarFill != null) bossHealthBarFill.fillAmount = 0f;
+            if (bossGhostBarFill != null) bossGhostBarFill.fillAmount = 0f;
             if (bossShieldBarFill != null) bossShieldBarFill.fillAmount = 0f;
+            if (bossShieldGhostBarFill != null) bossShieldGhostBarFill.fillAmount = 0f;
             if (clusterBossRoot != null)
             {
                 clusterBossRoot.gameObject.SetActive(false);
+            }
+        }
+
+        private static Sprite _proceduralBarSprite;
+
+        private Sprite GetDefaultBarSprite()
+        {
+            if (shieldBarFill != null && shieldBarFill.sprite != null)
+            {
+                return shieldBarFill.sprite;
+            }
+            if (_proceduralBarSprite == null)
+            {
+                Texture2D whiteTex = Texture2D.whiteTexture;
+                _proceduralBarSprite = Sprite.Create(whiteTex, new Rect(0, 0, whiteTex.width, whiteTex.height), new Vector2(0.5f, 0.5f));
+            }
+            return _proceduralBarSprite;
+        }
+
+        private void EnsureBarSpritesAssigned()
+        {
+            Sprite barSprite = GetDefaultBarSprite();
+            if (barSprite == null) return;
+
+            if (bossHealthBarFill != null)
+            {
+                if (bossHealthBarFill.sprite == null) bossHealthBarFill.sprite = barSprite;
+                bossHealthBarFill.type = Image.Type.Filled;
+            }
+            if (bossGhostBarFill != null)
+            {
+                if (bossGhostBarFill.sprite == null) bossGhostBarFill.sprite = barSprite;
+                bossGhostBarFill.type = Image.Type.Filled;
+            }
+            if (bossShieldBarFill != null)
+            {
+                if (bossShieldBarFill.sprite == null) bossShieldBarFill.sprite = barSprite;
+                bossShieldBarFill.type = Image.Type.Filled;
+            }
+            if (bossShieldGhostBarFill != null)
+            {
+                if (bossShieldGhostBarFill.sprite == null) bossShieldGhostBarFill.sprite = barSprite;
+                bossShieldGhostBarFill.type = Image.Type.Filled;
             }
         }
 
@@ -1016,6 +1073,7 @@ namespace VirtualRail
             if (clusterBossRoot != null)
             {
                 EnsureShieldBarUnder(clusterBossRoot);
+                EnsureBarSpritesAssigned();
                 return;
             }
 
@@ -1028,6 +1086,7 @@ namespace VirtualRail
                 if (bossGhostBarFill == null) bossGhostBarFill = existing.Find("HealthBar/GhostFill")?.GetComponent<Image>();
                 if (bossPhaseText == null) bossPhaseText = existing.Find("PhaseText")?.GetComponent<Text>();
                 EnsureShieldBarUnder(clusterBossRoot);
+                EnsureBarSpritesAssigned();
                 return;
             }
 
@@ -1079,6 +1138,8 @@ namespace VirtualRail
             Image trackImg = barObj.AddComponent<Image>();
             trackImg.color = new Color(0.12f, 0.14f, 0.18f, 0.95f);
 
+            Sprite barSprite = GetDefaultBarSprite();
+
             // Ghost Fill
             GameObject ghostObj = new GameObject("GhostFill");
             ghostObj.transform.SetParent(barObj.transform, false);
@@ -1089,6 +1150,7 @@ namespace VirtualRail
             ghostRt.offsetMax = Vector2.zero;
 
             bossGhostBarFill = ghostObj.AddComponent<Image>();
+            bossGhostBarFill.sprite = barSprite;
             bossGhostBarFill.type = Image.Type.Filled;
             bossGhostBarFill.fillMethod = Image.FillMethod.Horizontal;
             bossGhostBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
@@ -1105,6 +1167,7 @@ namespace VirtualRail
             fillRt.offsetMax = Vector2.zero;
 
             bossHealthBarFill = fillObj.AddComponent<Image>();
+            bossHealthBarFill.sprite = barSprite;
             bossHealthBarFill.type = Image.Type.Filled;
             bossHealthBarFill.fillMethod = Image.FillMethod.Horizontal;
             bossHealthBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
@@ -1133,6 +1196,7 @@ namespace VirtualRail
             bossPhaseText.text = "PHASE 1: DORSAL SHIELD ONLINE";
 
             clusterBossRoot = rt;
+            EnsureBarSpritesAssigned();
             bossPanel.SetActive(false);
         }
 
@@ -1140,11 +1204,14 @@ namespace VirtualRail
         {
             if (parent == null) return;
 
+            Sprite barSprite = GetDefaultBarSprite();
+
             Transform existingBar = parent.Find("ShieldBar");
             if (existingBar != null)
             {
                 if (bossShieldBarFill == null) bossShieldBarFill = existingBar.Find("Fill")?.GetComponent<Image>();
                 if (bossShieldGhostBarFill == null) bossShieldGhostBarFill = existingBar.Find("GhostFill")?.GetComponent<Image>();
+                EnsureBarSpritesAssigned();
                 return;
             }
 
@@ -1172,6 +1239,7 @@ namespace VirtualRail
             sGhostRt.offsetMax = Vector2.zero;
 
             bossShieldGhostBarFill = sGhost.AddComponent<Image>();
+            bossShieldGhostBarFill.sprite = barSprite;
             bossShieldGhostBarFill.type = Image.Type.Filled;
             bossShieldGhostBarFill.fillMethod = Image.FillMethod.Horizontal;
             bossShieldGhostBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
@@ -1188,6 +1256,7 @@ namespace VirtualRail
             sFillRt.offsetMax = Vector2.zero;
 
             bossShieldBarFill = sFill.AddComponent<Image>();
+            bossShieldBarFill.sprite = barSprite;
             bossShieldBarFill.type = Image.Type.Filled;
             bossShieldBarFill.fillMethod = Image.FillMethod.Horizontal;
             bossShieldBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
@@ -1205,6 +1274,8 @@ namespace VirtualRail
                     hbRt.sizeDelta = new Vector2(-28f, 11f);
                 }
             }
+
+            EnsureBarSpritesAssigned();
         }
 
         private void EnsureTelemetryAndGrazeCreated()
