@@ -123,7 +123,7 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 - [x] **3.2.4** **Thanh Máu Boss Đa Phân Đoạn:** Hiển thị và đồng bộ đa tầng Giáp + Máu (kèm Ghost Bar và text cảnh báo 3 pha) khi Boss F3 Corvette xuất hiện.
 
 ### Task 3.3: Menu Tạm Dừng Trong Trận (Pause Menu - ESC / P)
-- [ ] **3.3.1** Tạm dừng trò chơi (`Time.timeScale = 0`), làm mờ nền màn hình, cung cấp tùy chọn Tiếp tục, Xuất kích lại, Cài đặt, Thoát về Menu.
+- [x] **3.3.1** Tạm dừng trò chơi (`Time.timeScale = 0`), làm mờ nền buồng lái 75%, cung cấp tùy chọn Tiếp tục (Resume), Xuất kích lại (Restart Run), Cài đặt (Options), Thoát về Menu (Abort to Menu) kèm âm thanh phản hồi và dọn dẹp thực thể sạch sẽ.
 
 ### Task 3.4: Bảng Tổng Kết & Xếp Hạng Kỷ Lục (Run Debriefing & High Score)
 - [ ] **3.4.1** Màn hình kết thúc lượt chạy hiển thị chi tiết:

@@ -85,6 +85,9 @@ namespace VirtualRail
 
         private void Update()
         {
+            if (Time.timeScale <= 0.001f) return;
+            if (UIManager.Instance != null && UIManager.Instance.CurrentState != UIViewState.Gameplay) return;
+
             if (_anchor != null && _anchor.config != null && !_anchor.config.enableSmartBomb)
             {
                 return;

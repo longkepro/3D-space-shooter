@@ -317,7 +317,7 @@ namespace VirtualRail
             // Tự động đồng bộ HUD buồng lái
             if (ModernCockpitHUD.Instance != null)
             {
-                ModernCockpitHUD.Instance.SetHUDVisible(newState == UIViewState.Gameplay);
+                ModernCockpitHUD.Instance.SetHUDVisible(newState == UIViewState.Gameplay || newState == UIViewState.Pause);
             }
 
             // Ẩn các UI phụ trợ chặng bay khi không ở Gameplay
@@ -618,6 +618,10 @@ namespace VirtualRail
             _isPaused = pause;
             Time.timeScale = pause ? 0.0f : 1.0f;
             ShowState(pause ? UIViewState.Pause : UIViewState.Gameplay);
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 0.8f, pause ? 0.85f : 1.25f);
+            }
         }
 
         private void OnPauseResumeClicked()
@@ -634,6 +638,11 @@ namespace VirtualRail
         {
             Time.timeScale = 1.0f;
             _isPaused = false;
+            if (VirtualRailEndlessDirector.Instance != null) VirtualRailEndlessDirector.Instance.StopEndlessSession();
+            if (VirtualRailWaveSpawner.Instance != null) VirtualRailWaveSpawner.Instance.RecycleAll();
+            if (VirtualRailAsteroidSpawner.Instance != null) VirtualRailAsteroidSpawner.Instance.RecycleAll();
+            if (EnemyProjectilePool.Instance != null) EnemyProjectilePool.Instance.ClearAllActiveProjectiles();
+            if (BossF3CorvetteController.Instance != null) Destroy(BossF3CorvetteController.Instance.gameObject);
             OnSinglePlayerClicked();
         }
 
@@ -647,9 +656,11 @@ namespace VirtualRail
                 VirtualRailAnchor.Instance.CurrentSpeed = 0f;
                 VirtualRailAnchor.Instance.transform.position = Vector3.zero;
             }
+            if (VirtualRailEndlessDirector.Instance != null) VirtualRailEndlessDirector.Instance.StopEndlessSession();
             if (VirtualRailWaveSpawner.Instance != null) VirtualRailWaveSpawner.Instance.RecycleAll();
             if (VirtualRailAsteroidSpawner.Instance != null) VirtualRailAsteroidSpawner.Instance.RecycleAll();
             if (EnemyProjectilePool.Instance != null) EnemyProjectilePool.Instance.ClearAllActiveProjectiles();
+            if (BossF3CorvetteController.Instance != null) Destroy(BossF3CorvetteController.Instance.gameObject);
             ShowState(UIViewState.MainMenu);
         }
 

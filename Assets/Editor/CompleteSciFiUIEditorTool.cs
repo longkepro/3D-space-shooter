@@ -350,11 +350,12 @@ namespace VirtualRail.Editor
             GameObject pauseObj = CreatePanel("PauseModal", root.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(440f, 380f), spWindow, Image.Type.Sliced);
             uiMgr.pauseModal = pauseObj.GetComponent<RectTransform>();
 
-            CreateText("PauseTitle", pauseObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -32f), new Vector2(300f, 36f), "TACTICAL PAUSE", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
-            uiMgr.btnPauseResume = CreatePillButton("Btn_Resume", pauseObj.transform, new Vector2(0f, -90f), "RESUME", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnPauseOptions = CreatePillButton("Btn_Options", pauseObj.transform, new Vector2(0f, -155f), "OPTIONS", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnPauseRestart = CreatePillButton("Btn_Restart", pauseObj.transform, new Vector2(0f, -220f), "RESTART MISSION", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnPauseMainMenu = CreatePillButton("Btn_MainMenu", pauseObj.transform, new Vector2(0f, -285f), "ABORT TO MENU", font, spBtn, spBtnHover, spBtnPressed);
+            CreateText("PauseTitle", pauseObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -28f), new Vector2(300f, 32f), "TACTICAL PAUSE", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
+            CreateText("PauseSubtitle", pauseObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -54f), new Vector2(300f, 20f), "-- SIMULATION SUSPENDED --", font, 11, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter);
+            uiMgr.btnPauseResume = CreatePillButton("Btn_Resume", pauseObj.transform, new Vector2(0f, -95f), "RESUME", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.btnPauseOptions = CreatePillButton("Btn_Options", pauseObj.transform, new Vector2(0f, -160f), "OPTIONS", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.btnPauseRestart = CreatePillButton("Btn_Restart", pauseObj.transform, new Vector2(0f, -225f), "RESTART RUN", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.btnPauseMainMenu = CreatePillButton("Btn_MainMenu", pauseObj.transform, new Vector2(0f, -290f), "ABORT TO MENU", font, spBtn, spBtnHover, spBtnPressed);
 
             // -------------------------------------------------------------
             // 5. MISSION DEBRIEFING / GAME OVER MODAL
