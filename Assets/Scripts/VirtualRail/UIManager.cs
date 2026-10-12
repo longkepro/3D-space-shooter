@@ -706,7 +706,7 @@ namespace VirtualRail
             {
                 _backdropTargetAlpha = 1.0f;
                 if (fullScreenBackdrop != null) fullScreenBackdrop.gameObject.SetActive(true);
-                if (AudioManager.Instance != null && newState != UIViewState.ComicCutscene && newState != UIViewState.TitleScreen)
+                if (AudioManager.Instance != null && newState != UIViewState.ComicCutscene)
                 {
                     AudioManager.Instance.PlayMenuMusic();
                 }
@@ -1399,13 +1399,42 @@ namespace VirtualRail
                 Text nameText = row.Find("NameText")?.GetComponent<Text>();
                 Text scoreText = row.Find("ScoreText")?.GetComponent<Text>();
                 Text stageText = row.Find("StageText")?.GetComponent<Text>();
-                Text diffText = row.Find("DiffText")?.GetComponent<Text>();
+                
+                Transform diffBadge = row.Find("DiffBadge");
+                Text diffText = diffBadge != null ? diffBadge.Find("DiffText")?.GetComponent<Text>() : row.Find("DiffText")?.GetComponent<Text>();
+                Image diffBadgeImg = diffBadge != null ? diffBadge.GetComponent<Image>() : null;
 
                 if (rankText != null) rankText.text = entries[i].rank.ToString();
                 if (nameText != null) nameText.text = entries[i].callsign;
-                if (scoreText != null) scoreText.text = entries[i].score.ToString();
+                if (scoreText != null) scoreText.text = entries[i].score.ToString("N0");
                 if (stageText != null) stageText.text = entries[i].stage.ToString();
-                if (diffText != null) diffText.text = entries[i].difficulty;
+                if (diffText != null)
+                {
+                    string diff = entries[i].difficulty?.ToUpperInvariant() ?? "NORMAL";
+                    diffText.text = diff;
+                    Color badgeColor;
+                    switch (diff)
+                    {
+                        case "EASY":
+                            badgeColor = new Color(0f, 1f, 0.55f, 1f); // Cyber Emerald Green
+                            break;
+                        case "HARD":
+                            badgeColor = new Color(1f, 0.70f, 0.10f, 1f); // Warning Amber
+                            break;
+                        case "EXPERT":
+                            badgeColor = new Color(1f, 0.22f, 0.28f, 1f); // Critical Danger Crimson
+                            break;
+                        case "NORMAL":
+                        default:
+                            badgeColor = new Color(0f, 0.95f, 1f, 1f); // Cyber Cyan
+                            break;
+                    }
+                    diffText.color = badgeColor;
+                    if (diffBadgeImg != null)
+                    {
+                        diffBadgeImg.color = new Color(badgeColor.r, badgeColor.g, badgeColor.b, 0.28f);
+                    }
+                }
             }
         }
 

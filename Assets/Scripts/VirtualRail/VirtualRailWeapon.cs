@@ -159,91 +159,135 @@ namespace VirtualRail
 
             EnsureAimAssist();
 
-            bool isInputReaderFireHeld = inputReader != null && inputReader.IsFireHeld();
-            bool isManualFire = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space) || isInputReaderFireHeld;
+            bool isChargeDown = (inputReader != null && inputReader.IsChargeDown());
+            bool isChargeHeld = (inputReader != null && inputReader.IsChargeHeld());
+            bool isChargeUp = (inputReader != null && inputReader.IsChargeUp());
 
-            bool fireDown = Input.GetButtonDown("Fire1") || Input.GetKeyDown(KeyCode.Space) || (inputReader != null && inputReader.IsFireDown());
-            bool fireUp = Input.GetButtonUp("Fire1") || Input.GetKeyUp(KeyCode.Space) || (inputReader != null && inputReader.IsFireUp());
+            bool isRightStickActive = (inputReader != null && inputReader.IsRightStickActive);
+            bool isBtnFireDown = (inputReader != null && inputReader.btnFire != null && inputReader.btnFire.WasPressedThisFrame);
+            bool isBtnFireHeld = (inputReader != null && inputReader.btnFire != null && inputReader.btnFire.IsHeld);
+            bool isBtnFireUp = (inputReader != null && inputReader.btnFire != null && inputReader.btnFire.WasReleasedThisFrame);
+
+            bool isPcFireDown = Input.GetButtonDown("Fire1") || Input.GetKeyDown(KeyCode.Space);
+            bool isPcFireHeld = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
+            bool isPcFireUp = Input.GetButtonUp("Fire1") || Input.GetKeyUp(KeyCode.Space);
+
+            bool isLegacyFireDown = isPcFireDown || isBtnFireDown;
+            bool isLegacyFireHeld = isPcFireHeld || isBtnFireHeld;
+            bool isLegacyFireUp = isPcFireUp || isBtnFireUp;
 
             // Kiểm tra trạng thái nạp đạn tụ lực & khóa hồi nòng (0 GC Alloc)
             bool isAimAssistCharging = (_cachedAimAssist != null && _cachedAimAssist.IsCharging);
-            bool canFireRegular = (Time.time >= _weaponCooldownUntil) && !_isChargeActive && !isAimAssistCharging;
+            bool isChargingInputActive = isChargeHeld || _isChargeActive || isAimAssistCharging;
+            bool canFireRegular = (Time.time >= _weaponCooldownUntil) && !isChargingInputActive;
 
-            // 1. Máy trạng thái Tap-to-Fire vs Hold-to-Charge (Chuẩn Star Fox 64 1B - 0 Latency)
+            // 1. Máy trạng thái Nút Sạc Hỏa Lực Riêng Biệt (Dedicated Charge Shot - Mobile 4 Ngón)
             if (_cachedAimAssist != null)
             {
-                if (fireDown)
+                if (isChargeDown)
                 {
-                    _fireButtonDownTime = Time.time;
-                    _isChargeActive = false;
-
-                    // Phản xạ tức thời phát bắn đầu tiên (0ms input lag), chỉ bắn khi không trong cooldown
-                    if (canFireRegular && Time.time >= nextFireTime)
+                    if (Time.time >= _weaponCooldownUntil)
                     {
-                        FireAllMuzzles();
-                        nextFireTime = Time.time + fireRate;
+                        _isChargeActive = true;
+                        _cachedAimAssist.BeginChargingFromWeapon();
                     }
                 }
-                else if (isManualFire && _fireButtonDownTime > 0f)
+                else if (isChargeHeld && _isChargeActive)
                 {
-                    float holdDuration = Time.time - _fireButtonDownTime;
-                    if (holdDuration >= holdToChargeThreshold)
+                    _cachedAimAssist.UpdateChargeFromWeapon(Time.deltaTime);
+                }
+
+                if (isChargeUp && _isChargeActive)
+                {
+                    _cachedAimAssist.ReleaseChargeFromWeapon();
+                    _isChargeActive = false;
+
+                    // Kích hoạt Khóa hồi nòng sau khi phóng tụ lực (chuẩn Star Fox 64, chặn 100% rò rỉ đạn thường)
+                    float cooldown = (cfg != null && cfg.postChargeCooldown > 0f) ? cfg.postChargeCooldown : 0.35f;
+                    _weaponCooldownUntil = Time.time + cooldown;
+                    nextFireTime = _weaponCooldownUntil;
+                    _fireButtonDownTime = -1f;
+                }
+            }
+
+            // 2. Máy trạng thái Tap-to-Fire vs Hold-to-Charge cho Phím PC (Space/Fire1) và Nút Cảm Ứng Cũ (btnFire)
+            if (!isChargeHeld && !_isChargeActive)
+            {
+                if (_cachedAimAssist != null)
+                {
+                    if (isLegacyFireDown)
                     {
-                        // Giữ phím >= 0.25s -> Chuyển sang nạp tụ lực, ngừng bắn đạn thường
-                        // Chỉ kích hoạt nạp đạn nếu đã hết thời gian hồi nòng
-                        if (Time.time >= _weaponCooldownUntil)
-                        {
-                            if (!_isChargeActive)
-                            {
-                                _isChargeActive = true;
-                                _cachedAimAssist.BeginChargingFromWeapon();
-                            }
-                            _cachedAimAssist.UpdateChargeFromWeapon(Time.deltaTime);
-                        }
-                    }
-                    else
-                    {
-                        // Trong khoảng 0 < holdDuration < 0.25s: Bắn đạn liên thanh bình thường
+                        _fireButtonDownTime = Time.time;
+                        _isChargeActive = false;
+
+                        // Phản xạ tức thời phát bắn đầu tiên (0ms input lag), chỉ bắn khi không trong cooldown
                         if (canFireRegular && Time.time >= nextFireTime)
                         {
                             FireAllMuzzles();
                             nextFireTime = Time.time + fireRate;
                         }
                     }
-                }
-
-                if (fireUp)
-                {
-                    if (_isChargeActive)
+                    else if (isLegacyFireHeld && _fireButtonDownTime > 0f)
                     {
-                        _cachedAimAssist.ReleaseChargeFromWeapon();
-                        _isChargeActive = false;
-
-                        // Kích hoạt Khóa hồi nòng sau khi phóng tụ lực (chuẩn Star Fox 64, chặn 100% rò rỉ đạn thường)
-                        float cooldown = (cfg != null && cfg.postChargeCooldown > 0f) ? cfg.postChargeCooldown : 0.35f;
-                        _weaponCooldownUntil = Time.time + cooldown;
-                        nextFireTime = _weaponCooldownUntil;
+                        float holdDuration = Time.time - _fireButtonDownTime;
+                        if (holdDuration >= holdToChargeThreshold)
+                        {
+                            // Giữ phím >= 0.25s -> Chuyển sang nạp tụ lực, ngừng bắn đạn thường
+                            if (Time.time >= _weaponCooldownUntil)
+                            {
+                                if (!_isChargeActive)
+                                {
+                                    _isChargeActive = true;
+                                    _cachedAimAssist.BeginChargingFromWeapon();
+                                }
+                                _cachedAimAssist.UpdateChargeFromWeapon(Time.deltaTime);
+                            }
+                        }
+                        else
+                        {
+                            // Trong khoảng 0 < holdDuration < 0.25s: Bắn đạn liên thanh bình thường
+                            if (canFireRegular && Time.time >= nextFireTime)
+                            {
+                                FireAllMuzzles();
+                                nextFireTime = Time.time + fireRate;
+                            }
+                        }
                     }
-                    _fireButtonDownTime = -1f;
+
+                    if (isLegacyFireUp)
+                    {
+                        if (_isChargeActive)
+                        {
+                            _cachedAimAssist.ReleaseChargeFromWeapon();
+                            _isChargeActive = false;
+
+                            float cooldown = (cfg != null && cfg.postChargeCooldown > 0f) ? cfg.postChargeCooldown : 0.35f;
+                            _weaponCooldownUntil = Time.time + cooldown;
+                            nextFireTime = _weaponCooldownUntil;
+                        }
+                        _fireButtonDownTime = -1f;
+                    }
                 }
-            }
-            else
-            {
-                // Fallback nếu không có AimAssistModule
-                if (isManualFire && canFireRegular && Time.time >= nextFireTime)
+                else
                 {
-                    FireAllMuzzles();
-                    nextFireTime = Time.time + fireRate;
+                    // Fallback nếu không có AimAssistModule
+                    if (isLegacyFireHeld && canFireRegular && Time.time >= nextFireTime)
+                    {
+                        FireAllMuzzles();
+                        nextFireTime = Time.time + fireRate;
+                    }
                 }
             }
 
-            // 2. Tự động bắn (Auto-fire) - Bị chặn hoàn toàn khi đang nạp tụ lực HOẶC trong thời gian hồi nòng
-            if (canFireRegular && !isManualFire)
+            // 3. Tự động xả đạn thường (Auto-fire): Cần gạt ngắm phải (Right Aim Stick) hoặc Mouse Auto-Fire
+            // Bị chặn hoàn toàn khi đang nạp tụ lực HOẶC trong thời gian hồi nòng
+            if (canFireRegular && !isLegacyFireHeld)
             {
+                bool isStickAutoFire = isRightStickActive;
                 bool isReticleAutoFire = cfg != null && cfg.autoFireOnAimMove && reticle != null && reticle.IsAimingMoving;
                 bool isHoverFire = cfg != null && cfg.enableMouseHoverFire && !cfg.enableMouseAim && reticle != null && reticle.IsMouseTouchingReticle;
 
-                if ((isReticleAutoFire || isHoverFire) && Time.time >= nextFireTime)
+                if ((isStickAutoFire || isReticleAutoFire || isHoverFire) && Time.time >= nextFireTime)
                 {
                     FireAllMuzzles();
                     nextFireTime = Time.time + fireRate;

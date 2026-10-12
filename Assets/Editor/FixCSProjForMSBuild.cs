@@ -11,7 +11,10 @@ namespace VirtualRail.Editor
     {
         private static string OnGeneratedCSProject(string path, string content)
         {
-            content = content.Replace("<Project>", "<Project ToolsVersion=\"4.0\" DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">");
+            if (content.StartsWith("<Project>"))
+            {
+                content = "<Project ToolsVersion=\"4.0\" DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">" + content.Substring("<Project>".Length);
+            }
             content = content.Replace("<Import Project=\"Sdk.props\" Sdk=\"Microsoft.NET.Sdk\" />", "");
             content = content.Replace("<Import Project=\"Sdk.targets\" Sdk=\"Microsoft.NET.Sdk\" />", "<Import Project=\"$(MSBuildToolsPath)\\Microsoft.CSharp.targets\" />");
             content = content.Replace("<TargetFramework>netstandard2.1</TargetFramework>", "<TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>");

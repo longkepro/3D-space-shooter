@@ -42,10 +42,15 @@ namespace VirtualRail
         private Camera uiCamera;
         private Canvas parentCanvas;
 
+        private int _lastDownFrame = -1;
+        private int _lastUpFrame = -1;
+
         public Vector2 InputVector => inputVector;
         public float Horizontal => inputVector.x;
         public float Vertical => inputVector.y;
         public bool IsHeld => isHeld;
+        public bool WasPressedThisFrame => _lastDownFrame == Time.frameCount;
+        public bool WasReleasedThisFrame => _lastUpFrame == Time.frameCount;
 
         private void Awake()
         {
@@ -55,6 +60,17 @@ namespace VirtualRail
                 uiCamera = parentCanvas.worldCamera;
             }
 
+            SyncVisualElements();
+
+            _currentAlpha = idleAlpha;
+            ApplyAlpha(_currentAlpha);
+        }
+
+        /// <summary>
+        /// Đồng bộ và liên kết tự động các component Image hiển thị (0 GC Alloc).
+        /// </summary>
+        public void SyncVisualElements()
+        {
             if (background != null)
             {
                 defaultBackgroundAnchoredPosition = background.anchoredPosition;
@@ -65,9 +81,6 @@ namespace VirtualRail
             {
                 handleImage = handle.GetComponent<Image>();
             }
-
-            _currentAlpha = idleAlpha;
-            ApplyAlpha(_currentAlpha);
         }
 
         private void Update()
@@ -80,7 +93,7 @@ namespace VirtualRail
             }
         }
 
-        private void ApplyAlpha(float alpha)
+        public void ApplyAlpha(float alpha)
         {
             if (bgImage != null)
             {
@@ -99,6 +112,7 @@ namespace VirtualRail
         public void OnPointerDown(PointerEventData eventData)
         {
             isHeld = true;
+            _lastDownFrame = Time.frameCount;
 
             if (isDynamicFloating && background != null)
             {
@@ -145,6 +159,7 @@ namespace VirtualRail
         public void OnPointerUp(PointerEventData eventData)
         {
             isHeld = false;
+            _lastUpFrame = Time.frameCount;
             inputVector = Vector2.zero;
 
             if (handle != null)

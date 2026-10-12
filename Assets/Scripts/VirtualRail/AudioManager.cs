@@ -314,6 +314,34 @@ namespace VirtualRail
             if (customChargeFire == null) customChargeFire = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_ChargeFire.ogg");
             if (customBombSupply == null) customBombSupply = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_BombSupply.ogg");
             if (customRingGold == null) customRingGold = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{dir}/Studio_RingGold.ogg");
+
+            // Tự động nạp toàn bộ danh mục Nhạc nền BGM từ Assets/Audio/Music/
+            const string musicDir = "Assets/Audio/Music";
+            if (defaultStageBgm == null)
+            {
+                defaultStageBgm = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{musicDir}/Futuristic Sci-Fi Interstellar Synthwave -no copyright music- by MokkaMusic - Cryosleep.mp3");
+            }
+            if (defaultMenuBgm == null)
+            {
+                defaultMenuBgm = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{musicDir}/(No Copyright Music) Sci-Fi Background [Techno Music] by MokkaMusic - Vision.mp3");
+            }
+            if (stageMusicPlaylist == null || stageMusicPlaylist.Length == 0)
+            {
+                var list = new System.Collections.Generic.List<AudioClip>();
+                string[] trackFiles = new string[]
+                {
+                    "Futuristic Sci-Fi Interstellar Synthwave -no copyright music- by MokkaMusic - Cryosleep.mp3",
+                    "(No Copyright Music) Sci-Fi Background [Techno Music] by MokkaMusic - Vision.mp3",
+                    "Electro House Techno in Space -no copyright music- by MokkaMusic - Pusher.mp3",
+                    "Synthwave Futuristic Neon Electro (No Copyright Music) by MokkaMusic - Secret.mp3"
+                };
+                for (int i = 0; i < trackFiles.Length; i++)
+                {
+                    var clip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{musicDir}/{trackFiles[i]}");
+                    if (clip != null) list.Add(clip);
+                }
+                stageMusicPlaylist = list.ToArray();
+            }
         }
 #endif
 
@@ -629,6 +657,10 @@ namespace VirtualRail
             }
 
             AudioClip fallback = stageClip != null ? stageClip : defaultStageBgm;
+            if (fallback == null && stageMusicPlaylist != null && stageMusicPlaylist.Length > 0)
+            {
+                fallback = stageMusicPlaylist[0];
+            }
             if (fallback != null)
             {
                 PlayMusic(fallback, volume, 1.5f, true);
@@ -667,6 +699,9 @@ namespace VirtualRail
             _currentContext = BgmContext.Menu;
             _currentContextVolume = volume;
             AudioClip clip = menuClip != null ? menuClip : defaultMenuBgm;
+            if (clip == null && defaultStageBgm != null) clip = defaultStageBgm;
+            if (clip == null && stageMusicPlaylist != null && stageMusicPlaylist.Length > 0) clip = stageMusicPlaylist[0];
+
             if (clip != null)
             {
                 PlayMusic(clip, volume, 1.2f, true);

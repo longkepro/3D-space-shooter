@@ -102,6 +102,8 @@ namespace VirtualRail
                     // Giúp Camera tự động bay bám theo con tàu với đúng cự ly và góc độ người dùng đã đặt trong Scene!
                     targetCamera.transform.SetParent(transform, true);
                 }
+
+                EnsureAudioListener(targetCamera);
             }
 
             // Khởi tạo Bụi Sao Không Gian (Space Dust Motion Parallax) nếu chưa có
@@ -226,6 +228,35 @@ namespace VirtualRail
                 targetCamera.fieldOfView = cfg.cameraFOV;
                 targetCamera.transform.localPosition = Vector3.zero;
                 targetCamera.transform.localRotation = Quaternion.identity;
+            }
+        }
+
+        private void EnsureAudioListener(Camera cam)
+        {
+            if (cam == null) return;
+
+            var listeners = Object.FindObjectsByType<AudioListener>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            bool hasTargetListener = false;
+
+            for (int i = 0; i < listeners.Length; i++)
+            {
+                if (listeners[i] == null) continue;
+                if (listeners[i].gameObject == cam.gameObject)
+                {
+                    listeners[i].enabled = true;
+                    hasTargetListener = true;
+                }
+                else
+                {
+                    listeners[i].enabled = false;
+                }
+            }
+
+            if (!hasTargetListener)
+            {
+                var al = cam.GetComponent<AudioListener>();
+                if (al == null) al = cam.gameObject.AddComponent<AudioListener>();
+                al.enabled = true;
             }
         }
 

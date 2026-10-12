@@ -1280,7 +1280,9 @@ namespace VirtualRail
 
         private void EnsureTelemetryAndGrazeCreated()
         {
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font font = (scoreValueText != null && scoreValueText.font != null) ? scoreValueText.font :
+                        (hitCountValueText != null && hitCountValueText.font != null) ? hitCountValueText.font :
+                        Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
             // 1. Tự động sinh hoặc cấu hình TelemetryBox nếu chưa tồn tại
@@ -1298,20 +1300,25 @@ namespace VirtualRail
                     tbRt.anchorMax = new Vector2(1f, 1f);
                     tbRt.pivot = new Vector2(1f, 1f);
                     tbRt.anchoredPosition = new Vector2(0f, -148f);
-                    tbRt.sizeDelta = new Vector2(355f, 44f);
+                    tbRt.sizeDelta = new Vector2(355f, 48f);
 
                     Image telBg = telBox.AddComponent<Image>();
                     telBg.color = new Color(0.02f, 0.08f, 0.14f, 0.88f);
-                    Outline telOutline = telBox.AddComponent<Outline>();
-                    telOutline.effectColor = new Color(0f, 0.95f, 1f, 0.45f);
-                    telOutline.effectDistance = new Vector2(1.5f, -1.5f);
+                    // Mượn frame bracket sprite từ các cụm khác nếu có
+                    Image existingBracket = transform.Find("Cluster_BottomLeft_Comms")?.GetComponent<Image>()
+                                         ?? transform.Find("Cluster_Boss")?.GetComponent<Image>();
+                    if (existingBracket != null && existingBracket.sprite != null)
+                    {
+                        telBg.sprite = existingBracket.sprite;
+                        telBg.type = Image.Type.Sliced;
+                    }
 
                     // Threat Badge
                     GameObject tb = new GameObject("ThreatBadge");
                     tb.transform.SetParent(telBox.transform, false);
                     RectTransform tbChildRt = tb.AddComponent<RectTransform>();
                     tbChildRt.anchorMin = new Vector2(0f, 0f);
-                    tbChildRt.anchorMax = new Vector2(0.5f, 1f);
+                    tbChildRt.anchorMax = new Vector2(0.52f, 1f);
                     tbChildRt.offsetMin = Vector2.zero;
                     tbChildRt.offsetMax = Vector2.zero;
 
@@ -1321,7 +1328,7 @@ namespace VirtualRail
                     tlRt.anchorMin = new Vector2(0f, 0.5f);
                     tlRt.anchorMax = new Vector2(1f, 0.5f);
                     tlRt.pivot = new Vector2(0f, 0.5f);
-                    tlRt.anchoredPosition = new Vector2(16f, 6f);
+                    tlRt.anchoredPosition = new Vector2(16f, 7f);
                     tlRt.sizeDelta = new Vector2(-20f, 20f);
                     threatLevelText = tlObj.AddComponent<Text>();
                     threatLevelText.font = font;
@@ -1338,9 +1345,9 @@ namespace VirtualRail
                     tpRt.anchorMax = new Vector2(1f, 0.5f);
                     tpRt.pivot = new Vector2(0f, 0.5f);
                     tpRt.anchoredPosition = new Vector2(16f, -10f);
-                    tpRt.sizeDelta = new Vector2(-32f, 4f);
+                    tpRt.sizeDelta = new Vector2(-32f, 6f);
                     Image tpTrack = tpObj.AddComponent<Image>();
-                    tpTrack.color = new Color(0.04f, 0.16f, 0.22f, 0.85f);
+                    tpTrack.color = new Color(0.08f, 0.22f, 0.32f, 0.95f);
 
                     GameObject tpFillObj = new GameObject("Fill");
                     tpFillObj.transform.SetParent(tpObj.transform, false);
@@ -1356,11 +1363,19 @@ namespace VirtualRail
                     threatProgressFill.fillAmount = 0.25f;
                     threatProgressFill.color = COLOR_CYAN;
 
+                    // Mượn segmented sprite nếu có
+                    Image existingSeg = transform.Find("Cluster_TopLeft/LaserChargeGauge/Fill")?.GetComponent<Image>()
+                                     ?? transform.Find("Cluster_Boss/BossHealthBar/Fill")?.GetComponent<Image>();
+                    if (existingSeg != null && existingSeg.sprite != null)
+                    {
+                        threatProgressFill.sprite = existingSeg.sprite;
+                    }
+
                     // Distance Tracker
                     GameObject dt = new GameObject("DistanceTracker");
                     dt.transform.SetParent(telBox.transform, false);
                     RectTransform dtChildRt = dt.AddComponent<RectTransform>();
-                    dtChildRt.anchorMin = new Vector2(0.5f, 0f);
+                    dtChildRt.anchorMin = new Vector2(0.52f, 0f);
                     dtChildRt.anchorMax = new Vector2(1f, 1f);
                     dtChildRt.offsetMin = Vector2.zero;
                     dtChildRt.offsetMax = Vector2.zero;

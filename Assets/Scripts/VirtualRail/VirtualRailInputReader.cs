@@ -19,8 +19,10 @@ namespace VirtualRail
         public VirtualJoystick rightJoystick;
 
         [Header("Mobile Touch Buttons (Minimalist White Rings)")]
-        [Tooltip("Nút Bắn Laser & Tụ lực (Primary Fire / Charge)")]
+        [Tooltip("Nút Bắn Laser & Tụ lực (Fallback/Legacy)")]
         public VirtualTouchButton btnFire;
+        [Tooltip("Nút Sạc Hỏa Lực Tụ Lực Riêng Biệt (Dedicated Charge Shot Button)")]
+        public VirtualTouchButton btnCharge;
         [Tooltip("Nút Bom nguyên tử Smart Bomb")]
         public VirtualTouchButton btnBomb;
         [Tooltip("Nút Tăng tốc hành trình (Boost)")]
@@ -91,11 +93,12 @@ namespace VirtualRail
             if (mobileUIRoot == null || !mobileUIRoot.activeInHierarchy) return;
 
             // Đồng bộ tiến trình nạp tụ lực Laser lên vòng tròn nạp (Charge Arc Image - 0 GC Alloc)
-            if (btnFire != null)
+            VirtualTouchButton chargeTarget = btnCharge != null ? btnCharge : btnFire;
+            if (chargeTarget != null)
             {
                 if (_cachedAimAssist == null) CacheModules();
                 float charge = (_cachedAimAssist != null && _cachedAimAssist.IsCharging) ? _cachedAimAssist.ChargeProgress : 0f;
-                btnFire.SetChargeProgress(charge);
+                chargeTarget.SetChargeProgress(charge);
             }
 
             // Đồng bộ số lượng bom Smart Bomb còn lại lên nhãn huy hiệu (0 GC Alloc)
@@ -156,13 +159,19 @@ namespace VirtualRail
         }
 
         /// <summary>
-        /// Tự động tìm hoặc khởi tạo toàn bộ cụm điều khiển cảm ứng Android theo phong cách 'Vòng trắng tối giản'.
-        /// Bao gồm Cần gạt trái và Cụm 5 nút hành động (Bắn/Tụ lực, Bom, Boost, Phanh, Barrel Roll L/R).
+        /// Tự động tìm hoặc khởi tạo toàn bộ cụm điều khiển cảm ứng Android theo Bố cục 4 ngón công thái học Tinh gọn (Refined 4-Finger Claw).
+        /// Bao gồm:
+        /// - Góc dưới trái (Bottom-Left): Cần gạt di chuyển thân tàu (Left Joystick).
+        /// - Góc trên trái (Top-Left Shoulder): Cụm 2 nút lộn vòng phản đạn (Roll Left & Roll Right).
+        /// - Góc dưới phải (Bottom-Right): Cần gạt ngắm 3D độc lập (Right Aim Stick) kiêm Auto-Fire xả đạn liên thanh khi kéo cần.
+        /// - Góc trên phải (Top-Right Shoulder): Nút Sạc hỏa lực tụ lực riêng biệt (Charge Shot) & Nút Bom nguyên tử (Smart Bomb).
         /// </summary>
         public void EnsureMobileUI()
         {
-            // Kiểm tra xem đã có đầy đủ UI chưa
-            if (leftJoystick != null && btnFire != null && btnBomb != null && btnBoost != null && btnBrake != null && btnRollLeft != null && btnRollRight != null)
+            // Kiểm tra xem đã có đầy đủ UI và Sprite chuẩn vòng trắng hay chưa
+            if (leftJoystick != null && rightJoystick != null && btnCharge != null && btnBomb != null && btnRollLeft != null && btnRollRight != null &&
+                leftJoystick.bgImage != null && leftJoystick.bgImage.sprite != null &&
+                rightJoystick.bgImage != null && rightJoystick.bgImage.sprite != null)
             {
                 return;
             }
@@ -200,8 +209,6 @@ namespace VirtualRail
             Sprite baseRing = Resources.Load<Sprite>("UI/ui_touch_ring_base");
             Sprite handleRing = Resources.Load<Sprite>("UI/ui_touch_ring_handle");
             Sprite arcRing = Resources.Load<Sprite>("UI/ui_touch_ring_arc");
-            Sprite boostIcon = Resources.Load<Sprite>("UI/ui_touch_icon_boost");
-            Sprite brakeIcon = Resources.Load<Sprite>("UI/ui_touch_icon_brake");
             Sprite rollIcon = Resources.Load<Sprite>("UI/ui_touch_icon_roll");
             Sprite laserIcon = Resources.Load<Sprite>("HUD/hud_icon_twin_laser");
             Sprite bombIcon = Resources.Load<Sprite>("HUD/hud_icon_smartbomb");
@@ -210,183 +217,131 @@ namespace VirtualRail
             float handleRange = (config != null) ? config.joystickHandleRange : 70f;
             float deadZone = (config != null) ? config.joystickDeadZone : 0.1f;
 
-            // 3. Khởi tạo / Nâng cấp LEFT JOYSTICK (Cần gạt di chuyển thân tàu)
-            if (leftJoystick == null)
+            // Ẩn cụm nút cũ (RightActionCluster) nếu tồn tại để tránh xung đột
+            Transform oldActionCluster = mobileUIRoot.transform.Find("RightActionCluster");
+            if (oldActionCluster != null)
             {
-                Transform leftZoneTrans = mobileUIRoot.transform.Find("LeftTouchZone");
-                GameObject leftZone = leftZoneTrans != null ? leftZoneTrans.gameObject : null;
-                if (leftZone == null)
+                oldActionCluster.gameObject.SetActive(false);
+            }
+
+            // 3. Khởi tạo / Nâng cấp LEFT JOYSTICK (Cần gạt di chuyển thân tàu - Góc dưới trái)
+            Transform leftZoneTrans = mobileUIRoot.transform.Find("LeftTouchZone");
+            GameObject leftZone = leftZoneTrans != null ? leftZoneTrans.gameObject : null;
+            if (leftZone == null)
+            {
+                leftZone = new GameObject("LeftTouchZone");
+                leftZone.transform.SetParent(mobileUIRoot.transform, false);
+                RectTransform leftZoneRt = leftZone.AddComponent<RectTransform>();
+                leftZoneRt.anchorMin = new Vector2(0f, 0f);
+                leftZoneRt.anchorMax = new Vector2(0.5f, 0.75f);
+                leftZoneRt.offsetMin = Vector2.zero;
+                leftZoneRt.offsetMax = Vector2.zero;
+
+                Image leftZoneImg = leftZone.AddComponent<Image>();
+                leftZoneImg.color = new Color(0f, 0f, 0f, 0.001f);
+                leftZoneImg.raycastTarget = true;
+
+                leftJoystick = leftZone.AddComponent<VirtualJoystick>();
+                leftJoystick.handleRange = handleRange;
+                leftJoystick.deadZone = deadZone;
+                leftJoystick.isDynamicFloating = true;
+
+                // Background
+                GameObject leftBg = new GameObject("LeftJoyBackground");
+                leftBg.transform.SetParent(leftZone.transform, false);
+                RectTransform leftBgRt = leftBg.AddComponent<RectTransform>();
+                leftBgRt.anchorMin = new Vector2(0f, 0f);
+                leftBgRt.anchorMax = new Vector2(0f, 0f);
+                leftBgRt.anchoredPosition = new Vector2(170f, 170f);
+                leftBgRt.sizeDelta = new Vector2(180f, 180f);
+                Image leftBgImg = leftBg.AddComponent<Image>();
+                leftBgImg.sprite = baseRing;
+                leftBgImg.color = Color.white;
+                leftBgImg.raycastTarget = false;
+
+                // Handle
+                GameObject leftHandle = new GameObject("LeftJoyHandle");
+                leftHandle.transform.SetParent(leftBg.transform, false);
+                RectTransform leftHandleRt = leftHandle.AddComponent<RectTransform>();
+                leftHandleRt.sizeDelta = new Vector2(76f, 76f);
+                Image leftHandleImg = leftHandle.AddComponent<Image>();
+                leftHandleImg.sprite = handleRing;
+                leftHandleImg.color = Color.white;
+                leftHandleImg.raycastTarget = false;
+
+                leftJoystick.background = leftBgRt;
+                leftJoystick.handle = leftHandleRt;
+                leftJoystick.bgImage = leftBgImg;
+                leftJoystick.handleImage = leftHandleImg;
+            }
+            else
+            {
+                leftJoystick = leftZone.GetComponent<VirtualJoystick>();
+                if (leftJoystick == null) leftJoystick = leftZone.AddComponent<VirtualJoystick>();
+
+                Transform leftBgTrans = leftZone.transform.Find("LeftJoyBackground");
+                if (leftBgTrans != null)
                 {
-                    leftZone = new GameObject("LeftTouchZone");
-                    leftZone.transform.SetParent(mobileUIRoot.transform, false);
-                    RectTransform leftZoneRt = leftZone.AddComponent<RectTransform>();
-                    leftZoneRt.anchorMin = new Vector2(0f, 0f);
-                    leftZoneRt.anchorMax = new Vector2(0.5f, 0.85f);
-                    leftZoneRt.offsetMin = Vector2.zero;
-                    leftZoneRt.offsetMax = Vector2.zero;
-
-                    Image leftZoneImg = leftZone.AddComponent<Image>();
-                    leftZoneImg.color = new Color(0f, 0f, 0f, 0.001f);
-                    leftZoneImg.raycastTarget = true;
-
-                    leftJoystick = leftZone.AddComponent<VirtualJoystick>();
-                    leftJoystick.handleRange = handleRange;
-                    leftJoystick.deadZone = deadZone;
-                    leftJoystick.isDynamicFloating = true;
-
-                    // Background
-                    GameObject leftBg = new GameObject("LeftJoyBackground");
-                    leftBg.transform.SetParent(leftZone.transform, false);
-                    RectTransform leftBgRt = leftBg.AddComponent<RectTransform>();
-                    leftBgRt.anchorMin = new Vector2(0f, 0f);
-                    leftBgRt.anchorMax = new Vector2(0f, 0f);
-                    leftBgRt.anchoredPosition = new Vector2(180f, 180f);
-                    leftBgRt.sizeDelta = new Vector2(180f, 180f);
-                    Image leftBgImg = leftBg.AddComponent<Image>();
-                    leftBgImg.sprite = baseRing;
-                    leftBgImg.color = Color.white;
-                    leftBgImg.raycastTarget = false;
-
-                    // Handle
-                    GameObject leftHandle = new GameObject("LeftJoyHandle");
-                    leftHandle.transform.SetParent(leftBg.transform, false);
-                    RectTransform leftHandleRt = leftHandle.AddComponent<RectTransform>();
-                    leftHandleRt.sizeDelta = new Vector2(76f, 76f);
-                    Image leftHandleImg = leftHandle.AddComponent<Image>();
-                    leftHandleImg.sprite = handleRing;
-                    leftHandleImg.color = Color.white;
-                    leftHandleImg.raycastTarget = false;
-
-                    leftJoystick.background = leftBgRt;
-                    leftJoystick.handle = leftHandleRt;
-                    leftJoystick.bgImage = leftBgImg;
-                    leftJoystick.handleImage = leftHandleImg;
-                }
-                else
-                {
-                    leftJoystick = leftZone.GetComponent<VirtualJoystick>();
-                    if (leftJoystick != null)
+                    RectTransform rt = (RectTransform)leftBgTrans;
+                    rt.sizeDelta = new Vector2(180f, 180f);
+                    Image img = leftBgTrans.GetComponent<Image>();
+                    if (img != null)
                     {
-                        if (leftJoystick.bgImage != null && baseRing != null) leftJoystick.bgImage.sprite = baseRing;
-                        if (leftJoystick.handleImage != null && handleRing != null) leftJoystick.handleImage.sprite = handleRing;
+                        if (baseRing != null) img.sprite = baseRing;
+                        img.color = Color.white;
+                    }
+                    leftJoystick.background = rt;
+                    leftJoystick.bgImage = img;
+
+                    Transform leftHandleTrans = leftBgTrans.Find("LeftJoyHandle");
+                    if (leftHandleTrans != null)
+                    {
+                        RectTransform hRt = (RectTransform)leftHandleTrans;
+                        hRt.sizeDelta = new Vector2(76f, 76f);
+                        Image hImg = leftHandleTrans.GetComponent<Image>();
+                        if (hImg != null)
+                        {
+                            if (handleRing != null) hImg.sprite = handleRing;
+                            hImg.color = Color.white;
+                        }
+                        leftJoystick.handle = hRt;
+                        leftJoystick.handleImage = hImg;
                     }
                 }
             }
-
-            // 4. Khởi tạo RIGHT ACTION CLUSTER (Cụm nút bấm cảm ứng vòng trắng tối giản)
-            Transform clusterTrans = mobileUIRoot.transform.Find("RightActionCluster");
-            GameObject actionCluster = clusterTrans != null ? clusterTrans.gameObject : null;
-            if (actionCluster == null)
+            if (leftJoystick != null)
             {
-                // Nếu có RightTouchZone cũ từ phiên bản trước, ẩn đi để nhường chỗ cho cụm nút mới
-                Transform oldRightZone = mobileUIRoot.transform.Find("RightTouchZone");
-                if (oldRightZone != null)
-                {
-                    oldRightZone.gameObject.SetActive(false);
-                }
-
-                actionCluster = new GameObject("RightActionCluster");
-                actionCluster.transform.SetParent(mobileUIRoot.transform, false);
-                RectTransform clusterRt = actionCluster.AddComponent<RectTransform>();
-                clusterRt.anchorMin = new Vector2(1f, 0f);
-                clusterRt.anchorMax = new Vector2(1f, 0f);
-                clusterRt.pivot = new Vector2(1f, 0f);
-                clusterRt.anchoredPosition = Vector2.zero;
-                clusterRt.sizeDelta = new Vector2(450f, 380f);
+                leftJoystick.SyncVisualElements();
+                leftJoystick.ApplyAlpha(0.35f);
             }
 
-            // 4.1. Nút Bắn Laser & Tụ lực (Primary Fire / Charge)
-            if (btnFire == null)
+            // 4. Khởi tạo TOP-LEFT ROLL CLUSTER (Cụm 2 nút lộn vòng phản đạn - Góc trên trái)
+            Transform rollClusterTrans = mobileUIRoot.transform.Find("TopLeftRollCluster");
+            GameObject rollCluster = rollClusterTrans != null ? rollClusterTrans.gameObject : null;
+            if (rollCluster == null)
             {
-                Transform t = actionCluster.transform.Find("Btn_Fire");
-                btnFire = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
-                    actionCluster.transform,
-                    "Btn_Fire",
-                    new Vector2(-135f, 145f),
-                    new Vector2(100f, 100f),
-                    baseRing,
-                    laserIcon,
-                    new Vector2(54f, 54f),
-                    false,
-                    true,
-                    arcRing,
-                    false,
-                    null
-                );
+                rollCluster = new GameObject("TopLeftRollCluster");
+                rollCluster.transform.SetParent(mobileUIRoot.transform, false);
+                RectTransform rollRt = rollCluster.AddComponent<RectTransform>();
+                rollRt.anchorMin = new Vector2(0f, 1f);
+                rollRt.anchorMax = new Vector2(0f, 1f);
+                rollRt.pivot = new Vector2(0f, 1f);
+                rollRt.anchoredPosition = Vector2.zero;
+                rollRt.sizeDelta = new Vector2(240f, 130f);
             }
 
-            // 4.2. Nút Bom thông minh (Smart Bomb)
-            if (btnBomb == null)
-            {
-                Transform t = actionCluster.transform.Find("Btn_Bomb");
-                btnBomb = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
-                    actionCluster.transform,
-                    "Btn_Bomb",
-                    new Vector2(-245f, 190f),
-                    new Vector2(68f, 68f),
-                    baseRing,
-                    bombIcon,
-                    new Vector2(40f, 40f),
-                    false,
-                    false,
-                    null,
-                    true,
-                    scifiFont
-                );
-            }
-
-            // 4.3. Nút Tăng tốc (Boost)
-            if (btnBoost == null)
-            {
-                Transform t = actionCluster.transform.Find("Btn_Boost");
-                btnBoost = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
-                    actionCluster.transform,
-                    "Btn_Boost",
-                    new Vector2(-135f, 260f),
-                    new Vector2(64f, 64f),
-                    baseRing,
-                    boostIcon,
-                    new Vector2(34f, 34f),
-                    false,
-                    false,
-                    null,
-                    false,
-                    null
-                );
-            }
-
-            // 4.4. Nút Hãm phanh (Brake)
-            if (btnBrake == null)
-            {
-                Transform t = actionCluster.transform.Find("Btn_Brake");
-                btnBrake = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
-                    actionCluster.transform,
-                    "Btn_Brake",
-                    new Vector2(-135f, 45f),
-                    new Vector2(64f, 64f),
-                    baseRing,
-                    brakeIcon,
-                    new Vector2(34f, 34f),
-                    false,
-                    false,
-                    null,
-                    false,
-                    null
-                );
-            }
-
-            // 4.5. Nút Lộn vòng sang trái (Roll Left)
             if (btnRollLeft == null)
             {
-                Transform t = actionCluster.transform.Find("Btn_RollLeft");
+                Transform t = rollCluster.transform.Find("Btn_RollLeft");
                 btnRollLeft = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
-                    actionCluster.transform,
+                    rollCluster.transform,
                     "Btn_RollLeft",
-                    new Vector2(-245f, 95f),
-                    new Vector2(58f, 58f),
+                    new Vector2(0f, 1f),
+                    new Vector2(65f, -65f),
+                    new Vector2(64f, 64f),
                     baseRing,
                     rollIcon,
-                    new Vector2(32f, 32f),
+                    new Vector2(36f, 36f),
                     true, // Lật ngang icon hướng sang trái
                     false,
                     null,
@@ -395,23 +350,174 @@ namespace VirtualRail
                 );
             }
 
-            // 4.6. Nút Lộn vòng sang phải (Roll Right)
             if (btnRollRight == null)
             {
-                Transform t = actionCluster.transform.Find("Btn_RollRight");
+                Transform t = rollCluster.transform.Find("Btn_RollRight");
                 btnRollRight = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
-                    actionCluster.transform,
+                    rollCluster.transform,
                     "Btn_RollRight",
-                    new Vector2(-38f, 145f),
-                    new Vector2(58f, 58f),
+                    new Vector2(0f, 1f),
+                    new Vector2(145f, -65f),
+                    new Vector2(64f, 64f),
                     baseRing,
                     rollIcon,
-                    new Vector2(32f, 32f),
-                    false, // Giữ nguyên hướng sang phải
+                    new Vector2(36f, 36f),
+                    false,
                     false,
                     null,
                     false,
                     null
+                );
+            }
+
+            // 5. Khởi tạo RIGHT AIM JOYSTICK (Cần gạt ngắm 3D độc lập kiêm Auto-Fire - Góc dưới phải)
+            Transform rightAimTrans = mobileUIRoot.transform.Find("RightAimZone");
+            GameObject rightAimZone = rightAimTrans != null ? rightAimTrans.gameObject : null;
+            if (rightAimZone == null)
+            {
+                Transform oldRightTouch = mobileUIRoot.transform.Find("RightTouchZone");
+                if (oldRightTouch != null) oldRightTouch.gameObject.SetActive(false);
+
+                rightAimZone = new GameObject("RightAimZone");
+                rightAimZone.transform.SetParent(mobileUIRoot.transform, false);
+                RectTransform rightAimRt = rightAimZone.AddComponent<RectTransform>();
+                rightAimRt.anchorMin = new Vector2(0.5f, 0f);
+                rightAimRt.anchorMax = new Vector2(1f, 0.75f);
+                rightAimRt.offsetMin = Vector2.zero;
+                rightAimRt.offsetMax = Vector2.zero;
+
+                Image rightAimImg = rightAimZone.AddComponent<Image>();
+                rightAimImg.color = new Color(0f, 0f, 0f, 0.001f);
+                rightAimImg.raycastTarget = true;
+
+                rightJoystick = rightAimZone.AddComponent<VirtualJoystick>();
+                rightJoystick.handleRange = handleRange;
+                rightJoystick.deadZone = deadZone;
+                rightJoystick.isDynamicFloating = true;
+
+                // Background
+                GameObject rightBg = new GameObject("RightJoyBackground");
+                rightBg.transform.SetParent(rightAimZone.transform, false);
+                RectTransform rightBgRt = rightBg.AddComponent<RectTransform>();
+                rightBgRt.anchorMin = new Vector2(1f, 0f);
+                rightBgRt.anchorMax = new Vector2(1f, 0f);
+                rightBgRt.anchoredPosition = new Vector2(-170f, 170f);
+                rightBgRt.sizeDelta = new Vector2(180f, 180f);
+                Image rightBgImg = rightBg.AddComponent<Image>();
+                rightBgImg.sprite = baseRing;
+                rightBgImg.color = Color.white;
+                rightBgImg.raycastTarget = false;
+
+                // Handle
+                GameObject rightHandle = new GameObject("RightJoyHandle");
+                rightHandle.transform.SetParent(rightBg.transform, false);
+                RectTransform rightHandleRt = rightHandle.AddComponent<RectTransform>();
+                rightHandleRt.sizeDelta = new Vector2(76f, 76f);
+                Image rightHandleImg = rightHandle.AddComponent<Image>();
+                rightHandleImg.sprite = handleRing;
+                rightHandleImg.color = Color.white;
+                rightHandleImg.raycastTarget = false;
+
+                rightJoystick.background = rightBgRt;
+                rightJoystick.handle = rightHandleRt;
+                rightJoystick.bgImage = rightBgImg;
+                rightJoystick.handleImage = rightHandleImg;
+            }
+            else
+            {
+                rightJoystick = rightAimZone.GetComponent<VirtualJoystick>();
+                if (rightJoystick == null) rightJoystick = rightAimZone.AddComponent<VirtualJoystick>();
+
+                Transform rightBgTrans = rightAimZone.transform.Find("RightJoyBackground");
+                if (rightBgTrans != null)
+                {
+                    RectTransform rt = (RectTransform)rightBgTrans;
+                    rt.sizeDelta = new Vector2(180f, 180f);
+                    Image img = rightBgTrans.GetComponent<Image>();
+                    if (img != null)
+                    {
+                        if (baseRing != null) img.sprite = baseRing;
+                        img.color = Color.white;
+                    }
+                    rightJoystick.background = rt;
+                    rightJoystick.bgImage = img;
+
+                    Transform rightHandleTrans = rightBgTrans.Find("RightJoyHandle");
+                    if (rightHandleTrans != null)
+                    {
+                        RectTransform hRt = (RectTransform)rightHandleTrans;
+                        hRt.sizeDelta = new Vector2(76f, 76f);
+                        Image hImg = rightHandleTrans.GetComponent<Image>();
+                        if (hImg != null)
+                        {
+                            if (handleRing != null) hImg.sprite = handleRing;
+                            hImg.color = Color.white;
+                        }
+                        rightJoystick.handle = hRt;
+                        rightJoystick.handleImage = hImg;
+                    }
+                }
+            }
+            if (rightJoystick != null)
+            {
+                rightJoystick.SyncVisualElements();
+                rightJoystick.ApplyAlpha(0.35f);
+            }
+
+            // 6. Khởi tạo TOP-RIGHT ACTION CLUSTER (Cụm Nút Sạc Hỏa Lực & Bom - Góc trên phải)
+            Transform actionClusterTrans = mobileUIRoot.transform.Find("TopRightActionCluster");
+            GameObject actionCluster = actionClusterTrans != null ? actionClusterTrans.gameObject : null;
+            if (actionCluster == null)
+            {
+                actionCluster = new GameObject("TopRightActionCluster");
+                actionCluster.transform.SetParent(mobileUIRoot.transform, false);
+                RectTransform clusterRt = actionCluster.AddComponent<RectTransform>();
+                clusterRt.anchorMin = new Vector2(1f, 1f);
+                clusterRt.anchorMax = new Vector2(1f, 1f);
+                clusterRt.pivot = new Vector2(1f, 1f);
+                clusterRt.anchoredPosition = Vector2.zero;
+                clusterRt.sizeDelta = new Vector2(270f, 130f);
+            }
+
+            // Nút Sạc Tụ Lực Riêng Biệt (Dedicated Charge Shot Button)
+            if (btnCharge == null)
+            {
+                Transform t = actionCluster.transform.Find("Btn_Charge");
+                btnCharge = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
+                    actionCluster.transform,
+                    "Btn_Charge",
+                    new Vector2(1f, 1f),
+                    new Vector2(-165f, -65f),
+                    new Vector2(78f, 78f),
+                    baseRing,
+                    laserIcon,
+                    new Vector2(44f, 44f),
+                    false,
+                    true, // Có vòng tiến trình nạp Arc Image
+                    arcRing,
+                    false,
+                    null
+                );
+            }
+
+            // Nút Bom thông minh (Smart Bomb)
+            if (btnBomb == null)
+            {
+                Transform t = actionCluster.transform.Find("Btn_Bomb");
+                btnBomb = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
+                    actionCluster.transform,
+                    "Btn_Bomb",
+                    new Vector2(1f, 1f),
+                    new Vector2(-70f, -65f),
+                    new Vector2(68f, 68f),
+                    baseRing,
+                    bombIcon,
+                    new Vector2(40f, 40f),
+                    false,
+                    false,
+                    null,
+                    true, // Có huy hiệu số lượng bom
+                    scifiFont
                 );
             }
 
@@ -427,6 +533,7 @@ namespace VirtualRail
         private VirtualTouchButton CreateTouchButton(
             Transform parent,
             string name,
+            Vector2 anchorMinMax,
             Vector2 anchoredPos,
             Vector2 size,
             Sprite ringSprite,
@@ -442,8 +549,8 @@ namespace VirtualRail
             btnObj.transform.SetParent(parent, false);
 
             RectTransform btnRt = btnObj.AddComponent<RectTransform>();
-            btnRt.anchorMin = new Vector2(1f, 0f);
-            btnRt.anchorMax = new Vector2(1f, 0f);
+            btnRt.anchorMin = anchorMinMax;
+            btnRt.anchorMax = anchorMinMax;
             btnRt.pivot = new Vector2(0.5f, 0.5f);
             btnRt.anchoredPosition = anchoredPos;
             btnRt.sizeDelta = size;
@@ -574,11 +681,13 @@ namespace VirtualRail
 
         /// <summary>
         /// Tín hiệu đang nhấn giữ nút Bắn Laser (Duy trì nạp tụ lực Hold-to-Charge).
+        /// Tự động tắt nếu đang nhấn giữ nút Sạc Hỏa Lực riêng biệt.
         /// </summary>
         public bool IsFireHeld()
         {
+            if (IsChargeHeld()) return false;
             if (btnFire != null && btnFire.IsHeld) return true;
-            if (IsRightStickActive && rightJoystick.InputVector.sqrMagnitude > 0.01f) return true;
+            if (IsRightStickActive) return true;
             return false;
         }
 
@@ -588,6 +697,30 @@ namespace VirtualRail
         public bool IsFireUp()
         {
             return (btnFire != null && btnFire.WasReleasedThisFrame);
+        }
+
+        /// <summary>
+        /// Tín hiệu bắt đầu nhấn nút Sạc Tụ Lực Riêng Biệt (Dedicated Charge Shot) trong frame này.
+        /// </summary>
+        public bool IsChargeDown()
+        {
+            return (btnCharge != null && btnCharge.WasPressedThisFrame);
+        }
+
+        /// <summary>
+        /// Tín hiệu đang nhấn giữ nút Sạc Tụ Lực Riêng Biệt (Duy trì nạp tụ lực Hold-to-Charge).
+        /// </summary>
+        public bool IsChargeHeld()
+        {
+            return (btnCharge != null && btnCharge.IsHeld);
+        }
+
+        /// <summary>
+        /// Tín hiệu nhả nút Sạc Tụ Lực Riêng Biệt trong frame này (Phóng đạn Plasma tầm nhiệt).
+        /// </summary>
+        public bool IsChargeUp()
+        {
+            return (btnCharge != null && btnCharge.WasReleasedThisFrame);
         }
 
         /// <summary>

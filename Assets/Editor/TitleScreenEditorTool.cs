@@ -147,8 +147,8 @@ namespace VirtualRail.Editor
             promptObj.transform.SetParent(panelRt, false);
 
             RectTransform promptRt = promptObj.GetComponent<RectTransform>();
-            promptRt.anchorMin = new Vector2(0.5f, 0.08f);
-            promptRt.anchorMax = new Vector2(0.5f, 0.08f);
+            promptRt.anchorMin = new Vector2(0.5f, 0.16f);
+            promptRt.anchorMax = new Vector2(0.5f, 0.16f);
             promptRt.anchoredPosition = Vector2.zero;
             promptRt.sizeDelta = new Vector2(650f, 40f);
 

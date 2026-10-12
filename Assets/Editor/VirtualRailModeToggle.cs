@@ -1061,24 +1061,9 @@ public class VirtualRailModeToggle
         leftJoy.bgImage = leftBgImg;
         leftJoy.handleImage = leftHandleImg;
 
-        // --- CỤM NÚT HÀNH ĐỘNG CẢM ỨNG BÊN PHẢI (RIGHT ACTION CLUSTER) ---
-        GameObject actionCluster = new GameObject("RightActionCluster");
-        actionCluster.transform.SetParent(mobileRoot.transform, false);
-        RectTransform clusterRt = actionCluster.AddComponent<RectTransform>();
-        clusterRt.anchorMin = new Vector2(1f, 0f);
-        clusterRt.anchorMax = new Vector2(1f, 0f);
-        clusterRt.pivot = new Vector2(1f, 0f);
-        clusterRt.anchoredPosition = Vector2.zero;
-        clusterRt.sizeDelta = new Vector2(450f, 380f);
-
+        // --- HỆ THỐNG GIAO DIỆN CẢM ỨNG 4 NGÓN (4-FINGER CLAW MOBILE CONTROLS) ---
         inputReader.leftJoystick = leftJoy;
-        inputReader.btnFire = CreateEditorTouchButton(actionCluster.transform, "Btn_Fire", new Vector2(-135f, 145f), new Vector2(100f, 100f), baseRing, laserIcon, new Vector2(54f, 54f), false, true, arcRing, false, null);
-        inputReader.btnBomb = CreateEditorTouchButton(actionCluster.transform, "Btn_Bomb", new Vector2(-245f, 190f), new Vector2(68f, 68f), baseRing, bombIcon, new Vector2(40f, 40f), false, false, null, true, scifiFont);
-        inputReader.btnBoost = CreateEditorTouchButton(actionCluster.transform, "Btn_Boost", new Vector2(-135f, 260f), new Vector2(64f, 64f), baseRing, boostIcon, new Vector2(34f, 34f), false, false, null, false, null);
-        inputReader.btnBrake = CreateEditorTouchButton(actionCluster.transform, "Btn_Brake", new Vector2(-135f, 45f), new Vector2(64f, 64f), baseRing, brakeIcon, new Vector2(34f, 34f), false, false, null, false, null);
-        inputReader.btnRollLeft = CreateEditorTouchButton(actionCluster.transform, "Btn_RollLeft", new Vector2(-245f, 95f), new Vector2(58f, 58f), baseRing, rollIcon, new Vector2(32f, 32f), true, false, null, false, null);
-        inputReader.btnRollRight = CreateEditorTouchButton(actionCluster.transform, "Btn_RollRight", new Vector2(-38f, 145f), new Vector2(58f, 58f), baseRing, rollIcon, new Vector2(32f, 32f), false, false, null, false, null);
-        inputReader.rightJoystick = null;
+        inputReader.EnsureMobileUI();
 
         // 3. Ship Container
         GameObject shipContainer = new GameObject("[Ship Container]");

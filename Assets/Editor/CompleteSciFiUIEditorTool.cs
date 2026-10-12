@@ -377,7 +377,15 @@ namespace VirtualRail.Editor
                 CreateText("NameText", row.transform, new Vector2(0.30f, 0.5f), new Vector2(0.30f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140f, 28f), "MATT", font, 13, FontStyle.Bold, rowCol, TextAnchor.MiddleLeft);
                 CreateText("ScoreText", row.transform, new Vector2(0.55f, 0.5f), new Vector2(0.55f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(120f, 28f), "123939", font, 13, FontStyle.Bold, rowCol, TextAnchor.MiddleRight);
                 CreateText("StageText", row.transform, new Vector2(0.72f, 0.5f), new Vector2(0.72f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(80f, 28f), "6", font, 13, FontStyle.Bold, rowCol, TextAnchor.MiddleCenter);
-                CreateText("DiffText", row.transform, new Vector2(0.88f, 0.5f), new Vector2(0.88f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(100f, 28f), "EASY", font, 13, FontStyle.Bold, rowCol, TextAnchor.MiddleCenter);
+
+                // Micro-Pill Badge for Difficulty (Sci-Fi Beveled Frame + Neon Indicator)
+                GameObject diffBadge = CreatePanel("DiffBadge", row.transform, new Vector2(0.88f, 0.5f), new Vector2(0.88f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(90f, 24f), spDropdown, Image.Type.Sliced);
+                Color diffColor = (r % 4 == 0) ? new Color(0f, 1f, 0.55f, 1f) :   // EASY: Emerald Green
+                                  (r % 4 == 1) ? new Color(1f, 0.70f, 0.10f, 1f) :  // HARD: Warning Amber
+                                  (r % 4 == 2) ? new Color(0f, 0.95f, 1.00f, 1f) :  // NORMAL: Cyber Cyan
+                                                 new Color(1f, 0.22f, 0.28f, 1f);   // EXPERT: Crimson Danger
+                diffBadge.GetComponent<Image>().color = new Color(diffColor.r, diffColor.g, diffColor.b, 0.28f);
+                CreateText("DiffText", diffBadge.transform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, (r % 4 == 0 ? "EASY" : r % 4 == 1 ? "HARD" : r % 4 == 2 ? "NORMAL" : "EXPERT"), font, 11, FontStyle.Bold, diffColor, TextAnchor.MiddleCenter);
             }
 
             uiMgr.btnHallOfFameClose = CreateSmallButton("Btn_Close", hofModal.transform, new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(160f, 40f), "BACK TO MENU", font, spBtn, spBtnHover, spBtnPressed);

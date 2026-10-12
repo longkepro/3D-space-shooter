@@ -35,6 +35,9 @@ MonoBehaviour:
   minReticleScale: 0.7
   maxReticleScale: 1.4
   reticleScaleLerpSpeed: 12
+  enableModernHUD: 1
+  enableRadioComms: 1
+  radioCommsDuration: 3.5
   useDynamicFrustumBounds: 1
   shipViewportRatio: 0.75
   reticleViewportRatio: 0.85
@@ -90,6 +93,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   chargeTime: 0.5
+  chargeCooldown: 2
   lockConeAngle: 18
   lockMaxDistance: 250
   chargeShotBaseSpeed: 240
@@ -143,6 +147,7 @@ MonoBehaviour:
   enableSmartBombManualDetonation: 1
   chargeShotSplashRadius: 10
   usePhysicalEnemyProjectiles: 1
+  enableRailFrameTrailCompensation: 1
   useSpatialVectors: 1
   enable4PhaseLifecycle: 1
   telegraphDuration: 0.5
@@ -181,3 +186,18 @@ MonoBehaviour:
     type: 3}
   enemyImpactVFXPrefab: {fileID: 100002, guid: e9391f622091e1449bdef4ef15af4948, type: 3}
   enableProceduralSpline: 0
+  splineChunkLength: 500
+  minCurvatureRadius: 300
+  splineBankingGain: 10500
+  maxSplineBankAngle: 35
+  enableGoldenPathVerification: 1
+  goldenPathClearanceWidth: 15
+  goldenPathClearanceHeight: 5.25
+  maxEscapeAngle: 26.5
+  verificationSliceInterval: 25
+  maxReseedAttempts: 5
+  enableWorldOriginShifting: 1
+  originShiftThreshold: 4000
+  enablePlayerAutoRegeneration: 0
+  whiteOrbHealAmount: 3
+  enemyWhiteOrbDropChance: 0.2
