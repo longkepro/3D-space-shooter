@@ -93,6 +93,7 @@ namespace VirtualRail
         public static event Action<int, int> OnBossShieldChanged;
         public static event Action OnBossShieldBroken;
         public static event Action<bool> OnBossTrenchCharging;
+        public static event Action<bool> OnBossHyperLaserCharging;
         public static event Action<bool> OnBossStunned;
         public static event Action OnBossDefeated;
 
@@ -250,22 +251,31 @@ namespace VirtualRail
             Vector3 anchorUp = _anchor.transform.up;
             Vector3 anchorRight = _anchor.transform.right;
 
-            // Tinh toan cao do Y tuy theo pha
-            float targetY = _baseElevationY;
+            // Tinh toan cao do Y tuy theo pha (Noi suy muot ma MoveTowards khong bi snap 1-frame)
+            float targetBaseY = _baseElevationY;
+            float waveFreq = 1.2f;
+
             if (_currentPhase == BossBattlePhase.IntroBreach)
             {
-                _subventralY = Mathf.MoveTowards(_subventralY, _baseElevationY, dt * 14f);
-                targetY = _subventralY;
+                targetBaseY = _baseElevationY;
+                _subventralY = Mathf.MoveTowards(_subventralY, targetBaseY, dt * 14f);
+                waveFreq = 0f;
             }
             else if (_currentPhase == BossBattlePhase.Phase3_MeltdownOverdrive)
             {
-                // Pha 3 ap sat gan hon duoi bung (Y = -18m cho kích thước 1.55x)
-                targetY = -18f + Mathf.Sin(_phaseTimer * 2.5f) * 2.0f;
+                // Pha 3 ap sat gan hon duoi bung (Y = -18m) - noi suy muot o toc do 3.5 m/s (~1.1s)
+                targetBaseY = -18f;
+                _subventralY = Mathf.MoveTowards(_subventralY, targetBaseY, dt * 3.5f);
+                waveFreq = 2.5f;
             }
             else
             {
-                targetY = _baseElevationY + Mathf.Sin(_phaseTimer * 1.2f) * 2.0f;
+                targetBaseY = _baseElevationY;
+                _subventralY = Mathf.MoveTowards(_subventralY, targetBaseY, dt * 3.5f);
+                waveFreq = 1.2f;
             }
+
+            float targetY = _subventralY + (waveFreq > 0.01f ? Mathf.Sin(_phaseTimer * waveFreq) * 2.0f : 0f);
 
             // Dao dong hinh sin sang 2 ben
             float waveX = Mathf.Sin(_phaseTimer * _horizontalWaveFreq) * _horizontalWaveAmp;
@@ -406,6 +416,7 @@ namespace VirtualRail
             {
                 _isChargingHyperLaser = true;
                 _hyperLaserTimer = 0f;
+                OnBossHyperLaserCharging?.Invoke(true);
                 if (AudioManager.Instance != null)
                 {
                     AudioManager.Instance.PlaySFX2D(AudioSFXType.ChargeHum, 1.0f);
@@ -421,6 +432,7 @@ namespace VirtualRail
                     ExecuteHyperLaserBarrage();
                     _isChargingHyperLaser = false;
                     _hyperLaserTimer = 0f;
+                    OnBossHyperLaserCharging?.Invoke(false);
                 }
             }
         }
@@ -462,6 +474,11 @@ namespace VirtualRail
             _vlsTimer = 0f;
             _hyperLaserTimer = 0f;
             _isChargingHyperLaser = false;
+            _isChargingTrench = false;
+            _trenchChargeTimer = 0f;
+
+            OnBossTrenchCharging?.Invoke(false);
+            OnBossHyperLaserCharging?.Invoke(false);
 
             if (newPhase == BossBattlePhase.Phase2_ReactorTrench)
             {
@@ -593,8 +610,10 @@ namespace VirtualRail
                 return;
             }
 
-            // 2. Nếu bắn vào Rãnh Lò Phản Ứng trong lúc đang sạc -> STUN ngắt chiêu
-            if (hardpoint.HardpointType == BossHardpointType.DorsalReactorTrench && _isChargingTrench)
+            // 2. Nếu bắn vào Rãnh Lò Phản Ứng trong lúc đang sạc ở Pha 2 -> STUN ngắt chiêu
+            if (_currentPhase == BossBattlePhase.Phase2_ReactorTrench && 
+                hardpoint.HardpointType == BossHardpointType.DorsalReactorTrench && 
+                _isChargingTrench)
             {
                 InterruptAndStun();
             }

@@ -93,6 +93,8 @@ namespace VirtualRail
                 case BossBattlePhase.Defeated:
                     _phaseActive = 1f;
                     _meltdownIntensity = 1f;
+                    _chargeProgress = 0f;
+                    _stunIntensity = 0f;
                     break;
             }
             _isDirty = true;

@@ -2845,5 +2845,22 @@ public class VirtualRailModeToggle
             Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ ĐỘNG HỌC TỶ LỆ VÀNG (OFF - UNDO):</b></color> Tốc độ né trở lại gắn liền với tốc độ tiến Z (Vx = 50% Vz, Vy = 35% Vz).");
         }
     }
+
+    [MenuItem("Tools/Virtual Rail/53. Boss Corvette: Synchronize Phase Logic & Visual Telegraphs (ON)")]
+    public static void EnableBossPhaseVisualSync()
+    {
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT ĐỒNG BỘ LOGIC & THỊ GIÁC BOSS CORVETTE F3 (ON):</b></color>\n" +
+                  "1. Triệt tiêu rò rỉ _isChargingTrench khi chuyển pha.\n" +
+                  "2. HUD đồng bộ theo đúng CurrentPhase khi Boss bị Choáng (Stun).\n" +
+                  "3. Dải rãnh nhiệt lò phản ứng reset sạch _chargeProgress khi vào Pha 3 Meltdown.\n" +
+                  "4. Shader hiển thị xung điện Xanh Neon (Electric Cyan Flare) cảnh báo Hyper Laser cực kỳ nổi bật.\n" +
+                  "5. Thân tàu dâng cao -22m -> -18m qua MoveTowards 3.5 m/s, triệt tiêu hoàn toàn giật nhảy 1-frame!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/54. Boss Corvette: Revert Phase Visual Sync (OFF - Legacy)")]
+    public static void RevertBossPhaseVisualSync()
+    {
+        Debug.Log("<color=yellow><b>[VirtualRail] THÔNG BÁO HOÀN NGUYÊN (OFF - UNDO):</b></color> Để hoàn nguyên mã nguồn Boss F3 về trạng thái cũ, bạn có thể checkout nhánh backup/fix-boss-phase-conflicts.");
+    }
     #endregion
 }

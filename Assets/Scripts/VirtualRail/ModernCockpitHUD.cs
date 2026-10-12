@@ -138,6 +138,7 @@ namespace VirtualRail
             BossF3CorvetteController.OnBossShieldChanged += HandleBossShieldChanged;
             BossF3CorvetteController.OnBossShieldBroken += HandleBossShieldBroken;
             BossF3CorvetteController.OnBossTrenchCharging += HandleBossTrenchCharging;
+            BossF3CorvetteController.OnBossHyperLaserCharging += HandleBossHyperLaserCharging;
             BossF3CorvetteController.OnBossStunned += HandleBossStunned;
             BossF3CorvetteController.OnBossDefeated += HandleBossDefeated;
         }
@@ -161,6 +162,7 @@ namespace VirtualRail
             BossF3CorvetteController.OnBossShieldChanged -= HandleBossShieldChanged;
             BossF3CorvetteController.OnBossShieldBroken -= HandleBossShieldBroken;
             BossF3CorvetteController.OnBossTrenchCharging -= HandleBossTrenchCharging;
+            BossF3CorvetteController.OnBossHyperLaserCharging -= HandleBossHyperLaserCharging;
             BossF3CorvetteController.OnBossStunned -= HandleBossStunned;
             BossF3CorvetteController.OnBossDefeated -= HandleBossDefeated;
         }
@@ -616,7 +618,34 @@ namespace VirtualRail
             }
             else
             {
-                bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
+                BossBattlePhase currentPhase = (BossF3CorvetteController.Instance != null)
+                    ? BossF3CorvetteController.Instance.CurrentPhase
+                    : BossBattlePhase.Phase2_ReactorTrench;
+
+                if (currentPhase == BossBattlePhase.Phase3_MeltdownOverdrive)
+                {
+                    bossPhaseText.text = "PHASE 3: MELTDOWN OVERDRIVE";
+                }
+                else
+                {
+                    bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
+                }
+                bossPhaseText.color = new Color(0.85f, 0.88f, 0.95f, 0.9f);
+            }
+        }
+
+        private void HandleBossHyperLaserCharging(bool isCharging)
+        {
+            if (bossPhaseText == null) return;
+
+            if (isCharging)
+            {
+                bossPhaseText.text = "PHASE 3: WARNING! HYPER LASER OVERCHARGING! [EVADE NOW!]";
+                bossPhaseText.color = new Color(0.35f, 0.75f, 1f, 1f); // Electric Cyan Warning
+            }
+            else
+            {
+                bossPhaseText.text = "PHASE 3: MELTDOWN OVERDRIVE";
                 bossPhaseText.color = new Color(0.85f, 0.88f, 0.95f, 0.9f);
             }
         }
@@ -625,14 +654,33 @@ namespace VirtualRail
         {
             if (bossPhaseText == null) return;
 
+            BossBattlePhase currentPhase = (BossF3CorvetteController.Instance != null)
+                ? BossF3CorvetteController.Instance.CurrentPhase
+                : BossBattlePhase.Phase2_ReactorTrench;
+
             if (isStunned)
             {
-                bossPhaseText.text = "PHASE 2: THERMAL CORE OVERLOADED // BOSS STUNNED!";
+                string phasePrefix = (currentPhase == BossBattlePhase.Phase3_MeltdownOverdrive) ? "PHASE 3" : "PHASE 2";
+                bossPhaseText.text = $"{phasePrefix}: THERMAL CORE OVERLOADED // BOSS STUNNED!";
                 bossPhaseText.color = new Color(0.2f, 0.85f, 1f, 1f); // Neon Cyan Glitch
             }
             else
             {
-                bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
+                switch (currentPhase)
+                {
+                    case BossBattlePhase.Phase1_DeckStrafe:
+                        bossPhaseText.text = "PHASE 1: DORSAL SHIELD ONLINE";
+                        break;
+                    case BossBattlePhase.Phase2_ReactorTrench:
+                        bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
+                        break;
+                    case BossBattlePhase.Phase3_MeltdownOverdrive:
+                        bossPhaseText.text = "PHASE 3: MELTDOWN OVERDRIVE";
+                        break;
+                    default:
+                        bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
+                        break;
+                }
                 bossPhaseText.color = new Color(0.85f, 0.88f, 0.95f, 0.9f);
             }
         }

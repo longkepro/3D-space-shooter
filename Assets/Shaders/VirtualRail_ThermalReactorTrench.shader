@@ -110,21 +110,26 @@ Shader "VirtualRail/ThermalReactorTrench"
                 // 4. Mau co ban cua lo phan ung (Idle Orange/Amber)
                 fixed4 baseOutput = lerp(_CoreColor, _EdgeColor, fresnel * 0.6) * (flowPattern * ribDarkening);
 
-                // 5. Xung nhip nap nang luong (Charge Pulse)
-                if (_ChargeProgress > 0.001)
-                {
-                    // Tan so nhap nhay tang toc ti le thuan voi tien trinh sac (3Hz -> 18Hz)
-                    float pulseRate = lerp(4.0, 22.0, _ChargeProgress);
-                    float pulseWave = 0.5 + 0.5 * sin(time * pulseRate);
-                    // Dinh diem sac phat ra mau trang vang gay gat
-                    baseOutput = lerp(baseOutput, _PulseColor * 1.5, pulseWave * _ChargeProgress);
-                }
-
-                // 6. Trang thai Meltdown Pha 3: Chay do ruc toan bo
+                // 5. Trang thai Meltdown Pha 3: Nen vo tau chay do ruc qua nhiet
                 if (_MeltdownIntensity > 0.001)
                 {
                     float meltPulse = 0.7 + 0.3 * sin(time * 8.0);
-                    baseOutput = lerp(baseOutput, _PulseColor * 1.8, _MeltdownIntensity * meltPulse);
+                    fixed4 meltdownBase = lerp(_EdgeColor * 2.2, _PulseColor * 1.2, meltPulse);
+                    baseOutput = lerp(baseOutput, meltdownBase, _MeltdownIntensity);
+                }
+
+                // 6. Xung nhip nap nang luong (Charge Pulse) - Uu tien hien thi ro ret tren nen vo
+                if (_ChargeProgress > 0.001)
+                {
+                    // Tan so nhap nhay tang toc ti le thuan voi tien trinh sac (4Hz -> 26Hz)
+                    float pulseRate = lerp(4.0, 26.0, _ChargeProgress);
+                    float pulseWave = 0.5 + 0.5 * sin(time * pulseRate);
+
+                    // O Pha 3: Nap Hyper Laser phat ra luong dien quang sieu cao ap mau Xanh dien Neon (Blinding Electric Cyan Flare)
+                    fixed4 hyperLaserChargeColor = fixed4(3.2, 4.8, 7.5, 1.0);
+                    fixed4 activeChargeTarget = lerp(_PulseColor * 2.0, hyperLaserChargeColor, _MeltdownIntensity);
+
+                    baseOutput = lerp(baseOutput, activeChargeTarget, pulseWave * _ChargeProgress);
                 }
 
                 // 7. Trang thai Stun / Chap mach chap tat roi toi den
