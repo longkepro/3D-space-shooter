@@ -282,12 +282,43 @@ namespace VirtualRail
             // 4. Khởi tạo sóng âm toán học dự phòng (Procedural SFX Synthesizer)
             SynthesizeProceduralArcadeClips();
 
+            EnsureMusicTracksLoaded();
+
 #if UNITY_EDITOR
             if (!forceProceduralFallback)
             {
                 AutoLoadStudioClipsIfEmpty();
             }
 #endif
+        }
+
+        public void EnsureMusicTracksLoaded()
+        {
+            if (defaultStageBgm == null)
+            {
+                defaultStageBgm = Resources.Load<AudioClip>("Music/Futuristic Sci-Fi Interstellar Synthwave -no copyright music- by MokkaMusic - Cryosleep");
+            }
+            if (defaultMenuBgm == null)
+            {
+                defaultMenuBgm = Resources.Load<AudioClip>("Music/(No Copyright Music) Sci-Fi Background [Techno Music] by MokkaMusic - Vision");
+            }
+            if (stageMusicPlaylist == null || stageMusicPlaylist.Length == 0)
+            {
+                var list = new System.Collections.Generic.List<AudioClip>();
+                string[] trackResources = new string[]
+                {
+                    "Music/Futuristic Sci-Fi Interstellar Synthwave -no copyright music- by MokkaMusic - Cryosleep",
+                    "Music/(No Copyright Music) Sci-Fi Background [Techno Music] by MokkaMusic - Vision",
+                    "Music/Electro House Techno in Space -no copyright music- by MokkaMusic - Pusher",
+                    "Music/Synthwave Futuristic Neon Electro (No Copyright Music) by MokkaMusic - Secrecy"
+                };
+                for (int i = 0; i < trackResources.Length; i++)
+                {
+                    var clip = Resources.Load<AudioClip>(trackResources[i]);
+                    if (clip != null) list.Add(clip);
+                }
+                stageMusicPlaylist = list.ToArray();
+            }
         }
 
 #if UNITY_EDITOR

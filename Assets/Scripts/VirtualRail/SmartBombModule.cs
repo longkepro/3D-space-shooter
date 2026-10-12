@@ -58,13 +58,13 @@ namespace VirtualRail
         {
             if (bombPrefab == null)
             {
+                bombPrefab = Resources.Load<GameObject>("Prefabs/PlayerSmartBomb") ?? Resources.Load<GameObject>("PlayerSmartBomb");
 #if UNITY_EDITOR
-                bombPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PlayerSmartBomb.prefab");
-#endif
                 if (bombPrefab == null)
                 {
-                    bombPrefab = Resources.Load<GameObject>("PlayerSmartBomb");
+                    bombPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/PlayerSmartBomb.prefab");
                 }
+#endif
             }
         }
 

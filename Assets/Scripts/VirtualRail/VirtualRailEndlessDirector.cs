@@ -183,12 +183,16 @@ namespace VirtualRail
                 {
                     _bossPrefab = _stageData.climaxSettings.bossPrefab;
                 }
-#if UNITY_EDITOR
                 if (_bossPrefab == null)
                 {
-                    _bossPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Boss_F3_Corvette.prefab");
-                }
+                    _bossPrefab = Resources.Load<GameObject>("Prefabs/Boss_F3_Corvette");
+#if UNITY_EDITOR
+                    if (_bossPrefab == null)
+                    {
+                        _bossPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/Boss_F3_Corvette.prefab");
+                    }
 #endif
+                }
             }
             _bossIncursionsDefeatedCount = 0;
             _bossIncursionsTriggered = 0;

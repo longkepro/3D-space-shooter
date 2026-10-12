@@ -166,9 +166,24 @@ namespace VirtualRail
                 }
                 isAimingMoving = autoFireTimer > 0f;
             }
+            else if (Application.isMobilePlatform)
+            {
+                // ==================== TRẠNG THÁI NGHỈ TRÊN MOBILE (NHẢ CẦN GẠT PHẢI) ====================
+                // Giữ nguyên vị trí ngắm đã tích lũy (nhả tay đứng yên), ngừng xả đạn tự động
+                float targetX = currentNormalizedInput.x >= 0f
+                    ? Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.maxX, currentNormalizedInput.x)
+                    : Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.minX, -currentNormalizedInput.x);
+
+                float targetY = currentNormalizedInput.y >= 0f
+                    ? Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.maxY, currentNormalizedInput.y)
+                    : Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.minY, -currentNormalizedInput.y);
+
+                localPos2D = currentBounds.Clamp(new Vector2(targetX, targetY));
+                isAimingMoving = false;
+            }
             else if (cfg.enableIndependentControls && cfg.enableMouseAim && mainCamera != null)
             {
-                // ==================== CHẾ ĐỘ ĐIỀU KHIỂN TÂM NGẮM BẰNG CHUỘT ====================
+                // ==================== CHẾ ĐỘ ĐIỀU KHIỂN TÂM NGẮM BẰNG CHUỘT (PC ONLY) ====================
                 Vector2 currentMousePos = Input.mousePosition;
                 Vector2 mouseDelta = currentMousePos - prevMousePos;
                 prevMousePos = currentMousePos;

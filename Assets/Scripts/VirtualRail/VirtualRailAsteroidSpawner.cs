@@ -168,8 +168,12 @@ namespace VirtualRail
 
             if (asteroidPrefab == null)
             {
+                asteroidPrefab = Resources.Load<GameObject>("Prefabs/Asteroid (1)") ?? Resources.Load<GameObject>("Prefabs/Asteroid");
 #if UNITY_EDITOR
-                asteroidPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Asteroid (1).prefab");
+                if (asteroidPrefab == null)
+                {
+                    asteroidPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/Asteroid (1).prefab");
+                }
 #endif
             }
 

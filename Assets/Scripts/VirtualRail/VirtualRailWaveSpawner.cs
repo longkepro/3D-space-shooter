@@ -238,33 +238,32 @@ namespace VirtualRail
             var cfg = anchor != null ? anchor.config : null;
 
             // Tự động tìm nạp trọn bộ 5 Prefab Enemy chuẩn hóa (StarSparrow + Squad Leader + Shield Bearer)
-#if UNITY_EDITOR
-            var e0 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (0) - Scout.prefab");
-            if (e0 == null) e0 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (0).prefab");
-
-            var e1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (1) - Flanker.prefab");
-            if (e1 == null) e1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (1).prefab");
-
-            var e2 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (2) - Interceptor.prefab");
-            if (e2 == null) e2 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (2).prefab");
-
-            var e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (3) - Squad Leader.prefab");
-            if (e3 == null) e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (3).prefab");
-
-            var e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (4) - Shield Bearer.prefab");
-            if (e4 == null) e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemy (4).prefab");
-
-            var list = new List<GameObject>();
-            if (e0 != null) list.Add(e0);
-            if (e1 != null) list.Add(e1);
-            if (e2 != null) list.Add(e2);
-            if (e3 != null) list.Add(e3);
-            if (e4 != null) list.Add(e4);
-            if (list.Count > 0)
+            if (enemyPrefabs == null || enemyPrefabs.Length == 0)
             {
-                enemyPrefabs = list.ToArray();
-            }
+                var e0 = Resources.Load<GameObject>("Prefabs/Enemy (0) - Scout") ?? Resources.Load<GameObject>("Prefabs/Enemy (0)");
+                var e1 = Resources.Load<GameObject>("Prefabs/Enemy (1) - Flanker") ?? Resources.Load<GameObject>("Prefabs/Enemy (1)");
+                var e2 = Resources.Load<GameObject>("Prefabs/Enemy (2) - Interceptor") ?? Resources.Load<GameObject>("Prefabs/Enemy (2)");
+                var e3 = Resources.Load<GameObject>("Prefabs/Enemy (3) - Squad Leader") ?? Resources.Load<GameObject>("Prefabs/Enemy (3)");
+                var e4 = Resources.Load<GameObject>("Prefabs/Enemy (4) - Shield Bearer") ?? Resources.Load<GameObject>("Prefabs/Enemy (4)");
+
+#if UNITY_EDITOR
+                if (e0 == null) e0 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/Enemy (0) - Scout.prefab");
+                if (e1 == null) e1 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/Enemy (1) - Flanker.prefab");
+                if (e2 == null) e2 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/Enemy (2) - Interceptor.prefab");
+                if (e3 == null) e3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/Enemy (3) - Squad Leader.prefab");
+                if (e4 == null) e4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Resources/Prefabs/Enemy (4) - Shield Bearer.prefab");
 #endif
+                var list = new List<GameObject>();
+                if (e0 != null) list.Add(e0);
+                if (e1 != null) list.Add(e1);
+                if (e2 != null) list.Add(e2);
+                if (e3 != null) list.Add(e3);
+                if (e4 != null) list.Add(e4);
+                if (list.Count > 0)
+                {
+                    enemyPrefabs = list.ToArray();
+                }
+            }
 
             if (enemyPrefabs != null)
             {

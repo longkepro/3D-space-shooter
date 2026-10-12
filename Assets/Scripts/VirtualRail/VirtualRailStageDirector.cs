@@ -188,16 +188,21 @@ namespace VirtualRail
         {
             if (stages == null || stages.Length == 0)
             {
+                // Ưu tiên nạp từ Resources/Stages (Tương thích 100% cả PC lẫn Android APK)
+                var s1 = Resources.Load<StageData>("Stages/StageData_01");
+                var s2 = Resources.Load<StageData>("Stages/StageData_02");
+                var s3 = Resources.Load<StageData>("Stages/StageData_03");
+
 #if UNITY_EDITOR
-                var s1 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_01.asset");
-                var s2 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_02.asset");
-                var s3 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Scripts/VirtualRail/StageData_03.asset");
+                if (s1 == null) s1 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Resources/Stages/StageData_01.asset");
+                if (s2 == null) s2 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Resources/Stages/StageData_02.asset");
+                if (s3 == null) s3 = UnityEditor.AssetDatabase.LoadAssetAtPath<StageData>("Assets/Resources/Stages/StageData_03.asset");
+#endif
                 var list = new System.Collections.Generic.List<StageData>();
                 if (s1 != null) list.Add(s1);
                 if (s2 != null) list.Add(s2);
                 if (s3 != null) list.Add(s3);
                 stages = list.ToArray();
-#endif
             }
 
             if (anchor == null)

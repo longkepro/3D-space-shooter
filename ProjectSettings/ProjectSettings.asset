@@ -159,8 +159,8 @@ PlayerSettings:
   targetPixelDensity: 30
   resolutionScalingMode: 0
   resetResolutionOnWindowResize: 0
-  androidSupportedAspectRatio: 0
-  androidMaxAspectRatio: 2.4
+  androidSupportedAspectRatio: 1
+  androidMaxAspectRatio: 2.1
   androidMinAspectRatio: 1
   applicationIdentifier:
     Android: com.longke.starfox3d
