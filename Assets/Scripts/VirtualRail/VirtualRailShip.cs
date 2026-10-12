@@ -37,7 +37,6 @@ namespace VirtualRail
         private float lastTapTimeA = -1f;
         private float lastTapTimeD = -1f;
         private const float DOUBLE_TAP_THRESHOLD = 0.28f;
-        private float _idleInputTimer = 0f;
 
         public bool IsDeflecting => isDeflecting;
 
@@ -165,28 +164,10 @@ namespace VirtualRail
                     shipNormalizedPos.x = Mathf.Clamp(shipNormalizedPos.x + inputX * speedNormX * Time.deltaTime, -1f, 1f);
                     shipNormalizedPos.y = Mathf.Clamp(shipNormalizedPos.y + inputY * speedNormY * Time.deltaTime, -1f, 1f);
 
-                    // Cơ chế Hồi Tâm Tự Động Chuẩn Arcade (Star Fox 64 Auto-Centering Spring Return)
-                    if (cfg.enableAutoCentering)
-                    {
-                        if (Mathf.Abs(inputX) < 0.05f && Mathf.Abs(inputY) < 0.05f)
-                        {
-                            _idleInputTimer += Time.deltaTime;
-                            if (_idleInputTimer >= cfg.autoCenteringDelay)
-                            {
-                                shipNormalizedPos = Vector2.MoveTowards(shipNormalizedPos, Vector2.zero, cfg.autoCenteringSpeed * Time.deltaTime);
-                            }
-                        }
-                        else
-                        {
-                            _idleInputTimer = 0f;
-                        }
-                    }
-
                     // Phím C: Giữ để chủ động đưa tàu lướt êm về trung tâm khi cần
                     if (Input.GetKey(KeyCode.C))
                     {
                         shipNormalizedPos = Vector2.MoveTowards(shipNormalizedPos, Vector2.zero, 2.5f * Time.deltaTime);
-                        _idleInputTimer = 0f;
                     }
                 }
 
@@ -393,7 +374,6 @@ namespace VirtualRail
             isDeflecting = false;
             currentBarrelRollAngle = 0f;
             rollTimer = 0f;
-            _idleInputTimer = 0f;
 
             if (thrusters != null)
             {

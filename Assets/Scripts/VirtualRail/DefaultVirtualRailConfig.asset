@@ -180,7 +180,4 @@ MonoBehaviour:
   enemyProjectilePrefab: {fileID: 7464545904787211660, guid: 94beb9fa08fb83049a6e27a33b4dcf42,
     type: 3}
   enemyImpactVFXPrefab: {fileID: 100002, guid: e9391f622091e1449bdef4ef15af4948, type: 3}
-  enableAutoCentering: 1
-  autoCenteringDelay: 0.8
-  autoCenteringSpeed: 1.8
   enableProceduralSpline: 0
