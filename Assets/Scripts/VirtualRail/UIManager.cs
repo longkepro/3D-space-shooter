@@ -210,6 +210,19 @@ namespace VirtualRail
             {
                 ModernCockpitHUD.Instance.SetHUDVisible(newState == UIViewState.Gameplay);
             }
+
+            // Ẩn các UI phụ trợ chặng bay khi không ở Gameplay
+            if (newState != UIViewState.Gameplay)
+            {
+                if (StageNotificationUI.Instance != null && StageNotificationUI.Instance.bannerCanvasGroup != null)
+                {
+                    StageNotificationUI.Instance.bannerCanvasGroup.alpha = 0f;
+                }
+                if (RadioCommsHUD.Instance != null && RadioCommsHUD.Instance.commsCanvasGroup != null)
+                {
+                    RadioCommsHUD.Instance.commsCanvasGroup.alpha = 0f;
+                }
+            }
         }
 
         #region EVENT LISTENERS & SETUP

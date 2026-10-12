@@ -23,31 +23,41 @@ public class GameUI : MonoBehaviour
 
     private void Start()
     {
-        DelayShowMainMenu();
+        // Nếu không có UIManager (chế độ Legacy hoàn nguyên), mới hiện menu cũ
+        if (VirtualRail.UIManager.Instance == null && FindAnyObjectByType<VirtualRail.UIManager>() == null)
+        {
+            if (_mainMenu != null) _mainMenu.SetActive(true);
+            if (_gameUI != null) _gameUI.SetActive(false);
+        }
+        else
+        {
+            // Có UIManager mới: Triệt tiêu hoàn toàn UI cũ
+            if (_mainMenu != null) _mainMenu.SetActive(false);
+            if (_gameUI != null) _gameUI.SetActive(false);
+        }
     }
 
     private void ShowMainMenu()
     {
-        Invoke("DelayShowMainMenu", Asteroid.destructionDelay * 3f);
+        // Ở chế độ Legacy mới bật lại menu cũ sau khi nổ
+        if (VirtualRail.UIManager.Instance == null && FindAnyObjectByType<VirtualRail.UIManager>() == null)
+        {
+            Invoke("DelayShowMainMenu", Asteroid.destructionDelay * 3f);
+        }
     }
 
     private void DelayShowMainMenu()
     {
-        _mainMenu.SetActive(true);
-        _gameUI.SetActive(false);
+        if (_mainMenu != null) _mainMenu.SetActive(true);
+        if (_gameUI != null) _gameUI.SetActive(false);
     }
 
     private void ShowGameUI()
     {
-        _mainMenu.SetActive(false);
+        if (_mainMenu != null) _mainMenu.SetActive(false);
+        if (_gameUI != null) _gameUI.SetActive(false);
 
-        // Chặn hoàn toàn Game UI cũ khi ModernCockpitHUD đang hiện diện
-        bool hasModernHUD = (VirtualRail.ModernCockpitHUD.Instance != null || FindAnyObjectByType<VirtualRail.ModernCockpitHUD>() != null);
-        if (_gameUI != null)
-        {
-            _gameUI.SetActive(!hasModernHUD);
-        }
-
+        // Khởi tạo hoặc hồi sinh tàu người chơi
         if (VirtualRail.VirtualRailAnchor.Instance != null)
         {
             Vector3 spawnPos = (_playerSpawner != null) ? _playerSpawner.transform.position : Vector3.zero;

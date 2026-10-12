@@ -75,9 +75,17 @@ namespace VirtualRail.Editor
                 Object.DestroyImmediate(existing.gameObject);
             }
 
-            // Ẩn Main Menu gốc của scene cũ
+            // Ẩn Main Menu và Game UI gốc của scene cũ
             GameObject oldMainMenu = GameObject.Find("Main Menu");
             if (oldMainMenu != null) oldMainMenu.SetActive(false);
+            GameObject oldGameUI = GameObject.Find("Game UI");
+            if (oldGameUI != null) oldGameUI.SetActive(false);
+
+            // Vô hiệu hóa các component UI legacy chạy ngầm
+            GameTimer oldTimer = canvas.GetComponent<GameTimer>();
+            if (oldTimer != null) oldTimer.enabled = false;
+            GameScore oldScore = canvas.GetComponent<GameScore>();
+            if (oldScore != null) oldScore.enabled = false;
 
             // Xây dựng cây phân cấp mới
             BuildCompleteUIHierarchy(canvas.transform);
@@ -102,11 +110,18 @@ namespace VirtualRail.Editor
                 {
                     Object.DestroyImmediate(existing.gameObject);
                 }
+
+                GameTimer oldTimer = canvas.GetComponent<GameTimer>();
+                if (oldTimer != null) oldTimer.enabled = true;
+                GameScore oldScore = canvas.GetComponent<GameScore>();
+                if (oldScore != null) oldScore.enabled = true;
             }
 
-            // Bật lại Main Menu gốc
+            // Bật lại Main Menu và Game UI gốc
             GameObject oldMainMenu = GameObject.Find("Main Menu");
             if (oldMainMenu != null) oldMainMenu.SetActive(true);
+            GameObject oldGameUI = GameObject.Find("Game UI");
+            if (oldGameUI != null) oldGameUI.SetActive(true);
 
             Scene activeScene = EditorSceneManager.GetActiveScene();
             EditorSceneManager.MarkSceneDirty(activeScene);
