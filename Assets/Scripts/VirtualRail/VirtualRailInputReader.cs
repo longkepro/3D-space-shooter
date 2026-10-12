@@ -315,19 +315,33 @@ namespace VirtualRail
                 leftJoystick.ApplyAlpha(0.35f);
             }
 
-            // 4. Khởi tạo TOP-LEFT ROLL CLUSTER (Cụm 2 nút lộn vòng phản đạn - Góc trên trái)
-            Transform rollClusterTrans = mobileUIRoot.transform.Find("TopLeftRollCluster");
+            // 4. Khởi tạo MID-LEFT ROLL CLUSTER (Cụm 2 nút lộn vòng phản đạn - Giữa mép trái 50% màn hình)
+            Transform rollClusterTrans = mobileUIRoot.transform.Find("MidLeftRollCluster");
+            if (rollClusterTrans == null) rollClusterTrans = mobileUIRoot.transform.Find("TopLeftRollCluster");
             GameObject rollCluster = rollClusterTrans != null ? rollClusterTrans.gameObject : null;
             if (rollCluster == null)
             {
-                rollCluster = new GameObject("TopLeftRollCluster");
+                rollCluster = new GameObject("MidLeftRollCluster");
                 rollCluster.transform.SetParent(mobileUIRoot.transform, false);
                 RectTransform rollRt = rollCluster.AddComponent<RectTransform>();
-                rollRt.anchorMin = new Vector2(0f, 1f);
-                rollRt.anchorMax = new Vector2(0f, 1f);
-                rollRt.pivot = new Vector2(0f, 1f);
+                rollRt.anchorMin = new Vector2(0f, 0.5f);
+                rollRt.anchorMax = new Vector2(0f, 0.5f);
+                rollRt.pivot = new Vector2(0f, 0.5f);
                 rollRt.anchoredPosition = Vector2.zero;
                 rollRt.sizeDelta = new Vector2(240f, 130f);
+            }
+            else
+            {
+                rollCluster.name = "MidLeftRollCluster";
+                RectTransform rollRt = rollCluster.GetComponent<RectTransform>();
+                if (rollRt != null)
+                {
+                    rollRt.anchorMin = new Vector2(0f, 0.5f);
+                    rollRt.anchorMax = new Vector2(0f, 0.5f);
+                    rollRt.pivot = new Vector2(0f, 0.5f);
+                    rollRt.anchoredPosition = Vector2.zero;
+                    rollRt.sizeDelta = new Vector2(240f, 130f);
+                }
             }
 
             if (btnRollLeft == null)
@@ -336,8 +350,8 @@ namespace VirtualRail
                 btnRollLeft = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
                     rollCluster.transform,
                     "Btn_RollLeft",
-                    new Vector2(0f, 1f),
-                    new Vector2(65f, -65f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(65f, 0f),
                     new Vector2(64f, 64f),
                     baseRing,
                     rollIcon,
@@ -349,6 +363,17 @@ namespace VirtualRail
                     null
                 );
             }
+            if (btnRollLeft != null)
+            {
+                RectTransform rt = btnRollLeft.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0f, 0.5f);
+                    rt.anchorMax = new Vector2(0f, 0.5f);
+                    rt.pivot = new Vector2(0.5f, 0.5f);
+                    rt.anchoredPosition = new Vector2(65f, 0f);
+                }
+            }
 
             if (btnRollRight == null)
             {
@@ -356,8 +381,8 @@ namespace VirtualRail
                 btnRollRight = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
                     rollCluster.transform,
                     "Btn_RollRight",
-                    new Vector2(0f, 1f),
-                    new Vector2(145f, -65f),
+                    new Vector2(0f, 0.5f),
+                    new Vector2(145f, 0f),
                     new Vector2(64f, 64f),
                     baseRing,
                     rollIcon,
@@ -368,6 +393,17 @@ namespace VirtualRail
                     false,
                     null
                 );
+            }
+            if (btnRollRight != null)
+            {
+                RectTransform rt = btnRollRight.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0f, 0.5f);
+                    rt.anchorMax = new Vector2(0f, 0.5f);
+                    rt.pivot = new Vector2(0.5f, 0.5f);
+                    rt.anchoredPosition = new Vector2(145f, 0f);
+                }
             }
 
             // 5. Khởi tạo RIGHT AIM JOYSTICK (Cần gạt ngắm 3D độc lập kiêm Auto-Fire - Góc dưới phải)
@@ -464,19 +500,33 @@ namespace VirtualRail
                 rightJoystick.ApplyAlpha(0.35f);
             }
 
-            // 6. Khởi tạo TOP-RIGHT ACTION CLUSTER (Cụm Nút Sạc Hỏa Lực & Bom - Góc trên phải)
-            Transform actionClusterTrans = mobileUIRoot.transform.Find("TopRightActionCluster");
+            // 6. Khởi tạo MID-RIGHT ACTION CLUSTER (Cụm Nút Sạc Hỏa Lực & Bom - Giữa mép phải 50% màn hình)
+            Transform actionClusterTrans = mobileUIRoot.transform.Find("MidRightActionCluster");
+            if (actionClusterTrans == null) actionClusterTrans = mobileUIRoot.transform.Find("TopRightActionCluster");
             GameObject actionCluster = actionClusterTrans != null ? actionClusterTrans.gameObject : null;
             if (actionCluster == null)
             {
-                actionCluster = new GameObject("TopRightActionCluster");
+                actionCluster = new GameObject("MidRightActionCluster");
                 actionCluster.transform.SetParent(mobileUIRoot.transform, false);
                 RectTransform clusterRt = actionCluster.AddComponent<RectTransform>();
-                clusterRt.anchorMin = new Vector2(1f, 1f);
-                clusterRt.anchorMax = new Vector2(1f, 1f);
-                clusterRt.pivot = new Vector2(1f, 1f);
+                clusterRt.anchorMin = new Vector2(1f, 0.5f);
+                clusterRt.anchorMax = new Vector2(1f, 0.5f);
+                clusterRt.pivot = new Vector2(1f, 0.5f);
                 clusterRt.anchoredPosition = Vector2.zero;
                 clusterRt.sizeDelta = new Vector2(270f, 130f);
+            }
+            else
+            {
+                actionCluster.name = "MidRightActionCluster";
+                RectTransform clusterRt = actionCluster.GetComponent<RectTransform>();
+                if (clusterRt != null)
+                {
+                    clusterRt.anchorMin = new Vector2(1f, 0.5f);
+                    clusterRt.anchorMax = new Vector2(1f, 0.5f);
+                    clusterRt.pivot = new Vector2(1f, 0.5f);
+                    clusterRt.anchoredPosition = Vector2.zero;
+                    clusterRt.sizeDelta = new Vector2(270f, 130f);
+                }
             }
 
             // Nút Sạc Tụ Lực Riêng Biệt (Dedicated Charge Shot Button)
@@ -486,8 +536,8 @@ namespace VirtualRail
                 btnCharge = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
                     actionCluster.transform,
                     "Btn_Charge",
-                    new Vector2(1f, 1f),
-                    new Vector2(-165f, -65f),
+                    new Vector2(1f, 0.5f),
+                    new Vector2(-165f, 0f),
                     new Vector2(78f, 78f),
                     baseRing,
                     laserIcon,
@@ -499,6 +549,17 @@ namespace VirtualRail
                     null
                 );
             }
+            if (btnCharge != null)
+            {
+                RectTransform rt = btnCharge.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(1f, 0.5f);
+                    rt.anchorMax = new Vector2(1f, 0.5f);
+                    rt.pivot = new Vector2(0.5f, 0.5f);
+                    rt.anchoredPosition = new Vector2(-165f, 0f);
+                }
+            }
 
             // Nút Bom thông minh (Smart Bomb)
             if (btnBomb == null)
@@ -507,8 +568,8 @@ namespace VirtualRail
                 btnBomb = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
                     actionCluster.transform,
                     "Btn_Bomb",
-                    new Vector2(1f, 1f),
-                    new Vector2(-70f, -65f),
+                    new Vector2(1f, 0.5f),
+                    new Vector2(-70f, 0f),
                     new Vector2(68f, 68f),
                     baseRing,
                     bombIcon,
@@ -519,6 +580,17 @@ namespace VirtualRail
                     true, // Có huy hiệu số lượng bom
                     scifiFont
                 );
+            }
+            if (btnBomb != null)
+            {
+                RectTransform rt = btnBomb.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(1f, 0.5f);
+                    rt.anchorMax = new Vector2(1f, 0.5f);
+                    rt.pivot = new Vector2(0.5f, 0.5f);
+                    rt.anchoredPosition = new Vector2(-70f, 0f);
+                }
             }
 
             // Đảm bảo có EventSystem trong scene
