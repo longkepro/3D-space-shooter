@@ -22,18 +22,28 @@ namespace VirtualRail.Editor
             EditorApplication.update += CheckAutoBuildTrigger;
         }
 
+        private static bool _isBuilding = false;
+
         private static void CheckAutoBuildTrigger()
         {
+            if (_isBuilding) return;
             if (File.Exists(FLAG_FILE))
             {
+                _isBuilding = true;
                 try
                 {
                     File.Delete(FLAG_FILE);
                 }
                 catch { }
 
-                EditorApplication.update -= CheckAutoBuildTrigger;
-                BuildAndroidAPK();
+                try
+                {
+                    BuildAndroidAPK();
+                }
+                finally
+                {
+                    _isBuilding = false;
+                }
             }
         }
 
@@ -58,7 +68,7 @@ namespace VirtualRail.Editor
                 PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, "com.longke.starfox3d");
 
                 PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
-                PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+                PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)34;
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
 
                 // Tắt App Bundle để xuất file .apk cài đặt trực tiếp
