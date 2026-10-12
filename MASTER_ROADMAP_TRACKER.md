@@ -1,6 +1,6 @@
 # KẾ HOẠCH TỔNG THỂ & THEO DÕI TIẾN ĐỘ DỰ ÁN (MASTER ROADMAP & PROGRESS TRACKER)
-> **Dự án:** 3D Sci-Fi Virtual Rail Shooter (Chuẩn Star Fox 64 Arcade)  
-> **Tài liệu nguồn chân lý:** [`STAGE_1_DESIGN_DOCUMENT.md`](file:///d:/3D-Shooter-master/STAGE_1_DESIGN_DOCUMENT.md) • [`LEVEL_DESIGN_SPECIFICATION.md`](file:///d:/3D-Shooter-master/LEVEL_DESIGN_SPECIFICATION.md) • [`ENDLESS_SCORING_SPECIFICATION.md`](file:///d:/3D-Shooter-master/ENDLESS_SCORING_SPECIFICATION.md) • [`STARFOX64_AIMING_PLAN.md`](file:///d:/3D-Shooter-master/STARFOX64_AIMING_PLAN.md) • [`STARFOX64_ENEMY_SPAWN_PLAN.md`](file:///d:/3D-Shooter-master/STARFOX64_ENEMY_SPAWN_PLAN.md)  
+> **Dự án:** 3D Sci-Fi Virtual Rail Shooter (Chuẩn Star Fox 64 Arcade & Endless Survival)  
+> **Tài liệu nguồn chân lý:** [`ENDLESS_SCORING_SPECIFICATION.md`](file:///d:/3D-Shooter-master/ENDLESS_SCORING_SPECIFICATION.md) • [`LEVEL_DESIGN_SPECIFICATION.md`](file:///d:/3D-Shooter-master/LEVEL_DESIGN_SPECIFICATION.md) • [`STAGE_1_DESIGN_DOCUMENT.md`](file:///d:/3D-Shooter-master/STAGE_1_DESIGN_DOCUMENT.md) • [`STARFOX64_AIMING_PLAN.md`](file:///d:/3D-Shooter-master/STARFOX64_AIMING_PLAN.md) • [`STARFOX64_ENEMY_SPAWN_PLAN.md`](file:///d:/3D-Shooter-master/STARFOX64_ENEMY_SPAWN_PLAN.md)  
 > **Quy chuẩn hiệu lực:** Tuân thủ 100% Bộ Quy Tắc Phát Triển Dự Án ([`AGENTS.md`](file:///d:/3D-Shooter-master/AGENTS.md) / [`GEMINI.md`](file:///d:/3D-Shooter-master/GEMINI.md)) — An toàn 3 tầng, 0 GC Allocation, Kiểm thử biên dịch `0 Errors`.
 
 ---
@@ -8,17 +8,17 @@
 ## I. BẢNG ĐIỀU KHIỂN TIẾN ĐỘ TỔNG THỂ (EXECUTIVE DASHBOARD)
 
 ```text
-TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY):
-[█████████████████████░░░░░░░░░░░] 67% HOÀN TẤT
+TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY ENDLESS ARCADE):
+[████████████████████████░░░░░░░░] 74% HOÀN TẤT
 ```
 
 | Phân Hệ / Giai Đoạn | Trọng Tâm Phát Triển | Trạng Thái | Số Task | Tỉ Lệ | Ghi Chú Nghiệm Thu |
 | :--- | :--- | :---: | :---: | :---: | :--- |
-| **Giai đoạn 0: Cốt Lõi (Đã Có)** | Bay, Vũ khí, Đội hình, Director, Điểm số | **HOÀN TẤT** | 12/12 | $100\%$ | Biên dịch 0 Errors, 0 GC loop |
-| **Giai đoạn 1: Âm Thanh & Rung Chấn** | AudioManager, SFX, BGM, Screen Shake | **HOÀN TẤT** | 4/4 | $100\%$ | 0 GC Pool, Procedural SFX + Custom BGM Slots |
-| **Giai đoạn 2: Trận Đấu Trùm** | Mini-Boss Cruiser, Boss Gorgon Core, Boss UI | **CHỜ DUYỆT** | 0/4 | $0\%$ | 3 Pha chiến đấu theo LDS v1.0.0 |
-| **Giai đoạn 3: Vòng Lặp & UI/UX** | Menu, Pause, Settings, Debriefing S-Rank | **CHỜ DUYỆT** | 0/6 | $0\%$ | Hoàn chỉnh Game Loop thương mại |
-| **Giai đoạn 4: Mở Rộng & Endless** | Kịch bản Stage 2/3, Chế độ Endless TDD v2.0.0 | **CHỜ DUYỆT** | 0/4 | $0\%$ | Procedural Spline + DDA 3 pha |
+| **Giai đoạn 0: Cốt Lõi Bay & Vũ Khí** | Bay Arwing, Vũ khí, Đội hình Bézier, DDA Director, Điểm số | **HOÀN TẤT** | 12/12 | $100\%$ | Biên dịch 0 Errors, 0 GC Game Loop |
+| **Giai đoạn 1: Âm Thanh & Xúc Giác** | AudioManager 0 GC, SFX N64, Dual-BGM Shuffle, Camera Shake | **HOÀN TẤT** | 4/4 | $100\%$ | 0 GC Pool, Procedural SFX + Dual Shuffle |
+| **Giai đoạn 2: Đột Kích Trùm Tuần Hoàn** | Trùm Tuần Duyên Corvette F3 ("Crimson Titan") 3 Pha | **ĐANG TRIỂN KHAI** | 3/6 | $50\%$ | Khiên Hex 300 HP, Dual-Gauge HUD, Shader Lò Pha 2 xong; Chờ duyệt xử lý xung đột logic |
+| **Giai đoạn 3: Vòng Lặp & UI/UX Endless** | Modern Cockpit HUD, Multiplier Gauge, Menu, Bảng Vinh Danh | **CHỜ DUYỆT** | 0/6 | $0\%$ | Game Loop Endless thương mại |
+| **Giai đoạn 4: Hành Lang Thủ Tục & Quần Xã** | Spline Chunker, Solvability Verifier, Chuyển Quần Xã, Cổng Rủi Ro | **CHỜ DUYỆT** | 0/4 | $0\%$ | Procedural Hermite Spline + World Origin Shifting |
 
 ---
 
@@ -31,14 +31,14 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 
 > [!IMPORTANT]
 > **QUY TRÌNH KÍCH HOẠT THAY ĐỔI THEO ĐIỀU 1 BỘ QUY TẮC:**
-> 1. AI không tự ý sửa code hoặc tạo asset khi người dùng chưa ra lệnh trực tiếp (*"thực hiện Giai đoạn 1"*, *"tiến hành Task 1.1"*, v.v.).
+> 1. AI không tự ý sửa code hoặc tạo asset khi người dùng chưa ra lệnh trực tiếp (*"thực hiện Giai đoạn 2"*, *"tiến hành sửa xung đột"*, v.v.).
 > 2. Mỗi thay đổi đều phải tạo điểm checkpoint, bảo lưu prefab gốc và cung cấp MenuItem Editor hoàn nguyên (Undo).
 > 3. Sau khi hoàn thành một task, AI cập nhật dấu `[x]` và ghi nhật ký vào Mục VII của tài liệu này.
 
 ---
 
 ## III. GIAI ĐOẠN 1: HỆ THỐNG ÂM THANH & PHẢN HỒI XÚC GIÁC (AUDIO & POLISH CORE)
-> **Mục tiêu:** Bù đắp lỗ hổng lớn nhất của dự án (trò chơi hiện đang câm hoàn toàn), mang lại phản hồi xúc giác mạnh mẽ chuẩn phong cách Arcade.
+> **Mục tiêu:** Mang lại phản hồi âm thanh và xúc giác mạnh mẽ chuẩn phong cách Arcade Star Fox 64.
 
 ### Task 1.1: Kiến Trúc Quản Lý Âm Thanh Tập Trung (AudioManager 0 GC)
 - [x] **1.1.1** Tạo [`AudioManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/AudioManager.cs) theo mô hình Singleton, Unidirectional Data Flow, cấu hình sẵn 3 AudioMixer Groups: `Master`, `Music (BGM)`, `Sound Effects (SFX)`.
@@ -47,7 +47,7 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 
 ### Task 1.2: Thư Viện Sound Effects (SFX) Chuẩn Star Fox 64 Arcade
 - [x] **1.2.1** **Hỏa lực:**
-  - SFX Laser bắn chuẩn: Single Laser (tiếng tạch giòn), Twin Laser (tiếng kép dày âm), Hyper Laser (tiếng năng lượng rít).
+  - SFX Laser bắn chuẩn: Single Laser, Twin Laser, Hyper Laser.
   - SFX Tụ lực Charge Shot: Vòng lặp tiếng rít nạp điện cao tần (Charging Loop) + Tiếng bắt khóa mục tiêu Lock-on ("BEEP-BEEP!").
   - SFX Nổ lan Splash Impact của quả cầu năng lượng khi trúng mục tiêu.
 - [x] **1.2.2** **Phòng thủ & Cơ động:**
@@ -61,123 +61,105 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
   - SFX Bộ đàm Radio Transmission (Voice chatter blips kiểu N64 cổ điển).
 
 ### Task 1.3: Hệ Thống Nhạc Nền Động (Interactive BGM System)
-- [x] **1.3.1** BGM Main Menu (Giai điệu khoa học viễn tưởng hào hùng).
-- [x] **1.3.2** BGM Stage 1: "Operation Meteor Breach" (Space Synth / Orchestral nhịp điệu dồn dập).
-- [x] **1.3.3** BGM Boss Encounter (Tiết tấu căng thẳng kịch tính).
-- [x] **1.3.4** BGM Victory Fanfare (Mừng chiến thắng qua màn) & BGM Game Over.
-- [x] **1.3.5** Chuyển tiếp nhạc nền trơn tru qua `AudioMixerSnapshot` khi nhảy vọt Hyperspace Warp.
+- [x] **1.3.1** BGM Stage Shuffle Playlist: Tích hợp 4 bản nhạc nền MokkaMusic (Cryosleep, Pusher, Vision, Secrecy) qua Deck Fisher-Yates không trùng lặp và Auto-Crossfade $2.0\text{s}$.
+- [x] **1.3.2** BGM Boss Encounter độc lập: Tự động chuyển tiếp trơn tru qua `AudioMixerSnapshot` khi chạm trán Boss Incursion.
+- [x] **1.3.3** BGM Victory Fanfare (Mừng chiến thắng qua chu kỳ) & BGM Game Over.
 
 ### Task 1.4: Rung Chấn Camera & Cảnh Báo Viền Màn Hình (Polish Feel)
-- [x] **1.4.1** Tích hợp module rung chấn Camera Impulse (0 GC Alloc) vào [`VirtualRailCameraRig.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailCameraRig.cs):
-  - Rung nhẹ (Micro-shake): Khi nổ động cơ Boost hoặc lộn cánh Barrel Roll.
-  - Rung mạnh (Heavy-shake): Khi tàu dính đạn, va quẹt thiên thạch, hoặc kích nổ Smart Bomb.
+- [x] **1.4.1** Tích hợp module rung chấn Camera Impulse (0 GC Alloc) vào [`VirtualRailCameraRig.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailCameraRig.cs): Micro-shake khi Boost/Roll; Heavy-shake khi trúng đạn hoặc dính bom.
 - [x] **1.4.2** Tạo hiệu ứng viền màn hình nhấp nháy đỏ (Vignette Low-Health Pulse) trên Canvas UI khi khiên tàu rơi vào tình trạng nguy cấp.
 
 ---
 
-## IV. GIAI ĐOẠN 2: TRẬN ĐẤU TRÙM & CHIẾN HẠM HẠNG NẶNG (BOSS ECOSYSTEM)
-> **Mục tiêu:** Hiện thực hóa đỉnh cao trào của màn chơi theo đúng đặc tả [`LEVEL_DESIGN_SPECIFICATION.md`](file:///d:/3D-Shooter-master/LEVEL_DESIGN_SPECIFICATION.md).
+## IV. GIAI ĐOẠN 2: ĐỘT KÍCH TRÙM TUẦN HOÀN (APEX CLIMAX BOSS INCURSION)
+> **Mục tiêu:** Chiến hạm Tuần duyên Liên bang F3 ("Crimson Titan") đóng vai trò là Trùm đỉnh cao trào (Apex Climax Encounter) xuất hiện định kỳ tại đỉnh mỗi chu kỳ DDA Endless theo đúng đặc tả [`ENDLESS_SCORING_SPECIFICATION.md`](file:///d:/3D-Shooter-master/ENDLESS_SCORING_SPECIFICATION.md).
 
-### Task 2.1: Kiến Trúc Nền Tảng Boss & Bộ Phận Bị Phá Hủy (Boss Framework)
-- [ ] **2.1.1** Xây dựng [`BossLifecycleFSM.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/BossLifecycleFSM.cs): Quản lý các trạng thái Intro $\rightarrow$ Combat (Pha 1, 2, 3) $\rightarrow$ Defeated $\rightarrow$ Death Explosion Sequence.
-- [ ] **2.1.2** Xây dựng [`BossWeakpoint.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/BossWeakpoint.cs): Quản lý từng tháp pháo/bộ phận độc lập có thanh máu riêng, khả năng bộc lộ hoặc ẩn nấp theo trạng thái.
-- [ ] **2.1.3** Kết nối trực tiếp vào [`VirtualRailStageDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailStageDirector.cs) để tự động ghìm tốc độ ray đường bay về $5 - 10\text{ m/s}$ khi giao tranh Boss.
+### Task 2.1: Máy Trạng Thái 3 Pha & Neo Đấu Trường Trùm
+- [x] **2.1.1** Xây dựng [`BossLifecycleFSM.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/BossLifecycleFSM.cs): Quản lý chuyển tiếp trạng thái `Phase1_Shielded` $\rightarrow$ `Phase2_ExposedTrench` $\rightarrow$ `Phase3_OverdriveCore` $\rightarrow$ `Defeated`.
+- [x] **2.1.2** Kết nối với [`VirtualRailStageDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailStageDirector.cs) để tự động ghìm tốc độ ray đường bay về $5 - 10\text{ m/s}$ khi bắt đầu giao tranh Boss.
 
-### Task 2.2: Mini-Boss Tuần Dương Hạm ("Iron Vanguard" - Cụm Mục Tiêu Đa Điểm)
-- [ ] **2.2.1** Mô hình hóa Tuần Dương Hạm đồng tốc trước mũi tàu ở cự ly $+70\text{m}$ ($Z = 11,500\text{m}$).
-- [ ] **2.2.2** Tích hợp 3 cụm mục tiêu độc lập:
-  - Tháp pháo cánh trái (HP: 60) bắn đạn chùm 3 viên.
-  - Tháp pháo cánh phải (HP: 60) bắn đạn chùm 3 viên.
-  - Ống phóng tên lửa trung tâm (HP: 120) liên tục phóng tên lửa tự dẫn.
-- [ ] **2.2.3** Cơ chế bộc lộ buồng lái (Bridge Weakpoint): Bắn nổ 2 tháp pháo cánh $\implies$ Lộ buồng lái chỉ huy $\implies$ Tiêu diệt thưởng Smart Bomb và $+10\text{ Hits}$.
+### Task 2.2: Lớp Khiên Lục Giác & Dual-Gauge Cockpit HUD
+- [x] **2.2.1** Tách biệt độ bền khiên: Xây dựng [`VirtualRailHexShield.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailHexShield.cs) với quỹ máu riêng $300\text{ HP}$, hấp thụ $100\%$ sát thương và hiệu ứng chớp sáng Neon White (`_HitFlashIntensity`) khi trúng đạn.
+- [x] **2.2.2** Tích hợp hiển thị song song 2 thanh đo trên [`ModernCockpitHUD.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/ModernCockpitHUD.cs): Thanh Thân Tàu (Hull - Xanh lục) và thanh Khiên Năng Lượng (Shield - Xanh lam), đồng bộ mượt mà ở `LateUpdate`.
 
-### Task 2.3: Main Boss Pháo Đài Lõi ("Gorgon Core" - Máy Trạng Thái 3 Pha)
-- [ ] **2.3.1** **Pha 1: Khiên Hợp Kim Xoay Vòng ($100\% \rightarrow 66\%\text{ HP}$):**
-  - 4 Tấm khiên thép xoay quanh lõi tốc độ $45^\circ/\text{s}$.
-  - Súng trung tâm bắn lưới đạn Plasma buộc người chơi lộn cánh Barrel Roll hất đạn.
-- [ ] **2.3.2** **Pha 2: Bão Tên Lửa & Vòng Xung Kích EMP ($66\% \rightarrow 33\%\text{ HP}$):**
-  - 2 Tấm khiên nổ tung, tốc độ xoay tăng vọt $90^\circ/\text{s}$.
-  - Boss phóng 6 quả tên lửa dẫn đường và dộng sàn phát sóng xung kích màu lam (yêu cầu Boost bay lên trần để né).
-- [ ] **2.3.3** **Pha 3: Cuồng Nộ & Tia Hủy Diệt Hyper Laser ($33\% \rightarrow 0\%\text{ HP}$):**
-  - Toàn bộ khiên nổ sạch, lõi chuyển sang màu đỏ rực.
-  - Boss quét luồng laser khổng lồ chiếm $60\%$ màn hình (cửa sổ vàng để người chơi xả toàn bộ bom và đạn đôi dứt điểm trùm).
+### Task 2.3: Visual Hẻm Lò Phản Ứng Pha 2 (Thermal Reactor Trench Presentation)
+- [x] **2.3.1** Tạo Shader chuyên dụng [`VirtualRail_ThermalReactorTrench.shader`](file:///d:/3D-Shooter-master/Assets/Shaders/VirtualRail_ThermalReactorTrench.shader) & Material [`ReactorTrench_HotPlasma.mat`](file:///d:/3D-Shooter-master/Assets/Materials/ReactorTrench_HotPlasma.mat) mô phỏng dòng dung nham plasma cuộn chảy.
+- [x] **2.3.2** Xây dựng controller [`VirtualRailReactorTrenchVisual.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailReactorTrenchVisual.cs): Điều khiển cường độ tỏa nhiệt `_CoreGlowIntensity`, nhịp thở nạp năng lượng `_ChargingPulseRate`, và xung chớp giật gián đoạn khi bị người chơi bắn trúng (0 GC `MaterialPropertyBlock`).
 
-### Task 2.4: Giao Diện Boss UI & Chuỗi Cắt Cảnh Hạ Boss
-- [ ] **2.4.1** Tạo `BossHealthBarUI`: Thanh máu Boss đa phân đoạn ở đáy màn hình hiển thị 3 pha máu rõ ràng.
-- [ ] **2.4.2** Cảnh báo báo động đỏ toàn màn hình: *"WARNING: GORGON CORE DETECTED"*.
-- [ ] **2.4.3** Cắt cảnh nổ dây chuyền (Chain Explosions) và sóng xung kích trắng xóa mừng chiến thắng trước khi mở cổng Hyperspace Warp.
+### Task 2.4: Khắc Phục Xung Đột Va Chạm & Sát Thương Đa Điểm (Collision & Splash Decoupling)
+- [ ] **2.4.1** **Tách biệt Collider Khiên & Vỏ Tàu:** Khắc phục xung đột BoxCollider khiên và Hull trùng khít nhau trên trục Y ($Y = 1.6\text{m}$), dời BoxCollider khiên bao bọc ra ngoài ($Y = 2.2\text{m}, \text{Size} = [12, 4, 18]$) để chặn đứng đạn trước khi chạm vỏ tàu.
+- [ ] **2.4.2** **Khắc phục Bug Nổ Lan Tên Lửa 4X Sát Thương:** Phân nhóm layer và lọc ID cha để quả cầu nổ lan không gây sát thương đồng thời lên Khiên + Vỏ tàu + 2 Tháp pháo trong cùng 1 frame.
+- [ ] **2.4.3** **Cân Bằng Lại HP Hardpoint vs Máu Boss:** Tái cấu trúc tổng máu hardpoint ($1,800\text{ HP}$) không vượt ngưỡng máu Boss ($1,000\text{ HP}$), đảm bảo việc phá hủy hardpoint là lựa chọn chiến thuật săn điểm chứ không bị triệt tiêu lãng phí.
+
+### Task 2.5: Khắc Phục Logic Tháp Pháo & Điểm Yếu Buồng Lái (Turret & Bridge Logic)
+- [ ] **2.5.1** **Khắc phục Tháp Pháo Bị Đóng Băng ở Pha 2:** Cập nhật FSM để tháp pháo cánh tiếp tục bắn yểm trợ ở Pha 2 nếu chưa bị phá hủy ở Pha 1, tạo áp lực buộc người chơi phải cân nhắc giữa bắn Lò Phản Ứng hay dọn tháp pháo.
+- [ ] **2.5.2** **Kích Hoạt Buồng Lái Chỉ Huy (`_mainBridge`):** Kết nối biến `_mainBridge` bị bỏ quên làm điểm yếu phụ, bắn nổ buồng lái sẽ làm tê liệt hệ thống nhắm của Boss trong $4.0\text{s}$.
+- [ ] **2.5.3** **Bổ Sung Âm Thanh, Hiệu Ứng & Điểm Số Phá Hủy Hardpoint:** Kích hoạt SFX nổ kim loại, tia lửa điện bắn tung tóe và cộng thưởng điểm số tức thì ($+2,500\text{ Điểm} \times \mathbf{M}$) khi mỗi tháp pháo/buồng lái bị bắn hạ.
+
+### Task 2.6: Hoàn Thiện Pha 3 Cuồng Nộ & Kết Nối Vòng Lặp Endless (Phase 3 & Loop Link)
+- [ ] **2.6.1** **Khắc phục Bug Tắt Vĩnh Viễn Collider Lò Phản Ứng:** Đảm bảo khi máu khe nhiệt chạm 0 ở Pha 2, collider được chuyển sang trạng thái bốc khói hư hại thay vì vô hiệu hóa vĩnh viễn gây mất tương tác ở Pha 3.
+- [ ] **2.6.2** **Hiện Thực Hóa Cơ Chế Quá Tải Pha 3:** Kích hoạt quét tia Hyper Laser cực đại chiếm $60\%$ màn hình kèm rung chấn camera dữ dội.
+- [ ] **2.6.3** **Kết Nối Sự Kiện Hạ Boss với Endless Loop:** Khi Boss bị tiêu diệt:
+  - Thưởng ngay $+50,000\text{ Điểm}$, dọn sạch toàn bộ đạn đạo trên màn hình.
+  - Thông báo cho [`VirtualRailEndlessDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailEndlessDirector.cs) tăng Threat Level chu kỳ kế tiếp.
+  - Mở cổng Warp chuyển tiếp sang pha Thư Giãn (Breather) và quần xã tiếp theo.
 
 ---
 
-## V. GIAI ĐOẠN 3: VÒNG LẶP TRÒ CHƠI & GIAO DIỆN NGƯỜI DÙNG (COMPLETE GAME LOOP & UI/UX)
-> **Mục tiêu:** Xây dựng vòng lặp trò chơi hoàn chỉnh từ Main Menu $\rightarrow$ Gameplay $\rightarrow$ Pause $\rightarrow$ Debriefing/Medal $\rightarrow$ Save Persistence.
+## V. GIAI ĐOẠN 3: VÒNG LẶP TRÒ CHƠI & GIAO DIỆN ENDLESS (ENDLESS LOOP & UI/UX)
+> **Mục tiêu:** Xây dựng vòng lặp trải nghiệm Endless hoàn chỉnh từ Menu $\rightarrow$ Gameplay Săn Điểm $\rightarrow$ Bảng Vinh Danh & Lưu Trữ Kỷ Lục.
 
-### Task 3.1: Menu Chính Toàn Diện (Arcade Main Menu)
-- [ ] **3.1.1** Thiết kế giao diện Main Menu Sci-Fi hiện đại:
-  - Nút **Campaign Mode** (Chơi Chiến dịch theo Stage 1 -> 2 -> 3).
-  - Nút **Endless Mode** (Chế độ Sinh tồn Vô hạn săn điểm số).
-  - Nút **Settings / Options** (Cài đặt hệ thống).
-  - Nút **Medals & Hall of Fame** (Bộ sưu tập Huân chương & Bảng vinh danh điểm cao).
+### Task 3.1: Menu Chính Phong Cách Sci-Fi Arcade (Main Menu)
+- [ ] **3.1.1** Thiết kế Menu hiện đại tập trung vào chế độ Endless:
+  - Nút **Launch Endless Run** (Xuất kích Sinh tồn Vô hạn).
+  - Nút **Settings / Options** (Cài đặt âm thanh, đồ họa, đảo trục Y, độ nhạy).
+  - Nút **Hall of Fame & Medals** (Bảng vinh danh điểm cao kỷ lục, quãng đường xa nhất, huân chương).
   - Nút **Quit Game** (Thoát game).
-- [ ] **3.1.2** Tích hợp hiệu ứng tàu Arwing bay tuần tra làm phông nền menu động 3D.
+- [ ] **3.1.2** Tích hợp cảnh tàu Arwing bay tuần tra 3D làm phông nền menu động.
 
-### Task 3.2: Menu Tạm Dừng Trong Trận (Pause Menu - ESC / P)
-- [ ] **3.2.1** Tạm dừng trò chơi mượt mà (`Time.timeScale = 0`), làm mờ hậu cảnh Canvas.
-- [ ] **3.2.2** Cung cấp các nút: Tiếp tục (Resume), Chơi lại màn (Restart Stage), Cài đặt nhanh (Options), Thoát ra Menu chính (Quit to Menu).
+### Task 3.2: HUD Sinh Tồn Săn Điểm Chuyên Sâu (Endless Scoring HUD)
+- [ ] **3.2.1** **Thanh Multiplier Gauge ($1\times \to 32\times$):** Hiển thị hệ số nhân hiện tại và thanh tụt năng lượng trong $3.5\text{s}$.
+- [ ] **3.2.2** **Hiệu Ứng Lướt Cận Kề (Graze Indicator):** Báo hiệu tia lửa điện dọc cánh kèm chữ số nổi $+500 \times \mathbf{M}$ khi lướt sát đạn.
+- [ ] **3.2.3** **Huy Hiệu Threat Level & Distance Tracker:** Hiển thị cấp độ đe dọa chu kỳ hiện tại và số mét đã chinh phục theo thời gian thực.
+- [ ] **3.2.4** **Thanh Máu Boss Đa Phân Đoạn:** Tự động trượt vào đáy màn hình khi Boss Incursion xuất hiện và hiển thị rõ 3 pha máu.
 
-### Task 3.3: Bảng Cài Đặt Hệ Thống (Settings Panel)
-- [ ] **3.3.1** **Cài đặt Âm thanh:** Thanh trượt điều chỉnh âm lượng Master, Music (BGM), Sound Effects (SFX).
-- [ ] **3.3.2** **Cài đặt Điều khiển (Flight Controls):**
-  - Tùy chọn **Đảo trục Y (Invert Flight Y-Axis)** cho cả Chuột và Cần điều khiển Analog.
-  - Thanh trượt điều chỉnh Độ nhạy Chuột / Analog Stick (Aim Sensitivity).
-- [ ] **3.3.3** **Cài đặt Đồ họa & Hiển thị:**
-  - Chọn cấu hình chất lượng URP (Fastest / Good / Beautiful).
-  - Tùy chọn Độ phân giải màn hình, Chế độ Cửa sổ / Toàn màn hình (Fullscreen / Windowed).
+### Task 3.3: Menu Tạm Dừng Trong Trận (Pause Menu - ESC / P)
+- [ ] **3.3.1** Tạm dừng trò chơi (`Time.timeScale = 0`), làm mờ nền màn hình, cung cấp tùy chọn Tiếp tục, Xuất kích lại, Cài đặt, Thoát về Menu.
 
-### Task 3.4: Màn Hình Tổng Kết & Trao Huân Chương (Mission Accomplished Debriefing)
-- [ ] **3.4.1** Hiển thị bảng tổng kết thành tích sau khi hoàn tất màn chơi:
-  - Tổng số mục tiêu bị tiêu diệt (`Hit Count`).
-  - Điểm thưởng nổ lan (`Charge Shot Combos`).
-  - Độ vẹn toàn của Khiên (`Shield Integrity %`).
-  - Thời gian hoàn thành (`Mission Clear Time`).
-  - Tổng điểm cuối cùng (`Final Score`).
-- [ ] **3.4.2** Thuật toán tính bậc xếp hạng kỹ năng: **Rank D, Rank C, Rank B, Rank A, Rank S**.
-- [ ] **3.4.3** Cơ chế trao tặng **Huân Chương Danh Dự (Stage Medal)**:
-  - Kích hoạt biểu tượng Huân chương Vàng sáng bóng kèm hiệu ứng chuông ngân khi đạt đủ cả 2 điều kiện: $\text{Hit Count} \ge 150\text{ Hits}$ và $\text{Khiên cuối màn} \ge 50\%$.
+### Task 3.4: Bảng Tổng Kết & Xếp Hạng Kỷ Lục (Run Debriefing & High Score)
+- [ ] **3.4.1** Màn hình kết thúc lượt chạy hiển thị chi tiết:
+  - Tổng quãng đường bay được ($\text{Distance Reached}$).
+  - Cấp độ đe dọa tối đa vượt qua ($\text{Max Threat Level / Cycles Survived}$).
+  - Tổng số mục tiêu bị tiêu diệt ($\text{Enemy Hit Count}$).
+  - Số lần kích hoạt Graze thành công ($\text{Graze Count}$).
+  - Hệ số nhân cực đại chạm tới ($\text{Peak Multiplier}$).
+  - Tổng điểm số cuối cùng ($\text{Final Score}$).
+- [ ] **3.4.2** Thuật toán xếp hạng kỹ năng: **Rank D, Rank C, Rank B, Rank A, Rank S**.
+- [ ] **3.4.3** Trao tặng Huân Chương Sinh Tồn Vô Hạn (Endless Ace Medals) theo các cột mốc điểm số và quãng đường.
 
-### Task 3.5: Màn Hình Thất Bại (Mission Failed / Game Over)
-- [ ] **3.5.1** Hiển thị màn hình khi tàu bị bắn hạ: Thông báo thất bại, điểm số đạt được, tùy chọn Thử lại ngay (Retry Stage) hoặc Thoát về Menu.
-
-### Task 3.6: Hệ Thống Lưu Trữ Dữ Liệu Bền Vững (Save & Persistence Manager)
-- [ ] **3.6.1** Xây dựng [`SaveDataManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/SaveDataManager.cs) lưu trữ độc lập:
-  - Điểm cao kỷ lục của từng Stage (High Score per Stage).
-  - Điểm kỷ lục chế độ Endless (Endless Best Distance & Score).
-  - Trạng thái Huân chương đã mở khóa (Medal Unlock Flags).
-  - Cấu hình tùy chọn âm thanh và điều khiển người chơi đã chỉnh.
+### Task 3.5: Hệ Thống Lưu Trữ Dữ Liệu Bền Vững (SaveDataManager)
+- [ ] **3.5.1** Xây dựng [`SaveDataManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/SaveDataManager.cs) lưu trữ độc lập điểm cao kỷ lục, quãng đường xa nhất, danh sách huân chương và cấu hình người chơi.
 
 ---
 
-## VI. GIAI ĐOẠN 4: NỘI DUNG MỞ RỘNG & CHẾ ĐỘ CHƠI VÔ HẠN (EXPANDED CONTENT & ENDLESS)
-> **Mục tiêu:** Mở rộng trải nghiệm chiến dịch cho Stage 2/3 và hiện thực hóa Chế độ Chơi Vô hạn theo đúng đặc tả [`ENDLESS_SCORING_SPECIFICATION.md`](file:///d:/3D-Shooter-master/ENDLESS_SCORING_SPECIFICATION.md).
+## VI. GIAI ĐOẠN 4: HÀNH LANG THỦ TỤC & CHUYỂN TIẾP QUẦN XÃ (PROCEDURAL CORRIDOR & BIOMES)
+> **Mục tiêu:** Mở rộng trải nghiệm Endless với đường ray sinh thủ tục theo thời gian thực và chuyển tiếp quần xã liền mạch theo [`ENDLESS_SCORING_SPECIFICATION.md`](file:///d:/3D-Shooter-master/ENDLESS_SCORING_SPECIFICATION.md).
 
-### Task 4.1: Hoàn Thiện Kịch Bản Stage 2 (Volcano / Lava Planet)
-- [ ] **4.1.1** Xây dựng kịch bản Timeline trong [`StageData_02.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData_02.asset): Vùng biển dung nham, bão nhiệt, cột lửa phun trào ngẫu nhiên từ dưới lên.
-- [ ] **4.1.2** Tích hợp các đợt quái chuyên biệt: Phi đội tiêm kích lượn sườn, máy bay ném bom nhiệt đới.
+### Task 4.1: Bộ Ghép Nối Đường Ray Vô Hạn (Hermite Spline Chunker)
+- [ ] **4.1.1** Sinh đường ray liên tục theo từng đoạn Chunk $400 - 600\text{m}$, duy trì tối thiểu 3 Chunks đồng thời trong bộ nhớ.
+- [ ] **4.1.2** Đảm bảo tính trơn hình học $C^2$ tại hai đầu ghép nối (tiếp giáp vị trí, tiếp tuyến vận tốc và pháp tuyến độ cong).
 
-### Task 4.2: Hoàn Thiện Kịch Bản Stage 3 (Deep Space / Black Hole & Alien Citadel)
-- [ ] **4.2.1** Xây dựng kịch bản Timeline trong [`StageData_03.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData_03.asset): Không gian sâu thẳm, lực hút từ trường bẻ cong đạn đạo, phi đội phòng thủ pháo đài mẹ.
-- [ ] **4.2.2** Đại chiến Boss Tối Thượng kết thúc toàn bộ chiến dịch Lylat.
+### Task 4.2: Thuật Toán Bảo Chứng Khả Thi Hình Học (Golden Path Raycast)
+- [ ] **4.2.1** Chạy thuật toán mô phỏng hành lang an toàn $W_{ship} \times H_{ship} \times 1.5$ dọc theo Chunk mới sinh.
+- [ ] **4.2.2** Tự động loại bỏ và sinh lại seed mới nếu phát hiện "bức tường chết" (Unwinnable scenarios) không có lối thoát.
 
-### Task 4.3: Chế Độ Chơi Vô Hạn Thủ Tục (Endless Procedural Corridor theo TDD v2.0.0)
-- [ ] **4.3.1** **Bộ Ghép Nối Đường Ray Vô Hạn (Procedural Spline Chunker):**
-  - Sinh đường ray liên tục theo từng đoạn Chunk $400 - 600\text{m}$.
-  - Duy trì tối thiểu 3 Chunks đồng thời trong bộ nhớ và bảo đảm tính trơn hình học $C^2$ tại hai đầu ghép.
-- [ ] **4.3.2** **Hành Lang Thoát Hiểm Ảo (Golden Path Raycast):**
-  - Thuật toán quét trước kiểm định hình học để loại bỏ $100\%$ tình huống "bức tường chết" (Unwinnable scenarios).
-- [ ] **4.3.3** **Tái Định Vị Thế Giới (World Origin Shifting):**
-  - Dịch chuyển toàn bộ thực thể ngược về gốc $(0, 0, 0)$ mỗi khi đạt mốc tích lũy $4,000\text{m}$ để triệt tiêu hoàn toàn rung giật số thực (Floating-point jitter).
-- [ ] **4.3.4** **Bộ Điều Chỉnh Độ Khó Động (DDA 3 Pha Răng Cưa):**
-  - Chu kỳ $60 - 80\text{ giây}$: *Leo dốc (Ramp $60\%$) $\rightarrow$ Đỉnh điểm (Climax $25\%$) $\rightarrow$ Thư giãn/Hồi sức (Breather $15\%$)*.
+### Task 4.3: Tái Định Vị Thế Giới (World Origin Shifting)
+- [ ] **4.3.1** Tự động dịch chuyển toàn bộ thực thể ngược về gốc tọa độ $(0, 0, 0)$ mỗi mốc chu kỳ $4,000\text{m}$ để triệt tiêu hoàn toàn rung giật số thực 32-bit.
+- [ ] **4.3.2** Biến đo quãng đường tích lũy và bảng điểm sử dụng số thực 64-bit (`double`) độc lập, không bị ảnh hưởng bởi phép dịch chuyển.
+
+### Task 4.4: Chuyển Tiếp Quần Xã Liền Mạch & Cổng Rủi Ro (Biome Transitions & Risk Gates)
+- [ ] **4.4.1** **Hầm Chuyển Tiếp / Cổng Warp:** Sau mỗi 3 chu kỳ sinh tồn, đường ray dẫn vào hầm năng lượng để dỡ bộ asset cũ và nạp bộ asset quần xã mới (Vành đai Thiên thạch $\rightarrow$ Vùng Nham Thạch $\rightarrow$ Tinh Vân Không Gian Sâu).
+- [ ] **4.4.2** **Cổng Thách Thức Rủi Ro (Risk Gates):** Sinh các khe nứt piston hẹp chứa Huy hiệu Bạch kim, vượt qua thành công đóng băng thanh Multiplier trong $10\text{s}$.
 
 ---
 
@@ -189,14 +171,18 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 | *08/10/2026* | **PHASE 1** | Hoàn thành AudioManager 0 GC, Bộ tổng hợp SFX Arcade Star Fox 64, BGM Dual-Crossfader, Rung chấn Camera Impulse Traumatic Model | [`AudioManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/AudioManager.cs), [`VirtualRailCameraRig.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailCameraRig.cs), [`VirtualRailWeapon.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailWeapon.cs), [`AimAssistModule.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/AimAssistModule.cs), [`VirtualRailShip.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailShip.cs), [`Shield.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/Shield.cs), [`ShieldUI.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/ShieldUI.cs), [`StageData.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData.cs) | `0 Errors` | User (Thực hiện) |
 | *09/10/2026* | **BGM-LINK** | Tích hợp 4 bản nhạc nền MokkaMusic (Cryosleep, Pusher, Vision, Secrecy) vào StageData 1/2/3, nạp Playlist và MenuItem 44 | [`StageData_01.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData_01.asset), [`StageData_02.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData_02.asset), [`StageData_03.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData_03.asset), [`AudioManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/AudioManager.cs), [`VirtualRailModeToggle.cs`](file:///d:/3D-Shooter-master/Assets/Editor/VirtualRailModeToggle.cs) | `0 Errors` | User (Yêu cầu thêm nhạc) |
 | *09/10/2026* | **DUAL-SHUFFLE** | Xây dựng cơ chế Dual-Pool Shuffle: Stage Shuffle (4 bài, Deck Fisher-Yates, Auto-Crossfade 2.0s) & Boss Pool độc lập (tự động chuyển cảnh khi đấu Boss) | [`AudioManager.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/AudioManager.cs), [`VirtualRailStageDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailStageDirector.cs), [`VirtualRailModeToggle.cs`](file:///d:/3D-Shooter-master/Assets/Editor/VirtualRailModeToggle.cs), [`StageData_01.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData_01.asset) | `0 Errors` | User (Thực hiện) |
-| *--* | *--* | *Sẵn sàng kích hoạt Giai đoạn 2 (Boss & Mini-Boss Ecosystem)* | *--* | *--* | *--* |
+| *12/10/2026* | **DDA-FIX-B** | Khắc phục triệt để logic DDA: Nối dây tốc độ đạn quái tức thời vào EnemyAttack, bổ sung leo thang mật độ thiên thạch & tỉ lệ bất hoại, tăng tốc độ ray mượt mà theo Threat Level, cung cấp cặp MenuItem 49 & 50 | [`VirtualRailWaveSpawner.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailWaveSpawner.cs), [`VirtualRailAsteroidSpawner.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailAsteroidSpawner.cs), [`VirtualRailEndlessDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailEndlessDirector.cs), [`VirtualRailModeToggle.cs`](file:///d:/3D-Shooter-master/Assets/Editor/VirtualRailModeToggle.cs) | `0 Errors` | User (Thực hiện phương án B) |
+| *12/10/2026* | **HEX-SHIELD** | Tách biệt quỹ máu khiên 300 HP độc lập, hiệu ứng chớp sáng Neon White khi trúng đạn, tích hợp hiển thị 2 thanh đo song song Hull & Shield trên Cockpit HUD | [`VirtualRailHexShield.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailHexShield.cs), [`ModernCockpitHUD.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/ModernCockpitHUD.cs), [`VirtualRailShip.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailShip.cs) | `0 Errors` | User (Thực hiện) |
+| *12/10/2026* | **PHASE2-VISUAL** | Xây dựng Shader & Controller hiển thị Pha 2 Lò Phản Ứng: plasma cuộn chảy, nhịp thở nạp năng lượng, xung chớp giật gián đoạn khi trúng đạn, tự động tương thích fallback runtime | [`VirtualRail_ThermalReactorTrench.shader`](file:///d:/3D-Shooter-master/Assets/Shaders/VirtualRail_ThermalReactorTrench.shader), [`ReactorTrench_HotPlasma.mat`](file:///d:/3D-Shooter-master/Assets/Materials/ReactorTrench_HotPlasma.mat), [`VirtualRailReactorTrenchVisual.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailReactorTrenchVisual.cs) | `0 Errors` | User (Thực hiện) |
+| *12/10/2026* | **BOSS-RCA** | Khảo sát kiểm toán Root Cause Analysis logic Boss Corvette F3: phát hiện 5 logic bị mất và 5 xung đột va chạm/sát thương | [`MASTER_ROADMAP_TRACKER.md`](file:///d:/3D-Shooter-master/MASTER_ROADMAP_TRACKER.md) | `0 Errors` | User (Yêu cầu kiểm tra) |
+| *12/10/2026* | **ENDLESS-DOCS** | Đồng bộ hóa toàn diện tài liệu kiến trúc sang mô hình 100% Endless Virtual Rail Shooter & Deep Scoring Engine | [`README.md`](file:///d:/3D-Shooter-master/README.md), [`MASTER_ROADMAP_TRACKER.md`](file:///d:/3D-Shooter-master/MASTER_ROADMAP_TRACKER.md), [`LEVEL_DESIGN_SPECIFICATION.md`](file:///d:/3D-Shooter-master/LEVEL_DESIGN_SPECIFICATION.md), [`STAGE_1_DESIGN_DOCUMENT.md`](file:///d:/3D-Shooter-master/STAGE_1_DESIGN_DOCUMENT.md) | `0 Errors` | User (Yêu cầu cập nhật) |
 
 ---
 
 ## VIII. HƯỚNG DẪN RA LỆNH THỰC THI CHO NGƯỜI DÙNG (COMMAND QUICK REFERENCE)
 
 Khi bạn muốn bắt đầu triển khai bất kỳ hạng mục nào, chỉ cần ra lệnh bằng các câu lệnh mẫu sau:
-* *"Bắt đầu triển khai Giai đoạn 1"* $\implies$ AI sẽ lập phương án chi tiết cho Task 1.1 (AudioManager & SFX Pool).
-* *"Bắt đầu triển khai Task 1.1"* $\implies$ AI tập trung xây dựng module âm thanh tập trung.
-* *"Bắt đầu triển khai Giai đoạn 2"* $\implies$ AI tập trung thiết kế Boss FSM và Mini-Boss Cruiser.
-* *"Cập nhật tiến độ"* $\implies$ AI sẽ đọc trạng thái các file và cập nhật các checkbox `[x]` tương ứng trong file này.
+* *"Bắt đầu triển khai Task 2.4"* $\implies$ AI sẽ lập phương án chi tiết tách biệt Collider Khiên & Vỏ tàu, sửa bug splash damage 4x.
+* *"Bắt đầu triển khai Task 2.5"* $\implies$ AI tập trung khắc phục lỗi tháp pháo đóng băng và kết nối điểm yếu buồng lái `_mainBridge`.
+* *"Bắt đầu triển khai Task 2.6"* $\implies$ AI tập trung hoàn thiện Pha 3 cuồng nộ và kết nối sự kiện hạ Boss với vòng lặp Endless.
+* *"Bắt đầu triển khai Giai đoạn 3"* $\implies$ AI tập trung thiết kế HUD Endless (Multiplier 32x, Graze, Threat Level).

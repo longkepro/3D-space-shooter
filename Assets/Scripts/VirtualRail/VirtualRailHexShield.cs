@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace VirtualRail
@@ -6,15 +7,21 @@ namespace VirtualRail
     /// Component module hóa quản lý Tấm Khiên Năng Lượng Lưới Lục Giác (Procedural Hex Shield Barrier).
     /// Chuyên trách:
     /// 1. Vòng đời kích hoạt / tắt / quá tải vỡ khiên.
-    /// 2. Điều phối phản hồi thị giác chớp sáng trúng đạn (_HitFlash) bằng MaterialPropertyBlock.
-    /// 3. Tuyệt đối 0 GC Allocation trong vòng lặp Update().
-    /// 4. Đảm bảo hiển thị trường lực cự ly xa, không bị Small Mesh Culling ẩn mất.
+    /// 2. Quản lý độ bền/thanh máu riêng của Khiên (_maxShieldHealth, _currentShieldHealth).
+    /// 3. Điều phối phản hồi thị giác chớp sáng trúng đạn (_HitFlash) bằng MaterialPropertyBlock.
+    /// 4. Tuyệt đối 0 GC Allocation trong vòng lặp Update().
+    /// 5. Đảm bảo hiển thị trường lực cự ly xa, không bị Small Mesh Culling ẩn mất.
     /// </summary>
     [DisallowMultipleComponent]
     public class VirtualRailHexShield : MonoBehaviour
     {
         [Header("State")]
         [SerializeField] private bool _isActive = true;
+
+        [Header("Shield Durability")]
+        [SerializeField] private int _maxShieldHealth = 300;
+        [SerializeField] private int _currentShieldHealth = 300;
+        [SerializeField] private GameObject _overloadVfxPrefab;
 
         [Header("References")]
         [SerializeField] private Renderer _shieldRenderer;
@@ -33,6 +40,12 @@ namespace VirtualRail
 
         public bool IsActive => _isActive;
         public Collider ShieldCollider => _shieldCollider;
+        public int MaxShieldHealth => _maxShieldHealth;
+        public int CurrentShieldHealth => _currentShieldHealth;
+        public float ShieldHealthRatio => _maxShieldHealth > 0 ? (float)_currentShieldHealth / _maxShieldHealth : 0f;
+
+        public event Action<int, int> OnShieldHealthChanged;
+        public event Action OnShieldBroken;
 
         private void Awake()
         {
@@ -54,6 +67,7 @@ namespace VirtualRail
             }
 
             _propBlock = new MaterialPropertyBlock();
+            _currentShieldHealth = _maxShieldHealth;
             ApplyActiveState();
         }
 
@@ -79,6 +93,11 @@ namespace VirtualRail
         public void SetShieldActive(bool active)
         {
             _isActive = active;
+            if (active && _currentShieldHealth <= 0)
+            {
+                _currentShieldHealth = _maxShieldHealth;
+                OnShieldHealthChanged?.Invoke(_currentShieldHealth, _maxShieldHealth);
+            }
             ApplyActiveState();
         }
 
@@ -96,6 +115,54 @@ namespace VirtualRail
             {
                 _isFlashing = false;
             }
+        }
+
+        /// <summary>
+        /// Nhận sát thương trực tiếp vào lá chắn năng lượng (0 GC Alloc).
+        /// Trả về true nếu đòn đánh này làm khiên quá tải vỡ nát.
+        /// </summary>
+        public bool TakeDamage(int damage)
+        {
+            if (!_isActive) return false;
+
+            TriggerHitFlash();
+
+            _currentShieldHealth = Mathf.Max(0, _currentShieldHealth - damage);
+            OnShieldHealthChanged?.Invoke(_currentShieldHealth, _maxShieldHealth);
+
+            if (_currentShieldHealth <= 0)
+            {
+                BreakShield();
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Quá tải sập khiên: Phát âm thanh báo động/vỡ khiên, rung chấn và chuyển pha Boss.
+        /// </summary>
+        public void BreakShield()
+        {
+            if (!_isActive) return;
+
+            _currentShieldHealth = 0;
+            SetShieldActive(false);
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.ShieldAlarm, 1.0f);
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.ExplosionLarge, 0.9f);
+            }
+
+            VirtualRailCameraRig.TriggerShake(0.25f);
+
+            if (_overloadVfxPrefab != null && VirtualRailVFXPool.Instance != null)
+            {
+                VirtualRailVFXPool.Instance.SpawnVFX(_overloadVfxPrefab, transform.position, Quaternion.identity, null, 2.5f);
+            }
+
+            OnShieldBroken?.Invoke();
         }
 
         public void TriggerHitFlash()

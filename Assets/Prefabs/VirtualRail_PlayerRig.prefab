@@ -2550,6 +2550,11 @@ MonoBehaviour:
   ship: {fileID: 6043472655601008262}
   targetCamera: {fileID: 0}
   useExternalCamera: 0
+  maxShakeTranslationX: 0.45
+  maxShakeTranslationY: 0.35
+  maxShakeRotationZ: 2.5
+  traumaDecayRate: 1.4
+  shakeFrequency: 24
 --- !u!1 &4863059908659233633
 GameObject:
   m_ObjectHideFlags: 0

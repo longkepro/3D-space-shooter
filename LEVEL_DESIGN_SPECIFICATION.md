@@ -1,25 +1,26 @@
-# TÀI LIỆU THIẾT KẾ MÀN CHƠI TOÀN DIỆN (LEVEL DESIGN SPECIFICATION - LDS v1.0.0)
+# TÀI LIỆU THIẾT KẾ MÀN CHƠI TOÀN DIỆN & HÀNH LANG VÔ HẠN (LEVEL DESIGN SPECIFICATION - LDS v2.0.0)
 > **Dự án:** 3D Space Shooter (Virtual Rail Arcade Shooter)  
 > **Chuẩn tham chiếu:** Star Fox 64 (N64 US Rev 1.1), Panzer Dragoon Orta, Sin & Punishment  
-> **Trạng thái:** Tài liệu Đặc tả Thiết kế (Design Specification - Không can thiệp mã nguồn)  
-> **Hiệu lực:** Nguồn Chân Lý Thiết Kế Màn Chơi (Level Design Source of Truth)
+> **Định dạng vận hành:** Sinh Tồn Vô Hạn (Endless Procedural Rail & Cyclical Biome Incursions)  
+> **Trọng tâm:** Kết hợp biên đạo đội hình mẫu tinh xảo với giải thuật sinh hành lang vô hạn, đường cong nhịp độ răng cưa DDA và đại chiến Trùm đột kích tuần hoàn.  
+> **Hiệu lực:** Nguồn Chân Lý Thiết Kế Màn Chơi (Level Design Source of Truth).
 
 ---
 
 ## MỤC LỤC
 1. [Triết Lý Thiết Kế & Trụ Cột Trải Nghiệm (Design Pillars)](#1-triết-lý-thiết-kế--trụ-cột-trải-nghiệm)
-2. [Đặc Tính Động Lực Học Đường Ray & Thông Số Không Gian](#2-đặc-tính-động-lực-học-đường-ray--thông-số-không-gian)
-3. [Đường Cong Nhịp Độ & Căng Thẳng (Pacing & Tension Curve)](#3-đường-cong-nhịp-độ--căng-thẳng-pacing--tension-curve)
+2. [Đặc Tính Động Lực Học Đường Ray & Chu Kỳ Không Gian](#2-đặc-tính-động-lực-học-đường-ray--chu-kỳ-không-gian)
+3. [Đường Cong Nhịp Độ & Sóng Răng Cưa DDA (Pacing & Tension Curve)](#3-đường-cong-nhịp-độ--sóng-răng-cưa-dda)
 4. [Kiến Trúc Hệ Thống Màn Chơi Hướng Dữ Liệu (Data-Driven Architecture)](#4-kiến-trúc-hệ-thống-màn-chơi-hướng-dữ-liệu-data-driven-architecture)
-5. [Thiết Kế Chi Tiết Màn Chơi Mẫu 1: Vành Đai Thiên Thạch Meteo](#5-thiết-kế-chi-tiết-màn-chơi-mẫu-1-vành-đai-thiên-thạch-meteo)
+5. [Thiết Kế Chi Tiết Chu Kỳ Khởi Đầu: Vành Đai Thiên Thạch Meteo (Cycle 1 Incursion)](#5-thiết-kế-chi-tiết-chu-kỳ-khởi-đầu-vành-đai-thiên-thạch-meteo)
    - [Giai đoạn 1: Khởi Động & Nhận Diện ($Z: 0\text{m} - 2,500\text{m}$)](#giai-đoạn-1-khởi-động--nhận-diện-z-0m---2500m)
    - [Giai đoạn 2: Chiến Thuật Phi Đội & Đột Kích Sau Lưng ($Z: 2,500\text{m} - 6,500\text{m}$)](#giai-đoạn-2-chiến-thuật-phi-đội--đột-kích-sau-lưng-z-2500m---6500m)
    - [Giai đoạn 3: Hẻm Tử Thần & Vòng Năng Lượng ($Z: 6,500\text{m} - 11,500\text{m}$)](#giai-đoạn-3-hẻm-tử-thần--vòng-năng-lượng-z-6500m---11500m)
    - [Giai đoạn 4: Trung Hạm Tuần Dương Mini-Boss ($Z: 11,500\text{m} - 14,500\text{m}$)](#giai-đoạn-4-trung-hạm-tuần-dương-mini-boss-z-11500m---14500m)
-   - [Giai đoạn 5: Đại Chiến Pháo Đài Lõi Boss Cuối ($Z: 14,500\text{m} - 19,000\text{m}$)](#giai-đoạn-5-đại-chiến-pháo-đài-lõi-boss-cuối-z-14500m---19000m)
-   - [Giai đoạn 6: Thoát Ly & Bảng Vinh Danh ($Z > 19,000\text{m}$)](#giai-đoạn-6-thoát-ly--bảng-vinh-danh-z--19000m)
+   - [Giai đoạn 5: Đại Chiến Trùm Tuần Duyên Corvette F3 ($Z: 14,500\text{m} - 18,500\text{m}$)](#giai-đoạn-5-đại-chiến-trùm-tuần-duyên-corvette-f3)
+   - [Giai đoạn 6: Chuyển Tiếp Quần Xã & Mở Khóa Chu Kỳ Mới ($Z > 18,500\text{m}$)](#giai-đoạn-6-chuyển-tiếp-quần-xã--mở-khóa-chu-kỳ-mới)
 6. [Hệ Thống Phân Loại Địch & Ma Trận Cân Bằng (Archetypes & Balance Sheet)](#6-hệ-thống-phân-loại-địch--ma-trận-cân-bằng)
-7. [Cơ Chế Thưởng Rủi Ro & Săn Huân Chương (Medal & Score Attack)](#7-cơ-chế-thưởng-rủi-ro--săn-huân-chương)
+7. [Cơ Chế Thưởng Rủi Ro & Săn Điểm Kỷ Lục (High-Score & Risk Engine)](#7-cơ-chế-thưởng-rủi-ro--săn-điểm-kỷ-lục)
 
 ---
 
@@ -30,107 +31,103 @@
 │                           3 TRỤ CỘT THIẾT KẾ                            │
 ├───────────────────────┬─────────────────────────┬───────────────────────┤
 │ 1. ĐIỀU KHIỂN CHÍNH XÁC│ 2. NHỊP ĐỘ ĐIỆN ẢNH     │ 3. THƯỞNG - PHẠT RÕ RÀNG│
-│ Máy bay phản hồi tức  │ Xen kẽ giữa ngắm bắn thư│ Cơ chế Rủi ro / Phần  │
-│ thì, không quán tính  │ thả, luồn lách nghẹt thở│ thưởng (Risk/Reward), │
-│ trôi dạt, triệt tiêu  │ và đối đầu trùm hoành   │ săn Combo Hit Count   │
-│ hoàn toàn sai số 3D.  │ tráng.                  │ đoạt Huân chương Vàng.│
+│ Máy bay phản hồi tức  │ Sóng răng cưa 3 pha DDA:│ Cơ chế Rủi ro / Phần  │
+│ thì, không quán tính  │ Leo dốc -> Đột kích trùm│ thưởng, Graze cận kề, │
+│ trôi dạt, triệt tiêu  │ -> Thư giãn hồi sức     │ Multiplier 32x săn kỷ │
+│ hoàn toàn sai số 3D.  │ xuyên suốt vô hạn.      │ lục Leaderboard.      │
 └───────────────────────┴─────────────────────────┴───────────────────────┘
 ```
 
-1. **Khác biệt cốt lõi giữa "Endless Survival" và "Handcrafted Level":**
-   - **Endless:** Quái vật và thiên thạch sinh lặp ngẫu nhiên vô tận, thiếu cao trào, người chơi nhanh chán vì không có mục tiêu về đích.
-   - **Handcrafted Level:** Từng chiếc tàu địch, từng cụm thiên thạch và góc cua được **đo ni đóng giày** theo từng mét bay. Người chơi học thuộc nhịp điệu màn chơi, tối ưu hóa đường bay để đạt điểm tối đa (Mastery through repetition).
-2. **Chu kỳ Căng thẳng - Giải tỏa (Tension & Release):**
-   - Không duy trì áp lực $100\%$ liên tục khiến người chơi kiệt sức (sensory fatigue).
-   - Sau mỗi đợt giao tranh dữ dội (High Tension) luôn có một khoảng lặng $4 - 6\text{s}$ (Breathing Room) với thiên thạch thưa hoặc vòng hồi máu để người chơi định thần trước khi bước vào đợt sóng mới.
+### 1.1. Sự Kết Hợp Giữa Biên Đạo Tinh Xảo và Sinh Hành Lang Vô Hạn
+Tựa game dung hòa hai thái cực thiết kế để tạo nên trải nghiệm gây nghiện sâu sắc:
+1. **Biên Đạo Đội Hình Mẫu (Handcrafted Choreography Patterns):**
+   * Từng đợt quái xuất hiện theo các quỹ đạo Bézier 3D được tính toán kỹ lưỡng (Wedge, Echelon, Diamond, Spiral, Rear Ambush).
+   * Mỗi phi đội đều có Tàu Chỉ huy (Leader) và quy tắc phá vỡ đội hình (Panic Scatter) giúp người chơi thỏa mãn cảm giác bắn tụ lực Charge Shot nổ lan dọn sạch cả bầy (+Squad Clear Bonus).
+2. **Sinh Hành Lang Vô Hạn & Điều Chỉnh Độ Khó Động (Endless Procedural Rail & DDA):**
+   * Đường ray sinh thủ tục liên tục theo từng Chunk $400 - 600\text{m}$ với điều kiện trơn hình học $C^2$ và thuật toán quét trước bảo chứng khả thi (Golden Path Raycast).
+   * Độ khó không tăng hỗn loạn mà vận hành theo **Mô hình Sóng Răng Cưa Tăng Tiến (Cyclical Escalation Architecture)**: Leo dốc ($60\%$) $\rightarrow$ Đột kích Trùm / Phi đội Át chủ bài ($25\%$) $\rightarrow$ Thư giãn hồi phục ($15\%$).
 
 ---
 
-## 2. ĐẶC TÍNH ĐỘNG LỰC HỌC ĐƯỜNG RAY & THÔNG SỐ KHÔNG GIAN
+## 2. ĐẶC TÍNH ĐỘNG LỰC HỌC ĐƯỜNG RAY & CHU KỲ KHÔNG GIAN
 
-Mọi khoảng cách trong tài liệu này được tính toán dựa trên hệ quy chiếu vật lý thực tế của tàu Arwing đã hoàn thiện trong dự án:
+Mọi khoảng cách được tính toán dựa trên hệ quy chiếu vật lý thực tế của tàu Arwing trong dự án:
 
-| Thông số | Giá trị chuẩn | Thời gian bay tương ứng |
+| Thông số | Giá trị chuẩn | Thời gian bay tương ứng / Ghi chú |
 | :--- | :--- | :--- |
 | **Vận tốc bay cơ sở ($V_{rail}$)** | $120\text{ m/s}$ ($432\text{ km/h}$) | $1,000\text{m} = 8.33\text{ giây}$ |
 | **Vận tốc Tăng tốc ($V_{boost}$)** | $180\text{ m/s}$ ($+50\%$) | Tiêu hao năng lượng Boost trong tối đa $3.0\text{s}$ |
 | **Vận tốc Phanh hãm ($V_{brake}$)** | $60\text{ m/s}$ ($-50\%$) | Tạo cửa sổ $1.5\times$ thời gian để bắn tỉa |
 | **Hành lang bay khả dụng ($X \times Y$)** | Rộng $\pm 22\text{m}$, Cao $1.5\text{m} \sim 15.5\text{m}$ | Khung Frustum máy ảnh tại tiêu cự chuẩn $FOV = 40^\circ$ |
 | **Cự ly xuất hiện cảnh báo ($Z_{lead}$)** | $220\text{m} \sim 260\text{m}$ | Cung cấp cửa sổ phản xạ $1.8\text{s} - 2.2\text{s}$ |
-| **Tổng chiều dài Màn 1** | **$19,000\text{m}$** | **Tổng thời gian bay: $\approx 2\text{ phút } 45\text{ giây}$** |
+| **Chiều dài một Chu kỳ Sinh tồn** | **$2,500\text{m} - 3,500\text{m}$** | **Thời gian mỗi chu kỳ: $60 - 80\text{ giây}$** |
+| **Chu kỳ Tái định vị Thế giới** | **$4,000\text{m}$** | Dịch chuyển toàn bộ thực thể về $(0, 0, 0)$ triệt tiêu floating jitter |
 
 ---
 
-## 3. ĐƯỜNG CONG NHỊP ĐỘ & CĂNG THẲNG (PACING & TENSION CURVE)
+## 3. ĐƯỜNG CONG NHỊP ĐỘ & SÓNG RĂNG CƯA DDA
 
-Đồ thị biểu diễn mức độ căng thẳng của người chơi (Thang điểm $1 - 10$) trải dài từ xuất phát đến khi diệt Boss:
+Trong môi trường vô hạn, áp lực tâm lý của người chơi được điều phối theo mô hình **Sóng Răng Cưa 3 Pha Tuần Hoàn (Cyclical Tri-Phase Curve)**:
 
 ```mermaid
 xychart-beta
-    title "ĐƯỜNG CONG CĂNG THẲNG MÀN 1: METEO ASTEROID BREACH"
-    x-axis ["0m", "2km", "4km", "6km", "8km", "10km", "12km", "14km", "16km", "18km", "19km+"]
+    title "MÔ HÌNH SÓNG RĂNG CƯA DDA (ENDLESS ESCALATION CURVE)"
+    x-axis ["0km (Ramp)", "1.5km", "2.5km (Climax)", "3km (Restock)", "4km (Ramp 2)", "5.5km", "6.5km (Climax 2)", "7km (Restock)"]
     y-axis "Mức Độ Căng Thẳng (1-10)" 0 --> 10
-    bar [2, 3, 5, 4, 8, 6, 9, 7, 10, 2, 1]
-    line [2, 3, 5, 4, 8, 6, 9, 7, 10, 2, 1]
+    bar [2, 5, 9, 2, 4, 7, 10, 3]
+    line [2, 5, 9, 2, 4, 7, 10, 3]
 ```
 
-- **Pha 1 ($0\text{m} - 2.5\text{km}$):** Căng thẳng $2 \rightarrow 3$ (Khởi động, làm quen nhịp bắn).
-- **Pha 2 ($2.5\text{km} - 6.5\text{km}$):** Căng thẳng $4 \rightarrow 5$ (Phi đội bay, rèn luyện kỹ năng săn combo).
-- **Pha 3 ($6.5\text{km} - 11.5\text{km}$):** Căng thẳng vọt lên **8** (Hẻm thiên thạch tử thần, luồn lách nhấp nhô, lộn cánh Barrel Roll).
-- **Pha 4 ($11.5\text{km} - 14.5\text{km}$):** Căng thẳng chạm **9** (Mini-Boss Tuần dương hạm xuất hiện).
-- **Pha 5 ($14.5\text{km} - 18.5\text{km}$):** Căng thẳng đạt đỉnh **10** (Đại chiến Pháo Đài Lõi - 3 pha sinh tử).
-- **Pha 6 ($> 18.5\text{km}$):** Căng thẳng hạ về **1** (Chiến thắng, trút bỏ gánh nặng, vinh danh điểm số).
+1. **Pha Leo Dốc (Ramp Phase - $60\%$ thời lượng chu kỳ):**
+   * Căng thẳng tăng tuyến tính từ mức $2 \to 6$.
+   * Tăng dần mật độ quái vật, tốc độ tiếp cận và tỷ lệ thiên thạch bất hoại Monolith.
+2. **Pha Đỉnh Điểm (Climax Encounter - $25\%$ thời lượng chu kỳ):**
+   * Căng thẳng chạm đỉnh $9 - 10$.
+   * Hành lang bị thu hẹp, xuất hiện bầy tiêm kích bủa vây gọng kìm hoặc kích hoạt **Đột Kích Trùm Tuần Duyên (Corvette F3 Apex Incursion)**.
+3. **Pha Thư Giãn & Thu Hoạch (Breather / Restock - $15\%$ thời lượng chu kỳ):**
+   * Căng thẳng hạ tức thời về mức $1 - 2$.
+   * Không gian mở rộng, xuất hiện các chuỗi Vòng Năng Lượng (Gold Rings / Silver Rings) hồi máu, sạc khiên và nâng cấp hỏa lực trước khi bước vào chu kỳ tiếp theo với Threat Level cao hơn.
 
 ---
 
 ## 4. KIẾN TRÚC HỆ THỐNG MÀN CHƠI HƯỚNG DỮ LIỆU (DATA-DRIVEN ARCHITECTURE)
 
-Để đảm bảo hiệu năng tối cao **0 GC Allocation trong Game Loop**, hệ thống quản lý màn chơi được cấu trúc theo nguyên lý tách rời Dữ liệu (Data) và Trình thực thi (Director):
+Hệ thống kết hợp giữa kịch bản mẫu tĩnh ([`StageData.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData.cs)) và bộ điều phối vô hạn ([`VirtualRailEndlessDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailEndlessDirector.cs)):
 
 ```mermaid
 flowchart TD
     subgraph Data Layer [Tầng Dữ Liệu ScriptableObject]
-        A["StageData.asset (Màn 1: Meteo)"]
-        A --> B["Milestone Events (Sắp xếp theo trục Z tăng dần)"]
+        A["StageData_01.asset (Starter Biome)"]
+        B["FormationPatternData (Wedge, Echelon, Flanker)"]
+        C["ThreatBudgetMatrix (Chỉ số leo thang DDA)"]
     end
 
-    subgraph Runtime Director [Tầng Điều Phối Runtime]
-        C["StageDirector (MonoBehaviour)"]
-        D["VirtualRailAnchor (Đọc tọa độ Z hiện tại)"]
-        D -->|Cung cấp Z| C
-        B -->|Đọc Event kế tiếp| C
-        C -->|Trigger khi Z >= Event.Z| E{"Loại Sự Kiện?"}
+    subgraph Runtime Director [Tầng Điều Phối Runtime 0 GC]
+        D["VirtualRailEndlessDirector (Quản lý Chu kỳ, DDA & Threat Level)"]
+        E["VirtualRailAnchor (Theo dõi quãng đường tích lũy S)"]
+        E -->|Cung cấp Distance S| D
+        A -->|Nạp Kịch Bản Mẫu Chu Kỳ 1| D
+        C -->|Nạp Ngân Sách Nguy Hiểm| D
     end
 
-    subgraph Execution Systems [Hệ Thống Thực Thi]
-        E -->|Wave / Formation| F["VirtualRailWaveSpawner (Lấy từ Pool)"]
-        E -->|Asteroid Field| G["VirtualRailAsteroidSpawner (Đổi mật độ)"]
-        E -->|Hazard / Gate| H["EnvironmentObstaclePool (Sinh cổng/đá lớn)"]
-        E -->|Mini-Boss / Boss| I["BossLifecycleFSM (Kích hoạt đấu trùm)"]
-        E -->|HUD Alert| J["DualReticleHUD / VoiceUI (Báo động màn hình)"]
+    subgraph Execution Systems [Hệ Thống Thực Thi Object Pool]
+        D -->|Wave / Formation| F["VirtualRailWaveSpawner (Lấy quái từ Pool)"]
+        D -->|Asteroid Field| G["VirtualRailAsteroidSpawner (Cập nhật mật độ DDA)"]
+        D -->|Apex Boss Incursion| H["BossLifecycleFSM (Chiến hạm Corvette F3)"]
+        D -->|Scoring & Multiplier| I["ScoringEngine (Multiplier 32x & Graze)"]
+        D -->|HUD Presentation| J["ModernCockpitHUD (Hull & Shield Gauges)"]
     end
 ```
 
-### Cấu Trúc Dữ Liệu Sự Kiện Màn Chơi (Milestone Event Data)
-Mỗi sự kiện trên đường ray là một struct phẳng (Value Type) không cấp phát bộ nhớ động:
-- **`TriggerZ` (float):** Mốc tọa độ Z trên đường ray để kích hoạt sự kiện ($0 \sim 20,000\text{m}$).
-- **`Type` (enum):**
-  - `EnemyWave`: Triệu gọi đợt quái đơn lẻ theo Vector không gian chỉ định.
-  - `FormationEncounter`: Triệu gọi phi đội bay ráp nối Bézier 3D (Wedge, Echelon, Spiral).
-  - `AsteroidDensityModulation`: Thay đổi tần suất và biên độ uốn lượn của dải thiên thạch Perlin.
-  - `RingGateBonus`: Đặt cụm cổng hồi máu/khiên tại vị trí xác định.
-  - `DialogueAlert`: Bật thông điệp thoại radio và cảnh báo nguy hiểm trên HUD.
-  - `BossEncounter`: Neo tàu vào đấu trường trùm và kích hoạt thanh máu Boss.
-  - `StageClear`: Kích hoạt cắt cảnh thắng trận và tổng kết điểm.
-
 ---
 
-## 5. THIẾT KẾ CHI TIẾT MÀN CHƠI MẪU 1: VÀNH ĐAI THIÊN THẠCH METEO
+## 5. THIẾT KẾ CHI TIẾT CHU KỲ KHỞI ĐẦU: VÀNH ĐAI THIÊN THẠCH METEO
+*(Starter Biome / Cycle 1 Incursion Run)*
 
 ### TỔNG QUAN NHIỆM VỤ (MISSION BRIEFING)
-- **Địa điểm:** Vành đai tiểu hành tinh Meteo (Outer Rim Asteroid Field).
-- **Mục tiêu chính:** Vượt qua vành đai thiên thạch phòng thủ, tiêu diệt Trung Hạm Tiền Tiêu và phá hủy hoàn toàn **Pháo Đài Lõi Năng Lượng Gorgon Core**.
-- **Mục tiêu phụ (Săn Huân Chương):** Đạt tối thiểu **$150\text{ Hits}$** và duy trì khiên tàu trên $70\%$.
+- **Địa điểm:** Vành đai tiểu hành tinh Meteo (Outer Rim Asteroid Belt).
+- **Mục tiêu:** Vượt qua hành lang thiên thạch khởi đầu, làm quen nhịp độ bay Arwing, tiêu diệt Trung Hạm Tuần Tiêu và đánh bại **Chiến Hạm Tuần Duyên Liên Bang Corvette F3 ("Crimson Titan")**.
+- **Mục tiêu săn điểm:** Đạt chuỗi Combo Multiplier tối thiểu $16\times$, thu thập đủ 5 Vòng Vàng để mở khóa Twin Laser vĩnh viễn và hoàn tất trận đấu Trùm với khiên còn nguyên vẹn.
 
 ---
 
@@ -138,14 +135,13 @@ Mỗi sự kiện trên đường ray là một struct phẳng (Value Type) khô
 *Thời gian dự kiến: $0\text{s} - 21\text{s}$ | Mức căng thẳng: $2/10$*
 
 ```text
-[Z = 0m]      ──► BẮT ĐẦU MÀN: Tàu xuất phát từ khoang phóng mẹ, tăng tốc lên 120 m/s.
-[Z = 400m]    ──► THIÊN THẠCH THƯA: Vài tảng đá nhỏ trôi dạt (khoảng cách 150m), dễ dàng bắn nổ bằng 1 phát đạn.
+[Z = 0m]      ──► XUẤT KÍCH: Tàu Arwing tách khỏi tàu mẹ, ổn định vận tốc cơ sở 120 m/s.
+[Z = 400m]    ──► THIÊN THẠCH THƯA: Vài tảng đá nhỏ trôi dạt (cự ly 150m), dễ dàng bắn nổ bằng 1 phát đạn.
 [Z = 1,000m]  ──► ĐỢT TRINH SÁT 1: 3 Tàu địch trinh sát bay trực diện (Frontal Head-on).
-                  Bay thẳng tắp, không xả đạn, mục đích để người chơi làm quen với hồng tâm và tiêu cự hội tụ.
+                  Bay thẳng tắp, không xả đạn, người chơi làm quen với Dual Reticle và tiêu cự hội tụ.
 [Z = 1,800m]  ──► ĐỢT TRINH SÁT 2: 4 Tàu địch bay lượn sóng hình Sin nhẹ.
-                  Thử thách người chơi rê chuột/analog đón đầu đường bay.
+                  Thử thách rê chuột/analog đón đầu đường bay (Lead Aiming).
 ```
-* **Mục đích thiết kế:** Giúp người chơi căn chỉnh độ nhạy chuột/cần điều khiển, kiểm tra khả năng bắn đạn chụm ở cự ly xa ($150\text{m}$).
 
 ---
 
@@ -156,15 +152,15 @@ Mỗi sự kiện trên đường ray là một struct phẳng (Value Type) khô
 [Z = 2,800m]  ──► PHI ĐỘI CHỮ V (WEDGE FORMATION):
                   Phi đội 3 tàu ráp nối Bézier từ trần mây lao xuống.
                   - Slot 0 (Chỉ huy đỏ) nằm ở đỉnh chữ V, 2 tàu cánh bảo vệ phía sau.
-                  - Thưởng: Nếu diệt Tàu Chỉ huy trước, 2 tàu cánh sẽ Panic Scatter (tán loạn) -> Người chơi
-                    dùng Charge Shot nổ lan hốt trọn cả cụm, nhận ngay Combo +5 Hits!
+                  - Thưởng: Diệt Tàu Chỉ huy trước -> 2 tàu cánh Panic Scatter -> Người chơi dùng
+                    Charge Shot nổ lan hốt trọn cụm, nhận ngay Combo Multiplier +1 Cấp!
 [Z = 4,000m]  ──► CẢNH BÁO REAR AMBUSH (ĐỘT KÍCH SAU LƯNG):
                   Âm thanh radar kêu "BEEP-BEEP!". 2 Tàu tiêm kích địch vọt lên từ sau lưng (Z = -40m),
-                  áp sát 2 bên sườn tàu người chơi và bắt đầu xả đạn Plasma Orb.
+                  áp sát 2 bên sườn và xả đạn Plasma Orb.
                   - Ống xả đuôi tàu địch phát sáng đỏ (Điểm yếu chí mạng - 1 Hit tiêu diệt).
 [Z = 5,200m]  ──► PHI ĐỘI HÀNG NGANG (ECHELON):
                   4 Tàu địch dàn hàng ngang quét từ biên trái sang biên phải màn hình.
-                  Buộc người chơi phải tích tụ Charge Shot phóng vào giữa để tạo chấn động nổ lan.
+                  Buộc người chơi tụ lực Charge Shot phóng vào giữa để tạo chấn động nổ lan.
 [Z = 6,200m]  ──► KHOẢNG LẶNG ĐỊNH THẦN (BREATHING ROOM):
                   Không gian vắng bóng tàu địch trong 3 giây.
                   Xuất hiện 1 Vòng Bạc hồi phục khiên (Silver Ring) trôi ngay giữa màn hình.
@@ -178,19 +174,17 @@ Mỗi sự kiện trên đường ray là một struct phẳng (Value Type) khô
 ```text
 [Z = 6,600m]  ──► BƯỚC VÀO TRẬN ĐỊA THIÊN THẠCH DÀY ĐẶC (ASTEROID TRENCH RUN):
                   - Mật độ thiên thạch tăng vọt (bước Z giảm từ 50m xuống 25m).
-                  - Xuất hiện các khối THIÊN THẠCH KHỔNG LỒ (Megarocks) đường kính 20m không thể phá hủy.
-                  - Hẻm bay an toàn Perlin Spine bắt đầu uốn lượn ngoằn ngoèo:
+                  - Xuất hiện các khối THIÊN THẠCH KHỔNG LỒ (Monoliths) đường kính 20m không thể phá hủy.
+                  - Hẻm bay an toàn uốn lượn ngoằn ngoèo:
                     * Khúc cua 1 (Z = 7,500m): Đánh võng gấp sang mép trái (X = -18m).
                     * Khúc cua 2 (Z = 8,800m): Nâng độ cao đột ngột lên trần mây (Y = 14m).
 [Z = 7,800m]  ──► CHUỖI 3 CỔNG VÀNG RỦI RO / PHẦN THƯỞNG (GOLD RING RUN):
                   - 3 Cổng Vàng được đặt liên tiếp ngay sát rìa các tảng đá khổng lồ.
-                  - Thách thức: Muốn ăn cổng, người chơi buộc phải bay mấp mé va quẹt đá.
-                  - Phần thưởng:
-                    * Ăn đủ 3 cổng: Tàu lập tức hồi 100% khiên và nâng cấp hỏa lực lên TWIN LASER!
+                  - Thách thức: Người chơi buộc phải bay mấp mé va quẹt đá để ăn trọn chuỗi cổng.
+                  - Phần thưởng: Hồi 100% khiên lục giác và nâng cấp vĩnh viễn lên TWIN LASER!
 [Z = 9,500m]  ──► ĐỐI ĐẦU ĐỊCH TẠT SƯỜN TRONG HẺM ĐÁ (FLANKING HAZARDS):
-                  Trong khi đang luồn lách né đá, kẻ địch cắt ngang từ 2 vách hẻm (Lateral Flanking)
-                  xả đạn Plasma Orb dày đặc.
-                  - Đây là thời điểm VÀNG để kích hoạt BARREL ROLL: Nhấp đúp lộn cánh để bẻ gãy đạn địch
+                  Trong khi đang luồn lách né đá, kẻ địch cắt ngang từ 2 vách hẻm xả bão đạn.
+                  - Thời điểm VÀNG kích hoạt BARREL ROLL: Nhấp đúp lộn cánh bẻ gãy bão đạn địch
                     mà không cần nhả lái tránh đá!
 ```
 
@@ -206,109 +200,103 @@ Mỗi sự kiện trên đường ray là một struct phẳng (Value Type) khô
 [Z = 11,800m] ──► GIAO TRANH 3 CỤM MỤC TIÊU:
                   - Tháp pháo cánh trái (HP: 60): Bắn đạn chùm 3 viên.
                   - Tháp pháo cánh phải (HP: 60): Bắn đạn chùm 3 viên.
-                  - Ống phóng tên lửa trung tâm (HP: 120): Liên tục phóng Tên lửa dẫn đường (Missiles).
+                  - Ống phóng tên lửa trung tâm (HP: 120): Liên tục phóng Tên lửa dẫn đường.
 [Z = 12,200m] ──► THẾ TRẬN ĐỐI KHÁNG:
-                  - Người chơi có thể bắn nổ các quả tên lửa tầm nhiệt ngay trên không (Destructible Projectiles).
-                  - Nếu bắn nổ 2 tháp pháo cánh: Tàu mẹ bộc lộ Buồng Lái (Bridge Weakpoint).
+                  - Bắn nổ tên lửa tầm nhiệt trên không (Destructible Projectiles).
+                  - Bắn nổ 2 tháp pháo cánh bộc lộ Buồng Lái (Bridge Weakpoint).
 [Z = 13,800m] ──► TIÊU DIỆT MINI-BOSS:
-                  - Bắn nổ buồng lái: Toàn bộ tuần dương hạm nổ tung thành chuỗi pháo hoa rực sáng.
-                  - Rơi ra 1 biểu tượng BOM THÔNG MINH (Smart Bomb Pick-up) và thưởng ngay +10 Hits!
+                  - Bắn nổ buồng lái: Chiến hạm nổ tung, rơi 1 BOM THÔNG MINH và thưởng +10 Hits!
 ```
 
 ---
 
-### GIAI ĐOẠN 5: ĐẠI CHIẾN PHÁO ĐÀI LÕI BOSS CUỐI ($Z: 14,500\text{m} - 19,000\text{m}$)
-*Thời gian dự kiến: $121\text{s} - 165\text{s}$ | Mức căng thẳng: $10/10$ (ĐỈNH CAO TRÀO)*
+### GIAI ĐOẠN 5: ĐẠI CHIẾN TRÙM TUẦN DUYÊN CORVETTE F3
+*($Z: 14,500\text{m} - 18,500\text{m}$ | ĐỈNH CAO TRÀO CHU KỲ 1)*
 
 ```text
-[Z = 14,500m] ──► KÍCH HOẠT ĐẤU TRƯỜNG TRÙM (BOSS ARENA LOCK):
-                  - Màn hình chuyển viền báo động đỏ: "WARNING! GORGON CORE DETECTED".
-                  - Tốc độ đường ray hãm về vận tốc tuần tra chậm V = 30 m/s để người chơi tập trung quần thảo.
-                  - Thanh Máu Trùm (Boss HP Bar) hiện ra ở đáy màn hình với 3 phân đoạn máu.
+[Z = 14,500m] ──► KÍCH HOẠT ĐẤU TRƯỜNG TRÙM (APEX BOSS INCURSION):
+                  - Báo động đỏ toàn màn hình: "WARNING! CORVETTE F3 'CRIMSON TITAN' DETECTED".
+                  - Tốc độ ray hãm về vận tốc tuần tra chậm V = 10 m/s để người chơi tập trung quần thảo.
+                  - Thanh Máu Boss hiện ở đáy màn hình với 3 phân đoạn máu riêng biệt.
 ```
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Phase1_RotatingShields: Tiếp cận Boss
-    Phase1_RotatingShields --> Phase2_MissileSwarm: Máu còn 66% (Khiên Vỡ 2 Mảnh)
-    Phase2_MissileSwarm --> Phase3_HyperLaserOverdrive: Máu còn 33% (Khiên Nổ Hoàn Toàn)
-    Phase3_HyperLaserOverdrive --> BossDefeated: Máu về 0 (Nổ Dây Chuyền)
+    [*] --> Phase1_HexShield_Turrets: Tiếp cận Boss
+    Phase1_HexShield_Turrets --> Phase2_ThermalReactorTrench: Sập Khiên Hex (300 HP) / Máu còn 66%
+    Phase2_ThermalReactorTrench --> Phase3_OverdriveCoreLaser: Phá Khe Nhiệt (300 HP) / Máu còn 33%
+    Phase3_OverdriveCoreLaser --> BossDefeated: Máu về 0 (Nổ Dây Chuyền)
+    BossDefeated --> BiomeTransition_Warp: Mở Cổng Warp Chu Kỳ 2
 ```
 
-#### Quy Luật 3 Pha Của Boss "Gorgon Core":
-1. **Pha 1: Khiên Hợp Kim Xoay Vòng (Rotating Armor Plates - $100\% \rightarrow 66\%\text{ HP}$):**
-   - 4 Tấm khiên thép xoay quanh lõi năng lượng với tốc độ $45^\circ/\text{s}$.
-   - Lõi chỉ bị sát thương khi đạn lọt qua khe hở giữa 2 tấm khiên.
-   - Ụ súng trung tâm bắn đạn Plasma đan chéo dạng lưới (yêu cầu lộn cánh Barrel Roll hất đạn).
-2. **Pha 2: Bão Tên Lửa & Vòng Xung Kích EMP ($66\% \rightarrow 33\%\text{ HP}$):**
-   - 2 Tấm khiên nổ tung. Tốc độ xoay tăng gấp đôi ($90^\circ/\text{s}$).
-   - Boss phóng liên thanh 6 quả tên lửa tự dẫn đuổi theo tàu. Người chơi phải tụ lực Charge Shot bắn nổ tên lửa giữa đường bay hoặc phóng Smart Bomb giải vây.
-   - Boss dộng sàn năng lượng phát ra các vòng sóng xung kích màu lam (phải Boost bay vút lên trần để né).
-3. **Pha 3: Cuồng Nộ & Tia Hủy Diệt Hyper Laser ($33\% \rightarrow 0\%\text{ HP}$ - Rage Mode):**
-   - Toàn bộ khiên nổ sạch. Lõi năng lượng chuyển sang màu đỏ rực cảnh báo quá tải.
-   - **Tia Hủy Diệt (Death Ray):** Boss nạp năng lượng trong $2.0\text{s}$ (vệt tia laser cảnh báo màu tím nhấp nháy), sau đó quét 1 luồng laser cực đại bao phủ $60\%$ diện tích màn hình. Người chơi phải ép tàu sát góc mép biên để sống sót.
-   - Đây là **cửa sổ vàng (Golden Window)**: Khi Boss đang quét laser, lõi hoàn toàn mất phòng thủ. Người chơi xả toàn bộ bom và đạn đôi để dứt điểm trùm!
+#### Quy Luật 3 Pha Của Boss Tuần Duyên Corvette F3:
+1. **Pha 1: Khiên Năng Lượng Lục Giác & Hỏa Lực Sườn ($100\% \rightarrow 66\%\text{ HP}$):**
+   * Boss triển khai lớp khiên lục giác bao bọc thân trên ([`VirtualRailHexShield.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailHexShield.cs) - $300\text{ HP}$), phát sáng chớp trắng Neon White khi trúng đạn.
+   * 2 Tháp pháo cánh xả đạn plasma và phóng tên lửa tự dẫn.
+   * Người chơi tập trung hỏa lực bắn sập khiên để bộc lộ cấu trúc bên dưới.
+2. **Pha 2: Hẻm Lò Phản Ứng Lộ Diện ($66\% \rightarrow 33\%\text{ HP}$):**
+   * Lớp khiên sụp đổ, khe tản nhiệt nhiệt hạch bộc lộ hiệu ứng dung nham plasma rực sáng ([`VirtualRail_ThermalReactorTrench.shader`](file:///d:/3D-Shaders/VirtualRail_ThermalReactorTrench.shader)).
+   * Boss bắt đầu tích tụ năng lượng theo từng xung nhịp thở. Bắn trúng hẻm lò phản ứng sẽ làm gián đoạn xung nạp (Stun Interrupt Glitch).
+   * Ống xả phụ và buồng lái `_mainBridge` trở thành mục tiêu săn điểm thưởng.
+3. **Pha 3: Quá Tải Lõi & Cuồng Nộ Tia Hủy Diệt ($33\% \rightarrow 0\%\text{ HP}$ - Enrage Mode):**
+   * Khe tản nhiệt vỡ vụn, lõi chuyển sang trạng thái quá nhiệt đỏ rực.
+   * **Tia Hủy Diệt Hyper Laser:** Boss nạp năng lượng trong $2.0\text{s}$ và quét luồng laser khổng lồ chiếm $60\%$ diện tích màn hình. Buộc người chơi phải ép sát góc mép biên để sinh tồn.
+   * Cửa sổ vàng phản công: Lõi mất hoàn toàn phòng thủ khi đang quét laser, người chơi xả toàn bộ Smart Bomb và Twin Laser để kết liễu trùm!
 
 ---
 
-### GIAI ĐOẠN 6: THOÁT LY & BẢNG VINH DANH ($Z > 19,000\text{m}$)
-*Thời gian dự kiến: $165\text{s} - 180\text{s}$ | Mức căng thẳng: $1/10$ (GIẢI TỎA TOÀN BỘ)*
+### GIAI ĐOẠN 6: CHUYỂN TIẾP QUẦN XÃ & MỞ KHÓA CHU KỲ MỚI ($Z > 18,500\text{m}$)
+*Thời gian dự kiến: $165\text{s} - 180\text{s}$ | GIẢI TỎA ÁP LỰC & NẠP QUẦN XÃ TIẾP THEO*
 
 ```text
-[Z = 18,500m] ──► CẮT CẢNH HẠ TRÙM (BOSS DEFEAT CINEMATIC):
-                  - Lõi năng lượng sụp đổ, hút toàn bộ mảnh vỡ xung quanh rồi phát nổ sóng xung kích trắng xóa.
-                  - Tàu Arwing của người chơi lộn 1 vòng $360^\circ$ mừng chiến thắng.
-                  - Động cơ chuyển sang màu xanh dương rực rỡ, tàu kích hoạt Hyperdrive phóng vút về phía trước màn hình.
-[Z = 19,000m] ──► MÀN HÌNH TỔNG KẾT NHIỆM VỤ (MISSION ACCOMPLISHED):
-                  - Bảng thành tích hiển thị các chỉ số chi tiết:
-                    ┌────────────────────────────────────────┐
-                    │          MISSION ACCOMPLISHED          │
-                    ├────────────────────────────────────────┤
-                    │ ENEMY HIT COUNT:       168 Hits        │
-                    │ CHARGE SHOT COMBOS:    +45 Bonus       │
-                    │ SHIELD INTEGRITY:      85% Remaining   │
-                    │ MISSION CLEAR TIME:    02:42.15        │
-                    ├────────────────────────────────────────┤
-                    │ FINAL SCORE:           213,000 PTS     │
-                    │ RANK:                  RANK S (GOLD)   │
-                    │ [★ MEDAL AWARDED: METEO DEFENDER ★]    │
-                    └────────────────────────────────────────┘
+[Z = 18,500m] ──► HẠ GỤC TRÙM & THƯỞNG ĐIỂM SỐ CỰC ĐẠI:
+                  - Corvette F3 phát nổ dây chuyền, vỡ tung thành các khối mảnh kim loại cháy rực.
+                  - Thưởng tức thì: +50,000 PTS x Hệ số Multiplier hiện tại!
+                  - Toàn bộ đạn địch trên màn hình tự động chuyển hóa thành Vòng Điểm Sao (Star Pickups).
+[Z = 18,800m] ──► PHA THƯ GIÃN (BREATHER & RESTOCK):
+                  - Cổng Warp không gian mở ra phía trước.
+                  - Xuất hiện chuỗi 5 Vòng Năng Lượng hồi phục đầy đủ Thân Tàu và Khiên.
+[Z = 19,000m] ──► NHẢY VỌT HYPERSPACE VÀO CHU KỲ 2:
+                  - Kích hoạt hiệu ứng Warp Speed trong 2.5s.
+                  - Nạp Quần xã mới (Vùng Biển Dung Nham / Tinh Vân Sâu) với Threat Level k = 2.
+                  - Vòng lặp sinh tồn tiếp diễn với độ khó leo thang theo đúng LDS & Endless Spec!
 ```
 
 ---
 
 ## 6. HỆ THỐNG PHÂN LOẠI ĐỊCH & MA TRẬN CÂN BẰNG
 
-Để tạo sự đa dạng chiến thuật, các chủng loại tàu địch được phân công vai trò rõ ràng:
-
 | Tên Mã Kẻ Địch | Vai trò chiến thuật | Máu ($HP$) | Vũ khí & Đạn đạo | Điểm yếu / Cơ chế khắc chế | Điểm ($PTS$) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Drone Trinh Sát (Scout-01)** | Quân cờ chào sân, dạy ngắm bắn | $20$ (1 hit thường) | Không bắn hoặc bắn 1 viên chậm $20\text{ m/s}$ | Bay theo đường thẳng, tiết diện lớn | $100\text{ pts}$ |
+| **Drone Trinh Sát (Scout-01)** | Quân cờ chào sân, dạy ngắm bắn | $20$ (1 hit thường) | Bắn 1 viên chậm $20\text{ m/s}$ | Bay theo đường thẳng, tiết diện lớn | $100\text{ pts}$ |
 | **Tiêm Kích Sườn (Flanker-02)** | Gây nhiễu khi đang luồn lách né đá | $40$ (2 hit thường) | Bắn chùm 2 viên Plasma Orb góc $45^\circ$ | Lộn cánh Barrel Roll hất ngược đạn | $250\text{ pts}$ |
 | **Đột Kích Đuôi (Interceptor-03)** | Trừng phạt người chơi không quan sát sau | $35$ | Bắn đạn Dart tốc độ cao đuổi đuôi tàu | Ống xả phát quang sau đuôi ($200\%$ damage) | $400\text{ pts}$ |
 | **Chỉ Huy Đội Hình (Leader-Wedge)** | Giữ vững đội hình bay 3D | $80$ (Cần tụ lực) | Bắn cầu lửa Plasma nổ bán kính $3\text{m}$ | Tiêu diệt trước làm vỡ trận cả phi đội | $800\text{ pts}$ |
 | **Trung Hạm (Cruiser Mini-Boss)** | Thử thách hỏa lực giữa màn | $300$ (Tổng cụm) | Tên lửa tầm nhiệt + 2 Pháo chùm laser | Bắn nổ 2 tháp pháo để lộ buồng lái | $2,500\text{ pts}$ |
-| **Gorgon Core (Main Boss)** | Trùm cuối thử thách kỹ năng tổng hợp | $1,200$ (3 pha) | Lưới Plasma, EMP Shockwave, Hyper Laser | Bắn luồn qua khiên xoay, xả bom lúc lõi lộ diện | $10,000\text{ pts}$ |
+| **Corvette F3 "Crimson Titan"** | Trùm đột kích đỉnh cao trào chu kỳ | $1,000$ (3 pha) | Khiên Hex, Plasma, Tên lửa, Hyper Laser | Bắn sập khiên, tập trung khe nhiệt lúc quá tải | $50,000\text{ pts}$ |
 
 ---
 
-## 7. CƠ CHẾ THƯỞNG RỦI RO & SĂN HUÂN CHƯƠNG
+## 7. CƠ CHẾ THƯỞNG RỦI RO & SĂN ĐIỂM KỶ LỤC
 
-Nhằm kích thích giá trị chơi lại nhiều lần (Replayability) chuẩn phong cách Arcade của Nintendo:
+Tuân thủ nghiêm ngặt động cơ tính điểm sâu trong [`ENDLESS_SCORING_SPECIFICATION.md`](file:///d:/3D-Shooter-master/ENDLESS_SCORING_SPECIFICATION.md):
 
-### A. Hệ Thống Huân Chương (Medal Criteria)
-- Để đạt **Huân Chương Danh Dự (Stage Medal)** tại Màn 1, người chơi phải thỏa mãn **cả 2 điều kiện**:
-  1. Tổng số mục tiêu bị tiêu diệt ($\text{Hit Count}$) $\ge \mathbf{150\text{ Hits}}$.
-  2. Tàu người chơi **không bị nổ mạng nào** và khiên kết màn $\ge 50\%$.
+### 7.1. Bảng Nhân Combo Multiplier ($1\times \to 32\times$)
+* Điểm số nhân theo cấp số nhân: $1\times \to 2\times \to 4\times \to 8\times \to 16\times \to \mathbf{32\times}$.
+* Duy trì bằng thanh năng lượng suy giảm trong $3.5\text{s}$.
+* **Cách sạc đầy thanh năng lượng:**
+  * Bắn hạ trọn vẹn một phi đội (+Squad Wipeout).
+  * Tiêu diệt cụm bằng bắn tụ lực nổ lan (+Charge Shot Multikill).
+  * Kích hoạt cơ chế Lướt Cận Kề (**Graze**).
 
-### B. Chiến Thuật Đạt Điểm Cao (High-Score Secrets)
-1. **Quy tắc Bắn Nổ Lan (Splash Multiplier):** Bắn hạ 4 kẻ địch bằng đạn thường chỉ được $4\text{ Hits}$. Nhưng nếu gom cả 4 kẻ địch vào bán kính $10\text{m}$ của một quả **Charge Shot**, người chơi nhận được:
-   $$\text{Total Hits} = 4 + (4 - 1) = \mathbf{7\text{ Hits!}}$$
-2. **Quy tắc Ăn Cổng Vàng (Gold Ring Mastery):** Ăn đủ 5 cổng vàng trong hẻm thiên thạch sẽ kích hoạt hỏa lực **Twin Laser vĩnh viễn** cho đến hết màn, tăng gấp đôi lượng sát thương lên Boss cuối.
-3. **Phá Hủy Hoàn Toàn Tàu Mẹ:** Không bắn thẳng vào thân chính của Tuần dương hạm mà bắn rời từng cụm tháp pháo trước khi phá hủy buồng lái để vét trọn vẹn điểm số từng bộ phận.
+### 7.2. Cơ Chế Lướt Cận Kề (Graze / Near-Miss)
+* **Hitbox kép:** Lõi va chạm $R = 0.5\text{m}$, Vỏ lướt sát $R = 1.8\text{m}$.
+* Đạn địch bay xuyên qua vỏ lướt sát mà không trúng lõi tàu:
+  * Không mất máu, phát ra tiếng rít quang học dọc sườn cánh.
+  * Thưởng tức thì: $+500\text{ Điểm} \times \mathbf{M}$.
+  * Hồi phục ngay lập tức $30\%$ dung lượng thanh thời gian Multiplier Decay.
 
 ---
 
 > [!NOTE]
-> **Hướng phát triển tiếp theo khi bước sang giai đoạn triển khai (Implementation):**
-> Tài liệu này được thiết kế để ánh xạ $1:1$ với hệ sinh thái mã nguồn đã xây dựng trong dự án. Khi được người dùng phê duyệt lệnh *"thực hiện"*, ta chỉ cần tạo ScriptableObject `MeteoStageData.asset` và bộ điều phối `StageDirector.cs` để kết nối trực tiếp với [`VirtualRailWaveSpawner.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailWaveSpawner.cs), [`VirtualRailAsteroidSpawner.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailAsteroidSpawner.cs) và [`VirtualFormationAnchor.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualFormationAnchor.cs) mà không cần viết lại cơ chế cốt lõi.
+> Tài liệu này là nguồn chân lý thiết kế cho toàn bộ các màn chơi và chu kỳ vô hạn của dự án. Mọi nâng cấp tiếp theo về quái vật, chướng ngại vật và Boss đều phải bám sát cấu trúc sóng răng cưa 3 pha DDA và ma trận cân bằng được quy định tại đây.

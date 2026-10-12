@@ -138,6 +138,17 @@ namespace VirtualRail
         public void SetStageBulletSpeed(float bulletSpeed)
         {
             _stageBulletSpeed = bulletSpeed;
+            if (_activeWaveEnemies != null)
+            {
+                for (int i = 0; i < _activeWaveEnemies.Count; i++)
+                {
+                    if (_activeWaveEnemies[i] != null && _activeWaveEnemies[i].gameObject.activeSelf)
+                    {
+                        var atk = _activeWaveEnemies[i].GetComponent<EnemyAttack>();
+                        if (atk != null) atk.SetBulletSpeedOverride(bulletSpeed);
+                    }
+                }
+            }
         }
 
         private void Awake()
@@ -438,6 +449,10 @@ namespace VirtualRail
                 if (attackComp != null)
                 {
                     attackComp.enabled = _allowShooting;
+                    if (_stageBulletSpeed > 5f)
+                    {
+                        attackComp.SetBulletSpeedOverride(_stageBulletSpeed);
+                    }
                 }
 
                 var wingman = availableEnemy.GetComponent<FormationWingman>();
@@ -724,7 +739,14 @@ namespace VirtualRail
                 enemy.SetTarget(VirtualRailAnchor.PlayerShipTransform != null ? VirtualRailAnchor.PlayerShipTransform : anchor.transform);
 
                 var attack = enemy.GetComponent<EnemyAttack>();
-                if (attack != null) attack.enabled = _allowShooting;
+                if (attack != null)
+                {
+                    attack.enabled = _allowShooting;
+                    if (_stageBulletSpeed > 5f)
+                    {
+                        attack.SetBulletSpeedOverride(_stageBulletSpeed);
+                    }
+                }
 
                 var fsm = enemy.GetComponent<EnemyLifecycleFSM>();
                 if (fsm != null)
@@ -798,7 +820,19 @@ namespace VirtualRail
             _activeWaveEnemies.Clear();
             for (int i = 0; i < enemies.Count; i++)
             {
-                if (enemies[i] != null) _activeWaveEnemies.Add(enemies[i]);
+                if (enemies[i] != null)
+                {
+                    _activeWaveEnemies.Add(enemies[i]);
+                    var atk = enemies[i].GetComponent<EnemyAttack>();
+                    if (atk != null)
+                    {
+                        atk.enabled = _allowShooting;
+                        if (_stageBulletSpeed > 5f)
+                        {
+                            atk.SetBulletSpeedOverride(_stageBulletSpeed);
+                        }
+                    }
+                }
             }
             _activeWaveFormationAnchor = availableAnchor;
             _currentWaveTimer = 0f;

@@ -2765,4 +2765,53 @@ public class VirtualRailModeToggle
         return t;
     }
     #endregion
+
+    #region DDA Escalation Controls (ON / OFF - UNDO)
+    [MenuItem("Tools/Virtual Rail/49. DDA Escalation: Enable Full Hazard, Bullet & Speed Scaling (ON)")]
+    public static void EnableFullDDAEscalation()
+    {
+        var endlessDirectors = Object.FindObjectsByType<VirtualRailEndlessDirector>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < endlessDirectors.Length; i++)
+        {
+            endlessDirectors[i].ScaleRailSpeed = true;
+            EditorUtility.SetDirty(endlessDirectors[i]);
+        }
+
+        var asteroidSpawners = Object.FindObjectsByType<VirtualRailAsteroidSpawner>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < asteroidSpawners.Length; i++)
+        {
+            asteroidSpawners[i].EnableDDAScaling = true;
+            EditorUtility.SetDirty(asteroidSpawners[i]);
+        }
+
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT DDA ESCALATION ĐẦY ĐỦ (ON):</b></color> Tốc độ đạn quái, mật độ thiên thạch và vận tốc ray tự động tăng tiến theo thời gian sống sót!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/50. DDA Escalation: Revert to Flat Baseline (OFF - UNDO)")]
+    public static void RevertFullDDAEscalation()
+    {
+        var endlessDirectors = Object.FindObjectsByType<VirtualRailEndlessDirector>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < endlessDirectors.Length; i++)
+        {
+            endlessDirectors[i].ScaleRailSpeed = false;
+            EditorUtility.SetDirty(endlessDirectors[i]);
+        }
+
+        var asteroidSpawners = Object.FindObjectsByType<VirtualRailAsteroidSpawner>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < asteroidSpawners.Length; i++)
+        {
+            asteroidSpawners[i].EnableDDAScaling = false;
+            asteroidSpawners[i].ResetThreatLevelScaling();
+            EditorUtility.SetDirty(asteroidSpawners[i]);
+        }
+
+        var anchor = Object.FindAnyObjectByType<VirtualRailAnchor>();
+        if (anchor != null)
+        {
+            anchor.SetSpeedOverride(120f);
+        }
+
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN DDA VỀ FLAT BASELINE (OFF - UNDO):</b></color> Tốc độ ray và mật độ thiên thạch giữ cố định ở mức cơ sở ban đầu.");
+    }
+    #endregion
 }

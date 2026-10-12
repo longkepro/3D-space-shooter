@@ -174,6 +174,19 @@ namespace VirtualRail
 
         private void OnHit(RaycastHit hit)
         {
+            // 0. Xử lý va chạm Lá chắn Năng lượng (Procedural Hex Shield)
+            var hexShield = hit.transform.GetComponentInParent<VirtualRailHexShield>();
+            if (hexShield != null && hexShield.IsActive)
+            {
+                hexShield.TakeDamage(_damage);
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX2D(AudioSFXType.ShieldDamage, 0.85f);
+                }
+                Deactivate();
+                return;
+            }
+
             // 1. Thu thập vòng năng lượng / vật phẩm
             var ring = hit.transform.GetComponentInParent<CollectibleRing>();
             if (ring != null)

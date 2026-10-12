@@ -62,6 +62,8 @@ namespace VirtualRail
         public RectTransform clusterBossRoot;
         public Image bossHealthBarFill;
         public Image bossGhostBarFill;
+        public Image bossShieldBarFill;
+        public Image bossShieldGhostBarFill;
         public Text bossNameText;
         public Text bossPhaseText;
 
@@ -131,6 +133,10 @@ namespace VirtualRail
 
             BossF3CorvetteController.OnBossSpawned += HandleBossSpawned;
             BossF3CorvetteController.OnBossHealthChanged += HandleBossHealthChanged;
+            BossF3CorvetteController.OnBossShieldChanged += HandleBossShieldChanged;
+            BossF3CorvetteController.OnBossShieldBroken += HandleBossShieldBroken;
+            BossF3CorvetteController.OnBossTrenchCharging += HandleBossTrenchCharging;
+            BossF3CorvetteController.OnBossStunned += HandleBossStunned;
             BossF3CorvetteController.OnBossDefeated += HandleBossDefeated;
         }
 
@@ -150,6 +156,10 @@ namespace VirtualRail
 
             BossF3CorvetteController.OnBossSpawned -= HandleBossSpawned;
             BossF3CorvetteController.OnBossHealthChanged -= HandleBossHealthChanged;
+            BossF3CorvetteController.OnBossShieldChanged -= HandleBossShieldChanged;
+            BossF3CorvetteController.OnBossShieldBroken -= HandleBossShieldBroken;
+            BossF3CorvetteController.OnBossTrenchCharging -= HandleBossTrenchCharging;
+            BossF3CorvetteController.OnBossStunned -= HandleBossStunned;
             BossF3CorvetteController.OnBossDefeated -= HandleBossDefeated;
         }
 
@@ -256,6 +266,10 @@ namespace VirtualRail
             if (bossGhostBarFill != null && bossHealthBarFill != null && bossGhostBarFill.fillAmount > bossHealthBarFill.fillAmount)
             {
                 bossGhostBarFill.fillAmount = Mathf.MoveTowards(bossGhostBarFill.fillAmount, bossHealthBarFill.fillAmount, Time.deltaTime * 0.35f);
+            }
+            if (bossShieldGhostBarFill != null && bossShieldBarFill != null && bossShieldGhostBarFill.fillAmount > bossShieldBarFill.fillAmount)
+            {
+                bossShieldGhostBarFill.fillAmount = Mathf.MoveTowards(bossShieldGhostBarFill.fillAmount, bossShieldBarFill.fillAmount, Time.deltaTime * 0.45f);
             }
         }
 
@@ -512,9 +526,11 @@ namespace VirtualRail
             }
             if (bossHealthBarFill != null) bossHealthBarFill.fillAmount = 1f;
             if (bossGhostBarFill != null) bossGhostBarFill.fillAmount = 1f;
+            if (bossShieldBarFill != null) bossShieldBarFill.fillAmount = 1f;
+            if (bossShieldGhostBarFill != null) bossShieldGhostBarFill.fillAmount = 1f;
             if (bossPhaseText != null)
             {
-                bossPhaseText.text = "WARNING: COLOSSAL BATTLECRUISER BENEATH";
+                bossPhaseText.text = "PHASE 1: DORSAL SHIELD ONLINE";
             }
         }
 
@@ -539,7 +555,10 @@ namespace VirtualRail
                         bossPhaseText.text = "WARNING: SIGNATURE DETECTED";
                         break;
                     case BossBattlePhase.Phase1_DeckStrafe:
-                        bossPhaseText.text = "PHASE 1: DORSAL SHIELD ONLINE";
+                        if (bossShieldBarFill == null || bossShieldBarFill.fillAmount <= 0.001f)
+                        {
+                            bossPhaseText.text = "PHASE 1: DORSAL SHIELD ONLINE";
+                        }
                         break;
                     case BossBattlePhase.Phase2_ReactorTrench:
                         bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
@@ -554,9 +573,72 @@ namespace VirtualRail
             }
         }
 
+        private void HandleBossShieldChanged(int current, int max)
+        {
+            if (clusterBossRoot != null && !clusterBossRoot.gameObject.activeSelf)
+            {
+                clusterBossRoot.gameObject.SetActive(true);
+            }
+
+            float ratio = (max > 0) ? Mathf.Clamp01((float)current / max) : 0f;
+            if (bossShieldBarFill != null)
+            {
+                bossShieldBarFill.fillAmount = ratio;
+            }
+
+            if (bossPhaseText != null && ratio > 0.001f)
+            {
+                int pct = Mathf.RoundToInt(ratio * 100f);
+                bossPhaseText.text = $"PHASE 1: DORSAL SHIELD [{pct}%]";
+            }
+        }
+
+        private void HandleBossShieldBroken()
+        {
+            if (bossShieldBarFill != null) bossShieldBarFill.fillAmount = 0f;
+            if (bossPhaseText != null)
+            {
+                bossPhaseText.text = "PHASE 2: SHIELD DESTROYED // REACTOR EXPOSED";
+                bossPhaseText.color = new Color(0.85f, 0.88f, 0.95f, 0.9f);
+            }
+        }
+
+        private void HandleBossTrenchCharging(bool isCharging)
+        {
+            if (bossPhaseText == null) return;
+
+            if (isCharging)
+            {
+                bossPhaseText.text = "PHASE 2: WARNING! THERMAL CORE OVERCHARGING! [STRIKE NOW!]";
+                bossPhaseText.color = new Color(1f, 0.45f, 0.1f, 1f); // Blazing Neon Orange
+            }
+            else
+            {
+                bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
+                bossPhaseText.color = new Color(0.85f, 0.88f, 0.95f, 0.9f);
+            }
+        }
+
+        private void HandleBossStunned(bool isStunned)
+        {
+            if (bossPhaseText == null) return;
+
+            if (isStunned)
+            {
+                bossPhaseText.text = "PHASE 2: THERMAL CORE OVERLOADED // BOSS STUNNED!";
+                bossPhaseText.color = new Color(0.2f, 0.85f, 1f, 1f); // Neon Cyan Glitch
+            }
+            else
+            {
+                bossPhaseText.text = "PHASE 2: REACTOR TRENCH EXPOSED";
+                bossPhaseText.color = new Color(0.85f, 0.88f, 0.95f, 0.9f);
+            }
+        }
+
         private void HandleBossDefeated()
         {
             if (bossHealthBarFill != null) bossHealthBarFill.fillAmount = 0f;
+            if (bossShieldBarFill != null) bossShieldBarFill.fillAmount = 0f;
             if (clusterBossRoot != null)
             {
                 clusterBossRoot.gameObject.SetActive(false);
@@ -565,7 +647,14 @@ namespace VirtualRail
 
         private void EnsureBossClusterCreated()
         {
-            if (clusterBossRoot != null) return;
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            if (clusterBossRoot != null)
+            {
+                EnsureShieldBarUnder(clusterBossRoot);
+                return;
+            }
 
             Transform existing = transform.Find("Cluster_Boss");
             if (existing != null)
@@ -575,6 +664,7 @@ namespace VirtualRail
                 if (bossHealthBarFill == null) bossHealthBarFill = existing.Find("HealthBar/Fill")?.GetComponent<Image>();
                 if (bossGhostBarFill == null) bossGhostBarFill = existing.Find("HealthBar/GhostFill")?.GetComponent<Image>();
                 if (bossPhaseText == null) bossPhaseText = existing.Find("PhaseText")?.GetComponent<Text>();
+                EnsureShieldBarUnder(clusterBossRoot);
                 return;
             }
 
@@ -586,7 +676,7 @@ namespace VirtualRail
             rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
             rt.anchoredPosition = new Vector2(0f, -22f);
-            rt.sizeDelta = new Vector2(540f, 62f);
+            rt.sizeDelta = new Vector2(540f, 74f);
 
             Image panelBg = bossPanel.AddComponent<Image>();
             panelBg.color = new Color(0.02f, 0.08f, 0.14f, 0.88f);
@@ -595,9 +685,6 @@ namespace VirtualRail
             outline.effectColor = new Color(0.9f, 0.2f, 0.2f, 0.65f);
             outline.effectDistance = new Vector2(1.5f, -1.5f);
 
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-
             // 1. Tên Boss
             GameObject nameObj = new GameObject("BossName");
             nameObj.transform.SetParent(bossPanel.transform, false);
@@ -605,8 +692,8 @@ namespace VirtualRail
             nameRt.anchorMin = new Vector2(0f, 1f);
             nameRt.anchorMax = new Vector2(1f, 1f);
             nameRt.pivot = new Vector2(0.5f, 1f);
-            nameRt.anchoredPosition = new Vector2(0f, -6f);
-            nameRt.sizeDelta = new Vector2(-24f, 18f);
+            nameRt.anchoredPosition = new Vector2(0f, -4f);
+            nameRt.sizeDelta = new Vector2(-24f, 16f);
 
             bossNameText = nameObj.AddComponent<Text>();
             bossNameText.font = font;
@@ -616,15 +703,15 @@ namespace VirtualRail
             bossNameText.color = new Color(1f, 0.75f, 0.2f, 1f);
             bossNameText.text = "FEDERATION CORVETTE F3 // CRIMSON TITAN";
 
-            // 2. Thanh Máu (Track + Ghost Fill + Main Fill)
+            // 2. Thanh Máu Thân Tàu (HealthBar)
             GameObject barObj = new GameObject("HealthBar");
             barObj.transform.SetParent(bossPanel.transform, false);
             RectTransform barRt = barObj.AddComponent<RectTransform>();
             barRt.anchorMin = new Vector2(0f, 0.5f);
             barRt.anchorMax = new Vector2(1f, 0.5f);
             barRt.pivot = new Vector2(0.5f, 0.5f);
-            barRt.anchoredPosition = new Vector2(0f, -3f);
-            barRt.sizeDelta = new Vector2(-28f, 14f);
+            barRt.anchoredPosition = new Vector2(0f, -7f);
+            barRt.sizeDelta = new Vector2(-28f, 11f);
 
             Image trackImg = barObj.AddComponent<Image>();
             trackImg.color = new Color(0.12f, 0.14f, 0.18f, 0.95f);
@@ -661,14 +748,17 @@ namespace VirtualRail
             bossHealthBarFill.fillAmount = 1f;
             bossHealthBarFill.color = new Color(1f, 0.22f, 0.15f, 1f);
 
-            // 3. Phase Subtitle Text
+            // 3. Khởi tạo thanh khiên riêng
+            EnsureShieldBarUnder(bossPanel.transform);
+
+            // 4. Phase Subtitle Text
             GameObject phaseObj = new GameObject("PhaseText");
             phaseObj.transform.SetParent(bossPanel.transform, false);
             RectTransform phaseRt = phaseObj.AddComponent<RectTransform>();
             phaseRt.anchorMin = new Vector2(0f, 0f);
             phaseRt.anchorMax = new Vector2(1f, 0f);
             phaseRt.pivot = new Vector2(0.5f, 0f);
-            phaseRt.anchoredPosition = new Vector2(0f, 5f);
+            phaseRt.anchoredPosition = new Vector2(0f, 4f);
             phaseRt.sizeDelta = new Vector2(-24f, 14f);
 
             bossPhaseText = phaseObj.AddComponent<Text>();
@@ -677,10 +767,81 @@ namespace VirtualRail
             bossPhaseText.fontStyle = FontStyle.Normal;
             bossPhaseText.alignment = TextAnchor.MiddleCenter;
             bossPhaseText.color = new Color(0.85f, 0.88f, 0.95f, 0.9f);
-            bossPhaseText.text = "WARNING: COLOSSAL BATTLECRUISER BENEATH";
+            bossPhaseText.text = "PHASE 1: DORSAL SHIELD ONLINE";
 
             clusterBossRoot = rt;
             bossPanel.SetActive(false);
+        }
+
+        private void EnsureShieldBarUnder(Transform parent)
+        {
+            if (parent == null) return;
+
+            Transform existingBar = parent.Find("ShieldBar");
+            if (existingBar != null)
+            {
+                if (bossShieldBarFill == null) bossShieldBarFill = existingBar.Find("Fill")?.GetComponent<Image>();
+                if (bossShieldGhostBarFill == null) bossShieldGhostBarFill = existingBar.Find("GhostFill")?.GetComponent<Image>();
+                return;
+            }
+
+            // Tự động sinh ShieldBar (Tầng trên của thanh máu)
+            GameObject shieldObj = new GameObject("ShieldBar");
+            shieldObj.transform.SetParent(parent, false);
+
+            RectTransform sRt = shieldObj.AddComponent<RectTransform>();
+            sRt.anchorMin = new Vector2(0f, 0.5f);
+            sRt.anchorMax = new Vector2(1f, 0.5f);
+            sRt.pivot = new Vector2(0.5f, 0.5f);
+            sRt.anchoredPosition = new Vector2(0f, 6f);
+            sRt.sizeDelta = new Vector2(-28f, 9f);
+
+            Image sTrack = shieldObj.AddComponent<Image>();
+            sTrack.color = new Color(0.04f, 0.10f, 0.16f, 0.95f);
+
+            // Shield Ghost Fill
+            GameObject sGhost = new GameObject("GhostFill");
+            sGhost.transform.SetParent(shieldObj.transform, false);
+            RectTransform sGhostRt = sGhost.AddComponent<RectTransform>();
+            sGhostRt.anchorMin = Vector2.zero;
+            sGhostRt.anchorMax = Vector2.one;
+            sGhostRt.offsetMin = Vector2.zero;
+            sGhostRt.offsetMax = Vector2.zero;
+
+            bossShieldGhostBarFill = sGhost.AddComponent<Image>();
+            bossShieldGhostBarFill.type = Image.Type.Filled;
+            bossShieldGhostBarFill.fillMethod = Image.FillMethod.Horizontal;
+            bossShieldGhostBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            bossShieldGhostBarFill.fillAmount = 1f;
+            bossShieldGhostBarFill.color = new Color(0.2f, 0.85f, 1f, 0.55f);
+
+            // Shield Main Fill
+            GameObject sFill = new GameObject("Fill");
+            sFill.transform.SetParent(shieldObj.transform, false);
+            RectTransform sFillRt = sFill.AddComponent<RectTransform>();
+            sFillRt.anchorMin = Vector2.zero;
+            sFillRt.anchorMax = Vector2.one;
+            sFillRt.offsetMin = Vector2.zero;
+            sFillRt.offsetMax = Vector2.zero;
+
+            bossShieldBarFill = sFill.AddComponent<Image>();
+            bossShieldBarFill.type = Image.Type.Filled;
+            bossShieldBarFill.fillMethod = Image.FillMethod.Horizontal;
+            bossShieldBarFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+            bossShieldBarFill.fillAmount = 1f;
+            bossShieldBarFill.color = new Color(0f, 0.95f, 1f, 1f); // Neon Cyan
+
+            // Điều chỉnh vị trí HealthBar nếu cần
+            Transform hb = parent.Find("HealthBar");
+            if (hb != null)
+            {
+                RectTransform hbRt = hb.GetComponent<RectTransform>();
+                if (hbRt != null)
+                {
+                    hbRt.anchoredPosition = new Vector2(0f, -7f);
+                    hbRt.sizeDelta = new Vector2(-28f, 11f);
+                }
+            }
         }
 
         #endregion

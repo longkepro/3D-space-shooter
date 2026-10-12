@@ -55,6 +55,37 @@ namespace VirtualRail
             }
         }
 
+        [Header("DDA Difficulty Scaling")]
+        [SerializeField] private bool _enableDDAScaling = true;
+        public bool EnableDDAScaling { get => _enableDDAScaling; set => _enableDDAScaling = value; }
+
+        /// <summary>
+        /// Cập nhật mật độ và chướng ngại vật thích ứng theo DDA Threat Level (0 GC Alloc).
+        /// </summary>
+        public void SetThreatLevelScaling(int threatLevel)
+        {
+            if (!_enableDDAScaling) return;
+
+            var cfg = anchor != null ? anchor.config : null;
+            float baseInterval = (cfg != null && cfg.asteroidZInterval > 5f) ? cfg.asteroidZInterval : 35f;
+            float baseChance = (cfg != null) ? cfg.indestructibleAsteroidChance : 0.15f;
+
+            // Giảm khoảng cách Z giữa các thiên thạch (tăng mật độ): từ base xuống tối thiểu 22m (-2m mỗi bậc ThreatLevel)
+            _stageSpawnZInterval = Mathf.Max(22f, baseInterval - (threatLevel - 1) * 2.0f);
+
+            // Tăng nhẹ tỉ lệ thiên thạch bất hoại: từ base lên tối đa 40% (+4% mỗi bậc ThreatLevel)
+            _stageIndestructibleChance = Mathf.Min(0.40f, baseChance + (threatLevel - 1) * 0.04f);
+        }
+
+        /// <summary>
+        /// Khôi phục thông số thiên thạch về mặc định ban đầu (0 GC Alloc).
+        /// </summary>
+        public void ResetThreatLevelScaling()
+        {
+            _stageSpawnZInterval = -1f;
+            _stageIndestructibleChance = -1f;
+        }
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -145,6 +176,7 @@ namespace VirtualRail
         public void StopSpawning()
         {
             _isSpawning = false;
+            ResetThreatLevelScaling();
             RecycleAll();
         }
 

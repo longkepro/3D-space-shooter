@@ -47,6 +47,12 @@ namespace VirtualRail
         [SerializeField] private float _maxLeadDistance = 240f;
         [SerializeField] private float _formationAssemblyTime = 2.2f;
 
+        [Header("DDA Dynamic Rail Speed Scaling")]
+        [SerializeField] private bool _scaleRailSpeed = true;
+        public bool ScaleRailSpeed { get => _scaleRailSpeed; set => _scaleRailSpeed = value; }
+        [SerializeField] private float _speedScalePerLevel = 0.03f;
+        [SerializeField] private float _maxRailSpeedCap = 150f;
+
         // Subsystem References
         private StageData _stageData;
         private VirtualRailAnchor _anchor;
@@ -149,6 +155,17 @@ namespace VirtualRail
             {
                 _waveSpawner.ForceRetreatCurrentWave();
             }
+
+            if (_asteroidSpawner != null)
+            {
+                _asteroidSpawner.ResetThreatLevelScaling();
+            }
+
+            if (_anchor != null)
+            {
+                float baseSpeed = (_stageData != null) ? _stageData.GetBaseForwardSpeed() : 120f;
+                _anchor.SetSpeedOverride(baseSpeed);
+            }
         }
 
         private void Update()
@@ -165,6 +182,20 @@ namespace VirtualRail
             if (_waveSpawner != null)
             {
                 _waveSpawner.SetStageBulletSpeed(bulletSpeed);
+            }
+
+            // Cập nhật thiên thạch theo bậc đe dọa (mật độ dày hơn, tỉ lệ bất hoại tăng)
+            if (_asteroidSpawner != null)
+            {
+                _asteroidSpawner.SetThreatLevelScaling(_threatLevel);
+            }
+
+            // Cập nhật tốc độ đường ray tịnh tiến theo DDA (0 GC Alloc)
+            if (_scaleRailSpeed && _anchor != null)
+            {
+                float baseSpeed = (_stageData != null) ? _stageData.GetBaseForwardSpeed() : 120f;
+                float scaledSpeed = Mathf.Min(_maxRailSpeedCap, baseSpeed * (1f + _speedScalePerLevel * (_threatLevel - 1)));
+                _anchor.SetSpeedOverride(scaledSpeed);
             }
 
             // 2. Kiểm tra mốc Hyperspace Warp Reset mỗi 15,000m

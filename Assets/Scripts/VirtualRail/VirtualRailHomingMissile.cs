@@ -344,7 +344,14 @@ namespace VirtualRail
             {
                 var col = _cachedOverlapColliders[i];
                 if (col == null) continue;
-                if (col.CompareTag("Player") || col.transform.root == transform.root) continue;
+                var hexShield = col.GetComponentInParent<VirtualRailHexShield>();
+                if (hexShield != null && hexShield.IsActive)
+                {
+                    bool isDirectShield = (target != null && (col.transform == target || col.transform.IsChildOf(target)));
+                    int shieldDmg = isSmartBomb ? 999 : (isDirectShield ? 100 : 50);
+                    hexShield.TakeDamage(shieldDmg);
+                    continue;
+                }
 
                 var eh = col.GetComponentInParent<EnemyHealth>();
                 if (eh != null && !eh.IsDead)
