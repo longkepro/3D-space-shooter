@@ -12,6 +12,8 @@ namespace VirtualRail
     [DisallowMultipleComponent]
     public class VirtualRailEndlessDirector : MonoBehaviour
     {
+        public static VirtualRailEndlessDirector Instance { get; private set; }
+
         public enum BattleFlowState
         {
             Inactive = 0,
@@ -71,6 +73,17 @@ namespace VirtualRail
         // Formation Pattern Pool (Round-Robin / Shuffle-Bag)
         private FormationPattern[] _formationPool;
         private int _patternPoolIndex = 0;
+        private int _threatLevelBonus = 0;
+
+        private void Awake()
+        {
+            if (Instance == null) Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
 
         private void OnEnable()
         {
@@ -109,6 +122,7 @@ namespace VirtualRail
             _stageDirector = director != null ? director : VirtualRailStageDirector.Instance;
 
             _sessionTimer = 0f;
+            _threatLevelBonus = 0;
             _threatLevel = 1;
             _threatLevelProgress01 = 0f;
             _wavesCleared = 0;
@@ -150,6 +164,7 @@ namespace VirtualRail
             _battleState = BattleFlowState.Inactive;
             _stateTimer = 0f;
             _waveTimer = 0f;
+            _threatLevelBonus = 0;
 
             if (_waveSpawner != null)
             {
@@ -172,9 +187,9 @@ namespace VirtualRail
         {
             if (!_isActive) return;
 
-            // 1. Cập nhật đồng hồ phiên & Thuật toán DDA (Mỗi 45s tăng 1 bậc Threat Level)
+            // 1. Cập nhật đồng hồ phiên & Thuật toán DDA (Mỗi 45s tăng 1 bậc Threat Level + Bonus từ diệt Boss)
             _sessionTimer += Time.deltaTime;
-            _threatLevel = 1 + Mathf.FloorToInt(_sessionTimer / 45f);
+            _threatLevel = 1 + Mathf.FloorToInt(_sessionTimer / 45f) + _threatLevelBonus;
             _threatLevelProgress01 = Mathf.Repeat(_sessionTimer, 45f) / 45f;
 
             // Cập nhật tốc độ đạn quái theo bậc đe dọa (20m/s -> 32m/s)
@@ -422,6 +437,36 @@ namespace VirtualRail
             }
 
             Debug.Log("<color=yellow><b>[HYPERSPACE WARP RESET]</b></color> Đạt mốc 15,000m! Tặng +10,000 điểm thưởng sống sót!");
+        }
+
+        /// <summary>
+        /// Kích hoạt khi Boss F3 Corvette bị tiêu diệt trong chế độ Endless Survival (0 GC Alloc).
+        /// - Tăng bậc đe dọa (Threat Level) lên +1
+        /// - Đặt lại trạng thái chiến trường sang BreathingRoom (thời gian nghỉ 5.0s)
+        /// - Kích hoạt thông báo UI "BOSS ELIMINATED! SECTOR THREAT LEVEL UP"
+        /// - Phát âm thanh RadioChirp
+        /// </summary>
+        public void OnBossIncursionDefeated()
+        {
+            if (!_isActive) return;
+
+            _threatLevelBonus++;
+            _threatLevel = 1 + Mathf.FloorToInt(_sessionTimer / 45f) + _threatLevelBonus;
+            _wavesCleared++;
+            _breathingDuration = 5.0f;
+            TransitionTo(BattleFlowState.BreathingRoom);
+
+            if (_stageDirector != null && _stageDirector.notificationUI != null)
+            {
+                _stageDirector.notificationUI.ShowNotification("BOSS ELIMINATED!", $"THREAT LEVEL ESCALATED TO LEVEL {_threatLevel}", 4.0f);
+            }
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 1.0f);
+            }
+
+            Debug.Log($"<color=lime><b>[ENDLESS DIRECTOR]</b></color> Boss Incursion Defeated! Threat Level tăng lên {_threatLevel}.");
         }
 
 #if UNITY_EDITOR

@@ -9,14 +9,14 @@
 
 ```text
 TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY ENDLESS ARCADE):
-[█████████████████████████░░░░░░░] 78% HOÀN TẤT
+[███████████████████████████░░░░░] 84% HOÀN TẤT
 ```
 
 | Phân Hệ / Giai Đoạn | Trọng Tâm Phát Triển | Trạng Thái | Số Task | Tỉ Lệ | Ghi Chú Nghiệm Thu |
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | **Giai đoạn 0: Cốt Lõi Bay & Vũ Khí** | Bay Arwing, Vũ khí, Đội hình Bézier, DDA Director, Điểm số | **HOÀN TẤT** | 12/12 | $100\%$ | Biên dịch 0 Errors, 0 GC Game Loop |
 | **Giai đoạn 1: Âm Thanh & Xúc Giác** | AudioManager 0 GC, SFX N64, Dual-BGM Shuffle, Camera Shake | **HOÀN TẤT** | 4/4 | $100\%$ | 0 GC Pool, Procedural SFX + Dual Shuffle |
-| **Giai đoạn 2: Đột Kích Trùm Tuần Hoàn** | Trùm Tuần Duyên Corvette F3 ("Crimson Titan") 3 Pha | **ĐANG TRIỂN KHAI** | 4/6 | $67\%$ | Khiên Hex 300 HP, Dual HUD, Shader Pha 2, Tách Collider & Sửa Bug Splash 4X xong |
+| **Giai đoạn 2: Đột Kích Trùm Tuần Hoàn** | Trùm Tuần Duyên Corvette F3 ("Crimson Titan") 3 Pha | **HOÀN TẤT** | 6/6 | $100\%$ | Toàn bộ 6 task hoàn tất: Khiên Hex, Dual HUD, Shader Pha 2, Sửa Va Chạm & Splash 4X, Tháp Pháo & Buồng Lái Stun, Pha 3 Hyper Laser & Endless Loop |
 | **Giai đoạn 3: Vòng Lặp & UI/UX Endless** | Modern Cockpit HUD, Multiplier Gauge, Menu, Bảng Vinh Danh | **CHỜ DUYỆT** | 0/6 | $0\%$ | Game Loop Endless thương mại |
 | **Giai đoạn 4: Hành Lang Thủ Tục & Quần Xã** | Spline Chunker, Solvability Verifier, Chuyển Quần Xã, Cổng Rủi Ro | **CHỜ DUYỆT** | 0/4 | $0\%$ | Procedural Hermite Spline + World Origin Shifting |
 
@@ -92,17 +92,16 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 - [x] **2.4.3** **Cân Bằng Lại HP Hardpoint vs Máu Boss & Đồng Bộ 3 Pha:** Đồng bộ hóa chuyển pha và giới hạn máu từng pha (Pha 1 chặn ở 660 HP, Pha 2 chặn ở 330 HP, Pha 3 dứt điểm về 0); giữ mở collider rãnh lò phản ứng khi bị phá hủy để cho phép ngắm bắn lõi nóng chảy ở Pha 3.
 
 ### Task 2.5: Khắc Phục Logic Tháp Pháo & Điểm Yếu Buồng Lái (Turret & Bridge Logic)
-- [ ] **2.5.1** **Khắc phục Tháp Pháo Bị Đóng Băng ở Pha 2:** Cập nhật FSM để tháp pháo cánh tiếp tục bắn yểm trợ ở Pha 2 nếu chưa bị phá hủy ở Pha 1, tạo áp lực buộc người chơi phải cân nhắc giữa bắn Lò Phản Ứng hay dọn tháp pháo.
-- [ ] **2.5.2** **Kích Hoạt Buồng Lái Chỉ Huy (`_mainBridge`):** Kết nối biến `_mainBridge` bị bỏ quên làm điểm yếu phụ, bắn nổ buồng lái sẽ làm tê liệt hệ thống nhắm của Boss trong $4.0\text{s}$.
-- [ ] **2.5.3** **Bổ Sung Âm Thanh, Hiệu Ứng & Điểm Số Phá Hủy Hardpoint:** Kích hoạt SFX nổ kim loại, tia lửa điện bắn tung tóe và cộng thưởng điểm số tức thì ($+2,500\text{ Điểm} \times \mathbf{M}$) khi mỗi tháp pháo/buồng lái bị bắn hạ.
+- [x] **2.5.1** **Khắc phục Tháp Pháo Bị Đóng Băng ở Pha 2:** Cập nhật FSM để tháp pháo cánh còn sống tiếp tục bắn đạn phòng không (Flak) mỗi $1.8\text{s}$ ở Pha 2 nếu chưa bị phá hủy ở Pha 1, tạo áp lực chiến thuật buộc người chơi phải cân nhắc giữa bắn Lò Phản Ứng hay tiêu diệt tháp pháo.
+- [x] **2.5.2** **Kích Hoạt Buồng Lái Chỉ Huy (`_mainBridge`):** Kết nối biến `_mainBridge` làm điểm yếu phụ, bắn nổ buồng lái kích hoạt hàm `TriggerBridgeStun()` làm tê liệt ngắt toàn bộ hệ thống sạc/vũ khí của Boss trong $4.0\text{s}$ kèm tia lửa điện `_stunSparksPrefab` và rung chấn camera $0.45\text{f}$.
+- [x] **2.5.3** **Bổ Sung Âm Thanh, Hiệu Ứng & Điểm Số Phá Hủy Hardpoint:** Kích hoạt SFX nổ lớn kim loại (`AudioSFXType.ExplosionLarge`), hiệu ứng nổ tung `_explosionPrefab` tại vị trí hardpoint, rung camera $0.35\text{f}$ và cộng thưởng điểm số tức thì: Tháp pháo $+2,500\text{ PTS}$, Buồng lái $+5,000\text{ PTS}$, Khe nhiệt $+10,000\text{ PTS}$.
 
 ### Task 2.6: Hoàn Thiện Pha 3 Cuồng Nộ & Kết Nối Vòng Lặp Endless (Phase 3 & Loop Link)
-- [ ] **2.6.1** **Khắc phục Bug Tắt Vĩnh Viễn Collider Lò Phản Ứng:** Đảm bảo khi máu khe nhiệt chạm 0 ở Pha 2, collider được chuyển sang trạng thái bốc khói hư hại thay vì vô hiệu hóa vĩnh viễn gây mất tương tác ở Pha 3.
-- [ ] **2.6.2** **Hiện Thực Hóa Cơ Chế Quá Tải Pha 3:** Kích hoạt quét tia Hyper Laser cực đại chiếm $60\%$ màn hình kèm rung chấn camera dữ dội.
-- [ ] **2.6.3** **Kết Nối Sự Kiện Hạ Boss với Endless Loop:** Khi Boss bị tiêu diệt:
-  - Thưởng ngay $+50,000\text{ Điểm}$, dọn sạch toàn bộ đạn đạo trên màn hình.
-  - Thông báo cho [`VirtualRailEndlessDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailEndlessDirector.cs) tăng Threat Level chu kỳ kế tiếp.
-  - Mở cổng Warp chuyển tiếp sang pha Thư Giãn (Breather) và quần xã tiếp theo.
+- [x] **2.6.1** **Khắc phục Bug Tắt Vĩnh Viễn Collider Lò Phản Ứng:** Đảm bảo khi máu khe nhiệt chạm 0 ở Pha 2, collider được bảo lưu và giữ mở ở Pha 3 (`SetHardpointColliderActive(true)`) để người chơi bắn vào vùng lõi nóng chảy dứt điểm Boss.
+- [x] **2.6.2** **Hiện Thực Hóa Cơ Chế Quá Tải Pha 3:** Kích hoạt chu kỳ sạc $4.5\text{s}$ với cảnh báo âm thanh $1.8\text{s}$ (`AudioSFXType.ChargeHum`), giải phóng chùm 11 tia Hyper Laser (`AudioSFXType.LaserHyper`) quét ngang $X \in [-18\text{m}, +18\text{m}]$ ở vận tốc $55\text{ m/s}$ bao phủ hành lang trung tâm kèm rung chấn camera $0.5\text{f}$.
+- [x] **2.6.3** **Kết Nối Sự Kiện Hạ Boss với Endless Loop:** Khi Boss bị tiêu diệt:
+  - Thưởng ngay $+50,000\text{ PTS}$, dọn sạch toàn bộ đạn đạo trên màn hình (`EnemyProjectilePool.ClearAllActiveProjectiles()`).
+  - Thông báo cho [`VirtualRailEndlessDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailEndlessDirector.cs) qua `OnBossIncursionDefeated()`: tăng Threat Level chu kỳ tiếp theo ($+1$), chuyển trạng thái sang Thư Giãn (BreathingRoom $5.0\text{s}$), phát âm RadioChirp và thông báo HUD "BOSS ELIMINATED! SECTOR THREAT LEVEL UP".
 
 ---
 
@@ -179,6 +178,7 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 | *12/10/2026* | **DECOUPLE-EVASION** | Tách rời 100% tốc độ né ngang/dọc (60 m/s & 42 m/s) khỏi tốc độ tiến Z, tắt Golden Ratio, bảo toàn độ trễ lò xo 0.1s êm ái khi Boost/DDA, cung cấp cặp MenuItem 51 & 52 | [`DefaultVirtualRailConfig.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/DefaultVirtualRailConfig.asset), [`VirtualRailConfig.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailConfig.cs), [`VirtualRailModeToggle.cs`](file:///d:/3D-Shooter-master/Assets/Editor/VirtualRailModeToggle.cs) | `0 Errors` | User (Thực hiện phương án 1) |
 | *12/10/2026* | **BASE-SPEED-70** | Đồng bộ hóa tốc độ tiến cơ sở Z ban đầu về 70 m/s trên toàn hệ thống (StageData_01, DefaultConfig, EndlessDirector fallback, HUD Speedometer, AimAssist, SmartBomb) | [`StageData_01.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData_01.asset), [`DefaultVirtualRailConfig.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/DefaultVirtualRailConfig.asset), [`VirtualRailConfig.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailConfig.cs), [`VirtualRailEndlessDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailEndlessDirector.cs), [`ModernCockpitHUD.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/ModernCockpitHUD.cs) | `0 Errors` | User (Yêu cầu tốc độ Z ban đầu là 70) |
 | *12/10/2026* | **BOSS-DECOUPLE-2.4** | Hoàn thành Task 2.4: Tách biệt Collider Khiên (+3.25m đệm Y) & Vỏ tàu, triệt tiêu bug tên lửa gây sát thương nổ lan 4X qua multi-hit suppression 0 GC, cân bằng và đồng bộ hóa giới hạn máu 3 pha (660 HP / 330 HP / 0 HP) | [`VirtualRailHomingMissile.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailHomingMissile.cs), [`BossF3CorvetteController.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/BossF3CorvetteController.cs), [`BossHardpoint.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/BossHardpoint.cs), [`VirtualRailBossEditorTool.cs`](file:///d:/3D-Shooter-master/Assets/Editor/VirtualRailBossEditorTool.cs), [`Boss_F3_Corvette.prefab`](file:///d:/3D-Shooter-master/Assets/Prefabs/Boss_F3_Corvette.prefab) | `0 Errors` | User (Thực hiện phương án 1) |
+| *12/10/2026* | **BOSS-NHIP-2** | Hoàn thành Nhịp 2 (Task 2.5 & 2.6): Tháp pháo cánh bắn Flak 1.8s ở Pha 2, Buồng lái kích hoạt Stun 4.0s ngắt chiêu, SFX nổ lớn & VFX & Điểm thưởng (+2.5k/+5k/+10k), Pha 3 Hyper Laser 11 tia quét trung tâm 55 m/s, liên kết Endless Director nâng Threat Level khi diệt Boss | [`BossF3CorvetteController.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/BossF3CorvetteController.cs), [`VirtualRailEndlessDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailEndlessDirector.cs), [`MASTER_ROADMAP_TRACKER.md`](file:///d:/3D-Shooter-master/MASTER_ROADMAP_TRACKER.md) | `0 Errors` | User (Thực hiện nhịp 2) |
 
 ---
 

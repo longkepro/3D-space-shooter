@@ -64,6 +64,8 @@ namespace VirtualRail
         private float _stunTimer = 0f;
         private float _trenchChargeTimer = 0f;
         private bool _isChargingTrench = false;
+        private float _hyperLaserTimer = 0f;
+        private bool _isChargingHyperLaser = false;
         private float _cascadeExplosionTimer = 0f;
         private int _cascadeExplosionCount = 0;
 
@@ -319,7 +321,15 @@ namespace VirtualRail
 
         private void UpdatePhase2(float dt)
         {
-            // Ban ten lua VLS thang dung moi 3s
+            // 1. Tháp pháo cánh còn sống tiếp tục bắn đạn phòng không (Flak) mỗi 1.8s
+            _fireTimer += dt;
+            if (_fireTimer >= 1.8f)
+            {
+                _fireTimer = 0f;
+                FireUpwardFlakBurst();
+            }
+
+            // 2. Bắn tên lửa VLS thẳng đứng mỗi 3s
             _vlsTimer += dt;
             if (_vlsTimer >= 3.0f)
             {
@@ -327,7 +337,7 @@ namespace VirtualRail
                 FireVlsMissileSalvo();
             }
 
-            // Chu ky sac ranh lo phan ung moi 5s
+            // 3. Chu kỳ sạc rãnh lò phản ứng mỗi 5s
             _trenchChargeTimer += dt;
             if (!_isChargingTrench && _trenchChargeTimer >= 5.0f)
             {
@@ -346,7 +356,7 @@ namespace VirtualRail
 
                 if (_trenchChargeTimer >= 2.5f)
                 {
-                    // Sac thanh cong, phong luong nhiet thang dung
+                    // Sạc thành công, phóng luồng nhiệt thẳng đứng
                     ExecuteTrenchThermalVent();
                     _isChargingTrench = false;
                     _trenchChargeTimer = 0f;
@@ -370,10 +380,11 @@ namespace VirtualRail
 
         private void UpdatePhase3(float dt)
         {
-            // Hieu ung qua nhiet: Nhip tho emissive do ruc
+            // Hiệu ứng quá nhiệt: Nhịp thở emissive đỏ rực
             float pulse = 0.6f + 0.4f * Mathf.Sin(Time.time * 6.0f);
             ApplyMeltdownVisual(pulse);
 
+            // 1. Tháp pháo cánh dồn dập mỗi 0.8s
             _fireTimer += dt;
             if (_fireTimer >= 0.8f)
             {
@@ -381,11 +392,36 @@ namespace VirtualRail
                 FireUpwardFlakBurst();
             }
 
+            // 2. Giàn tên lửa VLS dồn dập mỗi 2.5s
             _vlsTimer += dt;
             if (_vlsTimer >= 2.5f)
             {
                 _vlsTimer = 0f;
                 FireVlsMissileSalvo();
+            }
+
+            // 3. Chu kỳ phóng chùm Hyper Laser quét qua hành lang trung tâm mỗi 4.5s (báo trước 1.8s)
+            _hyperLaserTimer += dt;
+            if (!_isChargingHyperLaser && _hyperLaserTimer >= 4.5f)
+            {
+                _isChargingHyperLaser = true;
+                _hyperLaserTimer = 0f;
+                if (AudioManager.Instance != null)
+                {
+                    AudioManager.Instance.PlaySFX2D(AudioSFXType.ChargeHum, 1.0f);
+                }
+            }
+            else if (_isChargingHyperLaser)
+            {
+                float prog = Mathf.Clamp01(_hyperLaserTimer / 1.8f);
+                if (_reactorVisual != null) _reactorVisual.UpdateCharging(prog);
+
+                if (_hyperLaserTimer >= 1.8f)
+                {
+                    ExecuteHyperLaserBarrage();
+                    _isChargingHyperLaser = false;
+                    _hyperLaserTimer = 0f;
+                }
             }
         }
 
@@ -424,6 +460,8 @@ namespace VirtualRail
             _phaseTimer = 0f;
             _fireTimer = 0f;
             _vlsTimer = 0f;
+            _hyperLaserTimer = 0f;
+            _isChargingHyperLaser = false;
 
             if (newPhase == BossBattlePhase.Phase2_ReactorTrench)
             {
@@ -516,6 +554,32 @@ namespace VirtualRail
             }
         }
 
+        private void ExecuteHyperLaserBarrage()
+        {
+            if (EnemyProjectilePool.Instance == null) return;
+            Vector3 muzzlePos = _reactorVentMuzzle != null ? _reactorVentMuzzle.position : transform.position + transform.up * 4f;
+
+            if (_reactorVisual != null)
+            {
+                _reactorVisual.TriggerVentEruption(_explosionPrefab);
+            }
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.LaserHyper, 1.0f);
+            }
+
+            VirtualRailCameraRig.TriggerShake(0.5f);
+
+            // 11 tia đạn Hyper Laser quét ngang từ X = -18m đến +18m ở tốc độ 55 m/s
+            for (int i = -5; i <= 5; i++)
+            {
+                float lateralOffset = i * 0.16f;
+                Vector3 blastDir = (transform.up * 1.8f + -transform.forward * 0.6f + transform.right * lateralOffset).normalized;
+                EnemyProjectilePool.Instance.SpawnProjectile(muzzlePos, blastDir, 55f, false);
+            }
+        }
+
         public void NotifyHardpointDamaged(BossHardpoint hardpoint, int damageDealt, Vector3 hitPoint)
         {
             if (_currentPhase == BossBattlePhase.Defeated) return;
@@ -562,17 +626,80 @@ namespace VirtualRail
 
         public void NotifyHardpointDestroyed(BossHardpoint hardpoint)
         {
-            VirtualRailCameraRig.TriggerShake(0.25f);
+            VirtualRailCameraRig.TriggerShake(0.35f);
 
-            // Nếu Rãnh Lò Phản Ứng bị phá hủy ở Pha 2 -> Tự động chuyển tiếp sang Pha 3 Cuồng Nộ
-            if (hardpoint.HardpointType == BossHardpointType.DorsalReactorTrench && _currentPhase == BossBattlePhase.Phase2_ReactorTrench)
+            Vector3 hpPos = (hardpoint != null) ? hardpoint.transform.position : transform.position;
+
+            // 1. Âm thanh nổ lớn và hiệu ứng nổ tại vị trí hardpoint bị tiêu diệt
+            if (AudioManager.Instance != null)
             {
-                if (_currentHealth > 330)
-                {
-                    _currentHealth = 330;
-                }
-                TransitionToPhase(BossBattlePhase.Phase3_MeltdownOverdrive);
+                AudioManager.Instance.PlaySFX3D(AudioSFXType.ExplosionLarge, hpPos, 1.0f);
             }
+
+            if (_explosionPrefab != null)
+            {
+                VirtualRailVFXPool.Instance.SpawnVFX(_explosionPrefab, hpPos, Quaternion.identity, null, 2.0f);
+            }
+
+            // 2. Điểm thưởng và cơ chế đặc thù cho từng loại hardpoint
+            if (hardpoint != null)
+            {
+                switch (hardpoint.HardpointType)
+                {
+                    case BossHardpointType.LeftFlakTurret:
+                    case BossHardpointType.RightFlakTurret:
+                        GameEventManager.IncrementScore(2500);
+                        break;
+
+                    case BossHardpointType.MainBridge:
+                        GameEventManager.IncrementScore(5000);
+                        TriggerBridgeStun();
+                        break;
+
+                    case BossHardpointType.DorsalReactorTrench:
+                        GameEventManager.IncrementScore(10000);
+                        // Nếu Rãnh Lò Phản Ứng bị phá hủy ở Pha 2 -> Tự động chuyển tiếp sang Pha 3 Cuồng Nộ
+                        if (_currentPhase == BossBattlePhase.Phase2_ReactorTrench)
+                        {
+                            if (_currentHealth > 330)
+                            {
+                                _currentHealth = 330;
+                            }
+                            TransitionToPhase(BossBattlePhase.Phase3_MeltdownOverdrive);
+                        }
+                        break;
+                }
+            }
+        }
+
+        private void TriggerBridgeStun()
+        {
+            _isChargingTrench = false;
+            _trenchChargeTimer = 0f;
+            _isChargingHyperLaser = false;
+            _hyperLaserTimer = 0f;
+            _stunTimer = 4.0f; // 4.0s Stun theo spec Task 2.5.2
+
+            OnBossTrenchCharging?.Invoke(false);
+            OnBossStunned?.Invoke(true);
+
+            if (_reactorVisual != null)
+            {
+                _reactorVisual.SetStunned(true);
+            }
+
+            if (_reactorTrench != null)
+            {
+                _reactorTrench.SetWeakSpot(false);
+            }
+
+            if (_stunSparksPrefab != null)
+            {
+                Vector3 sparkPos = (_mainBridge != null) ? _mainBridge.transform.position : transform.position + transform.up * 4f;
+                VirtualRailVFXPool.Instance.SpawnVFX(_stunSparksPrefab, sparkPos, Quaternion.identity, null, 4.0f);
+            }
+
+            VirtualRailCameraRig.TriggerShake(0.45f);
         }
 
         private void InterruptAndStun()
@@ -622,6 +749,12 @@ namespace VirtualRail
         {
             OnBossDefeated?.Invoke();
             GameEventManager.IncrementScore(50000);
+
+            // Thông báo cho Endless Director để nâng bậc DDA Threat Level và chuyển sang Breathing Room
+            if (VirtualRailEndlessDirector.Instance != null)
+            {
+                VirtualRailEndlessDirector.Instance.OnBossIncursionDefeated();
+            }
 
             // Xoa sach toan bo dan dich dang bay
             if (EnemyProjectilePool.Instance != null)
