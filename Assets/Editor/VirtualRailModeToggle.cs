@@ -2403,6 +2403,7 @@ public class VirtualRailModeToggle
         // Legacy / Secondary Clusters Sprites
         Sprite frameSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_frame_bracket.png");
         Sprite barFillSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_bar_segmented_fill.png");
+        Sprite barBgSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_bar_segmented_bg.png");
         Sprite laserIconSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_icon_twin_laser.png");
         Sprite pilotSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_avatar_pilot.png");
 
@@ -2478,16 +2479,18 @@ public class VirtualRailModeToggle
         hud.hitCountValueText = CreateUIText("HitsValue", hitsBox.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 0f), new Vector2(210f, 38f), "156", font, 30, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
 
         // Box 3: Endless Telemetry Box (Sector Threat Level & Distance Tracker)
-        GameObject telemetryBox = CreateUIPanel("TelemetryBox", trCluster.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(0f, -148f), new Vector2(355f, 44f), new Color(0.02f, 0.08f, 0.14f, 0.88f));
+        // High-tech Sci-Fi Bracket Frame with 9-Slice and glowing corner chamfers
+        GameObject telemetryBox = CreateUIPanel("TelemetryBox", trCluster.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(0f, -148f), new Vector2(355f, 48f), new Color(0.02f, 0.08f, 0.14f, 0.88f), frameSprite, Image.Type.Sliced);
+        
         // Sub 3a: Threat Badge
         GameObject threatBadge = new GameObject("ThreatBadge");
         threatBadge.transform.SetParent(telemetryBox.transform, false);
         RectTransform tbRt = threatBadge.AddComponent<RectTransform>();
         tbRt.anchorMin = new Vector2(0f, 0f);
-        tbRt.anchorMax = new Vector2(0.5f, 1f);
+        tbRt.anchorMax = new Vector2(0.52f, 1f);
         tbRt.offsetMin = Vector2.zero;
         tbRt.offsetMax = Vector2.zero;
-        hud.threatLevelText = CreateUIText("ThreatLabel", threatBadge.transform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0f, 0.5f), new Vector2(16f, 6f), new Vector2(-20f, 20f), "THREAT LV.01", font, 13, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
+        hud.threatLevelText = CreateUIText("ThreatLabel", threatBadge.transform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0f, 0.5f), new Vector2(16f, 7f), new Vector2(-20f, 20f), "THREAT LV.01", font, 13, FontStyle.Bold, borderCyan, TextAnchor.MiddleLeft);
 
         GameObject tpObj = new GameObject("ThreatProgress");
         tpObj.transform.SetParent(threatBadge.transform, false);
@@ -2496,9 +2499,11 @@ public class VirtualRailModeToggle
         tpRt.anchorMax = new Vector2(1f, 0.5f);
         tpRt.pivot = new Vector2(0f, 0.5f);
         tpRt.anchoredPosition = new Vector2(16f, -10f);
-        tpRt.sizeDelta = new Vector2(-32f, 4f);
+        tpRt.sizeDelta = new Vector2(-32f, 6f);
         Image tpTrack = tpObj.AddComponent<Image>();
-        tpTrack.color = new Color(0.04f, 0.16f, 0.22f, 0.85f);
+        tpTrack.sprite = barBgSprite;
+        tpTrack.type = Image.Type.Sliced;
+        tpTrack.color = new Color(0.08f, 0.22f, 0.32f, 0.95f);
 
         GameObject tpFillObj = new GameObject("Fill");
         tpFillObj.transform.SetParent(tpObj.transform, false);
@@ -2508,6 +2513,7 @@ public class VirtualRailModeToggle
         tpfRt.offsetMin = Vector2.zero;
         tpfRt.offsetMax = Vector2.zero;
         hud.threatProgressFill = tpFillObj.AddComponent<Image>();
+        hud.threatProgressFill.sprite = barFillSprite;
         hud.threatProgressFill.type = Image.Type.Filled;
         hud.threatProgressFill.fillMethod = Image.FillMethod.Horizontal;
         hud.threatProgressFill.fillOrigin = (int)Image.OriginHorizontal.Left;
@@ -2518,12 +2524,12 @@ public class VirtualRailModeToggle
         GameObject distTracker = new GameObject("DistanceTracker");
         distTracker.transform.SetParent(telemetryBox.transform, false);
         RectTransform dtRt = distTracker.AddComponent<RectTransform>();
-        dtRt.anchorMin = new Vector2(0.5f, 0f);
+        dtRt.anchorMin = new Vector2(0.52f, 0f);
         dtRt.anchorMax = new Vector2(1f, 1f);
         dtRt.offsetMin = Vector2.zero;
         dtRt.offsetMax = Vector2.zero;
         CreateUIText("DistLabel", distTracker.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(10f, 0f), new Vector2(45f, 22f), "DIST:", font, 12, FontStyle.Bold, new Color(0.6f, 0.78f, 0.88f, 0.85f), TextAnchor.MiddleLeft);
-        hud.distanceTrackerText = CreateUIText("DistanceValue", distTracker.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-16f, 0f), new Vector2(120f, 24f), "00,000 m", font, 14, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
+        hud.distanceTrackerText = CreateUIText("DistanceValue", distTracker.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-16f, 0f), new Vector2(115f, 24f), "00,000 m", font, 14, FontStyle.Bold, borderCyan, TextAnchor.MiddleRight);
 
         // Box 4: Combo Radial Dial (Circular Golden Gauge with 360 Arc Decay) positioned directly under right side of Telemetry box
         GameObject comboDialObj = new GameObject("ComboRadialDial");
@@ -3192,6 +3198,34 @@ public class VirtualRailModeToggle
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN GOLDEN PATH & WORLD ORIGIN SHIFTER (OFF - LEGACY):</b></color> Trở về cơ chế spawn và tọa độ thế giới nguyên thủy.");
+    }
+    #endregion
+
+    #region Projectile Rail-Frame Trail Compensation (Direction A)
+    [MenuItem("Tools/Virtual Rail/Projectiles/1. Enable Rail-Frame Trail Compensation (ON)")]
+    public static void EnableRailFrameTrailCompensation()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.enableRailFrameTrailCompensation = true;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ BẬT BÙ TRỪ ĐỘ TRÔI ĐƯỜNG RAY CHO VỆT ĐUÔI ĐẠN (ON):</b></color> TrailRenderer và ParticleSystem sẽ rải vết xuôi chiều theo góc nhìn buồng lái Arwing.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Projectiles/2. Disable Rail-Frame Trail Compensation (OFF - Legacy)")]
+    public static void DisableRailFrameTrailCompensation()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.enableRailFrameTrailCompensation = false;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỆT ĐUÔI ĐẠN VỀ WORLD SPACE NGUYÊN BẢN (OFF - LEGACY):</b></color> Tắt bù trừ dịch chuyển đỉnh trail.");
     }
     #endregion
 }

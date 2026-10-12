@@ -221,7 +221,15 @@ namespace VirtualRail
             main.startSpeed = 1.5f;
             main.startSize = 0.22f;
             main.startColor = new Color(1f, 0.7f, 0.2f, 1f);
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            if (VirtualRailAnchor.Instance != null)
+            {
+                main.simulationSpace = ParticleSystemSimulationSpace.Custom;
+                main.customSimulationSpace = VirtualRailAnchor.Instance.transform;
+            }
+            else
+            {
+                main.simulationSpace = ParticleSystemSimulationSpace.World;
+            }
             main.maxParticles = 40;
             main.loop = true;
             main.playOnAwake = false;
@@ -318,7 +326,7 @@ namespace VirtualRail
             {
                 if (_pool[i] != null && _pool[i].gameObject.activeSelf)
                 {
-                    _pool[i].transform.position -= shift;
+                    _pool[i].ShiftOrigin(shift);
                 }
             }
         }

@@ -317,6 +317,8 @@ namespace VirtualRail
         public float chargeShotSplashRadius = 10f;
         [Tooltip("Bật sử dụng đạn vật lý Plasma Orb cho quái thay vì hitscan cũ")]
         public bool usePhysicalEnemyProjectiles = true;
+        [Tooltip("Bật bù trừ độ trôi hệ quy chiếu đường ray cho vệt đuôi đạn TrailRenderer (Rail-Frame Moving Shift)")]
+        public bool enableRailFrameTrailCompensation = true;
 
         [Header("15. Spatial Vectors & 4-Phase Lifecycle FSM (TDD v1.0.0 Phần II)")]
         [Tooltip("Bật hệ thống 10 Vector xuất hiện không gian đa hướng")]

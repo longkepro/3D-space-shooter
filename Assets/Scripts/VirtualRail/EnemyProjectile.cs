@@ -41,6 +41,7 @@ namespace VirtualRail
         private float _spawnTime;
         private float _deflectRecycleTime = -1f;
         private bool _isDeflected = false;
+        private bool _hasRailVelocity = false;
         private Transform _playerTransform;
         private VirtualRailAnchor _anchor;
 
@@ -98,6 +99,7 @@ namespace VirtualRail
             Vector3 railVelocity = (_anchor != null) ? _anchor.ForwardTangent * _anchor.CurrentSpeed : Vector3.zero;
             Vector3 localVelocity = direction.normalized * speed;
 
+            _hasRailVelocity = !isHeadOn && _anchor != null;
             _velocity = localVelocity + (isHeadOn ? Vector3.zero : railVelocity);
             if (direction.sqrMagnitude > 0.001f)
             {
@@ -111,6 +113,16 @@ namespace VirtualRail
 
             if (sparkParticles != null)
             {
+                var main = sparkParticles.main;
+                if (_anchor != null)
+                {
+                    main.simulationSpace = ParticleSystemSimulationSpace.Custom;
+                    main.customSimulationSpace = _anchor.transform;
+                }
+                else
+                {
+                    main.simulationSpace = ParticleSystemSimulationSpace.World;
+                }
                 sparkParticles.Clear();
                 sparkParticles.Play();
             }
@@ -122,6 +134,25 @@ namespace VirtualRail
         {
             float dt = Time.deltaTime;
             transform.position += _velocity * dt;
+
+            // Bù trừ dịch chuyển hệ quy chiếu đường ray cho vệt đuôi đạn (Rail-Frame Moving Shift - Hướng A):
+            // Giúp TrailRenderer rải vết xuôi chiều theo chuyển động tương đối trong buồng lái Arwing
+            bool allowComp = (_anchor != null && _anchor.config != null)
+                ? _anchor.config.enableRailFrameTrailCompensation
+                : true;
+
+            if (allowComp && _hasRailVelocity && trailRenderer != null && trailRenderer.positionCount > 0)
+            {
+                Vector3 railShift = (_anchor != null) ? _anchor.ForwardTangent * (_anchor.CurrentSpeed * dt) : Vector3.zero;
+                if (railShift.sqrMagnitude > 0.00001f)
+                {
+                    int count = trailRenderer.positionCount;
+                    for (int i = 0; i < count; i++)
+                    {
+                        trailRenderer.SetPosition(i, trailRenderer.GetPosition(i) + railShift);
+                    }
+                }
+            }
 
             // Bù trừ cự ly cho kích thước thị giác (Distance Scale Compensation):
             // Scale_visual = Clamp(1.0 + (Distance / D_ref) * K_scale, 1.0, 3.5)
@@ -221,6 +252,7 @@ namespace VirtualRail
         public void Deflect(Vector3 shipPosition)
         {
             _isDeflected = true;
+            _hasRailVelocity = false;
 
             // Bẻ hướng vuông góc 90 độ văng ra xa thân tàu
             Vector3 awayDir = (transform.position - shipPosition).normalized;
@@ -271,6 +303,22 @@ namespace VirtualRail
                 trailRenderer.Clear();
             }
             gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// Dịch chuyển viên đạn và các đỉnh TrailRenderer trong quá trình Tái định vị thế giới (Task 4.3).
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            transform.position -= shift;
+            if (trailRenderer != null && trailRenderer.positionCount > 0)
+            {
+                int count = trailRenderer.positionCount;
+                for (int i = 0; i < count; i++)
+                {
+                    trailRenderer.SetPosition(i, trailRenderer.GetPosition(i) - shift);
+                }
+            }
         }
     }
 }
