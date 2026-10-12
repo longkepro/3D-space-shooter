@@ -70,6 +70,8 @@ namespace VirtualRail
         public Slider sliderVolMaster;
         public Slider sliderVolMusic;
         public Slider sliderVolSFX;
+        public Text txtMusicVolVal;
+        public Text txtSfxVolVal;
         public InputField inputPilotCallsign;
 
         public Button btnSettingsApply;
@@ -462,28 +464,58 @@ namespace VirtualRail
                 dropdownQuality.onValueChanged.AddListener(val => mgr.qualityLevel = val);
             }
 
-            // Audio sliders
+            // Audio sliders (Real-time reactive adjustment)
             if (sliderVolMaster != null)
             {
                 sliderVolMaster.value = mgr.volumeMaster;
+                sliderVolMaster.onValueChanged.RemoveAllListeners();
                 sliderVolMaster.onValueChanged.AddListener(val => mgr.volumeMaster = val);
             }
             if (sliderVolMusic != null)
             {
                 sliderVolMusic.value = mgr.volumeMusic;
-                sliderVolMusic.onValueChanged.AddListener(val => mgr.volumeMusic = val);
+                if (txtMusicVolVal != null) txtMusicVolVal.text = Mathf.RoundToInt(mgr.volumeMusic * 100f) + "%";
+                sliderVolMusic.onValueChanged.RemoveAllListeners();
+                sliderVolMusic.onValueChanged.AddListener(OnMusicVolumeChanged);
             }
             if (sliderVolSFX != null)
             {
                 sliderVolSFX.value = mgr.volumeSFX;
-                sliderVolSFX.onValueChanged.AddListener(val => mgr.volumeSFX = val);
+                if (txtSfxVolVal != null) txtSfxVolVal.text = Mathf.RoundToInt(mgr.volumeSFX * 100f) + "%";
+                sliderVolSFX.onValueChanged.RemoveAllListeners();
+                sliderVolSFX.onValueChanged.AddListener(OnSfxVolumeChanged);
             }
 
             // Pilot Callsign
             if (inputPilotCallsign != null)
             {
                 inputPilotCallsign.text = mgr.pilotCallsign;
+                inputPilotCallsign.onValueChanged.RemoveAllListeners();
                 inputPilotCallsign.onValueChanged.AddListener(val => mgr.pilotCallsign = val.ToUpper());
+            }
+        }
+
+        private float _lastSfxSampleTime = 0f;
+
+        private void OnMusicVolumeChanged(float val)
+        {
+            if (txtMusicVolVal != null) txtMusicVolVal.text = Mathf.RoundToInt(val * 100f) + "%";
+            if (SettingsManager.Instance != null) SettingsManager.Instance.volumeMusic = val;
+            if (AudioManager.Instance != null) AudioManager.Instance.SetMusicVolume(val);
+        }
+
+        private void OnSfxVolumeChanged(float val)
+        {
+            if (txtSfxVolVal != null) txtSfxVolVal.text = Mathf.RoundToInt(val * 100f) + "%";
+            if (SettingsManager.Instance != null) SettingsManager.Instance.volumeSFX = val;
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.SetSfxVolume(val);
+                if (Time.unscaledTime - _lastSfxSampleTime > 0.15f)
+                {
+                    _lastSfxSampleTime = Time.unscaledTime;
+                    AudioManager.Instance.PlaySFX2D(AudioSFXType.LaserSingle, 0.7f, 1f);
+                }
             }
         }
 
@@ -565,6 +597,14 @@ namespace VirtualRail
 
         private void OnSettingsExitClicked()
         {
+            if (SettingsManager.Instance != null)
+            {
+                if (inputPilotCallsign != null && !string.IsNullOrEmpty(inputPilotCallsign.text))
+                {
+                    SettingsManager.Instance.pilotCallsign = inputPilotCallsign.text.ToUpper();
+                }
+                SettingsManager.Instance.SaveSettings();
+            }
             ShowState(_previousState == UIViewState.Gameplay || _previousState == UIViewState.Pause ? UIViewState.Pause : UIViewState.MainMenu);
         }
 

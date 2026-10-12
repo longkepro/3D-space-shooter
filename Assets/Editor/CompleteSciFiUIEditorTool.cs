@@ -252,152 +252,46 @@ namespace VirtualRail.Editor
             uiMgr.btnQuit = CreatePillButton("Btn_Quit", mmObj.transform, new Vector2(0f, -275f), "QUIT GAME", font, spBtn, spBtnHover, spBtnPressed);
 
             // -------------------------------------------------------------
-            // 2. SETTINGS / OPTIONS MODAL (Matching UI COMPONENTS 01)
             // -------------------------------------------------------------
-            GameObject setModal = CreatePanel("SettingsModal", root.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(860f, 520f), spWindow, Image.Type.Sliced);
+            // 2. SETTINGS / AUDIO & PILOT MODAL (Compact, Focused)
+            // -------------------------------------------------------------
+            GameObject setModal = CreatePanel("SettingsModal", root.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560f, 380f), spWindow, Image.Type.Sliced);
             uiMgr.settingsModal = setModal.GetComponent<RectTransform>();
 
+            // Header Title
+            CreateText("HeaderTitle", setModal.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -32f), new Vector2(400f, 32f), "AUDIO & PILOT SETTINGS", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
+
             // Close [X] Button on top-right
-            uiMgr.btnSettingsCloseX = CreateIconButton("Btn_CloseX", setModal.transform, new Vector2(1f, 1f), new Vector2(-28f, -28f), new Vector2(44f, 44f), spCloseX);
+            uiMgr.btnSettingsCloseX = CreateIconButton("Btn_CloseX", setModal.transform, new Vector2(1f, 1f), new Vector2(-28f, -28f), new Vector2(36f, 36f), spCloseX);
 
-            // Top Tabs: VIDEO (Green Active), AUDIO, PLAYERS, CONTROLS
-            float tabXStart = 32f;
-            float tabSpacing = 145f;
-            uiMgr.tabVideo = CreateTabButton("Tab_Video", setModal.transform, new Vector2(tabXStart, 22f), "VIDEO", font, spTabAct, Color.white);
-            uiMgr.tabAudio = CreateTabButton("Tab_Audio", setModal.transform, new Vector2(tabXStart + tabSpacing, 22f), "AUDIO", font, spTabNorm, cyanColor);
-            uiMgr.tabPlayers = CreateTabButton("Tab_Players", setModal.transform, new Vector2(tabXStart + tabSpacing * 2, 22f), "PLAYERS", font, spTabNorm, cyanColor);
-            uiMgr.tabControls = CreateTabButton("Tab_Controls", setModal.transform, new Vector2(tabXStart + tabSpacing * 3, 22f), "CONTROLS", font, spTabNorm, cyanColor);
-            uiMgr.tabActiveSprite = spTabAct;
-            uiMgr.tabNormalSprite = spTabNorm;
+            // 1. PILOT CALLSIGN ROW (y = +45f)
+            CreateText("Label_Callsign", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-120f, 45f), new Vector2(220f, 32f), "PILOT CALLSIGN:", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
+            uiMgr.inputPilotCallsign = CreateInputField("P_Callsign_Input", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(100f, 45f), new Vector2(200f, 34f), "FOX McCLOUD", font, spDropdown);
 
-            // --- TAB CONTENT: VIDEO ---
-            GameObject videoContent = new GameObject("TabContent_Video");
-            videoContent.transform.SetParent(setModal.transform, false);
-            RectTransform vcRt = videoContent.AddComponent<RectTransform>();
-            vcRt.anchorMin = new Vector2(0f, 0f);
-            vcRt.anchorMax = new Vector2(1f, 1f);
-            vcRt.offsetMin = new Vector2(40f, 75f);
-            vcRt.offsetMax = new Vector2(-40f, -50f);
-            uiMgr.tabVideoContent = videoContent;
+            // 2. MUSIC VOLUME ROW (y = -15f)
+            CreateText("Label_VolMusic", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-120f, -15f), new Vector2(220f, 32f), "MUSIC VOLUME:", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
+            uiMgr.sliderVolMusic = CreateSlider("Slider_Music", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(65f, -15f), new Vector2(140f, 20f), 0f, 1f, spSliderTrack, spSliderFill, spSliderThumb).slider;
+            uiMgr.txtMusicVolVal = CreateText("Val_Music", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(175f, -15f), new Vector2(60f, 28f), "80%", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter).GetComponent<Text>();
 
-            float rowY = -25f;
-            float rowStep = 45f;
+            // 3. SFX VOLUME ROW (y = -75f)
+            CreateText("Label_VolSFX", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-120f, -75f), new Vector2(220f, 32f), "SFX VOLUME:", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
+            uiMgr.sliderVolSFX = CreateSlider("Slider_SFX", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(65f, -75f), new Vector2(140f, 20f), 0f, 1f, spSliderTrack, spSliderFill, spSliderThumb).slider;
+            uiMgr.txtSfxVolVal = CreateText("Val_SFX", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(175f, -75f), new Vector2(60f, 28f), "90%", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter).GetComponent<Text>();
 
-            // 1. SCREEN RESOLUTION
-            CreateText("Label_Res", videoContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "SCREEN RESOLUTION", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.dropdownResolution = CreateDropdown("Dropdown_Res", videoContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), new Vector2(300f, 36f), font, spDropdown);
+            // Bottom Buttons: DEFAULTS, CLOSE & SAVE
+            uiMgr.btnSettingsDefaults = CreateSmallButton("Btn_Defaults", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(-100f, -135f), new Vector2(160f, 42f), "DEFAULTS", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.btnSettingsExit = CreateSmallButton("Btn_Exit", setModal.transform, new Vector2(0.5f, 0.5f), new Vector2(100f, -135f), new Vector2(160f, 42f), "CLOSE & SAVE", font, spBtn, spBtnHover, spBtnPressed);
+            uiMgr.btnSettingsApply = null;
 
-            // 2. FULLSCREEN
-            rowY -= rowStep;
-            CreateText("Label_Fullscreen", videoContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "FULLSCREEN", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.toggleFullscreen = CreateCheckbox("Toggle_Fullscreen", videoContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), spCheckFrame, spCheckX);
-
-            // 3. LUMINOSITY
-            rowY -= rowStep;
-            CreateText("Label_Luminosity", videoContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "LUMINOSITY", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            var lumSlider = CreateSlider("Slider_Luminosity", videoContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), new Vector2(240f, 20f), 0.5f, 2.0f, spSliderTrack, spSliderFill, spSliderThumb);
-            uiMgr.sliderLuminosity = lumSlider.slider;
-            uiMgr.txtLuminosityVal = CreateText("Val_Luminosity", videoContent.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(0f, rowY), new Vector2(50f, 32f), "1.00", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleRight).GetComponent<Text>();
-
-            // 4. VSYNC
-            rowY -= rowStep;
-            CreateText("Label_VSync", videoContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "VSYNC", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.toggleVSync = CreateCheckbox("Toggle_VSync", videoContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), spCheckFrame, spToggleSq);
-
-            // 5. TARGET FRAMERATE
-            rowY -= rowStep;
-            CreateText("Label_Framerate", videoContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "TARGET FRAMERATE", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            var fpsSlider = CreateSlider("Slider_Framerate", videoContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), new Vector2(240f, 20f), 30f, 144f, spSliderTrack, spSliderFill, spSliderThumb);
-            uiMgr.sliderFramerate = fpsSlider.slider;
-            uiMgr.txtFramerateVal = CreateText("Val_Framerate", videoContent.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(0f, rowY), new Vector2(50f, 32f), "60", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleRight).GetComponent<Text>();
-
-            // 6. DISPLAY FPS
-            rowY -= rowStep;
-            CreateText("Label_ShowFPS", videoContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "DISPLAY FPS", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.toggleShowFPS = CreateCheckbox("Toggle_ShowFPS", videoContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), spCheckFrame, spCheckX);
-
-            // 7. OVERALL IMAGE QUALITY
-            rowY -= rowStep;
-            CreateText("Label_Quality", videoContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "OVERALL IMAGE QUALITY", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.dropdownQuality = CreateDropdown("Dropdown_Quality", videoContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), new Vector2(300f, 36f), font, spDropdown);
-
-            // --- TAB CONTENT: AUDIO ---
-            GameObject audioContent = new GameObject("TabContent_Audio");
-            audioContent.transform.SetParent(setModal.transform, false);
-            RectTransform acRt = audioContent.AddComponent<RectTransform>();
-            acRt.anchorMin = new Vector2(0f, 0f);
-            acRt.anchorMax = new Vector2(1f, 1f);
-            acRt.offsetMin = new Vector2(40f, 75f);
-            acRt.offsetMax = new Vector2(-40f, -50f);
-            uiMgr.tabAudioContent = audioContent;
-            audioContent.SetActive(false);
-
-            rowY = -40f;
-            CreateText("Label_VolMaster", audioContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "MASTER VOLUME", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.sliderVolMaster = CreateSlider("Slider_Master", audioContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), new Vector2(300f, 20f), 0f, 1f, spSliderTrack, spSliderFill, spSliderThumb).slider;
-
-            rowY -= 60f;
-            CreateText("Label_VolMusic", audioContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "MUSIC VOLUME", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.sliderVolMusic = CreateSlider("Slider_Music", audioContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), new Vector2(300f, 20f), 0f, 1f, spSliderTrack, spSliderFill, spSliderThumb).slider;
-
-            rowY -= 60f;
-            CreateText("Label_VolSFX", audioContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, rowY), new Vector2(260f, 32f), "SFX VOLUME", font, 14, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.sliderVolSFX = CreateSlider("Slider_SFX", audioContent.transform, new Vector2(1f, 1f), new Vector2(-150f, rowY), new Vector2(300f, 20f), 0f, 1f, spSliderTrack, spSliderFill, spSliderThumb).slider;
-
-            // --- TAB CONTENT: PLAYERS ---
-            GameObject playersContent = new GameObject("TabContent_Players");
-            playersContent.transform.SetParent(setModal.transform, false);
-            RectTransform pcRt = playersContent.AddComponent<RectTransform>();
-            pcRt.anchorMin = new Vector2(0f, 0f);
-            pcRt.anchorMax = new Vector2(1f, 1f);
-            pcRt.offsetMin = new Vector2(40f, 75f);
-            pcRt.offsetMax = new Vector2(-40f, -50f);
-            uiMgr.tabPlayersContent = playersContent;
-            playersContent.SetActive(false);
-
-            CreateText("Players_Title", playersContent.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -25f), new Vector2(450f, 32f), "PILOT PROFILE & TACTICAL LOADOUT", font, 15, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
-
-            float pY = -70f;
-            float pStep = 36f;
-            CreateText("P_Callsign", playersContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, pY), new Vector2(300f, 28f), "PILOT CALLSIGN:", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            uiMgr.inputPilotCallsign = CreateInputField("P_Callsign_Input", playersContent.transform, new Vector2(1f, 1f), new Vector2(-20f, pY + 4f), new Vector2(260f, 32f), "FOX McCLOUD", font, spDropdown);
-
-            pY -= pStep;
-            CreateText("P_Craft", playersContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, pY), new Vector2(300f, 28f), "ASSIGNED CRAFT:", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            CreateText("P_Craft_Val", playersContent.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, pY), new Vector2(300f, 28f), "ARWING MK-II INTERCEPTOR", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
-
-            pY -= pStep;
-            CreateText("P_Propulsion", playersContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, pY), new Vector2(300f, 28f), "PROPULSION SYSTEM:", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            CreateText("P_Propulsion_Val", playersContent.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, pY), new Vector2(300f, 28f), "G-DIFFUSER + PLASMA TURBO", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
-
-            pY -= pStep;
-            CreateText("P_Shield", playersContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, pY), new Vector2(300f, 28f), "DEFENSE MATRIX:", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            CreateText("P_Shield_Val", playersContent.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, pY), new Vector2(300f, 28f), "HEXAGONAL TITANIUM 100 HP", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
-
-            pY -= pStep;
-            CreateText("P_Weapons", playersContent.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, pY), new Vector2(300f, 28f), "WEAPON SUITE:", font, 13, FontStyle.Bold, cyanColor, TextAnchor.MiddleLeft);
-            CreateText("P_Weapons_Val", playersContent.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20f, pY), new Vector2(300f, 28f), "TWIN HYPER LASER + 3 BOMBS", font, 13, FontStyle.Bold, Color.white, TextAnchor.MiddleRight);
-
-            // --- TAB CONTENT: CONTROLS ---
-            GameObject ctrlContent = new GameObject("TabContent_Controls");
-            ctrlContent.transform.SetParent(setModal.transform, false);
-            RectTransform ccRt = ctrlContent.AddComponent<RectTransform>();
-            ccRt.anchorMin = new Vector2(0f, 0f);
-            ccRt.anchorMax = new Vector2(1f, 1f);
-            ccRt.offsetMin = new Vector2(40f, 75f);
-            ccRt.offsetMax = new Vector2(-40f, -50f);
-            uiMgr.tabControlsContent = ctrlContent;
-            ctrlContent.SetActive(false);
-
-            CreateText("Ctrl_Guide", ctrlContent.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(500f, 200f),
-                "FLIGHT CONTROLS:\n\n[W / A / S / D] or [ARROWS] : Pitch & Yaw Steering\n[SPACE] or [LEFT CLICK] : Fire Plasma Blaster\n[HOLD SPACE] : Plasma Charge Shot\n[B] or [RIGHT CLICK] : Launch Smart Bomb\n[SHIFT] : Turbo Boost\n[CTRL] : Airbrake\n[Q / E] : Barrel Roll\n[ESC] : In-Game Pause",
-                font, 13, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter);
-
-            // Bottom Buttons (APPLY, DEFAULTS, EXIT)
-            float bY = 28f;
-            uiMgr.btnSettingsApply = CreateSmallButton("Btn_Apply", setModal.transform, new Vector2(0.5f, 0f), new Vector2(-150f, bY), new Vector2(130f, 40f), "APPLY", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnSettingsDefaults = CreateSmallButton("Btn_Defaults", setModal.transform, new Vector2(0.5f, 0f), new Vector2(0f, bY), new Vector2(140f, 40f), "DEFAULTS", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnSettingsExit = CreateSmallButton("Btn_Exit", setModal.transform, new Vector2(0.5f, 0f), new Vector2(150f, bY), new Vector2(130f, 40f), "EXIT", font, spBtn, spBtnHover, spBtnPressed);
+            // Reset obsolete tab references
+            uiMgr.tabVideo = null;
+            uiMgr.tabAudio = null;
+            uiMgr.tabPlayers = null;
+            uiMgr.tabControls = null;
+            uiMgr.tabVideoContent = null;
+            uiMgr.tabAudioContent = null;
+            uiMgr.tabPlayersContent = null;
+            uiMgr.tabControlsContent = null;
 
             // -------------------------------------------------------------
             // 3. HALL OF FAME MODAL (Matching UI COMPONENTS 02)
@@ -793,7 +687,7 @@ namespace VirtualRail.Editor
             RectTransform rt = obj.AddComponent<RectTransform>();
             rt.anchorMin = aMin;
             rt.anchorMax = aMin;
-            rt.pivot = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = pos;
             rt.sizeDelta = size;
 
