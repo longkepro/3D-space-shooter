@@ -25,7 +25,7 @@ namespace VirtualRail
 
         [Header("Procedural Spline Rail (Task 4.1)")]
         [Tooltip("Bật chế độ di chuyển theo đường ray cong sinh thủ tục Hermite Spline C^2. Tắt để giữ đường bay thẳng cổ điển (Layer 2 Undo)")]
-        [SerializeField] private bool useProceduralSpline = true;
+        [SerializeField] private bool useProceduralSpline = false;
         private float _accumulatedArcDistance = 0f;
 
         public bool UseProceduralSpline
@@ -184,9 +184,10 @@ namespace VirtualRail
             currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, 8f * Time.deltaTime);
 
             float deltaDist = currentSpeed * Time.deltaTime;
+            _accumulatedArcDistance += deltaDist;
+
             if (useProceduralSpline && VirtualRailSplineChunker.Instance != null)
             {
-                _accumulatedArcDistance += deltaDist;
                 VirtualRailSplineChunker.Instance.Advance(deltaDist);
                 transform.position = VirtualRailSplineChunker.Instance.EvaluatePosition(_accumulatedArcDistance);
                 transform.rotation = VirtualRailSplineChunker.Instance.EvaluateRotation(_accumulatedArcDistance);

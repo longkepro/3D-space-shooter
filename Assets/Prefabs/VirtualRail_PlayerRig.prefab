@@ -8361,6 +8361,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: ef982638eabca46419a42545db1e7a80, type: 2}
   currentSpeed: 0
+  useProceduralSpline: 0
 --- !u!114 &5015863737717513512
 MonoBehaviour:
   m_ObjectHideFlags: 0

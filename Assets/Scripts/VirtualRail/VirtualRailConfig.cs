@@ -113,6 +113,14 @@ namespace VirtualRail
         [Tooltip("Tốc độ bay tự do của tàu theo trục dọc Y (m/s)")]
         public float shipSpeedY = 42f;
 
+        [Header("5d. Arcade Auto-Centering (Star Fox 64 Spring Return)")]
+        [Tooltip("Tự động hồi tâm phi thuyền về giữa màn hình khi người chơi buông cần điều khiển sau một khoảng trễ")]
+        public bool enableAutoCentering = true;
+        [Tooltip("Thời gian chờ (giây) sau khi buông phím trước khi bắt đầu hồi tâm")]
+        public float autoCenteringDelay = 0.8f;
+        [Tooltip("Tốc độ lướt hồi tâm về (0,0) (normalized/giây)")]
+        public float autoCenteringSpeed = 1.8f;
+
         [Header("5b. Android & Mobile Touch Controls")]
         [Tooltip("Bật/Tắt tổng thể cụm UI cảm ứng Mobile (Master Switch)")]
         public bool enableMobileUI = true;
@@ -408,7 +416,7 @@ namespace VirtualRail
 
         [Header("23. Procedural Spline Rail (Hermite Spline Chunker - Task 4.1)")]
         [Tooltip("Bật đường ray sinh thủ tục theo từng đoạn Chunk Hermite Spline C^2")]
-        public bool enableProceduralSpline = true;
+        public bool enableProceduralSpline = false;
         [Tooltip("Chiều dài cung tiêu chuẩn của mỗi Chunk ray (m - chuẩn 500m)")]
         public float splineChunkLength = 500f;
         [Tooltip("Bán kính cong tối thiểu cho phép (m - chuẩn >= 300m)")]

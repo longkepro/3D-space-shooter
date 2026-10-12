@@ -3025,6 +3025,14 @@ public class VirtualRailModeToggle
             }
         }
 
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.enableProceduralSpline = true;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT PROCEDURAL SPLINE RAIL (HERMITE SPLINE CHUNKER - ON):</b></color>\n" +
                   "1. Sinh đường ray liên tục theo từng đoạn Chunk L = 500m.\n" +
@@ -3055,6 +3063,14 @@ public class VirtualRailModeToggle
                 EditorUtility.SetDirty(rigPrefab);
                 PrefabUtility.SavePrefabAsset(rigPrefab);
             }
+        }
+
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.enableProceduralSpline = false;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
@@ -3131,6 +3147,34 @@ public class VirtualRailModeToggle
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN GOLDEN PATH & WORLD ORIGIN SHIFTER (OFF - LEGACY):</b></color> Trở về cơ chế spawn và tọa độ thế giới nguyên thủy.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/61. Auto-Centering Controls: Star Fox Spring Return (ON)")]
+    [MenuItem("Tools/Virtual Rail/Controls/1. Auto-Centering Controls: Star Fox Spring Return (ON)")]
+    public static void EnableAutoCenteringControls()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableAutoCentering = true;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ BẬT HỒI TÂM TỰ ĐỘNG (STAR FOX SPRING RETURN - ON):</b></color> Khi buông cần điều khiển sau 0.8s, phi thuyền tự động lướt êm ái về tâm màn hình (0,0).");
+    }
+
+    [MenuItem("Tools/Virtual Rail/62. Auto-Centering Controls: Free Roam Stay (OFF - Legacy)")]
+    [MenuItem("Tools/Virtual Rail/Controls/2. Auto-Centering Controls: Free Roam Stay (OFF - Legacy)")]
+    public static void DisableAutoCenteringControls()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.enableAutoCentering = false;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT HỒI TÂM TỰ ĐỘNG (FREE ROAM STAY - OFF):</b></color> Phi thuyền đứng yên tại vị trí buông phím (chỉ hồi tâm khi giữ phím C).");
     }
     #endregion
 }
