@@ -134,6 +134,8 @@ namespace VirtualRail
             if (_waveSpawner != null)
             {
                 _waveSpawner.ControlMode = SpawnerControlMode.ScriptedDirectorOnly;
+                _waveSpawner.SetStageFireCooldownScale(1.0f);
+                _waveSpawner.SetStageBulletSpeed(20f);
             }
 
             // Nạp Formation Pool từ StageData
@@ -169,6 +171,8 @@ namespace VirtualRail
             if (_waveSpawner != null)
             {
                 _waveSpawner.ForceRetreatCurrentWave();
+                _waveSpawner.SetStageFireCooldownScale(1.0f);
+                _waveSpawner.SetStageBulletSpeed(20f);
             }
 
             if (_asteroidSpawner != null)
@@ -192,11 +196,14 @@ namespace VirtualRail
             _threatLevel = 1 + Mathf.FloorToInt(_sessionTimer / 45f) + _threatLevelBonus;
             _threatLevelProgress01 = Mathf.Repeat(_sessionTimer, 45f) / 45f;
 
-            // Cập nhật tốc độ đạn quái theo bậc đe dọa (20m/s -> 32m/s)
-            float bulletSpeed = Mathf.Min(32f, 20f + (_threatLevel - 1) * 1.5f);
+            // 2. Cập nhật tần suất bắn của quái vật theo DDA Threat Level (Đạn nhiều hơn, không tăng tốc độ đạn)
+            // Mỗi bậc Threat Level giảm thời gian chờ giữa các loạt bắn (-8% mỗi bậc), có trần hãm an toàn tối thiểu 50%
+            float cooldownScale = Mathf.Max(0.50f, 1.0f - (_threatLevel - 1) * 0.08f);
             if (_waveSpawner != null)
             {
-                _waveSpawner.SetStageBulletSpeed(bulletSpeed);
+                _waveSpawner.SetStageFireCooldownScale(cooldownScale);
+                // Giữ tốc độ đạn ở mức cơ sở chuẩn 20m/s (không tăng theo Threat Level)
+                _waveSpawner.SetStageBulletSpeed(20f);
             }
 
             // Cập nhật thiên thạch theo bậc đe dọa (mật độ dày hơn, tỉ lệ bất hoại tăng)

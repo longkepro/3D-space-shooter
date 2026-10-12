@@ -20,6 +20,10 @@ public class EnemyAttack : MonoBehaviour
     private float _nextBurstTime = 0f;
     private float _nextFindTime = 0f;
 
+    private float _baseFireCooldown = 1.2f;
+    private float _cooldownScale = 1.0f;
+    private const float MIN_FIRE_COOLDOWN_CAP = 0.60f; // Trần hãm an toàn: giữa 2 loạt đạn luôn có khoảng trống tối thiểu 0.6s
+
     private void OnEnable()
     {
         _nextFindTime = 0f;
@@ -45,11 +49,22 @@ public class EnemyAttack : MonoBehaviour
     public void ApplyData(VirtualRail.EnemyData data)
     {
         if (data == null) return;
-        _fireCooldown = data.fireCooldown;
+        _baseFireCooldown = data.fireCooldown;
+        _fireCooldown = Mathf.Max(MIN_FIRE_COOLDOWN_CAP, _baseFireCooldown * _cooldownScale);
         _burstCount = Mathf.Max(1, data.burstCount);
         _burstInterval = Mathf.Max(0.05f, data.burstInterval);
         _bulletSpeedOverride = data.projectileSpeed;
         _burstRemaining = 0;
+    }
+
+    /// <summary>
+    /// Điều chỉnh hệ số giãn cách bắn đạn thích ứng theo DDA Threat Level (0 GC Alloc).
+    /// Giảm thời gian chờ giữa các loạt bắn để tạo mật độ đạn dày đặc hơn, có trần hãm an toàn tối thiểu 0.6s.
+    /// </summary>
+    public void SetFireCooldownScale(float scale)
+    {
+        _cooldownScale = Mathf.Clamp(scale, 0.45f, 1.0f);
+        _fireCooldown = Mathf.Max(MIN_FIRE_COOLDOWN_CAP, _baseFireCooldown * _cooldownScale);
     }
 
     public void SetBulletSpeedOverride(float speed)

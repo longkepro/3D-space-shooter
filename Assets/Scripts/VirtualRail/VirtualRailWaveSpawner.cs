@@ -83,6 +83,7 @@ namespace VirtualRail
         private int _formationPatternCycleIndex = 0;
         private bool _allowShooting = true;
         private float _stageBulletSpeed = 22f;
+        private float _stageFireCooldownScale = 1.0f;
         private bool _stageEnableFormations = true;
         private float _stageWaveInterval = -1f;
         private int _stageFormationInterval = -1;
@@ -146,6 +147,25 @@ namespace VirtualRail
                     {
                         var atk = _activeWaveEnemies[i].GetComponent<EnemyAttack>();
                         if (atk != null) atk.SetBulletSpeedOverride(bulletSpeed);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Điều chỉnh hệ số giãn cách bắn đạn của quái vật phục vụ thuật toán DDA (Dynamic Difficulty Adjustment).
+        /// </summary>
+        public void SetStageFireCooldownScale(float cooldownScale)
+        {
+            _stageFireCooldownScale = Mathf.Clamp(cooldownScale, 0.45f, 1.0f);
+            if (_activeWaveEnemies != null)
+            {
+                for (int i = 0; i < _activeWaveEnemies.Count; i++)
+                {
+                    if (_activeWaveEnemies[i] != null && _activeWaveEnemies[i].gameObject.activeSelf)
+                    {
+                        var atk = _activeWaveEnemies[i].GetComponent<EnemyAttack>();
+                        if (atk != null) atk.SetFireCooldownScale(_stageFireCooldownScale);
                     }
                 }
             }
@@ -449,6 +469,7 @@ namespace VirtualRail
                 if (attackComp != null)
                 {
                     attackComp.enabled = _allowShooting;
+                    attackComp.SetFireCooldownScale(_stageFireCooldownScale);
                     if (_stageBulletSpeed > 5f)
                     {
                         attackComp.SetBulletSpeedOverride(_stageBulletSpeed);
@@ -742,6 +763,7 @@ namespace VirtualRail
                 if (attack != null)
                 {
                     attack.enabled = _allowShooting;
+                    attack.SetFireCooldownScale(_stageFireCooldownScale);
                     if (_stageBulletSpeed > 5f)
                     {
                         attack.SetBulletSpeedOverride(_stageBulletSpeed);
@@ -827,6 +849,7 @@ namespace VirtualRail
                     if (atk != null)
                     {
                         atk.enabled = _allowShooting;
+                        atk.SetFireCooldownScale(_stageFireCooldownScale);
                         if (_stageBulletSpeed > 5f)
                         {
                             atk.SetBulletSpeedOverride(_stageBulletSpeed);
