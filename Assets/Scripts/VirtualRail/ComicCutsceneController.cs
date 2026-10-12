@@ -21,6 +21,7 @@ namespace VirtualRail
         public Button btnPrev;
         public Button btnSkip;
         public Text txtPageIndicator;
+        public Text txtNextLabel;
         public CanvasGroup cutsceneCanvasGroup;
 
         [Header("Audio SFX Per Page")]
@@ -36,6 +37,11 @@ namespace VirtualRail
 
         private int _currentPageIndex = 0;
         private bool _isActive = false;
+
+        private const string LABEL_NEXT = "TIẾP THEO  ▶▶";
+        private const string LABEL_LAUNCH = "XUẤT KÍCH  ▶▶";
+        private static readonly Color COLOR_CYAN = new Color(0f, 0.95f, 1f, 1f);
+        private static readonly Color COLOR_AMBER = new Color(1f, 0.75f, 0.1f, 1f);
 
         private static readonly string[] PAGE_INDICATOR_STRINGS = new string[]
         {
@@ -116,6 +122,15 @@ namespace VirtualRail
                     OnNextClicked();
                 }
             }
+
+            // Hiệu ứng nhấp nháy phát sáng nút Xuất Kích ở trang cuối (0 GC Allocation)
+            if (_currentPageIndex >= comicPages.Length - 1 && txtNextLabel != null)
+            {
+                float pulse = 0.75f + 0.25f * Mathf.Sin(Time.unscaledTime * 5.5f);
+                Color c = COLOR_AMBER;
+                c.a = pulse;
+                txtNextLabel.color = c;
+            }
         }
 
         /// <summary>
@@ -162,6 +177,18 @@ namespace VirtualRail
                 btnPrev.gameObject.SetActive(_currentPageIndex > 0);
             }
 
+            if (txtNextLabel == null && btnNext != null)
+            {
+                txtNextLabel = btnNext.GetComponentInChildren<Text>();
+            }
+
+            if (txtNextLabel != null)
+            {
+                bool isLastPage = (_currentPageIndex >= comicPages.Length - 1);
+                txtNextLabel.text = isLastPage ? LABEL_LAUNCH : LABEL_NEXT;
+                txtNextLabel.color = isLastPage ? COLOR_AMBER : COLOR_CYAN;
+            }
+
             PlayPageAudio(_currentPageIndex);
         }
 
@@ -190,6 +217,18 @@ namespace VirtualRail
         {
             if (!_isActive) return;
 
+            if (AudioManager.Instance != null)
+            {
+                if (_currentPageIndex >= comicPages.Length - 1)
+                {
+                    AudioManager.Instance.PlaySFX2D(AudioSFXType.EngineBoost, 1.0f, 1.0f);
+                }
+                else
+                {
+                    AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 0.85f, 1.0f);
+                }
+            }
+
             if (_currentPageIndex < comicPages.Length - 1)
             {
                 _currentPageIndex++;
@@ -205,6 +244,11 @@ namespace VirtualRail
         {
             if (!_isActive) return;
 
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 0.85f, 0.9f);
+            }
+
             if (_currentPageIndex > 0)
             {
                 _currentPageIndex--;
@@ -215,6 +259,11 @@ namespace VirtualRail
         public void OnSkipClicked()
         {
             if (!_isActive) return;
+
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 0.85f, 1.0f);
+            }
 
             FinishCutscene();
         }

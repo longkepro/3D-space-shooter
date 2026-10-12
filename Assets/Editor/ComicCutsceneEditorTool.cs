@@ -147,35 +147,58 @@ namespace VirtualRail.Editor
 
             controller.comicDisplayImage = displayImg;
 
-            // 3. Nút TIẾP THEO >> (BtnNext)
-            controller.btnNext = CreateCutsceneButton(panelRt, "BtnNext", "TIẾP THEO >>", new Vector2(1f, 0.05f), new Vector2(1f, 0.05f), new Vector2(-120f, 40f), new Vector2(200f, 55f));
+            // 3. Nút TIẾP THEO  ▶▶ (BtnNext)
+            controller.btnNext = CreateCutsceneButton(panelRt, "BtnNext", "TIẾP THEO  ▶▶", new Vector2(1f, 0.05f), new Vector2(1f, 0.05f), new Vector2(-140f, 45f), new Vector2(220f, 52f), isSkip: false);
 
-            // 4. Nút << TRƯỚC (BtnPrev)
-            controller.btnPrev = CreateCutsceneButton(panelRt, "BtnPrev", "<< TRƯỚC", new Vector2(0f, 0.05f), new Vector2(0f, 0.05f), new Vector2(120f, 40f), new Vector2(170f, 55f));
+            // 4. Nút ◀◀  TRƯỚC (BtnPrev)
+            controller.btnPrev = CreateCutsceneButton(panelRt, "BtnPrev", "◀◀  TRƯỚC", new Vector2(0f, 0.05f), new Vector2(0f, 0.05f), new Vector2(140f, 45f), new Vector2(200f, 52f), isSkip: false);
 
-            // 5. Nút BỎ QUA [ESC] (BtnSkip)
-            controller.btnSkip = CreateCutsceneButton(panelRt, "BtnSkip", "BỎ QUA [ESC] >>", new Vector2(1f, 0.95f), new Vector2(1f, 0.95f), new Vector2(-110f, -30f), new Vector2(190f, 45f), new Color(0.85f, 0.25f, 0.25f, 0.9f));
+            // 5. Nút BỎ QUA [ESC]  ▶▶ (BtnSkip)
+            controller.btnSkip = CreateCutsceneButton(panelRt, "BtnSkip", "BỎ QUA [ESC]  ▶▶", new Vector2(1f, 0.95f), new Vector2(1f, 0.95f), new Vector2(-115f, -32f), new Vector2(185f, 42f), isSkip: true);
 
             // 6. Text Chỉ Số Trang (TxtPageIndicator)
             Transform indTr = panelRt.Find("TxtPageIndicator");
-            GameObject indObj = indTr != null ? indTr.gameObject : new GameObject("TxtPageIndicator", typeof(RectTransform), typeof(Text));
+            GameObject indObj = indTr != null ? indTr.gameObject : new GameObject("TxtPageIndicator", typeof(RectTransform), typeof(Image));
             indObj.transform.SetParent(panelRt, false);
             RectTransform indRt = indObj.GetComponent<RectTransform>();
             indRt.anchorMin = new Vector2(0.5f, 0.05f);
             indRt.anchorMax = new Vector2(0.5f, 0.05f);
-            indRt.anchoredPosition = new Vector2(0f, 40f);
-            indRt.sizeDelta = new Vector2(220f, 40f);
+            indRt.pivot = new Vector2(0.5f, 0.5f);
+            indRt.anchoredPosition = new Vector2(0f, 45f);
+            indRt.sizeDelta = new Vector2(200f, 42f);
 
-            Text indTxt = indObj.GetComponent<Text>();
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (font == null) font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Orbitron.ttf");
+            Image indBg = indObj.GetComponent<Image>();
+            if (indBg == null) indBg = indObj.AddComponent<Image>();
+            Sprite spPill = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_btn_pill_metallic.png");
+            if (spPill != null)
+            {
+                indBg.sprite = spPill;
+                indBg.type = Image.Type.Sliced;
+                indBg.color = new Color(0.04f, 0.08f, 0.15f, 0.88f);
+            }
+            indBg.raycastTarget = false;
+
+            Transform indTxtTr = indRt.Find("Text");
+            GameObject indTxtObj = indTxtTr != null ? indTxtTr.gameObject : new GameObject("Text", typeof(RectTransform), typeof(Text));
+            indTxtObj.transform.SetParent(indRt, false);
+            RectTransform indTxtRt = indTxtObj.GetComponent<RectTransform>();
+            indTxtRt.anchorMin = Vector2.zero;
+            indTxtRt.anchorMax = Vector2.one;
+            indTxtRt.offsetMin = Vector2.zero;
+            indTxtRt.offsetMax = Vector2.zero;
+
+            Text indTxt = indTxtObj.GetComponent<Text>();
+            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Orbitron.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             indTxt.font = font;
-            indTxt.fontSize = 20;
+            indTxt.fontSize = 14;
             indTxt.fontStyle = FontStyle.Bold;
             indTxt.alignment = TextAnchor.MiddleCenter;
-            indTxt.color = new Color(0.2f, 0.9f, 1f, 1f);
+            indTxt.color = new Color(0.2f, 0.95f, 1f, 1f);
             indTxt.text = "TRANG 1 / 4";
+            indTxt.raycastTarget = false;
             controller.txtPageIndicator = indTxt;
+            controller.txtNextLabel = controller.btnNext != null ? controller.btnNext.GetComponentInChildren<Text>() : null;
 
             // Liên kết vào UIManager
             uiMgr.comicCutscenePanel = panelRt;
@@ -245,7 +268,7 @@ namespace VirtualRail.Editor
             }
         }
 
-        private static Button CreateCutsceneButton(RectTransform parent, string name, string textLabel, Vector2 anchorMin, Vector2 anchorMax, Vector2 pos, Vector2 size, Color? buttonColor = null)
+        private static Button CreateCutsceneButton(RectTransform parent, string name, string textLabel, Vector2 anchorMin, Vector2 anchorMax, Vector2 pos, Vector2 size, bool isSkip = false)
         {
             Transform existing = parent.Find(name);
             GameObject btnObj = existing != null ? existing.gameObject : new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
@@ -254,18 +277,46 @@ namespace VirtualRail.Editor
             RectTransform rt = btnObj.GetComponent<RectTransform>();
             rt.anchorMin = anchorMin;
             rt.anchorMax = anchorMax;
+            rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = pos;
             rt.sizeDelta = size;
 
+            Sprite spNorm = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_btn_pill_metallic.png");
+            Sprite spHover = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_btn_pill_metallic_hover.png");
+            Sprite spPressed = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_btn_pill_metallic_pressed.png");
+
             Image img = btnObj.GetComponent<Image>();
-            img.color = buttonColor ?? new Color(0.08f, 0.45f, 0.85f, 0.95f);
+            if (spNorm != null)
+            {
+                img.sprite = spNorm;
+                img.type = Image.Type.Sliced;
+                img.color = isSkip ? new Color(1f, 0.82f, 0.82f, 0.92f) : Color.white;
+            }
+            else
+            {
+                img.color = isSkip ? new Color(0.85f, 0.25f, 0.25f, 0.9f) : new Color(0.08f, 0.45f, 0.85f, 0.95f);
+            }
 
             Button btn = btnObj.GetComponent<Button>();
-            ColorBlock cb = btn.colors;
-            cb.normalColor = Color.white;
-            cb.highlightedColor = new Color(1.2f, 1.2f, 1.2f, 1f);
-            cb.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
-            btn.colors = cb;
+            btn.targetGraphic = img;
+
+            if (spHover != null && spPressed != null)
+            {
+                btn.transition = Selectable.Transition.SpriteSwap;
+                SpriteState ss = new SpriteState();
+                ss.highlightedSprite = spHover;
+                ss.pressedSprite = spPressed;
+                ss.selectedSprite = spHover;
+                btn.spriteState = ss;
+            }
+            else
+            {
+                ColorBlock cb = btn.colors;
+                cb.normalColor = Color.white;
+                cb.highlightedColor = new Color(1.2f, 1.2f, 1.2f, 1f);
+                cb.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+                btn.colors = cb;
+            }
 
             Transform txtTr = rt.Find("Text");
             GameObject txtObj = txtTr != null ? txtTr.gameObject : new GameObject("Text", typeof(RectTransform), typeof(Text));
@@ -278,14 +329,15 @@ namespace VirtualRail.Editor
             txtRt.offsetMax = Vector2.zero;
 
             Text txt = txtObj.GetComponent<Text>();
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (font == null) font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Orbitron.ttf");
+            Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Orbitron.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             txt.font = font;
-            txt.fontSize = 17;
+            txt.fontSize = isSkip ? 13 : 15;
             txt.fontStyle = FontStyle.Bold;
             txt.alignment = TextAnchor.MiddleCenter;
-            txt.color = Color.white;
+            txt.color = isSkip ? new Color(1f, 0.45f, 0.45f, 1f) : new Color(0f, 0.95f, 1f, 1f);
             txt.text = textLabel;
+            txt.raycastTarget = false;
 
             return btn;
         }
