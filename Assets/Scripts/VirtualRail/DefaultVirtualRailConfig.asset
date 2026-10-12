@@ -57,7 +57,7 @@ MonoBehaviour:
   shipSpeedX: 60
   shipSpeedY: 42
   enableMobileUI: 1
-  forceShowMobileUI: 0
+  forceShowMobileUI: 1
   toggleMobileUIKey: 282
   joystickHandleRange: 65
   joystickDeadZone: 0.1
