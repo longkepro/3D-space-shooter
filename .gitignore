@@ -65,3 +65,10 @@ crashlytics-build.properties
 # Claude Code
 CLAUDE.md
 .claude/
+
+# AI Agent & Workspace Skills Tooling
+.agents/
+.gemini/
+skills-lock.json
+AGENTS.md
+GEMINI.md
