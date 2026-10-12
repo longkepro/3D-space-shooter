@@ -470,9 +470,13 @@ namespace VirtualRail.Editor
 
             CreateText("DebriefTitle", debriefObj.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -32f), new Vector2(400f, 36f), "MISSION DEBRIEFING", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter);
 
-            uiMgr.txtDebriefScore = CreateText("DebriefScore", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(400f, 32f), "FINAL SCORE: 000,000", font, 16, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter).GetComponent<Text>();
+            GameObject newRecordObj = CreateText("DebriefNewRecord", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 75f), new Vector2(400f, 28f), "★ NEW HIGH SCORE RECORD! ★", font, 14, FontStyle.Bold, new Color(1f, 0.84f, 0f, 1f), TextAnchor.MiddleCenter);
+            newRecordObj.SetActive(false);
+            uiMgr.txtDebriefNewRecord = newRecordObj.GetComponent<Text>();
+
+            uiMgr.txtDebriefScore = CreateText("DebriefScore", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 35f), new Vector2(400f, 32f), "FINAL SCORE: 000,000", font, 16, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter).GetComponent<Text>();
             uiMgr.txtDebriefHits = CreateText("DebriefHits", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(400f, 32f), "TOTAL HITS: 000", font, 16, FontStyle.Bold, cyanColor, TextAnchor.MiddleCenter).GetComponent<Text>();
-            uiMgr.txtDebriefRank = CreateText("DebriefRank", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -40f), new Vector2(400f, 36f), "RANK: CLASS S (GOLD MEDAL)", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter).GetComponent<Text>();
+            uiMgr.txtDebriefRank = CreateText("DebriefRank", debriefObj.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -35f), new Vector2(400f, 36f), "RANK: CLASS S (GOLD MEDAL)", font, 18, FontStyle.Bold, amberColor, TextAnchor.MiddleCenter).GetComponent<Text>();
 
             uiMgr.btnDebriefRestart = CreatePillButton("Btn_Retry", debriefObj.transform, new Vector2(0f, -270f), "RETRY MISSION", font, spBtn, spBtnHover, spBtnPressed);
             uiMgr.btnDebriefMainMenu = CreatePillButton("Btn_MainMenu", debriefObj.transform, new Vector2(0f, -335f), "MAIN MENU", font, spBtn, spBtnHover, spBtnPressed);

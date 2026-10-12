@@ -91,8 +91,14 @@ namespace VirtualRail
         public Text txtDebriefScore;
         public Text txtDebriefHits;
         public Text txtDebriefRank;
+        public Text txtDebriefNewRecord;
         public Button btnDebriefRestart;
         public Button btnDebriefMainMenu;
+
+        private int _sessionScore = 0;
+        private int _sessionHits = 0;
+        public int SessionScore => _sessionScore;
+        public int SessionHits => _sessionHits;
 
         private UIViewState _currentState = UIViewState.MainMenu;
         private UIViewState _previousState = UIViewState.MainMenu;
@@ -177,12 +183,18 @@ namespace VirtualRail
         {
             GameEventManager.OnStartGame += HandleGameStarted;
             GameEventManager.OnPlayerDestroyed += HandlePlayerDestroyed;
+            GameEventManager.OnIncrementScore += HandleScoreIncremented;
+            ComboScoringEngine.OnComboScored += HandleComboScored;
+            VirtualRailStageDirector.OnAllStagesCompleted += HandleAllStagesCompleted;
         }
 
         private void OnDisable()
         {
             GameEventManager.OnStartGame -= HandleGameStarted;
             GameEventManager.OnPlayerDestroyed -= HandlePlayerDestroyed;
+            GameEventManager.OnIncrementScore -= HandleScoreIncremented;
+            ComboScoringEngine.OnComboScored -= HandleComboScored;
+            VirtualRailStageDirector.OnAllStagesCompleted -= HandleAllStagesCompleted;
         }
 
         private void Update()
@@ -481,6 +493,8 @@ namespace VirtualRail
         {
             Time.timeScale = 1.0f;
             _isPaused = false;
+            _sessionScore = 0;
+            _sessionHits = 0;
             ShowState(UIViewState.Gameplay);
 
             // Tái thiết lập thế giới màn chơi sạch sẽ từ điểm xuất phát (0 GC Alloc)
@@ -589,7 +603,25 @@ namespace VirtualRail
 
         private void HandleGameStarted()
         {
+            _sessionScore = 0;
+            _sessionHits = 0;
             ShowState(UIViewState.Gameplay);
+        }
+
+        private void HandleScoreIncremented(int points)
+        {
+            _sessionScore += points;
+        }
+
+        private void HandleComboScored(int hitCount, int totalPoints)
+        {
+            _sessionHits += hitCount;
+        }
+
+        private void HandleAllStagesCompleted()
+        {
+            // Chiến dịch hoàn tất (Stage Clear / Victory) -> Kích hoạt Debriefing sau 3.0s
+            Invoke("ShowDebriefingDelayed", 3.0f);
         }
 
         private void HandlePlayerDestroyed()
@@ -600,7 +632,94 @@ namespace VirtualRail
 
         private void ShowDebriefingDelayed()
         {
+            UpdateDebriefingResults();
             ShowState(UIViewState.Debriefing);
+        }
+
+        public void UpdateDebriefingResults()
+        {
+            // Đồng bộ fallback từ ModernCockpitHUD nếu có
+            if (ModernCockpitHUD.Instance != null)
+            {
+                if (ModernCockpitHUD.Instance.CurrentScore > _sessionScore)
+                {
+                    _sessionScore = ModernCockpitHUD.Instance.CurrentScore;
+                }
+                if (ModernCockpitHUD.Instance.CurrentHits > _sessionHits)
+                {
+                    _sessionHits = ModernCockpitHUD.Instance.CurrentHits;
+                }
+            }
+
+            // 1. Hiển thị Final Score và Total Hits
+            if (txtDebriefScore != null)
+            {
+                txtDebriefScore.text = "FINAL SCORE: " + _sessionScore.ToString("N0");
+            }
+
+            if (txtDebriefHits != null)
+            {
+                txtDebriefHits.text = "TOTAL HITS: " + _sessionHits.ToString("D3");
+            }
+
+            // 2. Phân loại Huân chương Rank (Star Fox 64 Arcade Standard)
+            // Class S (Gold Medal): Score >= 100,000 hoặc Hits >= 120
+            // Class A (Silver Medal): Score >= 60,000 hoặc Hits >= 70
+            // Class B (Bronze Medal): Score >= 30,000 hoặc Hits >= 35
+            // Class C (Mission Incomplete): Còn lại
+            if (txtDebriefRank != null)
+            {
+                if (_sessionScore >= 100000 || _sessionHits >= 120)
+                {
+                    txtDebriefRank.text = "RANK: CLASS S (GOLD MEDAL)";
+                    txtDebriefRank.color = new Color(1.0f, 0.82f, 0.12f, 1f); // #FFD21E Solar Gold
+                }
+                else if (_sessionScore >= 60000 || _sessionHits >= 70)
+                {
+                    txtDebriefRank.text = "RANK: CLASS A (SILVER MEDAL)";
+                    txtDebriefRank.color = new Color(0.85f, 0.95f, 1.0f, 1f); // #D9F2FF Silver Cyan
+                }
+                else if (_sessionScore >= 30000 || _sessionHits >= 35)
+                {
+                    txtDebriefRank.text = "RANK: CLASS B (BRONZE MEDAL)";
+                    txtDebriefRank.color = new Color(1.0f, 0.55f, 0.20f, 1f); // #FF8C33 Bronze Orange
+                }
+                else
+                {
+                    txtDebriefRank.text = "RANK: CLASS C (MISSION INCOMPLETE)";
+                    txtDebriefRank.color = new Color(0.45f, 0.85f, 1.0f, 1f); // #73D9FF Standard Cyan
+                }
+            }
+
+            // 3. Kiểm tra và cập nhật Bảng vinh danh (Hall of Fame Leaderboard)
+            int currentStage = 1;
+            if (VirtualRailStageDirector.Instance != null)
+            {
+                currentStage = Mathf.Max(1, VirtualRailStageDirector.Instance.currentStageIndex + 1);
+            }
+
+            bool isNewRecord = false;
+            if (LeaderboardManager.Instance != null && _sessionScore > 0)
+            {
+                isNewRecord = LeaderboardManager.Instance.IsHighScore(_sessionScore);
+                LeaderboardManager.Instance.AddEntry("PLAYER", _sessionScore, currentStage, "NORMAL");
+                PopulateHallOfFameRows();
+            }
+
+            // 4. Phản hồi kỷ lục mới (New Record Badge & SFX)
+            if (txtDebriefNewRecord != null)
+            {
+                txtDebriefNewRecord.gameObject.SetActive(isNewRecord);
+                if (isNewRecord)
+                {
+                    txtDebriefNewRecord.text = "★ NEW HIGH SCORE RECORD! ★";
+                }
+            }
+
+            if (isNewRecord && AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySFX2D(AudioSFXType.RingGold, 1f, 1f);
+            }
         }
 
         public void PopulateHallOfFameRows()

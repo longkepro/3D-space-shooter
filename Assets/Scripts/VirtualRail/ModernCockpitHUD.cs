@@ -97,6 +97,8 @@ namespace VirtualRail
         private int _cachedHealthPercent = 100;
         private int _cachedScore = 0;
         private int _cachedHits = 0;
+        public int CurrentScore => _cachedScore;
+        public int CurrentHits => _cachedHits;
         private int _cachedBombs = 3;
         private int _lastSpeedInt = -1;
         private float _bindingRetryTime = 0f;
