@@ -1021,73 +1021,64 @@ public class VirtualRailModeToggle
         leftZoneImg.color = new Color(0f, 0f, 0f, 0.001f); // Vùng chạm trong suốt
         leftZoneImg.raycastTarget = true;
         VirtualJoystick leftJoy = leftZone.AddComponent<VirtualJoystick>();
+        Sprite baseRing = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_touch_ring_base.png");
+        Sprite handleRing = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_touch_ring_handle.png");
+        Sprite arcRing = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_touch_ring_arc.png");
+        Sprite boostIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_touch_icon_boost.png");
+        Sprite brakeIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_touch_icon_brake.png");
+        Sprite rollIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/UI/ui_touch_icon_roll.png");
+        Sprite laserIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_icon_twin_laser.png");
+        Sprite bombIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Textures/HUD/hud_icon_smartbomb.png");
+        Font scifiFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Orbitron.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+
         leftJoy.handleRange = config.joystickHandleRange;
         leftJoy.deadZone = config.joystickDeadZone;
-        leftJoy.isDynamicFloating = false;
+        leftJoy.isDynamicFloating = true;
 
         GameObject leftBg = new GameObject("LeftJoyBackground");
         leftBg.transform.SetParent(leftZone.transform, false);
         RectTransform leftBgRt = leftBg.AddComponent<RectTransform>();
         leftBgRt.anchorMin = new Vector2(0f, 0f);
         leftBgRt.anchorMax = new Vector2(0f, 0f);
-        leftBgRt.anchoredPosition = new Vector2(170f, 170f);
-        leftBgRt.sizeDelta = new Vector2(160, 160);
+        leftBgRt.anchoredPosition = new Vector2(180f, 180f);
+        leftBgRt.sizeDelta = new Vector2(180f, 180f);
         Image leftBgImg = leftBg.AddComponent<Image>();
-        leftBgImg.color = new Color(0.1f, 0.7f, 1f, 0.45f);
+        leftBgImg.sprite = baseRing;
+        leftBgImg.color = Color.white;
         leftBgImg.raycastTarget = false;
 
         GameObject leftHandle = new GameObject("LeftJoyHandle");
         leftHandle.transform.SetParent(leftBg.transform, false);
         RectTransform leftHandleRt = leftHandle.AddComponent<RectTransform>();
-        leftHandleRt.sizeDelta = new Vector2(70, 70);
+        leftHandleRt.sizeDelta = new Vector2(76f, 76f);
         Image leftHandleImg = leftHandle.AddComponent<Image>();
-        leftHandleImg.color = new Color(0.3f, 0.9f, 1f, 0.95f);
+        leftHandleImg.sprite = handleRing;
+        leftHandleImg.color = Color.white;
         leftHandleImg.raycastTarget = false;
 
         leftJoy.background = leftBgRt;
         leftJoy.handle = leftHandleRt;
+        leftJoy.bgImage = leftBgImg;
+        leftJoy.handleImage = leftHandleImg;
 
-        // --- CẦN GẠT PHẢI (RIGHT JOYSTICK - TÂM NGẮM & TỰ ĐỘNG BẮN) ---
-        GameObject rightZone = new GameObject("RightTouchZone");
-        rightZone.transform.SetParent(mobileRoot.transform, false);
-        RectTransform rightZoneRt = rightZone.AddComponent<RectTransform>();
-        rightZoneRt.anchorMin = new Vector2(0.5f, 0f);
-        rightZoneRt.anchorMax = new Vector2(1f, 0.8f);
-        rightZoneRt.offsetMin = Vector2.zero;
-        rightZoneRt.offsetMax = Vector2.zero;
-        Image rightZoneImg = rightZone.AddComponent<Image>();
-        rightZoneImg.color = new Color(0f, 0f, 0f, 0.001f); // Vùng chạm trong suốt
-        rightZoneImg.raycastTarget = true;
-        VirtualJoystick rightJoy = rightZone.AddComponent<VirtualJoystick>();
-        rightJoy.handleRange = config.joystickHandleRange;
-        rightJoy.deadZone = config.joystickDeadZone;
-        rightJoy.isDynamicFloating = false;
+        // --- CỤM NÚT HÀNH ĐỘNG CẢM ỨNG BÊN PHẢI (RIGHT ACTION CLUSTER) ---
+        GameObject actionCluster = new GameObject("RightActionCluster");
+        actionCluster.transform.SetParent(mobileRoot.transform, false);
+        RectTransform clusterRt = actionCluster.AddComponent<RectTransform>();
+        clusterRt.anchorMin = new Vector2(1f, 0f);
+        clusterRt.anchorMax = new Vector2(1f, 0f);
+        clusterRt.pivot = new Vector2(1f, 0f);
+        clusterRt.anchoredPosition = Vector2.zero;
+        clusterRt.sizeDelta = new Vector2(450f, 380f);
 
-        GameObject rightBg = new GameObject("RightJoyBackground");
-        rightBg.transform.SetParent(rightZone.transform, false);
-        RectTransform rightBgRt = rightBg.AddComponent<RectTransform>();
-        rightBgRt.anchorMin = new Vector2(1f, 0f);
-        rightBgRt.anchorMax = new Vector2(1f, 0f);
-        rightBgRt.anchoredPosition = new Vector2(-170f, 170f);
-        rightBgRt.sizeDelta = new Vector2(160, 160);
-        Image rightBgImg = rightBg.AddComponent<Image>();
-        rightBgImg.color = new Color(1f, 0.3f, 0.3f, 0.45f);
-        rightBgImg.raycastTarget = false;
-
-        GameObject rightHandle = new GameObject("RightJoyHandle");
-        rightHandle.transform.SetParent(rightBg.transform, false);
-        RectTransform rightHandleRt = rightHandle.AddComponent<RectTransform>();
-        rightHandleRt.sizeDelta = new Vector2(70, 70);
-        Image rightHandleImg = rightHandle.AddComponent<Image>();
-        rightHandleImg.color = new Color(1f, 0.5f, 0.4f, 0.95f);
-        rightHandleImg.raycastTarget = false;
-
-        rightJoy.background = rightBgRt;
-        rightJoy.handle = rightHandleRt;
-
-        // Nối 2 cần gạt vào InputReader
         inputReader.leftJoystick = leftJoy;
-        inputReader.rightJoystick = rightJoy;
+        inputReader.btnFire = CreateEditorTouchButton(actionCluster.transform, "Btn_Fire", new Vector2(-135f, 145f), new Vector2(100f, 100f), baseRing, laserIcon, new Vector2(54f, 54f), false, true, arcRing, false, null);
+        inputReader.btnBomb = CreateEditorTouchButton(actionCluster.transform, "Btn_Bomb", new Vector2(-245f, 190f), new Vector2(68f, 68f), baseRing, bombIcon, new Vector2(40f, 40f), false, false, null, true, scifiFont);
+        inputReader.btnBoost = CreateEditorTouchButton(actionCluster.transform, "Btn_Boost", new Vector2(-135f, 260f), new Vector2(64f, 64f), baseRing, boostIcon, new Vector2(34f, 34f), false, false, null, false, null);
+        inputReader.btnBrake = CreateEditorTouchButton(actionCluster.transform, "Btn_Brake", new Vector2(-135f, 45f), new Vector2(64f, 64f), baseRing, brakeIcon, new Vector2(34f, 34f), false, false, null, false, null);
+        inputReader.btnRollLeft = CreateEditorTouchButton(actionCluster.transform, "Btn_RollLeft", new Vector2(-245f, 95f), new Vector2(58f, 58f), baseRing, rollIcon, new Vector2(32f, 32f), true, false, null, false, null);
+        inputReader.btnRollRight = CreateEditorTouchButton(actionCluster.transform, "Btn_RollRight", new Vector2(-38f, 145f), new Vector2(58f, 58f), baseRing, rollIcon, new Vector2(32f, 32f), false, false, null, false, null);
+        inputReader.rightJoystick = null;
 
         // 3. Ship Container
         GameObject shipContainer = new GameObject("[Ship Container]");
@@ -3254,6 +3245,152 @@ public class VirtualRailModeToggle
             AssetDatabase.SaveAssets();
         }
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ BẬT LẠI TỰ HỒI MÁU THEO THỜI GIAN (OFF - LEGACY):</b></color> Trở lại cơ chế tự hồi 1 HP mỗi 2 giây.");
+    }
+    #endregion
+
+    #region Mobile Touch Controls (Minimalist White Rings)
+    private static VirtualTouchButton CreateEditorTouchButton(
+        Transform parent,
+        string name,
+        Vector2 anchoredPos,
+        Vector2 size,
+        Sprite ringSprite,
+        Sprite iconSprite,
+        Vector2 iconSize,
+        bool flipIconX = false,
+        bool hasChargeArc = false,
+        Sprite arcSprite = null,
+        bool hasBadge = false,
+        Font badgeFont = null)
+    {
+        GameObject btnObj = new GameObject(name);
+        btnObj.transform.SetParent(parent, false);
+
+        RectTransform btnRt = btnObj.AddComponent<RectTransform>();
+        btnRt.anchorMin = new Vector2(1f, 0f);
+        btnRt.anchorMax = new Vector2(1f, 0f);
+        btnRt.pivot = new Vector2(0.5f, 0.5f);
+        btnRt.anchoredPosition = anchoredPos;
+        btnRt.sizeDelta = size;
+
+        Image ringImg = btnObj.AddComponent<Image>();
+        ringImg.sprite = ringSprite;
+        ringImg.color = Color.white;
+        ringImg.raycastTarget = true;
+
+        VirtualTouchButton touchBtn = btnObj.AddComponent<VirtualTouchButton>();
+        touchBtn.ringImage = ringImg;
+
+        if (iconSprite != null)
+        {
+            GameObject iconObj = new GameObject("Icon");
+            iconObj.transform.SetParent(btnObj.transform, false);
+
+            RectTransform iconRt = iconObj.AddComponent<RectTransform>();
+            iconRt.anchorMin = new Vector2(0.5f, 0.5f);
+            iconRt.anchorMax = new Vector2(0.5f, 0.5f);
+            iconRt.anchoredPosition = Vector2.zero;
+            iconRt.sizeDelta = iconSize;
+            if (flipIconX)
+            {
+                iconRt.localScale = new Vector3(-1f, 1f, 1f);
+            }
+
+            Image iconImg = iconObj.AddComponent<Image>();
+            iconImg.sprite = iconSprite;
+            iconImg.color = Color.white;
+            iconImg.raycastTarget = false;
+
+            touchBtn.iconImage = iconImg;
+        }
+
+        if (hasChargeArc && arcSprite != null)
+        {
+            GameObject arcObj = new GameObject("ChargeArc");
+            arcObj.transform.SetParent(btnObj.transform, false);
+
+            RectTransform arcRt = arcObj.AddComponent<RectTransform>();
+            arcRt.anchorMin = new Vector2(0.5f, 0.5f);
+            arcRt.anchorMax = new Vector2(0.5f, 0.5f);
+            arcRt.anchoredPosition = Vector2.zero;
+            arcRt.sizeDelta = size * 1.14f;
+
+            Image arcImg = arcObj.AddComponent<Image>();
+            arcImg.sprite = arcSprite;
+            arcImg.type = Image.Type.Filled;
+            arcImg.fillMethod = Image.FillMethod.Radial360;
+            arcImg.fillOrigin = (int)Image.Origin360.Top;
+            arcImg.fillClockwise = true;
+            arcImg.fillAmount = 0f;
+            arcImg.color = new Color(0.2f, 1f, 0.45f, 0.95f);
+            arcImg.raycastTarget = false;
+
+            touchBtn.chargeArcImage = arcImg;
+            arcObj.SetActive(false);
+        }
+
+        if (hasBadge)
+        {
+            GameObject badgeObj = new GameObject("BadgeText");
+            badgeObj.transform.SetParent(btnObj.transform, false);
+
+            RectTransform badgeRt = badgeObj.AddComponent<RectTransform>();
+            badgeRt.anchorMin = new Vector2(0.5f, 0.5f);
+            badgeRt.anchorMax = new Vector2(0.5f, 0.5f);
+            badgeRt.anchoredPosition = new Vector2(0f, -size.y * 0.32f);
+            badgeRt.sizeDelta = new Vector2(36f, 18f);
+
+            Text badge = badgeObj.AddComponent<Text>();
+            badge.font = badgeFont != null ? badgeFont : Resources.GetBuiltinResource<Font>("Arial.ttf");
+            badge.fontSize = 12;
+            badge.fontStyle = FontStyle.Bold;
+            badge.alignment = TextAnchor.MiddleCenter;
+            badge.color = new Color(1f, 0.88f, 0.2f, 1f);
+            badge.raycastTarget = false;
+            badge.text = "x3";
+
+            Outline outline = badgeObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            touchBtn.badgeText = badge;
+        }
+
+        return touchBtn;
+    }
+
+    [MenuItem("Tools/Virtual Rail/Touch Controls/1. Enable Minimalist White Ring Controls (ON)")]
+    public static void EnableMinimalistWhiteTouchControls()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.enableMobileUI = true;
+            cfg.forceShowMobileUI = true;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+
+        var reader = Object.FindAnyObjectByType<VirtualRailInputReader>();
+        if (reader != null)
+        {
+            reader.EnsureMobileUI();
+        }
+
+        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ KÍCH HOẠT HỆ THỐNG NÚT CẢM ỨNG VÒNG TRẮNG TỐI GIẢN (ON):</b></color> Đầy đủ cụm 5 nút hành động (Laser, Bom, Boost, Brake, Barrel Roll) & Cần gạt trái.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Touch Controls/2. Disable Mobile Touch Controls on PC (OFF - Legacy)")]
+    public static void DisableMobileTouchControlsOnPC()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.forceShowMobileUI = false;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT HIỂN THỊ NÚT CẢM ỨNG TRÊN PC (OFF - LEGACY):</b></color> Mobile UI chỉ hiển thị khi chạy trên thiết bị di động.");
     }
     #endregion
 }

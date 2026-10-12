@@ -159,12 +159,11 @@ namespace VirtualRail
 
             EnsureAimAssist();
 
-            bool isFireButton = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space);
-            bool isInputReaderFiring = inputReader != null && inputReader.IsFiring();
-            bool isManualFire = isFireButton || isInputReaderFiring;
+            bool isInputReaderFireHeld = inputReader != null && inputReader.IsFireHeld();
+            bool isManualFire = Input.GetButton("Fire1") || Input.GetKey(KeyCode.Space) || isInputReaderFireHeld;
 
-            bool fireDown = Input.GetButtonDown("Fire1") || Input.GetKeyDown(KeyCode.Space);
-            bool fireUp = Input.GetButtonUp("Fire1") || Input.GetKeyUp(KeyCode.Space);
+            bool fireDown = Input.GetButtonDown("Fire1") || Input.GetKeyDown(KeyCode.Space) || (inputReader != null && inputReader.IsFireDown());
+            bool fireUp = Input.GetButtonUp("Fire1") || Input.GetKeyUp(KeyCode.Space) || (inputReader != null && inputReader.IsFireUp());
 
             // Kiểm tra trạng thái nạp đạn tụ lực & khóa hồi nòng (0 GC Alloc)
             bool isAimAssistCharging = (_cachedAimAssist != null && _cachedAimAssist.IsCharging);

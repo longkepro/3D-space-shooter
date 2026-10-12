@@ -225,7 +225,12 @@ namespace VirtualRail
             // ==================== DOUBLE TAP DETECT: BARREL ROLL DEFLECTION ====================
             if (cfg.enableBarrelRollDeflection)
             {
-                if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.Q))
+                float touchRoll = (inputReader != null) ? inputReader.GetBarrelRollTrigger() : 0f;
+                if (touchRoll != 0f)
+                {
+                    TriggerBarrelRoll(touchRoll);
+                }
+                else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.Q))
                 {
                     if (Time.time - lastTapTimeA <= DOUBLE_TAP_THRESHOLD || Input.GetKeyDown(KeyCode.Q))
                     {

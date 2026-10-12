@@ -21,7 +21,9 @@ namespace VirtualRail
         [SerializeField] private float currentSpeed;
         [SerializeField] private bool _isGameActive = false;
         private bool isBoosting = false;
+        private bool isBraking = false;
         private float _overrideSpeed = -1f;
+        private VirtualRailInputReader _cachedInputReader;
 
         [Header("Procedural Spline Rail (Task 4.1)")]
         [Tooltip("Bật chế độ di chuyển theo đường ray cong sinh thủ tục Hermite Spline C^2. Tắt để giữ đường bay thẳng cổ điển (Layer 2 Undo)")]
@@ -47,6 +49,8 @@ namespace VirtualRail
             get => currentSpeed;
             set => currentSpeed = value;
         }
+        public bool IsBoosting => isBoosting;
+        public bool IsBraking => isBraking;
         public Vector3 ForwardTangent => transform.forward;
 
         public void SetSpeedOverride(float speed)
@@ -175,12 +179,30 @@ namespace VirtualRail
                 return;
             }
 
-            // Kiểm tra boost
-            float boostInput = Input.GetAxis("Fire3") > 0 ? Input.GetAxis("Fire3") : (Input.GetKey(KeyCode.LeftShift) ? 1f : 0f);
-            isBoosting = boostInput > 0.1f;
+            if (_cachedInputReader == null)
+            {
+                _cachedInputReader = GetComponentInChildren<VirtualRailInputReader>();
+                if (_cachedInputReader == null) _cachedInputReader = FindAnyObjectByType<VirtualRailInputReader>();
+            }
+
+            // Kiểm tra boost và brake (hỗ trợ đồng thời cả PC bàn phím lẫn Mobile Touch)
+            bool boostRequested = (Input.GetAxis("Fire3") > 0.1f || Input.GetKey(KeyCode.LeftShift)) || (_cachedInputReader != null && _cachedInputReader.IsBoosting());
+            bool brakeRequested = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C) || Input.GetKey(KeyCode.S)) || (_cachedInputReader != null && _cachedInputReader.IsBraking());
+
+            // Ưu tiên: Hãm phanh (Brake) sẽ ghi đè Tăng tốc (Boost) nếu kích hoạt đồng thời
+            isBraking = brakeRequested;
+            isBoosting = boostRequested && !isBraking;
 
             float baseSpeed = _overrideSpeed > 0f ? _overrideSpeed : config.forwardSpeed;
-            float targetSpeed = baseSpeed * (isBoosting ? config.boostMultiplier : 1f);
+            float targetSpeed = baseSpeed;
+            if (isBoosting)
+            {
+                targetSpeed *= config.boostMultiplier;
+            }
+            else if (isBraking)
+            {
+                targetSpeed *= 0.5f; // Chuẩn Star Fox 64: Hãm phanh giảm 50% vận tốc hành trình
+            }
             currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, 8f * Time.deltaTime);
 
             float deltaDist = currentSpeed * Time.deltaTime;
@@ -232,6 +254,7 @@ namespace VirtualRail
             ClearSpeedOverride();
             currentSpeed = (config != null) ? config.forwardSpeed : 28f;
             isBoosting = false;
+            isBraking = false;
 
             // 3. Phục hồi trạng thái thân tàu & hiển thị đồ họa
             var ship = GetComponentInChildren<VirtualRailShip>();

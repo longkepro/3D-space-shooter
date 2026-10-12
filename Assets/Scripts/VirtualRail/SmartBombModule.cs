@@ -27,6 +27,7 @@ namespace VirtualRail
         private VirtualRailAnchor _anchor;
         private VirtualRailShip _ship;
         private VirtualRailReticle _cachedReticle;
+        private VirtualRailInputReader _inputReader;
         private VirtualRailHomingMissile _activeBombInstance;
         private static readonly Collider[] _bombColliders = new Collider[128];
 
@@ -78,6 +79,8 @@ namespace VirtualRail
             if (_ship == null) _ship = FindAnyObjectByType<VirtualRailShip>();
             if (_cachedReticle == null && _anchor != null) _cachedReticle = _anchor.GetComponentInChildren<VirtualRailReticle>();
             if (_cachedReticle == null) _cachedReticle = FindAnyObjectByType<VirtualRailReticle>();
+            if (_inputReader == null && _anchor != null) _inputReader = _anchor.GetComponentInChildren<VirtualRailInputReader>();
+            if (_inputReader == null) _inputReader = FindAnyObjectByType<VirtualRailInputReader>();
 
             EnsureBombPrefab();
             OnBombCountChanged?.Invoke(_currentBombs);
@@ -93,7 +96,14 @@ namespace VirtualRail
                 return;
             }
 
-            if (Input.GetKeyDown(bombKey))
+            if (_inputReader == null && _anchor != null)
+            {
+                _inputReader = _anchor.GetComponentInChildren<VirtualRailInputReader>();
+                if (_inputReader == null) _inputReader = FindAnyObjectByType<VirtualRailInputReader>();
+            }
+
+            bool bombTriggered = Input.GetKeyDown(bombKey) || (_inputReader != null && _inputReader.IsBombTriggered());
+            if (bombTriggered)
             {
                 // Kiểm tra kích nổ thủ công giữa không trung (Manual Air Detonation)
                 bool allowManualDetonate = (_anchor == null || _anchor.config == null || _anchor.config.enableSmartBombManualDetonation);

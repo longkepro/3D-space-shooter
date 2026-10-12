@@ -27,6 +27,13 @@ namespace VirtualRail
         [Tooltip("Bật chế độ neo động: Khi chạm vào vùng này, gốc cần gạt tự động nhảy tới vị trí ngón tay chạm")]
         public bool isDynamicFloating = false;
 
+        [Header("Appearance & Alpha")]
+        public Image bgImage;
+        public Image handleImage;
+        [Range(0f, 1f)] public float idleAlpha = 0.35f;
+        [Range(0f, 1f)] public float heldAlpha = 0.85f;
+        private float _currentAlpha = 0.35f;
+
         [Header("Runtime State")]
         [SerializeField] private Vector2 inputVector = Vector2.zero;
         [SerializeField] private bool isHeld = false;
@@ -51,6 +58,41 @@ namespace VirtualRail
             if (background != null)
             {
                 defaultBackgroundAnchoredPosition = background.anchoredPosition;
+                if (bgImage == null) bgImage = background.GetComponent<Image>();
+            }
+
+            if (handle != null && handleImage == null)
+            {
+                handleImage = handle.GetComponent<Image>();
+            }
+
+            _currentAlpha = idleAlpha;
+            ApplyAlpha(_currentAlpha);
+        }
+
+        private void Update()
+        {
+            float targetAlpha = isHeld ? heldAlpha : idleAlpha;
+            if (Mathf.Abs(_currentAlpha - targetAlpha) > 0.001f)
+            {
+                _currentAlpha = Mathf.MoveTowards(_currentAlpha, targetAlpha, 14f * Time.unscaledDeltaTime);
+                ApplyAlpha(_currentAlpha);
+            }
+        }
+
+        private void ApplyAlpha(float alpha)
+        {
+            if (bgImage != null)
+            {
+                Color c = bgImage.color;
+                c.a = alpha;
+                bgImage.color = c;
+            }
+            if (handleImage != null)
+            {
+                Color c = handleImage.color;
+                c.a = alpha * 1.15f;
+                handleImage.color = c;
             }
         }
 
