@@ -29,10 +29,12 @@ namespace VirtualRail
         public VirtualTouchButton btnBoost;
         [Tooltip("Nút Hãm phanh (Brake)")]
         public VirtualTouchButton btnBrake;
-        [Tooltip("Nút Lộn vòng sang trái phản xạ đạn (Barrel Roll Left)")]
+        [Tooltip("Nút Lộn vòng sang trái phản xạ đạn (Barrel Roll Left) - Legacy")]
         public VirtualTouchButton btnRollLeft;
-        [Tooltip("Nút Lộn vòng sang phải phản xạ đạn (Barrel Roll Right)")]
+        [Tooltip("Nút Lộn vòng sang phải phản xạ đạn (Barrel Roll Right) - Legacy")]
         public VirtualTouchButton btnRollRight;
+        [Tooltip("Nút Lộn vòng phản xạ đạn thông minh duy nhất (Smart Single Barrel Roll)")]
+        public VirtualTouchButton btnRoll;
 
         [Header("Config & UI References")]
         public VirtualRailConfig config;
@@ -42,6 +44,7 @@ namespace VirtualRail
         // Bộ nhớ đệm không cấp phát rác (0 GC Alloc Cache)
         private SmartBombModule _cachedBombModule;
         private AimAssistModule _cachedAimAssist;
+        private VirtualRailShip _cachedShip;
         private int _lastBombCount = -999;
         private static readonly string[] BombBadgeStrings = new string[]
         {
@@ -85,6 +88,12 @@ namespace VirtualRail
             {
                 _cachedAimAssist = GetComponentInParent<AimAssistModule>();
                 if (_cachedAimAssist == null) _cachedAimAssist = FindAnyObjectByType<AimAssistModule>();
+            }
+
+            if (_cachedShip == null)
+            {
+                _cachedShip = GetComponentInParent<VirtualRailShip>();
+                if (_cachedShip == null) _cachedShip = FindAnyObjectByType<VirtualRailShip>();
             }
         }
 
@@ -176,7 +185,7 @@ namespace VirtualRail
         public void EnsureMobileUI()
         {
             // Kiểm tra xem đã có đầy đủ UI và Sprite chuẩn vòng trắng hay chưa
-            if (leftJoystick != null && rightJoystick != null && btnCharge != null && btnBomb != null && btnRollLeft != null && btnRollRight != null &&
+            if (leftJoystick != null && rightJoystick != null && btnCharge != null && btnBomb != null && (btnRoll != null || (btnRollLeft != null && btnRollRight != null)) &&
                 leftJoystick.bgImage != null && leftJoystick.bgImage.sprite != null &&
                 rightJoystick.bgImage != null && rightJoystick.bgImage.sprite != null)
             {
@@ -322,7 +331,7 @@ namespace VirtualRail
                 leftJoystick.ApplyAlpha(0.35f);
             }
 
-            // 4. Khởi tạo MID-LEFT ROLL CLUSTER (Cụm 2 nút lộn vòng phản đạn - Giữa mép trái 50% màn hình)
+            // 4. Khởi tạo MID-LEFT ROLL CLUSTER (Nút lộn vòng phản đạn thông minh duy nhất - Giữa mép trái 50% màn hình)
             Transform rollClusterTrans = mobileUIRoot.transform.Find("MidLeftRollCluster");
             if (rollClusterTrans == null) rollClusterTrans = mobileUIRoot.transform.Find("TopLeftRollCluster");
             GameObject rollCluster = rollClusterTrans != null ? rollClusterTrans.gameObject : null;
@@ -335,7 +344,7 @@ namespace VirtualRail
                 rollRt.anchorMax = new Vector2(0f, 0.5f);
                 rollRt.pivot = new Vector2(0f, 0.5f);
                 rollRt.anchoredPosition = Vector2.zero;
-                rollRt.sizeDelta = new Vector2(240f, 130f);
+                rollRt.sizeDelta = new Vector2(180f, 130f);
             }
             else
             {
@@ -347,53 +356,29 @@ namespace VirtualRail
                     rollRt.anchorMax = new Vector2(0f, 0.5f);
                     rollRt.pivot = new Vector2(0f, 0.5f);
                     rollRt.anchoredPosition = Vector2.zero;
-                    rollRt.sizeDelta = new Vector2(240f, 130f);
+                    rollRt.sizeDelta = new Vector2(180f, 130f);
                 }
             }
 
-            if (btnRollLeft == null)
-            {
-                Transform t = rollCluster.transform.Find("Btn_RollLeft");
-                btnRollLeft = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
-                    rollCluster.transform,
-                    "Btn_RollLeft",
-                    new Vector2(0f, 0.5f),
-                    new Vector2(65f, 0f),
-                    new Vector2(64f, 64f),
-                    baseRing,
-                    rollIcon,
-                    new Vector2(36f, 36f),
-                    true, // Lật ngang icon hướng sang trái
-                    false,
-                    null,
-                    false,
-                    null
-                );
-            }
-            if (btnRollLeft != null)
-            {
-                RectTransform rt = btnRollLeft.GetComponent<RectTransform>();
-                if (rt != null)
-                {
-                    rt.anchorMin = new Vector2(0f, 0.5f);
-                    rt.anchorMax = new Vector2(0f, 0.5f);
-                    rt.pivot = new Vector2(0.5f, 0.5f);
-                    rt.anchoredPosition = new Vector2(65f, 0f);
-                }
-            }
+            // Ẩn 2 nút cũ (nếu có trong prefab/hierarchy) để chuyển sang dùng 1 nút duy nhất
+            Transform oldRollLeft = rollCluster.transform.Find("Btn_RollLeft");
+            if (oldRollLeft != null) oldRollLeft.gameObject.SetActive(false);
+            Transform oldRollRight = rollCluster.transform.Find("Btn_RollRight");
+            if (oldRollRight != null) oldRollRight.gameObject.SetActive(false);
 
-            if (btnRollRight == null)
+            // Khởi tạo Nút Lộn Vòng Duy Nhất (Smart Single Roll Button)
+            if (btnRoll == null)
             {
-                Transform t = rollCluster.transform.Find("Btn_RollRight");
-                btnRollRight = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
+                Transform t = rollCluster.transform.Find("Btn_Roll");
+                btnRoll = (t != null) ? t.GetComponent<VirtualTouchButton>() : CreateTouchButton(
                     rollCluster.transform,
-                    "Btn_RollRight",
+                    "Btn_Roll",
                     new Vector2(0f, 0.5f),
-                    new Vector2(145f, 0f),
-                    new Vector2(64f, 64f),
+                    new Vector2(85f, 0f),
+                    new Vector2(76f, 76f),
                     baseRing,
                     rollIcon,
-                    new Vector2(36f, 36f),
+                    new Vector2(44f, 44f),
                     false,
                     false,
                     null,
@@ -401,15 +386,17 @@ namespace VirtualRail
                     null
                 );
             }
-            if (btnRollRight != null)
+            if (btnRoll != null)
             {
-                RectTransform rt = btnRollRight.GetComponent<RectTransform>();
+                btnRoll.gameObject.SetActive(true);
+                RectTransform rt = btnRoll.GetComponent<RectTransform>();
                 if (rt != null)
                 {
                     rt.anchorMin = new Vector2(0f, 0.5f);
                     rt.anchorMax = new Vector2(0f, 0.5f);
                     rt.pivot = new Vector2(0.5f, 0.5f);
-                    rt.anchoredPosition = new Vector2(145f, 0f);
+                    rt.anchoredPosition = new Vector2(85f, 0f);
+                    rt.sizeDelta = new Vector2(76f, 76f);
                 }
             }
 
@@ -827,20 +814,44 @@ namespace VirtualRail
         }
 
         /// <summary>
-        /// Kiểm tra tín hiệu Phóng Bom Nguyên Tử (Smart Bomb) trong frame này.
+        /// Kiểm tra tín hiệu Phóng Bom Nguyên Tử (Smart Bomb) trong frame này (0ms input lag).
         /// </summary>
         public bool IsBombTriggered()
         {
-            return (btnBomb != null && btnBomb.WasPressedThisFrame);
+            return (btnBomb != null && (btnBomb.ConsumePress() || btnBomb.WasPressedThisFrame));
         }
 
         /// <summary>
         /// Kiểm tra tín hiệu Lộn vòng (Barrel Roll): Trả về -1f (Trái), 1f (Phải), 0f (Không có).
+        /// Hỗ trợ Nút Lộn Thông Minh duy nhất (Smart Single Roll Button) kết hợp nhận diện hướng theo ngữ cảnh (Contextual).
         /// </summary>
         public float GetBarrelRollTrigger()
         {
-            if (btnRollLeft != null && btnRollLeft.WasPressedThisFrame) return -1f;
-            if (btnRollRight != null && btnRollRight.WasPressedThisFrame) return 1f;
+            // 1. Nút lộn thông minh duy nhất (Smart Single Roll)
+            if (btnRoll != null && (btnRoll.ConsumePress() || btnRoll.WasPressedThisFrame))
+            {
+                // Nếu đang gạt Cần lái trái (Left Joystick) sang bên nào -> Lộn và né theo bên đó
+                if (leftJoystick != null && Mathf.Abs(leftJoystick.InputVector.x) > 0.15f)
+                {
+                    return Mathf.Sign(leftJoystick.InputVector.x);
+                }
+
+                // Nếu cần lái đang ở giữa: Tự động lộn về hướng đối diện với vị trí lệch của tàu
+                if (_cachedShip == null) CacheModules();
+                if (_cachedShip != null)
+                {
+                    if (_cachedShip.NormalizedPos.x > 0.2f) return -1f; // Tàu đang ở phải -> Lộn trái
+                    if (_cachedShip.NormalizedPos.x < -0.2f) return 1f;  // Tàu đang ở trái -> Lộn phải
+                }
+
+                // Mặc định lộn trái (-1f) chuẩn Star Fox 64
+                return -1f;
+            }
+
+            // 2. Tương thích ngược: Nếu scene cũ vẫn còn nút RollLeft / RollRight
+            if (btnRollLeft != null && (btnRollLeft.ConsumePress() || btnRollLeft.WasPressedThisFrame)) return -1f;
+            if (btnRollRight != null && (btnRollRight.ConsumePress() || btnRollRight.WasPressedThisFrame)) return 1f;
+
             return 0f;
         }
 

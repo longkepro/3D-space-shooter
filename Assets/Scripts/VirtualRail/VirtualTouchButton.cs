@@ -51,10 +51,6 @@ namespace VirtualRail
 
         private void Update()
         {
-            // Reset các cờ 1-frame sau mỗi frame
-            _wasPressedThisFrame = false;
-            _wasReleasedThisFrame = false;
-
             // Chuyển đổi mượt mà độ mờ (Alpha) và tỉ lệ kích thước (Scale) khi nhấn (0 GC Alloc)
             float targetAlpha = _isHeld ? pressedAlpha : idleAlpha;
             if (Mathf.Abs(_currentAlpha - targetAlpha) > 0.001f)
@@ -68,6 +64,39 @@ namespace VirtualRail
             {
                 transform.localScale = Vector3.Lerp(transform.localScale, targetScale, animSpeed * Time.unscaledDeltaTime);
             }
+        }
+
+        private void LateUpdate()
+        {
+            // Reset các cờ 1-frame ở cuối frame (sau khi toàn bộ các hàm Update() của mọi script trong game đã đọc xong)
+            _wasPressedThisFrame = false;
+            _wasReleasedThisFrame = false;
+        }
+
+        /// <summary>
+        /// Tiêu thụ sự kiện nhấn tức thì (0ms input lag) - trả về true nếu vừa nhấn trong frame này và tự động xóa cờ.
+        /// </summary>
+        public bool ConsumePress()
+        {
+            if (_wasPressedThisFrame)
+            {
+                _wasPressedThisFrame = false;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Tiêu thụ sự kiện nhả nút tức thì - trả về true nếu vừa nhả trong frame này và tự động xóa cờ.
+        /// </summary>
+        public bool ConsumeRelease()
+        {
+            if (_wasReleasedThisFrame)
+            {
+                _wasReleasedThisFrame = false;
+                return true;
+            }
+            return false;
         }
 
         private void ApplyAlpha(float alpha)
