@@ -250,7 +250,7 @@ namespace VirtualRail
             }
             if (_anchor != null)
             {
-                float dist = Mathf.Max(0f, _anchor.transform.position.z);
+                float dist = _anchor.UseProceduralSpline ? _anchor.AccumulatedArcDistance : Mathf.Max(0f, _anchor.transform.position.z);
                 if (dist > _maxDistanceReached)
                 {
                     _maxDistanceReached = dist;

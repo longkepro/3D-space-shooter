@@ -406,6 +406,18 @@ namespace VirtualRail
         [Tooltip("Prefab hiệu ứng nổ va chạm đạn Plasma (Impact FX)")]
         public GameObject enemyImpactVFXPrefab;
 
+        [Header("23. Procedural Spline Rail (Hermite Spline Chunker - Task 4.1)")]
+        [Tooltip("Bật đường ray sinh thủ tục theo từng đoạn Chunk Hermite Spline C^2")]
+        public bool enableProceduralSpline = true;
+        [Tooltip("Chiều dài cung tiêu chuẩn của mỗi Chunk ray (m - chuẩn 500m)")]
+        public float splineChunkLength = 500f;
+        [Tooltip("Bán kính cong tối thiểu cho phép (m - chuẩn >= 300m)")]
+        public float minCurvatureRadius = 300f;
+        [Tooltip("Hệ số nghiêng thân ray khí động học (Aerodynamic Track Banking gain)")]
+        public float splineBankingGain = 10500f;
+        [Tooltip("Góc nghiêng ray tối đa (độ - chuẩn 35 độ)")]
+        public float maxSplineBankAngle = 35f;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

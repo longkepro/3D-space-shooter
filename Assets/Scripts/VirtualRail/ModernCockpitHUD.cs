@@ -756,10 +756,10 @@ namespace VirtualRail
                 }
             }
 
-            // 2. Cập nhật Distance Tracker (Z-position theo mốc 10m)
+            // 2. Cập nhật Distance Tracker (Z-position hoặc Spline Arc Distance theo mốc 10m)
             if (distanceTrackerText != null)
             {
-                float currentZ = (anchor != null) ? anchor.transform.position.z : 0f;
+                float currentZ = (anchor != null) ? (anchor.UseProceduralSpline ? anchor.AccumulatedArcDistance : anchor.transform.position.z) : 0f;
                 int distMeters = Mathf.Max(0, Mathf.RoundToInt(currentZ));
                 int step = Mathf.Clamp(distMeters / 10, 0, DIST_STRINGS.Length - 1);
                 if (step != _lastDistanceStep)

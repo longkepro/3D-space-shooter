@@ -2990,5 +2990,75 @@ public class VirtualRailModeToggle
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT ENDLESS BOSS INCURSIONS (OFF - UNDO):</b></color> Chế độ Endless chỉ xuất kích các phi đội chiến đấu thông thường.");
     }
+
+    [MenuItem("Tools/Virtual Rail/57. Procedural Spline Rail: Hermite Spline Chunker (ON)")]
+    [MenuItem("Tools/Virtual Rail/Spline System/1. Enable Procedural Spline Rail (ON)")]
+    public static void EnableProceduralSplineRail()
+    {
+        var anchors = Object.FindObjectsByType<VirtualRailAnchor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < anchors.Length; i++)
+        {
+            anchors[i].UseProceduralSpline = true;
+            var chunker = anchors[i].GetComponent<VirtualRailSplineChunker>();
+            if (chunker == null)
+            {
+                chunker = anchors[i].gameObject.AddComponent<VirtualRailSplineChunker>();
+            }
+            chunker.Initialize(anchors[i].transform.position, anchors[i].transform.forward);
+            EditorUtility.SetDirty(anchors[i]);
+            EditorUtility.SetDirty(chunker);
+        }
+
+        GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(VIRTUAL_RAIL_PREFAB);
+        if (rigPrefab != null)
+        {
+            var rigAnchor = rigPrefab.GetComponent<VirtualRailAnchor>();
+            if (rigAnchor != null)
+            {
+                rigAnchor.UseProceduralSpline = true;
+                if (rigPrefab.GetComponent<VirtualRailSplineChunker>() == null)
+                {
+                    rigPrefab.AddComponent<VirtualRailSplineChunker>();
+                }
+                EditorUtility.SetDirty(rigPrefab);
+                PrefabUtility.SavePrefabAsset(rigPrefab);
+            }
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT PROCEDURAL SPLINE RAIL (HERMITE SPLINE CHUNKER - ON):</b></color>\n" +
+                  "1. Sinh đường ray liên tục theo từng đoạn Chunk L = 500m.\n" +
+                  "2. Duy trì Look-ahead Ring Buffer 3 Chunks đồng thời: [0] Behind, [1] Current, [2] Ahead.\n" +
+                  "3. Đảm bảo tính trơn hình học C2 tuyệt đối tại giao diện tiếp nối (Position, Tangent, Curvature).\n" +
+                  "4. Bán kính cong an toàn R_min >= 300m (kappa <= 0.0033 m^-1) triệt tiêu hoàn toàn giật cục.\n" +
+                  "5. Tự động nghiêng thân ray khí động học (Aerodynamic Track Banking phi_bank trong [-35 deg, +35 deg]).");
+    }
+
+    [MenuItem("Tools/Virtual Rail/58. Procedural Spline Rail: Revert to Straight Rail (OFF - Legacy)")]
+    [MenuItem("Tools/Virtual Rail/Spline System/2. Revert to Straight Rail (OFF - Legacy)")]
+    public static void DisableProceduralSplineRail()
+    {
+        var anchors = Object.FindObjectsByType<VirtualRailAnchor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < anchors.Length; i++)
+        {
+            anchors[i].UseProceduralSpline = false;
+            EditorUtility.SetDirty(anchors[i]);
+        }
+
+        GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(VIRTUAL_RAIL_PREFAB);
+        if (rigPrefab != null)
+        {
+            var rigAnchor = rigPrefab.GetComponent<VirtualRailAnchor>();
+            if (rigAnchor != null)
+            {
+                rigAnchor.UseProceduralSpline = false;
+                EditorUtility.SetDirty(rigPrefab);
+                PrefabUtility.SavePrefabAsset(rigPrefab);
+            }
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ ĐƯỜNG RAY THẲNG CỔ ĐIỂN (OFF - LEGACY):</b></color> Phi thuyền chuyển động thẳng tịnh tiến theo trục Z như trước.");
+    }
     #endregion
 }

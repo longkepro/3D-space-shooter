@@ -23,6 +23,19 @@ namespace VirtualRail
         private bool isBoosting = false;
         private float _overrideSpeed = -1f;
 
+        [Header("Procedural Spline Rail (Task 4.1)")]
+        [Tooltip("Bật chế độ di chuyển theo đường ray cong sinh thủ tục Hermite Spline C^2. Tắt để giữ đường bay thẳng cổ điển (Layer 2 Undo)")]
+        [SerializeField] private bool useProceduralSpline = true;
+        private float _accumulatedArcDistance = 0f;
+
+        public bool UseProceduralSpline
+        {
+            get => useProceduralSpline;
+            set => useProceduralSpline = value;
+        }
+
+        public float AccumulatedArcDistance => _accumulatedArcDistance;
+
         public bool IsGameActive
         {
             get => _isGameActive;
@@ -125,6 +138,17 @@ namespace VirtualRail
                 gameObject.AddComponent<ComboScoringEngine>();
             }
 
+            // Khởi tạo Hermite Spline Chunker nếu được kích hoạt (Task 4.1)
+            if (useProceduralSpline || (config != null && config.enableProceduralSpline))
+            {
+                var chunker = GetComponent<VirtualRailSplineChunker>();
+                if (chunker == null)
+                {
+                    chunker = gameObject.AddComponent<VirtualRailSplineChunker>();
+                }
+                chunker.Initialize(transform.position, transform.forward);
+            }
+
             // Đảm bảo Pool đạn địch sẵn sàng
             if (EnemyProjectilePool.Instance == null)
             {
@@ -148,8 +172,19 @@ namespace VirtualRail
             float targetSpeed = baseSpeed * (isBoosting ? config.boostMultiplier : 1f);
             currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, 8f * Time.deltaTime);
 
-            // Tịnh tiến dọc theo hướng tiến của đường ray
-            transform.position += transform.forward * (currentSpeed * Time.deltaTime);
+            float deltaDist = currentSpeed * Time.deltaTime;
+            if (useProceduralSpline && VirtualRailSplineChunker.Instance != null)
+            {
+                _accumulatedArcDistance += deltaDist;
+                VirtualRailSplineChunker.Instance.Advance(deltaDist);
+                transform.position = VirtualRailSplineChunker.Instance.EvaluatePosition(_accumulatedArcDistance);
+                transform.rotation = VirtualRailSplineChunker.Instance.EvaluateRotation(_accumulatedArcDistance);
+            }
+            else
+            {
+                // Tịnh tiến dọc theo hướng tiến của đường ray (Cơ chế cổ điển)
+                transform.position += transform.forward * deltaDist;
+            }
         }
 
         public Vector3 ToWorldPoint(Vector3 localPoint)
@@ -171,6 +206,11 @@ namespace VirtualRail
             // 1. Dịch chuyển vị trí Rig về tọa độ xuất phát
             transform.position = spawnPosition;
             transform.rotation = spawnRotation;
+            _accumulatedArcDistance = 0f;
+            if (VirtualRailSplineChunker.Instance != null)
+            {
+                VirtualRailSplineChunker.Instance.ResetSpline(spawnPosition, spawnRotation * Vector3.forward);
+            }
 
             // 2. Phục hồi tốc độ bay ray
             ClearSpeedOverride();
