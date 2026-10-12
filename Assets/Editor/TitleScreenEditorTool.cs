@@ -154,7 +154,7 @@ namespace VirtualRail.Editor
 
             Text promptTxt = promptObj.GetComponent<Text>();
             Font font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Orbitron.ttf");
-            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             promptTxt.font = font;
             promptTxt.fontSize = 21;
             promptTxt.fontStyle = FontStyle.Bold;

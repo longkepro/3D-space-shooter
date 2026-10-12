@@ -167,7 +167,9 @@ namespace VirtualRail.Editor
             indRt.sizeDelta = new Vector2(220f, 40f);
 
             Text indTxt = indObj.GetComponent<Text>();
-            indTxt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Orbitron.ttf");
+            indTxt.font = font;
             indTxt.fontSize = 20;
             indTxt.fontStyle = FontStyle.Bold;
             indTxt.alignment = TextAnchor.MiddleCenter;
@@ -276,7 +278,9 @@ namespace VirtualRail.Editor
             txtRt.offsetMax = Vector2.zero;
 
             Text txt = txtObj.GetComponent<Text>();
-            txt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/HUD_SciFi_Orbitron.ttf");
+            txt.font = font;
             txt.fontSize = 17;
             txt.fontStyle = FontStyle.Bold;
             txt.alignment = TextAnchor.MiddleCenter;

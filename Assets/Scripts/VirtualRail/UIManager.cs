@@ -150,11 +150,19 @@ namespace VirtualRail
             _cgPause = EnsureCanvasGroup(pauseModal);
             _cgDebriefing = EnsureCanvasGroup(debriefingModal);
 
+            // Khởi tạo ẩn ngay toàn bộ các modal phụ từ frame 0 để chống chồng lấn giao diện
+            SetGroupVisible(_cgMainMenu, false);
+            SetGroupVisible(_cgSettings, false);
+            SetGroupVisible(_cgHallOfFame, false);
+            SetGroupVisible(_cgPause, false);
+            SetGroupVisible(_cgDebriefing, false);
+
             if (comicCutscenePanel == null)
             {
                 EnsureComicCutscenePanelRuntime();
             }
             _cgComicCutscene = EnsureCanvasGroup(comicCutscenePanel);
+            SetGroupVisible(_cgComicCutscene, false);
 
             if (comicCutsceneController != null)
             {
@@ -254,6 +262,18 @@ namespace VirtualRail
             GameEventManager.OnIncrementScore += HandleScoreIncremented;
             ComboScoringEngine.OnComboScored += HandleComboScored;
             VirtualRailStageDirector.OnAllStagesCompleted += HandleAllStagesCompleted;
+
+            if (comicCutsceneController != null)
+            {
+                comicCutsceneController.OnComicCompleted -= HandleComicCutsceneCompleted;
+                comicCutsceneController.OnComicCompleted += HandleComicCutsceneCompleted;
+            }
+
+            if (titleScreenController != null)
+            {
+                titleScreenController.OnTitleCompleted -= HandleTitleScreenCompleted;
+                titleScreenController.OnTitleCompleted += HandleTitleScreenCompleted;
+            }
         }
 
         private void OnDisable()
@@ -329,6 +349,28 @@ namespace VirtualRail
             if (cg == null) cg = rt.gameObject.AddComponent<CanvasGroup>();
             return cg;
         }
+
+        private static Font GetSafeDefaultFont()
+        {
+            Font font = null;
+            try
+            {
+                font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            }
+            catch {}
+
+            if (font == null)
+            {
+                try
+                {
+                    font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                }
+                catch {}
+            }
+
+            return font;
+        }
+
 
         private void EnsureTitleScreenPanelRuntime()
         {
@@ -417,9 +459,7 @@ namespace VirtualRail
             promptRt.sizeDelta = new Vector2(650f, 40f);
 
             Text promptTxt = promptObj.GetComponent<Text>();
-            Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            promptTxt.font = font;
+            promptTxt.font = GetSafeDefaultFont();
             promptTxt.fontSize = 21;
             promptTxt.fontStyle = FontStyle.Bold;
             promptTxt.alignment = TextAnchor.MiddleCenter;
@@ -526,9 +566,7 @@ namespace VirtualRail
             indRt.sizeDelta = new Vector2(220f, 40f);
 
             Text indTxt = indObj.GetComponent<Text>();
-            Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            indTxt.font = font;
+            indTxt.font = GetSafeDefaultFont();
             indTxt.fontSize = 20;
             indTxt.fontStyle = FontStyle.Bold;
             indTxt.alignment = TextAnchor.MiddleCenter;
@@ -571,9 +609,7 @@ namespace VirtualRail
             txtRt.offsetMax = Vector2.zero;
 
             Text txt = txtObj.GetComponent<Text>();
-            Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            txt.font = font;
+            txt.font = GetSafeDefaultFont();
             txt.fontSize = 17;
             txt.fontStyle = FontStyle.Bold;
             txt.alignment = TextAnchor.MiddleCenter;
