@@ -2808,10 +2808,42 @@ public class VirtualRailModeToggle
         var anchor = Object.FindAnyObjectByType<VirtualRailAnchor>();
         if (anchor != null)
         {
-            anchor.SetSpeedOverride(120f);
+            anchor.SetSpeedOverride(70f);
         }
 
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN DDA VỀ FLAT BASELINE (OFF - UNDO):</b></color> Tốc độ ray và mật độ thiên thạch giữ cố định ở mức cơ sở ban đầu.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/51. Evasion Controls: Decouple from Z-Speed (Independent Speeds - ON)")]
+    public static void EnableIndependentEvasionSpeeds()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useGoldenRatioMotion = false;
+            config.shipSpeedX = 60f;
+            config.shipSpeedY = 42f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            RebuildPlayerRigPrefab();
+            Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT TỐC ĐỘ NÉ ĐỘC LẬP (ON):</b></color> Tốc độ né ngang (60 m/s) và né dọc (42 m/s) hoàn toàn độc lập với tốc độ tiến Z!");
+        }
+    }
+
+    [MenuItem("Tools/Virtual Rail/52. Evasion Controls: Revert to Golden Ratio Coupled (OFF - Legacy)")]
+    public static void RevertToGoldenRatioCoupled()
+    {
+        VirtualRailConfig config = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (config != null)
+        {
+            config.useGoldenRatioMotion = true;
+            config.goldenRatioX = 0.50f;
+            config.goldenRatioY = 0.35f;
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssets();
+            RebuildPlayerRigPrefab();
+            Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ ĐỘNG HỌC TỶ LỆ VÀNG (OFF - UNDO):</b></color> Tốc độ né trở lại gắn liền với tốc độ tiến Z (Vx = 50% Vz, Vy = 35% Vz).");
+        }
     }
     #endregion
 }

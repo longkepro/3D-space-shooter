@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cc0fa9c728d55b428f256f5340321d5, type: 3}
   m_Name: DefaultVirtualRailConfig
   m_EditorClassIdentifier: 
-  forwardSpeed: 120
+  forwardSpeed: 70
   boostMultiplier: 1.5
   convergenceDistance: 150
   enableDynamicDepthConvergence: 1
@@ -51,15 +51,15 @@ MonoBehaviour:
   reticleMouseTouchRadius: 45
   aimMoveDeadzone: 0.5
   autoFireHoldTime: 0.08
-  shipSpeedX: 140
-  shipSpeedY: 85
+  shipSpeedX: 60
+  shipSpeedY: 42
   enableMobileUI: 1
   forceShowMobileUI: 0
   toggleMobileUIKey: 282
   joystickHandleRange: 65
   joystickDeadZone: 0.1
   mobileAimSensitivity: 1
-  useGoldenRatioMotion: 1
+  useGoldenRatioMotion: 0
   goldenRatioX: 0.5
   goldenRatioY: 0.35
   maxSafeDriftDistance: 2.5

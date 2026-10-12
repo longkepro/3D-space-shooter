@@ -502,7 +502,7 @@ namespace VirtualRail
                 : null;
             if (missile == null) return;
 
-            float shipSpeed = (anchor != null) ? anchor.CurrentSpeed : 120f;
+            float shipSpeed = (anchor != null) ? anchor.CurrentSpeed : 70f;
             float baseSpeed = (cfg != null && cfg.chargeShotBaseSpeed > 10f) ? cfg.chargeShotBaseSpeed : 240f;
             float turnSpeed = (cfg != null && cfg.chargeShotTurnRate > 10f) ? cfg.chargeShotTurnRate : 420f;
             float inheritedSpeed = (cfg != null && cfg.enableChargeVelocityInheritance) ? shipSpeed : 0f;
@@ -547,7 +547,7 @@ namespace VirtualRail
             if (missile == null) return;
 
             var cfg = (anchor != null) ? anchor.config : null;
-            float shipSpeed = (anchor != null) ? anchor.CurrentSpeed : 120f;
+            float shipSpeed = (anchor != null) ? anchor.CurrentSpeed : 70f;
             float baseSpeed = (cfg != null && cfg.chargeShotBaseSpeed > 10f) ? cfg.chargeShotBaseSpeed : 240f;
             float turnSpeed = (cfg != null && cfg.chargeShotTurnRate > 10f) ? cfg.chargeShotTurnRate : 420f;
             float inheritedSpeed = (cfg != null && cfg.enableChargeVelocityInheritance) ? shipSpeed : 0f;

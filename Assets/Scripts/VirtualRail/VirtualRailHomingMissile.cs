@@ -25,6 +25,7 @@ namespace VirtualRail
 
         private static readonly Collider[] _cachedOverlapColliders = new Collider[64];
         private static readonly RaycastHit[] _cachedSweepHits = new RaycastHit[16];
+        private static readonly EnemyHealth[] _cachedHitEnemies = new EnemyHealth[32];
 
         private VirtualRailConfig _cachedConfig;
         private TrailRenderer _trail;
@@ -340,41 +341,103 @@ namespace VirtualRail
             LayerMask mask = (_cachedConfig != null && _cachedConfig.enemyLayer.value != 0) ? _cachedConfig.enemyLayer : ~0;
             int hitCount = Physics.OverlapSphereNonAlloc(impactPoint, splashRadius, _cachedOverlapColliders, mask, QueryTriggerInteraction.Ignore);
 
+            BossF3CorvetteController hitBoss = null;
+            int hitEnemyCount = 0;
+
             for (int i = 0; i < hitCount; i++)
             {
                 var col = _cachedOverlapColliders[i];
                 if (col == null) continue;
-                var hexShield = col.GetComponentInParent<VirtualRailHexShield>();
-                if (hexShield != null && hexShield.IsActive)
+
+                // 1.1. Triệt tiêu xung đột đa sát thương lên Boss (Multi-hit Suppression 0 GC)
+                var bossCtrl = col.GetComponentInParent<BossF3CorvetteController>();
+                if (bossCtrl != null)
+                {
+                    if (hitBoss != null && hitBoss == bossCtrl)
+                    {
+                        // Boss này đã nhận sát thương nổ lan trong frame hiện tại -> bỏ qua các collider hardpoint/hull khác
+                        continue;
+                    }
+                    hitBoss = bossCtrl;
+
+                    if (bossCtrl.IsShieldOnline)
+                    {
+                        var hexShield = bossCtrl.GetComponentInChildren<VirtualRailHexShield>();
+                        if (hexShield != null && hexShield.IsActive)
+                        {
+                            bool isDirectShield = (target != null && (col.transform == target || col.transform.IsChildOf(target)));
+                            int shieldDmg = isSmartBomb ? 999 : (isDirectShield ? 100 : 50);
+                            hexShield.TakeDamage(shieldDmg);
+                        }
+                        continue;
+                    }
+                    else
+                    {
+                        // Khiên đã sập: áp dụng sát thương 1 lần vào đúng Hardpoint trúng nổ
+                        var eh = col.GetComponentInParent<EnemyHealth>();
+                        if (eh != null && !eh.IsDead)
+                        {
+                            bool isDirect = (target != null && (col.transform == target || col.transform.IsChildOf(target)));
+                            int dmg = isSmartBomb ? 999 : (isDirect ? 100 : 50);
+                            Vector3 hitDir = (eh.transform.position - impactPoint).normalized;
+                            if (hitDir.sqrMagnitude < 0.001f) hitDir = transform.forward;
+                            if (eh.TakeDamage(dmg, eh.transform.position, hitDir))
+                            {
+                                killCount++;
+                            }
+                        }
+                        continue;
+                    }
+                }
+
+                // 1.2. Xử lý khiên độc lập (quái thường)
+                var hexShieldStandalone = col.GetComponentInParent<VirtualRailHexShield>();
+                if (hexShieldStandalone != null && hexShieldStandalone.IsActive)
                 {
                     bool isDirectShield = (target != null && (col.transform == target || col.transform.IsChildOf(target)));
                     int shieldDmg = isSmartBomb ? 999 : (isDirectShield ? 100 : 50);
-                    hexShield.TakeDamage(shieldDmg);
+                    hexShieldStandalone.TakeDamage(shieldDmg);
                     continue;
                 }
 
-                var eh = col.GetComponentInParent<EnemyHealth>();
-                if (eh != null && !eh.IsDead)
+                // 1.3. Xử lý EnemyHealth (chống trúng nhiều collider trên cùng 1 quái)
+                var generalEh = col.GetComponentInParent<EnemyHealth>();
+                if (generalEh != null && !generalEh.IsDead)
                 {
+                    bool alreadyHit = false;
+                    for (int k = 0; k < hitEnemyCount; k++)
+                    {
+                        if (_cachedHitEnemies[k] == generalEh)
+                        {
+                            alreadyHit = true;
+                            break;
+                        }
+                    }
+                    if (alreadyHit) continue;
+                    if (hitEnemyCount < _cachedHitEnemies.Length)
+                    {
+                        _cachedHitEnemies[hitEnemyCount++] = generalEh;
+                    }
+
                     bool isDirect = (target != null && (col.transform == target || col.transform.IsChildOf(target)));
 
                     // Kiểm tra khiên hộ thể Shieldbearer: nếu điểm nổ ở phía trước mặt quái (trong nón khiên)
-                    if (eh.IsShieldActive && !isSmartBomb)
+                    if (generalEh.IsShieldActive && !isSmartBomb)
                     {
-                        Vector3 toExplosion = (impactPoint - eh.transform.position).normalized;
-                        bool hitShieldFront = Vector3.Dot(toExplosion, eh.transform.forward) > 0.1f;
+                        Vector3 toExplosion = (impactPoint - generalEh.transform.position).normalized;
+                        bool hitShieldFront = Vector3.Dot(toExplosion, generalEh.transform.forward) > 0.1f;
                         if (hitShieldFront)
                         {
                             // Khiên cản hoàn toàn đòn đánh trực diện, kích hoạt phản hồi khiên lóe sáng
-                            eh.TakeDamage(0, eh.transform.position, transform.forward);
+                            generalEh.TakeDamage(0, generalEh.transform.position, transform.forward);
                             continue;
                         }
                     }
 
                     int dmg = isSmartBomb ? 999 : (isDirect ? 100 : 50);
-                    Vector3 hitDir = (eh.transform.position - impactPoint).normalized;
+                    Vector3 hitDir = (generalEh.transform.position - impactPoint).normalized;
                     if (hitDir.sqrMagnitude < 0.001f) hitDir = transform.forward;
-                    if (eh.TakeDamage(dmg, eh.transform.position, hitDir))
+                    if (generalEh.TakeDamage(dmg, generalEh.transform.position, hitDir))
                     {
                         killCount++;
                     }
@@ -397,6 +460,12 @@ namespace VirtualRail
                         asteroid.TakeDamage(isSmartBomb ? 999 : 100, impactPoint);
                     }
                 }
+            }
+
+            // Dọn sạch cache tham chiếu (0 GC Alloc)
+            for (int k = 0; k < hitEnemyCount; k++)
+            {
+                _cachedHitEnemies[k] = null;
             }
 
             // 2. Gửi tín hiệu tính điểm Combo cấp số cộng: TotalHits = N + (N - 1)

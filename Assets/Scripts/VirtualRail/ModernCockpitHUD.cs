@@ -492,7 +492,7 @@ namespace VirtualRail
 
         private void UpdateSpeedometerUI()
         {
-            float speed = (anchor != null) ? anchor.CurrentSpeed : 120f;
+            float speed = (anchor != null) ? anchor.CurrentSpeed : 70f;
             int speedInt = Mathf.Clamp(Mathf.RoundToInt(speed), 0, 350);
 
             if (speedInt != _lastSpeedInt)

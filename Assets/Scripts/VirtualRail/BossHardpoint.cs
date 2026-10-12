@@ -114,7 +114,15 @@ namespace VirtualRail
             if (_isDestroyed) return;
             _isDestroyed = true;
 
-            SetHardpointColliderActive(false);
+            // Với Rãnh Lò Phản Ứng (DorsalReactorTrench), không tắt collider hoàn toàn mà giữ mở để ở Pha 3 người chơi tiếp tục bắn vào vùng lõi nóng chảy
+            if (_hardpointType != BossHardpointType.DorsalReactorTrench)
+            {
+                SetHardpointColliderActive(false);
+            }
+            else
+            {
+                _isWeakSpot = false; // Chuyển về sát thương chuẩn x1
+            }
 
             if (_destroyedFireVFX != null)
             {

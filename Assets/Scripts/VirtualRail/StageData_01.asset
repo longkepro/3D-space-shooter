@@ -21,12 +21,12 @@ MonoBehaviour:
     isEndlessSurvival: 1
     durationMinutes: 4.5
     targetDistanceZ: 34680
-    baseForwardSpeed: 120
+    baseForwardSpeed: 70
     warpDuration: 2.5
     warpSpeedMultiplier: 3.2
     targetEliminationCount: 50
   railSettings:
-    forwardSpeed: 120
+    forwardSpeed: 70
     stageDistanceZ: 34680
     warpDuration: 2.5
     warpSpeedMultiplier: 3.2

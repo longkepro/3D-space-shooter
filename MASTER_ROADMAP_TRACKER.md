@@ -9,14 +9,14 @@
 
 ```text
 TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY ENDLESS ARCADE):
-[████████████████████████░░░░░░░░] 74% HOÀN TẤT
+[█████████████████████████░░░░░░░] 78% HOÀN TẤT
 ```
 
 | Phân Hệ / Giai Đoạn | Trọng Tâm Phát Triển | Trạng Thái | Số Task | Tỉ Lệ | Ghi Chú Nghiệm Thu |
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | **Giai đoạn 0: Cốt Lõi Bay & Vũ Khí** | Bay Arwing, Vũ khí, Đội hình Bézier, DDA Director, Điểm số | **HOÀN TẤT** | 12/12 | $100\%$ | Biên dịch 0 Errors, 0 GC Game Loop |
 | **Giai đoạn 1: Âm Thanh & Xúc Giác** | AudioManager 0 GC, SFX N64, Dual-BGM Shuffle, Camera Shake | **HOÀN TẤT** | 4/4 | $100\%$ | 0 GC Pool, Procedural SFX + Dual Shuffle |
-| **Giai đoạn 2: Đột Kích Trùm Tuần Hoàn** | Trùm Tuần Duyên Corvette F3 ("Crimson Titan") 3 Pha | **ĐANG TRIỂN KHAI** | 3/6 | $50\%$ | Khiên Hex 300 HP, Dual-Gauge HUD, Shader Lò Pha 2 xong; Chờ duyệt xử lý xung đột logic |
+| **Giai đoạn 2: Đột Kích Trùm Tuần Hoàn** | Trùm Tuần Duyên Corvette F3 ("Crimson Titan") 3 Pha | **ĐANG TRIỂN KHAI** | 4/6 | $67\%$ | Khiên Hex 300 HP, Dual HUD, Shader Pha 2, Tách Collider & Sửa Bug Splash 4X xong |
 | **Giai đoạn 3: Vòng Lặp & UI/UX Endless** | Modern Cockpit HUD, Multiplier Gauge, Menu, Bảng Vinh Danh | **CHỜ DUYỆT** | 0/6 | $0\%$ | Game Loop Endless thương mại |
 | **Giai đoạn 4: Hành Lang Thủ Tục & Quần Xã** | Spline Chunker, Solvability Verifier, Chuyển Quần Xã, Cổng Rủi Ro | **CHỜ DUYỆT** | 0/4 | $0\%$ | Procedural Hermite Spline + World Origin Shifting |
 
@@ -87,9 +87,9 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 - [x] **2.3.2** Xây dựng controller [`VirtualRailReactorTrenchVisual.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailReactorTrenchVisual.cs): Điều khiển cường độ tỏa nhiệt `_CoreGlowIntensity`, nhịp thở nạp năng lượng `_ChargingPulseRate`, và xung chớp giật gián đoạn khi bị người chơi bắn trúng (0 GC `MaterialPropertyBlock`).
 
 ### Task 2.4: Khắc Phục Xung Đột Va Chạm & Sát Thương Đa Điểm (Collision & Splash Decoupling)
-- [ ] **2.4.1** **Tách biệt Collider Khiên & Vỏ Tàu:** Khắc phục xung đột BoxCollider khiên và Hull trùng khít nhau trên trục Y ($Y = 1.6\text{m}$), dời BoxCollider khiên bao bọc ra ngoài ($Y = 2.2\text{m}, \text{Size} = [12, 4, 18]$) để chặn đứng đạn trước khi chạm vỏ tàu.
-- [ ] **2.4.2** **Khắc phục Bug Nổ Lan Tên Lửa 4X Sát Thương:** Phân nhóm layer và lọc ID cha để quả cầu nổ lan không gây sát thương đồng thời lên Khiên + Vỏ tàu + 2 Tháp pháo trong cùng 1 frame.
-- [ ] **2.4.3** **Cân Bằng Lại HP Hardpoint vs Máu Boss:** Tái cấu trúc tổng máu hardpoint ($1,800\text{ HP}$) không vượt ngưỡng máu Boss ($1,000\text{ HP}$), đảm bảo việc phá hủy hardpoint là lựa chọn chiến thuật săn điểm chứ không bị triệt tiêu lãng phí.
+- [x] **2.4.1** **Tách biệt Collider Khiên & Vỏ Tàu:** Hiệu chỉnh BoxCollider khiên ($Y = 4.5\text{m}, \text{Scale} = [36, 10.5, 114]$) và hạ đỉnh vỏ tàu ($Y = 1.5\text{m}, \text{Size} = [30, 10, 108]$) tạo biên độ đệm an toàn $+3.25\text{m}$ trên trục Y; chuyển hướng $100\%$ sát thương đạn vào khiên khi khiên đang hoạt động.
+- [x] **2.4.2** **Khắc phục Bug Nổ Lan Tên Lửa 4X Sát Thương:** Phân nhóm multi-hit suppression 0 GC (lọc ID Boss và mảng đệm 32 EnemyHealth) trong `VirtualRailHomingMissile.cs`, đảm bảo quả cầu nổ lan chỉ gây sát thương 1 lần duy nhất lên Boss.
+- [x] **2.4.3** **Cân Bằng Lại HP Hardpoint vs Máu Boss & Đồng Bộ 3 Pha:** Đồng bộ hóa chuyển pha và giới hạn máu từng pha (Pha 1 chặn ở 660 HP, Pha 2 chặn ở 330 HP, Pha 3 dứt điểm về 0); giữ mở collider rãnh lò phản ứng khi bị phá hủy để cho phép ngắm bắn lõi nóng chảy ở Pha 3.
 
 ### Task 2.5: Khắc Phục Logic Tháp Pháo & Điểm Yếu Buồng Lái (Turret & Bridge Logic)
 - [ ] **2.5.1** **Khắc phục Tháp Pháo Bị Đóng Băng ở Pha 2:** Cập nhật FSM để tháp pháo cánh tiếp tục bắn yểm trợ ở Pha 2 nếu chưa bị phá hủy ở Pha 1, tạo áp lực buộc người chơi phải cân nhắc giữa bắn Lò Phản Ứng hay dọn tháp pháo.
@@ -176,6 +176,9 @@ TIẾN ĐỘ TOÀN DỰ ÁN HƯỚNG TỚI BẢN HOÀN CHỈNH (PRODUCTION-READY
 | *12/10/2026* | **PHASE2-VISUAL** | Xây dựng Shader & Controller hiển thị Pha 2 Lò Phản Ứng: plasma cuộn chảy, nhịp thở nạp năng lượng, xung chớp giật gián đoạn khi trúng đạn, tự động tương thích fallback runtime | [`VirtualRail_ThermalReactorTrench.shader`](file:///d:/3D-Shooter-master/Assets/Shaders/VirtualRail_ThermalReactorTrench.shader), [`ReactorTrench_HotPlasma.mat`](file:///d:/3D-Shooter-master/Assets/Materials/ReactorTrench_HotPlasma.mat), [`VirtualRailReactorTrenchVisual.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailReactorTrenchVisual.cs) | `0 Errors` | User (Thực hiện) |
 | *12/10/2026* | **BOSS-RCA** | Khảo sát kiểm toán Root Cause Analysis logic Boss Corvette F3: phát hiện 5 logic bị mất và 5 xung đột va chạm/sát thương | [`MASTER_ROADMAP_TRACKER.md`](file:///d:/3D-Shooter-master/MASTER_ROADMAP_TRACKER.md) | `0 Errors` | User (Yêu cầu kiểm tra) |
 | *12/10/2026* | **ENDLESS-DOCS** | Đồng bộ hóa toàn diện tài liệu kiến trúc sang mô hình 100% Endless Virtual Rail Shooter & Deep Scoring Engine | [`README.md`](file:///d:/3D-Shooter-master/README.md), [`MASTER_ROADMAP_TRACKER.md`](file:///d:/3D-Shooter-master/MASTER_ROADMAP_TRACKER.md), [`LEVEL_DESIGN_SPECIFICATION.md`](file:///d:/3D-Shooter-master/LEVEL_DESIGN_SPECIFICATION.md), [`STAGE_1_DESIGN_DOCUMENT.md`](file:///d:/3D-Shooter-master/STAGE_1_DESIGN_DOCUMENT.md) | `0 Errors` | User (Yêu cầu cập nhật) |
+| *12/10/2026* | **DECOUPLE-EVASION** | Tách rời 100% tốc độ né ngang/dọc (60 m/s & 42 m/s) khỏi tốc độ tiến Z, tắt Golden Ratio, bảo toàn độ trễ lò xo 0.1s êm ái khi Boost/DDA, cung cấp cặp MenuItem 51 & 52 | [`DefaultVirtualRailConfig.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/DefaultVirtualRailConfig.asset), [`VirtualRailConfig.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailConfig.cs), [`VirtualRailModeToggle.cs`](file:///d:/3D-Shooter-master/Assets/Editor/VirtualRailModeToggle.cs) | `0 Errors` | User (Thực hiện phương án 1) |
+| *12/10/2026* | **BASE-SPEED-70** | Đồng bộ hóa tốc độ tiến cơ sở Z ban đầu về 70 m/s trên toàn hệ thống (StageData_01, DefaultConfig, EndlessDirector fallback, HUD Speedometer, AimAssist, SmartBomb) | [`StageData_01.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/StageData_01.asset), [`DefaultVirtualRailConfig.asset`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/DefaultVirtualRailConfig.asset), [`VirtualRailConfig.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailConfig.cs), [`VirtualRailEndlessDirector.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailEndlessDirector.cs), [`ModernCockpitHUD.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/ModernCockpitHUD.cs) | `0 Errors` | User (Yêu cầu tốc độ Z ban đầu là 70) |
+| *12/10/2026* | **BOSS-DECOUPLE-2.4** | Hoàn thành Task 2.4: Tách biệt Collider Khiên (+3.25m đệm Y) & Vỏ tàu, triệt tiêu bug tên lửa gây sát thương nổ lan 4X qua multi-hit suppression 0 GC, cân bằng và đồng bộ hóa giới hạn máu 3 pha (660 HP / 330 HP / 0 HP) | [`VirtualRailHomingMissile.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/VirtualRailHomingMissile.cs), [`BossF3CorvetteController.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/BossF3CorvetteController.cs), [`BossHardpoint.cs`](file:///d:/3D-Shooter-master/Assets/Scripts/VirtualRail/BossHardpoint.cs), [`VirtualRailBossEditorTool.cs`](file:///d:/3D-Shooter-master/Assets/Editor/VirtualRailBossEditorTool.cs), [`Boss_F3_Corvette.prefab`](file:///d:/3D-Shooter-master/Assets/Prefabs/Boss_F3_Corvette.prefab) | `0 Errors` | User (Thực hiện phương án 1) |
 
 ---
 

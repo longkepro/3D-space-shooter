@@ -66,8 +66,8 @@ namespace VirtualRail.EditorTools
 
             var hullCol = hullObj.GetComponent<BoxCollider>();
             if (hullCol == null) hullCol = hullObj.AddComponent<BoxCollider>();
-            hullCol.size = new Vector3(30f, 12f, 110f);
-            hullCol.center = new Vector3(0f, 2f, 0f);
+            hullCol.size = new Vector3(30f, 10f, 108f);
+            hullCol.center = new Vector3(0f, 1.5f, 0f);
 
             var hullHp = hullObj.GetComponent<BossHardpoint>();
             if (hullHp == null) hullHp = hullObj.AddComponent<BossHardpoint>();
@@ -217,8 +217,8 @@ namespace VirtualRail.EditorTools
             {
                 shieldObj.transform.SetParent(bossObj.transform, false);
             }
-            shieldObj.transform.localPosition = new Vector3(0f, 5.0f, 5.0f);
-            shieldObj.transform.localScale = new Vector3(40f, 5.5f, 44f);
+            shieldObj.transform.localPosition = new Vector3(0f, 4.5f, 0f);
+            shieldObj.transform.localScale = new Vector3(36f, 10.5f, 114f);
             shieldObj.tag = "Enemy";
 
             var hexShield = shieldObj.GetComponent<VirtualRailHexShield>();

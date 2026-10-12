@@ -163,7 +163,7 @@ namespace VirtualRail
 
                 if (missile != null)
                 {
-                    float shipSpeed = (_anchor != null) ? _anchor.CurrentSpeed : 120f;
+                    float shipSpeed = (_anchor != null) ? _anchor.CurrentSpeed : 70f;
                     float speed = (cfg != null && cfg.smartBombFlightSpeed > 10f) ? cfg.smartBombFlightSpeed : 160f;
                     float turnSpeed = (cfg != null && cfg.smartBombTurnRate > 10f) ? cfg.smartBombTurnRate : 320f;
                     float lifeTime = (cfg != null && cfg.smartBombLifetime > 0.5f) ? cfg.smartBombLifetime : 3.0f;

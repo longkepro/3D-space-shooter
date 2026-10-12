@@ -163,7 +163,7 @@ namespace VirtualRail
 
             if (_anchor != null)
             {
-                float baseSpeed = (_stageData != null) ? _stageData.GetBaseForwardSpeed() : 120f;
+                float baseSpeed = (_stageData != null) ? _stageData.GetBaseForwardSpeed() : 70f;
                 _anchor.SetSpeedOverride(baseSpeed);
             }
         }
@@ -193,7 +193,7 @@ namespace VirtualRail
             // Cập nhật tốc độ đường ray tịnh tiến theo DDA (0 GC Alloc)
             if (_scaleRailSpeed && _anchor != null)
             {
-                float baseSpeed = (_stageData != null) ? _stageData.GetBaseForwardSpeed() : 120f;
+                float baseSpeed = (_stageData != null) ? _stageData.GetBaseForwardSpeed() : 70f;
                 float scaledSpeed = Mathf.Min(_maxRailSpeedCap, baseSpeed * (1f + _speedScalePerLevel * (_threatLevel - 1)));
                 _anchor.SetSpeedOverride(scaledSpeed);
             }

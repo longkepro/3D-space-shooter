@@ -7,7 +7,7 @@ namespace VirtualRail
     {
         [Header("1. Rail Movement")]
         [Tooltip("Tốc độ tiến dọc trục Z của đường ray")]
-        public float forwardSpeed = 28f;
+        public float forwardSpeed = 70f;
         [Tooltip("Hệ số tăng tốc khi boost")]
         public float boostMultiplier = 1.6f;
 
@@ -109,9 +109,9 @@ namespace VirtualRail
         [Tooltip("Thời gian duy trì bắn tự động sau khi chuột dừng (giây) - chống giật cục micro-pause")]
         public float autoFireHoldTime = 0.08f;
         [Tooltip("Tốc độ bay tự do của tàu theo trục ngang X (m/s)")]
-        public float shipSpeedX = 140f;
+        public float shipSpeedX = 60f;
         [Tooltip("Tốc độ bay tự do của tàu theo trục dọc Y (m/s)")]
-        public float shipSpeedY = 85f;
+        public float shipSpeedY = 42f;
 
         [Header("5b. Android & Mobile Touch Controls")]
         [Tooltip("Bật/Tắt tổng thể cụm UI cảm ứng Mobile (Master Switch)")]
@@ -129,7 +129,7 @@ namespace VirtualRail
 
         [Header("5c. Golden-Ratio Kinematics (Tỷ Lệ Vàng Động Học)")]
         [Tooltip("Bật động học tỷ lệ vàng: Vx = 50% Vz, Vy = 35% Vz, khống chế trôi dạt S_drift <= 2.5m")]
-        public bool useGoldenRatioMotion = true;
+        public bool useGoldenRatioMotion = false;
         [Range(0.35f, 0.65f)]
         [Tooltip("Hệ số phân bổ trục ngang X so với tốc độ tiến Z (chuẩn 0.50)")]
         public float goldenRatioX = 0.50f;

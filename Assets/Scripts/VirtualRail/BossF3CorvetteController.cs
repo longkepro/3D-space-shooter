@@ -154,6 +154,11 @@ namespace VirtualRail
             OnBossShieldBroken?.Invoke();
             if (_currentPhase == BossBattlePhase.Phase1_DeckStrafe || _currentPhase == BossBattlePhase.IntroBreach)
             {
+                // Đồng bộ lượng máu: Pha 1 hoàn tất -> Máu Boss tối đa còn 66% (660 HP)
+                if (_currentHealth > 660)
+                {
+                    _currentHealth = 660;
+                }
                 TransitionToPhase(BossBattlePhase.Phase2_ReactorTrench);
             }
         }
@@ -353,8 +358,12 @@ namespace VirtualRail
                 }
             }
 
-            if (HealthNormalized <= 0.35f)
+            if (HealthNormalized <= 0.35f || (_reactorTrench != null && _reactorTrench.IsDestroyed))
             {
+                if (_currentHealth > 330)
+                {
+                    _currentHealth = 330;
+                }
                 TransitionToPhase(BossBattlePhase.Phase3_MeltdownOverdrive);
             }
         }
@@ -418,6 +427,18 @@ namespace VirtualRail
 
             if (newPhase == BossBattlePhase.Phase2_ReactorTrench)
             {
+                if (_reactorTrench != null)
+                {
+                    _reactorTrench.SetHardpointColliderActive(true);
+                }
+            }
+            else if (newPhase == BossBattlePhase.Phase3_MeltdownOverdrive)
+            {
+                if (_currentHealth > 330)
+                {
+                    _currentHealth = 330;
+                }
+                // Giữ collider rãnh lò phản ứng mở để người chơi bắn vào vùng lõi nóng chảy dứt điểm Boss
                 if (_reactorTrench != null)
                 {
                     _reactorTrench.SetHardpointColliderActive(true);
@@ -499,20 +520,38 @@ namespace VirtualRail
         {
             if (_currentPhase == BossBattlePhase.Defeated) return;
 
-            // Kiem tra neu Khien con online va ban vao than chinh thi chuyen sat thuong vao khien
-            if (hardpoint.HardpointType == BossHardpointType.ArmoredHull && IsShieldOnline)
+            // 1. Kiểm tra nếu Khiên còn online: Mọi phát bắn vào ArmoredHull, Trench, Bridge đều được chuyển 100% vào Khiên
+            if (IsShieldOnline && (hardpoint.HardpointType == BossHardpointType.ArmoredHull || 
+                                   hardpoint.HardpointType == BossHardpointType.DorsalReactorTrench || 
+                                   hardpoint.HardpointType == BossHardpointType.MainBridge))
             {
                 if (_hexShield != null) _hexShield.TakeDamage(damageDealt);
                 return;
             }
 
-            // Neu ban vao Ranh Lo Phan Ung trong luc dang sac -> STUN ngat chieu
+            // 2. Nếu bắn vào Rãnh Lò Phản Ứng trong lúc đang sạc -> STUN ngắt chiêu
             if (hardpoint.HardpointType == BossHardpointType.DorsalReactorTrench && _isChargingTrench)
             {
                 InterruptAndStun();
             }
 
-            _currentHealth = Mathf.Max(0, _currentHealth - damageDealt);
+            // 3. Khấu trừ sát thương theo từng pha (không để sát thương vượt pha khi chưa hoàn thành mục tiêu pha)
+            if (_currentPhase == BossBattlePhase.Phase1_DeckStrafe || _currentPhase == BossBattlePhase.IntroBreach)
+            {
+                // Trong Pha 1, sát thương tháp pháo cánh không làm tụt qua mốc Pha 2 (660 HP)
+                _currentHealth = Mathf.Max(660, _currentHealth - damageDealt);
+            }
+            else if (_currentPhase == BossBattlePhase.Phase2_ReactorTrench)
+            {
+                // Trong Pha 2, sát thương chỉ làm tụt tối đa đến mốc Pha 3 (330 HP)
+                _currentHealth = Mathf.Max(330, _currentHealth - damageDealt);
+            }
+            else
+            {
+                // Trong Pha 3, sát thương dứt điểm Boss về 0
+                _currentHealth = Mathf.Max(0, _currentHealth - damageDealt);
+            }
+
             OnBossHealthChanged?.Invoke(_currentHealth, _maxHealth, _currentPhase);
 
             if (_currentHealth <= 0 && _currentPhase != BossBattlePhase.Defeated)
@@ -524,6 +563,16 @@ namespace VirtualRail
         public void NotifyHardpointDestroyed(BossHardpoint hardpoint)
         {
             VirtualRailCameraRig.TriggerShake(0.25f);
+
+            // Nếu Rãnh Lò Phản Ứng bị phá hủy ở Pha 2 -> Tự động chuyển tiếp sang Pha 3 Cuồng Nộ
+            if (hardpoint.HardpointType == BossHardpointType.DorsalReactorTrench && _currentPhase == BossBattlePhase.Phase2_ReactorTrench)
+            {
+                if (_currentHealth > 330)
+                {
+                    _currentHealth = 330;
+                }
+                TransitionToPhase(BossBattlePhase.Phase3_MeltdownOverdrive);
+            }
         }
 
         private void InterruptAndStun()
