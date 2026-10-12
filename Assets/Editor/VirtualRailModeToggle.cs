@@ -2862,5 +2862,45 @@ public class VirtualRailModeToggle
     {
         Debug.Log("<color=yellow><b>[VirtualRail] THÔNG BÁO HOÀN NGUYÊN (OFF - UNDO):</b></color> Để hoàn nguyên mã nguồn Boss F3 về trạng thái cũ, bạn có thể checkout nhánh backup/fix-boss-phase-conflicts.");
     }
+
+    [MenuItem("Tools/Virtual Rail/55. Endless Boss Incursions & DDA Scaling (ON)")]
+    public static void EnableEndlessBossIncursions()
+    {
+        var directors = Object.FindObjectsByType<VirtualRailEndlessDirector>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        GameObject bossPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Boss_F3_Corvette.prefab");
+
+        for (int i = 0; i < directors.Length; i++)
+        {
+            directors[i].EnableBossIncursions = true;
+            directors[i].BossIncursionIntervalWaves = 8;
+            if (bossPrefab != null)
+            {
+                directors[i].BossPrefab = bossPrefab;
+            }
+            EditorUtility.SetDirty(directors[i]);
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT ENDLESS BOSS INCURSIONS & DDA SCALING (ON):</b></color>\n" +
+                  "1. Tự động xuất kích Boss F3 Corvette mỗi 8 waves hoặc mỗi 15,000m Sector Warp.\n" +
+                  "2. Boss DDA Scaling: HP tăng +20% mỗi lần chạm trán, Khiên Hex-Shield tăng tương ứng.\n" +
+                  "3. Cooldown vũ khí Flak/VLS/Laser thu ngắn theo Threat Level (giảm tối đa 40% trần hãm 0.60x).\n" +
+                  "4. Kháng choáng: Thời gian choáng buồng lái giảm từ 4.0s về 2.0s; Lò phản ứng giảm từ 2.0s về 1.0s.\n" +
+                  "5. Tiêu diệt Boss: Thưởng +50,000 pts, Sector Warp +10,000 pts, Threat Level +1, Breathing Room 5.0s.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/56. Endless Boss Incursions: Disable Incursions (OFF - Legacy)")]
+    public static void DisableEndlessBossIncursions()
+    {
+        var directors = Object.FindObjectsByType<VirtualRailEndlessDirector>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < directors.Length; i++)
+        {
+            directors[i].EnableBossIncursions = false;
+            EditorUtility.SetDirty(directors[i]);
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ TẮT ENDLESS BOSS INCURSIONS (OFF - UNDO):</b></color> Chế độ Endless chỉ xuất kích các phi đội chiến đấu thông thường.");
+    }
     #endregion
 }

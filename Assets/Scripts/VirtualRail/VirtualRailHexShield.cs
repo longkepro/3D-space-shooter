@@ -101,6 +101,18 @@ namespace VirtualRail
             ApplyActiveState();
         }
 
+        /// <summary>
+        /// Thiết lập lượng máu tối đa mới cho Khiên (phục vụ DDA leo thang độ khó).
+        /// </summary>
+        public void SetMaxHealth(int maxHealth)
+        {
+            _maxShieldHealth = Mathf.Max(1, maxHealth);
+            _currentShieldHealth = _maxShieldHealth;
+            _isActive = true;
+            ApplyActiveState();
+            OnShieldHealthChanged?.Invoke(_currentShieldHealth, _maxShieldHealth);
+        }
+
         private void ApplyActiveState()
         {
             if (_shieldCollider != null)

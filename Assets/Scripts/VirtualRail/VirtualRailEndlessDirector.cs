@@ -21,7 +21,8 @@ namespace VirtualRail
             Dispatching = 2,
             CombatTracking = 3,
             CleaningBuffer = 4,
-            BreathingRoom = 5
+            BreathingRoom = 5,
+            BossIncursion = 6
         }
 
         [Header("State Machine")]
@@ -57,6 +58,17 @@ namespace VirtualRail
         public bool ScaleRailSpeed { get => _scaleRailSpeed; set => _scaleRailSpeed = value; }
         [SerializeField] private float _speedScalePerLevel = 0.03f;
         [SerializeField] private float _maxRailSpeedCap = 150f;
+
+        [Header("Endless Boss Incursion Settings")]
+        [SerializeField] private bool _enableBossIncursions = true;
+        public bool EnableBossIncursions { get => _enableBossIncursions; set => _enableBossIncursions = value; }
+        [SerializeField] private int _bossIncursionIntervalWaves = 8;
+        public int BossIncursionIntervalWaves { get => _bossIncursionIntervalWaves; set => _bossIncursionIntervalWaves = value; }
+        [SerializeField] private GameObject _bossPrefab;
+        public GameObject BossPrefab { get => _bossPrefab; set => _bossPrefab = value; }
+        private int _bossIncursionsDefeatedCount = 0;
+        private int _bossIncursionsTriggered = 0;
+        private BossF3CorvetteController _activeBossInstance = null;
 
         // Subsystem References
         private StageData _stageData;
@@ -158,9 +170,27 @@ namespace VirtualRail
 #endif
             }
 
+            // Nạp Boss Prefab nếu chưa được cấu hình
+            if (_bossPrefab == null)
+            {
+                if (_stageData != null && _stageData.climaxSettings.bossPrefab != null)
+                {
+                    _bossPrefab = _stageData.climaxSettings.bossPrefab;
+                }
+#if UNITY_EDITOR
+                if (_bossPrefab == null)
+                {
+                    _bossPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Boss_F3_Corvette.prefab");
+                }
+#endif
+            }
+            _bossIncursionsDefeatedCount = 0;
+            _bossIncursionsTriggered = 0;
+            _activeBossInstance = null;
+
             _isActive = true;
             TransitionTo(BattleFlowState.InitialDelay);
-            Debug.Log($"<color=lime><b>[ENDLESS DIRECTOR]</b></color> Khởi động Endless Survival Mode! Formation Pool: {(_formationPool != null ? _formationPool.Length : 0)} mẫu.");
+            Debug.Log($"<color=lime><b>[ENDLESS DIRECTOR]</b></color> Khởi động Endless Survival Mode! Formation Pool: {(_formationPool != null ? _formationPool.Length : 0)} mẫu, Boss Incursions: {_enableBossIncursions}.");
         }
 
         /// <summary>
@@ -174,6 +204,12 @@ namespace VirtualRail
             _waveTimer = 0f;
             _threatLevelBonus = 0;
             _currentShooterRatio = 1.0f;
+
+            if (_activeBossInstance != null)
+            {
+                Destroy(_activeBossInstance.gameObject);
+                _activeBossInstance = null;
+            }
 
             if (_waveSpawner != null)
             {
@@ -231,8 +267,8 @@ namespace VirtualRail
                 _anchor.SetSpeedOverride(scaledSpeed);
             }
 
-            // 2. Kiểm tra mốc Hyperspace Warp Reset mỗi 15,000m
-            if (_anchor != null)
+            // 2. Kiểm tra mốc Hyperspace Warp Reset mỗi 15,000m (chỉ tự động reset khi không bật Boss Incursions)
+            if (_anchor != null && !_enableBossIncursions)
             {
                 float distSinceWarp = _anchor.transform.position.z - _lastWarpZ;
                 if (distSinceWarp >= 15000f)
@@ -295,6 +331,15 @@ namespace VirtualRail
                         TransitionTo(BattleFlowState.Dispatching);
                     }
                     break;
+
+                case BattleFlowState.BossIncursion:
+                    // Trong khi Boss đang giao chiến, nếu Boss bị hủy ngoài ý muốn
+                    if (_activeBossInstance == null)
+                    {
+                        _breathingDuration = 3.5f;
+                        TransitionTo(BattleFlowState.BreathingRoom);
+                    }
+                    break;
             }
         }
 
@@ -306,6 +351,15 @@ namespace VirtualRail
 
         private void DispatchNextWave()
         {
+            // Kiểm tra điều kiện kích hoạt Boss Incursion: Mỗi 8 wave hoặc mỗi 15,000m Warp
+            bool distBossDue = (_anchor != null && (_anchor.transform.position.z - _lastWarpZ) >= 15000f);
+            bool waveBossDue = (_currentWaveIndex > 0 && _currentWaveIndex % _bossIncursionIntervalWaves == 0);
+            if (_enableBossIncursions && _bossPrefab != null && (waveBossDue || distBossDue))
+            {
+                TriggerBossIncursion();
+                return;
+            }
+
             if (_formationPool == null || _formationPool.Length == 0)
             {
                 TransitionTo(BattleFlowState.BreathingRoom);
@@ -437,6 +491,59 @@ namespace VirtualRail
             };
         }
 
+        private void TriggerBossIncursion()
+        {
+            if (_bossPrefab == null || _anchor == null)
+            {
+                TransitionTo(BattleFlowState.BreathingRoom);
+                return;
+            }
+
+            _currentWaveIndex++;
+            _bossIncursionsTriggered++;
+            TransitionTo(BattleFlowState.BossIncursion);
+
+            // 1. Rút lui toàn bộ quái thường đang bay
+            if (_waveSpawner != null)
+            {
+                _waveSpawner.ForceRetreatCurrentWave();
+            }
+
+            // 2. Thu dọn thiên thạch để giải phóng không gian chiến đấu cho Boss F3 Corvette
+            if (_asteroidSpawner != null)
+            {
+                _asteroidSpawner.RecycleAll();
+            }
+
+            // 3. Tọa độ xuất hiện dưới bụng Arwing (Sub-Ventral Y = -22m, Z = 68m dọc đường ray)
+            Vector3 spawnPos = _anchor.transform.position + _anchor.ForwardTangent * 68f - _anchor.transform.up * 22f;
+            Quaternion spawnRot = Quaternion.LookRotation(_anchor.ForwardTangent, _anchor.transform.up) * Quaternion.Euler(-7.5f, 0f, 0f);
+
+            GameObject bossObj = Instantiate(_bossPrefab, spawnPos, spawnRot);
+            _activeBossInstance = bossObj.GetComponent<BossF3CorvetteController>();
+
+            if (_activeBossInstance != null)
+            {
+                _activeBossInstance.ApplyDDA(_threatLevel, _bossIncursionsTriggered);
+            }
+
+            // 4. Chuyển nhạc nền sang Boss BGM
+            if (AudioManager.Instance != null)
+            {
+                AudioClip bossClip = (_stageData != null) ? _stageData.audioSettings.bossBgm : null;
+                float vol = (_stageData != null) ? _stageData.audioSettings.musicVolume : 1f;
+                AudioManager.Instance.PlayBossMusic(bossClip, vol);
+            }
+
+            // 5. Cảnh báo HUD UI
+            if (_stageDirector != null && _stageDirector.notificationUI != null)
+            {
+                _stageDirector.notificationUI.ShowNotification("WARNING: CAPITAL SHIP INCURSION!", $"F3 CORVETTE DETECTED (THREAT LVL {_threatLevel})", 4.0f);
+            }
+
+            Debug.Log($"<color=red><b>[ENDLESS DIRECTOR]</b></color> Kích hoạt Boss Incursion #{_bossIncursionsTriggered} tại Threat Level {_threatLevel}!");
+        }
+
         private void ExecuteHyperspaceSectorWarp()
         {
             if (_anchor == null) return;
@@ -460,6 +567,8 @@ namespace VirtualRail
         /// <summary>
         /// Kích hoạt khi Boss F3 Corvette bị tiêu diệt trong chế độ Endless Survival (0 GC Alloc).
         /// - Tăng bậc đe dọa (Threat Level) lên +1
+        /// - Thực hiện Hyperspace Sector Warp (+10,000 pts và reset mốc Z 15,000m)
+        /// - Khôi phục Stage BGM qua AudioManager
         /// - Đặt lại trạng thái chiến trường sang BreathingRoom (thời gian nghỉ 5.0s)
         /// - Kích hoạt thông báo UI "BOSS ELIMINATED! SECTOR THREAT LEVEL UP"
         /// - Phát âm thanh RadioChirp
@@ -468,15 +577,31 @@ namespace VirtualRail
         {
             if (!_isActive) return;
 
+            _bossIncursionsDefeatedCount++;
+            _activeBossInstance = null;
+
             _threatLevelBonus++;
             _threatLevel = 1 + Mathf.FloorToInt(_sessionTimer / 45f) + _threatLevelBonus;
             _wavesCleared++;
+
+            // 1. Thực hiện Hyperspace Sector Warp: Thưởng +10,000 điểm và làm mới mốc đo Z 15,000m
+            ExecuteHyperspaceSectorWarp();
+
+            // 2. Khôi phục Stage BGM
+            if (AudioManager.Instance != null)
+            {
+                AudioClip stageClip = (_stageData != null) ? _stageData.audioSettings.stageBgm : null;
+                float vol = (_stageData != null) ? _stageData.audioSettings.musicVolume : 1f;
+                AudioManager.Instance.PlayStageMusic(stageClip, vol);
+            }
+
+            // 3. Thời gian nghỉ ngơi 5.0s
             _breathingDuration = 5.0f;
             TransitionTo(BattleFlowState.BreathingRoom);
 
             if (_stageDirector != null && _stageDirector.notificationUI != null)
             {
-                _stageDirector.notificationUI.ShowNotification("BOSS ELIMINATED!", $"THREAT LEVEL ESCALATED TO LEVEL {_threatLevel}", 4.0f);
+                _stageDirector.notificationUI.ShowNotification("BOSS ELIMINATED!", $"THREAT ESCALATED TO LEVEL {_threatLevel}", 4.0f);
             }
 
             if (AudioManager.Instance != null)
@@ -484,7 +609,7 @@ namespace VirtualRail
                 AudioManager.Instance.PlaySFX2D(AudioSFXType.RadioChirp, 1.0f);
             }
 
-            Debug.Log($"<color=lime><b>[ENDLESS DIRECTOR]</b></color> Boss Incursion Defeated! Threat Level tăng lên {_threatLevel}.");
+            Debug.Log($"<color=lime><b>[ENDLESS DIRECTOR]</b></color> Boss Incursion #{_bossIncursionsDefeatedCount} Defeated! Threat Level tăng lên {_threatLevel}.");
         }
 
 #if UNITY_EDITOR

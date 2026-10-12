@@ -30,6 +30,16 @@ namespace VirtualRail
         [SerializeField] private int _currentHealth = 1000;
         [SerializeField] private bool _isDefeated = false;
 
+        [Header("DDA Dynamic Difficulty Adjustment")]
+        [SerializeField] private int _threatLevel = 1;
+        [SerializeField] private int _incursionIndex = 1;
+        [SerializeField] private float _fireCooldownScale = 1.0f;
+        [SerializeField] private float _bridgeStunDuration = 4.0f;
+        [SerializeField] private float _interruptStunDuration = 2.0f;
+        public int ThreatLevel => _threatLevel;
+        public int IncursionIndex => _incursionIndex;
+        public float FireCooldownScale => _fireCooldownScale;
+
         [Header("Spatial Positioning (Direction 1: 50% Vertical & 69.5% Horizontal)")]
         [SerializeField] private float _leadDistanceZ = 68f;
         [SerializeField] private float _baseElevationY = -22f;
@@ -157,13 +167,49 @@ namespace VirtualRail
             OnBossShieldBroken?.Invoke();
             if (_currentPhase == BossBattlePhase.Phase1_DeckStrafe || _currentPhase == BossBattlePhase.IntroBreach)
             {
-                // Đồng bộ lượng máu: Pha 1 hoàn tất -> Máu Boss tối đa còn 66% (660 HP)
-                if (_currentHealth > 660)
+                // Đồng bộ lượng máu: Pha 1 hoàn tất -> Máu Boss tối đa còn 66%
+                int p2Threshold = Mathf.RoundToInt(_maxHealth * 0.66f);
+                if (_currentHealth > p2Threshold)
                 {
-                    _currentHealth = 660;
+                    _currentHealth = p2Threshold;
                 }
                 TransitionToPhase(BossBattlePhase.Phase2_ReactorTrench);
             }
+        }
+
+        /// <summary>
+        /// Áp dụng các thông số leo thang độ khó DDA cho Boss F3 Corvette (0 GC Alloc).
+        /// - incursionIndex: Lần chạm trán Boss thứ mấy trong phiên Endless (1, 2, 3...)
+        /// - threatLevel: Bậc đe dọa hiện tại của Endless Director (1, 2, 3...)
+        /// </summary>
+        public void ApplyDDA(int threatLevel, int incursionIndex)
+        {
+            _threatLevel = Mathf.Max(1, threatLevel);
+            _incursionIndex = Mathf.Max(1, incursionIndex);
+
+            // 1. Leo thang Máu tối đa: Mỗi lần chạm trán Boss tăng +20% HP
+            float hpMultiplier = 1.0f + 0.20f * (_incursionIndex - 1);
+            _maxHealth = Mathf.RoundToInt(1000 * hpMultiplier);
+            _currentHealth = _maxHealth;
+
+            // Đồng bộ nâng cấp dung lượng khiên Hex-Shield tương ứng
+            if (_hexShield == null) AutoBindHardpoints();
+            if (_hexShield != null)
+            {
+                int scaledShieldHp = Mathf.RoundToInt(300 * hpMultiplier);
+                _hexShield.SetMaxHealth(scaledShieldHp);
+                OnBossShieldChanged?.Invoke(_hexShield.CurrentShieldHealth, _hexShield.MaxShieldHealth);
+            }
+
+            // 2. Leo thang Tần suất xả đạn: Cooldown giảm 5% mỗi Threat Level (Trần hãm tối đa giảm 40% -> scale 0.60f)
+            _fireCooldownScale = Mathf.Max(0.60f, 1.0f - (_threatLevel - 1) * 0.05f);
+
+            // 3. Kháng Choáng (Stun Resistance): Buồng lái giảm từ 4.0s về sàn 2.0s; Lò phản ứng giảm từ 2.0s về sàn 1.0s
+            _bridgeStunDuration = Mathf.Max(2.0f, 4.0f - (_threatLevel - 1) * 0.25f);
+            _interruptStunDuration = Mathf.Max(1.0f, 2.0f - (_threatLevel - 1) * 0.15f);
+
+            OnBossHealthChanged?.Invoke(_currentHealth, _maxHealth, _currentPhase);
+            Debug.Log($"<color=red><b>[BOSS DDA]</b></color> Incursion #{_incursionIndex} (Threat Lvl {_threatLevel}): Max HP={_maxHealth}, CooldownScale={_fireCooldownScale:F2}, BridgeStun={_bridgeStunDuration:F1}s");
         }
 
         private void AutoBindHardpoints()
@@ -305,7 +351,7 @@ namespace VirtualRail
         private void UpdatePhase1(float dt)
         {
             _fireTimer += dt;
-            if (_fireTimer >= 1.2f)
+            if (_fireTimer >= 1.2f * _fireCooldownScale)
             {
                 _fireTimer = 0f;
                 FireUpwardFlakBurst();
@@ -333,7 +379,7 @@ namespace VirtualRail
         {
             // 1. Tháp pháo cánh còn sống tiếp tục bắn đạn phòng không (Flak) mỗi 1.8s
             _fireTimer += dt;
-            if (_fireTimer >= 1.8f)
+            if (_fireTimer >= 1.8f * _fireCooldownScale)
             {
                 _fireTimer = 0f;
                 FireUpwardFlakBurst();
@@ -341,7 +387,7 @@ namespace VirtualRail
 
             // 2. Bắn tên lửa VLS thẳng đứng mỗi 3s
             _vlsTimer += dt;
-            if (_vlsTimer >= 3.0f)
+            if (_vlsTimer >= 3.0f * _fireCooldownScale)
             {
                 _vlsTimer = 0f;
                 FireVlsMissileSalvo();
@@ -349,7 +395,7 @@ namespace VirtualRail
 
             // 3. Chu kỳ sạc rãnh lò phản ứng mỗi 5s
             _trenchChargeTimer += dt;
-            if (!_isChargingTrench && _trenchChargeTimer >= 5.0f)
+            if (!_isChargingTrench && _trenchChargeTimer >= 5.0f * _fireCooldownScale)
             {
                 _isChargingTrench = true;
                 _trenchChargeTimer = 0f;
@@ -378,11 +424,12 @@ namespace VirtualRail
                 }
             }
 
+            int p3Threshold = Mathf.RoundToInt(_maxHealth * 0.33f);
             if (HealthNormalized <= 0.35f || (_reactorTrench != null && _reactorTrench.IsDestroyed))
             {
-                if (_currentHealth > 330)
+                if (_currentHealth > p3Threshold)
                 {
-                    _currentHealth = 330;
+                    _currentHealth = p3Threshold;
                 }
                 TransitionToPhase(BossBattlePhase.Phase3_MeltdownOverdrive);
             }
@@ -396,7 +443,7 @@ namespace VirtualRail
 
             // 1. Tháp pháo cánh dồn dập mỗi 0.8s
             _fireTimer += dt;
-            if (_fireTimer >= 0.8f)
+            if (_fireTimer >= 0.8f * _fireCooldownScale)
             {
                 _fireTimer = 0f;
                 FireUpwardFlakBurst();
@@ -404,7 +451,7 @@ namespace VirtualRail
 
             // 2. Giàn tên lửa VLS dồn dập mỗi 2.5s
             _vlsTimer += dt;
-            if (_vlsTimer >= 2.5f)
+            if (_vlsTimer >= 2.5f * _fireCooldownScale)
             {
                 _vlsTimer = 0f;
                 FireVlsMissileSalvo();
@@ -412,7 +459,7 @@ namespace VirtualRail
 
             // 3. Chu kỳ phóng chùm Hyper Laser quét qua hành lang trung tâm mỗi 4.5s (báo trước 1.8s)
             _hyperLaserTimer += dt;
-            if (!_isChargingHyperLaser && _hyperLaserTimer >= 4.5f)
+            if (!_isChargingHyperLaser && _hyperLaserTimer >= 4.5f * _fireCooldownScale)
             {
                 _isChargingHyperLaser = true;
                 _hyperLaserTimer = 0f;
@@ -489,9 +536,10 @@ namespace VirtualRail
             }
             else if (newPhase == BossBattlePhase.Phase3_MeltdownOverdrive)
             {
-                if (_currentHealth > 330)
+                int p3Limit = Mathf.RoundToInt(_maxHealth * 0.33f);
+                if (_currentHealth > p3Limit)
                 {
-                    _currentHealth = 330;
+                    _currentHealth = p3Limit;
                 }
                 // Giữ collider rãnh lò phản ứng mở để người chơi bắn vào vùng lõi nóng chảy dứt điểm Boss
                 if (_reactorTrench != null)
@@ -618,16 +666,19 @@ namespace VirtualRail
                 InterruptAndStun();
             }
 
+            int p2Threshold = Mathf.RoundToInt(_maxHealth * 0.66f);
+            int p3Threshold = Mathf.RoundToInt(_maxHealth * 0.33f);
+
             // 3. Khấu trừ sát thương theo từng pha (không để sát thương vượt pha khi chưa hoàn thành mục tiêu pha)
             if (_currentPhase == BossBattlePhase.Phase1_DeckStrafe || _currentPhase == BossBattlePhase.IntroBreach)
             {
-                // Trong Pha 1, sát thương tháp pháo cánh không làm tụt qua mốc Pha 2 (660 HP)
-                _currentHealth = Mathf.Max(660, _currentHealth - damageDealt);
+                // Trong Pha 1, sát thương tháp pháo cánh không làm tụt qua mốc Pha 2 (66% HP)
+                _currentHealth = Mathf.Max(p2Threshold, _currentHealth - damageDealt);
             }
             else if (_currentPhase == BossBattlePhase.Phase2_ReactorTrench)
             {
-                // Trong Pha 2, sát thương chỉ làm tụt tối đa đến mốc Pha 3 (330 HP)
-                _currentHealth = Mathf.Max(330, _currentHealth - damageDealt);
+                // Trong Pha 2, sát thương chỉ làm tụt tối đa đến mốc Pha 3 (33% HP)
+                _currentHealth = Mathf.Max(p3Threshold, _currentHealth - damageDealt);
             }
             else
             {
@@ -680,9 +731,10 @@ namespace VirtualRail
                         // Nếu Rãnh Lò Phản Ứng bị phá hủy ở Pha 2 -> Tự động chuyển tiếp sang Pha 3 Cuồng Nộ
                         if (_currentPhase == BossBattlePhase.Phase2_ReactorTrench)
                         {
-                            if (_currentHealth > 330)
+                            int p3Limit = Mathf.RoundToInt(_maxHealth * 0.33f);
+                            if (_currentHealth > p3Limit)
                             {
-                                _currentHealth = 330;
+                                _currentHealth = p3Limit;
                             }
                             TransitionToPhase(BossBattlePhase.Phase3_MeltdownOverdrive);
                         }
@@ -697,7 +749,7 @@ namespace VirtualRail
             _trenchChargeTimer = 0f;
             _isChargingHyperLaser = false;
             _hyperLaserTimer = 0f;
-            _stunTimer = 4.0f; // 4.0s Stun theo spec Task 2.5.2
+            _stunTimer = _bridgeStunDuration; // DDA scaled Stun duration (4.0s base)
 
             OnBossTrenchCharging?.Invoke(false);
             OnBossStunned?.Invoke(true);
@@ -715,7 +767,7 @@ namespace VirtualRail
             if (_stunSparksPrefab != null)
             {
                 Vector3 sparkPos = (_mainBridge != null) ? _mainBridge.transform.position : transform.position + transform.up * 4f;
-                VirtualRailVFXPool.Instance.SpawnVFX(_stunSparksPrefab, sparkPos, Quaternion.identity, null, 4.0f);
+                VirtualRailVFXPool.Instance.SpawnVFX(_stunSparksPrefab, sparkPos, Quaternion.identity, null, _bridgeStunDuration);
             }
 
             VirtualRailCameraRig.TriggerShake(0.45f);
@@ -725,7 +777,7 @@ namespace VirtualRail
         {
             _isChargingTrench = false;
             _trenchChargeTimer = 0f;
-            _stunTimer = 2.0f;
+            _stunTimer = _interruptStunDuration; // DDA scaled interrupt stun (2.0s base)
             OnBossTrenchCharging?.Invoke(false);
             OnBossStunned?.Invoke(true);
 
@@ -742,7 +794,7 @@ namespace VirtualRail
             if (_stunSparksPrefab != null)
             {
                 Vector3 sparkPos = transform.position + transform.up * 4f;
-                VirtualRailVFXPool.Instance.SpawnVFX(_stunSparksPrefab, sparkPos, Quaternion.identity, null, 2.0f);
+                VirtualRailVFXPool.Instance.SpawnVFX(_stunSparksPrefab, sparkPos, Quaternion.identity, null, _interruptStunDuration);
             }
 
             VirtualRailCameraRig.TriggerShake(0.4f);
