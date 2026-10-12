@@ -185,6 +185,25 @@ public class Asteroid : MonoBehaviour, VirtualRail.IPoolableEntity
         }
     }
 
+    /// <summary>
+    /// Bị vỡ nát do tàu người chơi húc trực diện (tiêu hao 30% khiên).
+    /// Kích nổ mảnh vỡ và thu hồi về pool (không tính điểm combo thưởng).
+    /// </summary>
+    public void ShatterByPlayerCollision()
+    {
+        if (_isDestroyed) return;
+        _isDestroyed = true;
+
+        if (_cachedExplosion != null)
+        {
+            _cachedExplosion.BlowUp();
+        }
+        else
+        {
+            Recycle();
+        }
+    }
+
     public void ResetScale()
     {
         HasGrazed = false;

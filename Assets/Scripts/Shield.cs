@@ -7,18 +7,34 @@ public class Shield : MonoBehaviour
     [SerializeField] private int _currentHealth;
     [SerializeField] private int _regenerationAmount = 1;
     [Tooltip("Time in seconds")][SerializeField] private float _regenerationRate = 2f;
+    [Tooltip("Thời gian bất tử sau khi nhận sát thương (giây)")][SerializeField] private float _invulnerabilityDuration = 0.8f;
 
     public int CurrentHealth => _currentHealth;
     public int MaxHealth => _maxHealth;
+    public bool IsInvulnerable => Time.time < _invulnerableUntil;
 
     private Explosion _cachedExplosion;
     private VirtualRail.VirtualRailShip _cachedShip;
     private float _nextRegenTime;
+    private float _invulnerableUntil = 0f;
+    private bool _wasInvulnerable = false;
+    private MeshRenderer[] _shipMeshRenderers;
 
     private void Awake()
     {
         _cachedExplosion = GetComponent<Explosion>();
         _cachedShip = GetComponentInParent<VirtualRail.VirtualRailShip>();
+
+        var allRenderers = GetComponentsInChildren<MeshRenderer>(true);
+        var activeList = new System.Collections.Generic.List<MeshRenderer>();
+        for (int i = 0; i < allRenderers.Length; i++)
+        {
+            if (allRenderers[i] != null && allRenderers[i].enabled)
+            {
+                activeList.Add(allRenderers[i]);
+            }
+        }
+        _shipMeshRenderers = activeList.ToArray();
     }
 
     private void Start()
@@ -33,6 +49,36 @@ public class Shield : MonoBehaviour
         {
             _nextRegenTime = Time.time + _regenerationRate;
             Regenerate();
+        }
+
+        UpdateInvulnerabilityVisual();
+    }
+
+    private void UpdateInvulnerabilityVisual()
+    {
+        if (IsInvulnerable)
+        {
+            // Nhấp nháy hiển thị thân tàu (tần số 20Hz) trong thời gian bất tử
+            bool visible = (Mathf.FloorToInt(Time.time * 20f) % 2) == 0;
+            SetMeshRenderersVisible(visible);
+            _wasInvulnerable = true;
+        }
+        else if (_wasInvulnerable)
+        {
+            SetMeshRenderersVisible(true);
+            _wasInvulnerable = false;
+        }
+    }
+
+    private void SetMeshRenderersVisible(bool visible)
+    {
+        if (_shipMeshRenderers == null) return;
+        for (int i = 0; i < _shipMeshRenderers.Length; i++)
+        {
+            if (_shipMeshRenderers[i] != null)
+            {
+                _shipMeshRenderers[i].enabled = visible;
+            }
         }
     }
 
@@ -49,10 +95,17 @@ public class Shield : MonoBehaviour
         GameEventManager.UpdateHealthBar(Mathf.RoundToInt(_currentHealth / (float)_maxHealth * 100));
     }
 
-    public void TakeDamage(int damageAmount = 1)
+    public void TriggerInvulnerability(float duration)
+    {
+        _invulnerableUntil = Mathf.Max(_invulnerableUntil, Time.time + duration);
+    }
+
+    public void TakeDamage(int damageAmount = 1, bool ignoreInvulnerability = false)
     {
         if (_currentHealth <= 0) return;
+        if (IsInvulnerable && !ignoreInvulnerability) return;
 
+        _invulnerableUntil = Time.time + _invulnerabilityDuration;
         _currentHealth -= damageAmount;
         if (_currentHealth < 0)
         {
@@ -77,6 +130,10 @@ public class Shield : MonoBehaviour
 
     private void TriggerPlayerDeath()
     {
+        _invulnerableUntil = 0f;
+        SetMeshRenderersVisible(true);
+        _wasInvulnerable = false;
+
         VirtualRail.AudioManager.Instance?.PlaySFX2D(VirtualRail.AudioSFXType.ExplosionLarge, 1.0f);
         VirtualRail.VirtualRailCameraRig.TriggerShake(0.85f);
 
@@ -108,6 +165,9 @@ public class Shield : MonoBehaviour
     {
         _currentHealth = _maxHealth;
         _nextRegenTime = Time.time + _regenerationRate;
+        _invulnerableUntil = 0f;
+        SetMeshRenderersVisible(true);
+        _wasInvulnerable = false;
         GameEventManager.UpdateHealthBar(100);
     }
 

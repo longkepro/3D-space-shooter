@@ -382,6 +382,13 @@ namespace VirtualRail
                     if (thrusters[i] != null) thrusters[i].Intensity(0.5f);
                 }
             }
+
+            var shield = GetComponentInChildren<Shield>();
+            if (shield != null)
+            {
+                shield.ResetHealth();
+                shield.TriggerInvulnerability(1.5f);
+            }
         }
 
         private void OnDrawGizmosSelected()

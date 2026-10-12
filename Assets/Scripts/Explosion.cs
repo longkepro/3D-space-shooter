@@ -16,13 +16,22 @@ public class Explosion : MonoBehaviour
 
     private void OnCollisionEnter(Collision collision)
     {
-        foreach (var contactPoint in collision.contacts)
+        // 1. Sinh hiệu ứng nổ / tia lửa tại các điểm tiếp xúc (giới hạn tối đa 2 điểm để tối ưu hiệu năng)
+        int contactCount = collision.contacts != null ? collision.contacts.Length : 0;
+        int spawnLimit = Mathf.Min(contactCount, 2);
+        for (int i = 0; i < spawnLimit; i++)
         {
-            SpawnExplosion(contactPoint.point);
+            SpawnExplosionVFX(collision.contacts[i].point);
+        }
+
+        // 2. Xử lý sát thương khiên (CHỈ GỌI ĐÚNG 1 LẦN DUY NHẤT CHO CẢ VA CHẠM)
+        if (_shield != null)
+        {
+            HandleCollisionDamage(collision);
         }
     }
 
-    private void SpawnExplosion(Vector3 explosionPosition)
+    private void SpawnExplosionVFX(Vector3 explosionPosition)
     {
         if (_explosion != null)
         {
@@ -37,16 +46,47 @@ public class Explosion : MonoBehaviour
                 Destroy(spawnedExplosion, _explosionDuration);
             }
         }
+    }
 
-        if (_shield != null)
+    private void HandleCollisionDamage(Collision collision)
+    {
+        if (_shield == null || _shield.CurrentHealth <= 0) return;
+
+        // Kiểm tra xem vật va chạm có phải là Thiên thạch (Asteroid) không
+        var asteroid = collision.collider != null ? collision.collider.GetComponentInParent<Asteroid>() : null;
+        if (asteroid == null && collision.gameObject != null)
         {
-            _shield.TakeDamage();
+            asteroid = collision.gameObject.GetComponent<Asteroid>();
         }
+
+        if (asteroid != null)
+        {
+            if (asteroid.HazardType == AsteroidHazardType.Indestructible)
+            {
+                // Thiên thạch kim loại bất hoại: Sát thương nặng (50% khiên = 5 HP)
+                _shield.TakeDamage(5);
+                VirtualRail.VirtualRailCameraRig.TriggerShake(0.65f);
+                VirtualRail.AudioManager.Instance?.PlaySFX2D(VirtualRail.AudioSFXType.ShieldDamage, 1.0f);
+            }
+            else
+            {
+                // Thiên thạch thường có thể phá hủy: Sát thương vừa (30% khiên = 3 HP)
+                _shield.TakeDamage(3);
+                VirtualRail.VirtualRailCameraRig.TriggerShake(0.4f);
+
+                // Cú húc trực diện của tàu làm vỡ nát thiên thạch thường để giải phóng đường bay
+                asteroid.ShatterByPlayerCollision();
+            }
+            return;
+        }
+
+        // Kiểm tra va chạm với các vật cản vật lý thông thường khác (1 HP)
+        _shield.TakeDamage(1);
     }
 
     public void AddForce(Vector3 hitPosition, Transform hitSource)
     {
-        SpawnExplosion(hitPosition);
+        SpawnExplosionVFX(hitPosition);
         if (_rigidBody == null || hitSource == null) return;
         Vector3 forceDirection = (hitSource.position - transform.position).normalized;
         _rigidBody.AddForceAtPosition(forceDirection * _laserHitForce, hitPosition, ForceMode.Impulse);
