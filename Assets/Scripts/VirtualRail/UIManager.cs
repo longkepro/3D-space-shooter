@@ -11,7 +11,8 @@ namespace VirtualRail
         Settings,
         HallOfFame,
         Pause,
-        Debriefing
+        Debriefing,
+        ComicCutscene
     }
 
     /// <summary>
@@ -31,6 +32,8 @@ namespace VirtualRail
         public RectTransform pauseModal;
         public RectTransform debriefingModal;
         public RectTransform fpsDisplayRoot;
+        public RectTransform comicCutscenePanel;
+        public ComicCutsceneController comicCutsceneController;
 
         [Header("Full-Screen Backdrop (Covers 3D Demo in Menus)")]
         public CanvasGroup fullScreenBackdrop;
@@ -119,6 +122,7 @@ namespace VirtualRail
         private CanvasGroup _cgHallOfFame;
         private CanvasGroup _cgPause;
         private CanvasGroup _cgDebriefing;
+        private CanvasGroup _cgComicCutscene;
 
         private bool _isPaused = false;
         private static readonly string[] FLOAT_STRINGS = PrecomputeFloatStrings();
@@ -142,6 +146,12 @@ namespace VirtualRail
             _cgHallOfFame = EnsureCanvasGroup(hallOfFameModal);
             _cgPause = EnsureCanvasGroup(pauseModal);
             _cgDebriefing = EnsureCanvasGroup(debriefingModal);
+            _cgComicCutscene = EnsureCanvasGroup(comicCutscenePanel);
+
+            if (comicCutsceneController != null)
+            {
+                comicCutsceneController.OnComicCompleted += HandleComicCutsceneCompleted;
+            }
 
             if (fullScreenBackdrop == null)
             {
@@ -203,6 +213,11 @@ namespace VirtualRail
             GameEventManager.OnIncrementScore -= HandleScoreIncremented;
             ComboScoringEngine.OnComboScored -= HandleComboScored;
             VirtualRailStageDirector.OnAllStagesCompleted -= HandleAllStagesCompleted;
+
+            if (comicCutsceneController != null)
+            {
+                comicCutsceneController.OnComicCompleted -= HandleComicCutsceneCompleted;
+            }
         }
 
         private void Update()
@@ -279,13 +294,14 @@ namespace VirtualRail
             SetGroupVisible(_cgHallOfFame, newState == UIViewState.HallOfFame);
             SetGroupVisible(_cgPause, newState == UIViewState.Pause);
             SetGroupVisible(_cgDebriefing, newState == UIViewState.Debriefing);
+            SetGroupVisible(_cgComicCutscene, newState == UIViewState.ComicCutscene);
 
             // Cập nhật độ trong suốt mục tiêu cho màn che toàn màn hình (Full-Screen Backdrop)
-            if (newState == UIViewState.MainMenu || newState == UIViewState.HallOfFame)
+            if (newState == UIViewState.MainMenu || newState == UIViewState.HallOfFame || newState == UIViewState.ComicCutscene)
             {
                 _backdropTargetAlpha = 1.0f;
                 if (fullScreenBackdrop != null) fullScreenBackdrop.gameObject.SetActive(true);
-                if (AudioManager.Instance != null)
+                if (AudioManager.Instance != null && newState != UIViewState.ComicCutscene)
                 {
                     AudioManager.Instance.PlayMenuMusic();
                 }
@@ -538,6 +554,37 @@ namespace VirtualRail
         {
             Time.timeScale = 1.0f;
             _isPaused = false;
+
+            // Nếu có ComicCutsceneController và đã gán các trang truyện -> Trình chiếu Comic Cutscene trước khi vào trận
+            if (comicCutsceneController != null && comicCutsceneController.comicPages != null && comicCutsceneController.comicPages.Length > 0)
+            {
+                ShowState(UIViewState.ComicCutscene);
+                comicCutsceneController.StartCutscene();
+            }
+            else
+            {
+                StartGameplayActual();
+            }
+        }
+
+        public void OnMultiplayerClicked()
+        {
+            // Bắt đầu Arcade Star Fox Endless mode với Comic Cutscene dẫn nhập
+            OnSinglePlayerClicked();
+        }
+
+        private void HandleComicCutsceneCompleted()
+        {
+            StartGameplayActual();
+        }
+
+        /// <summary>
+        /// Bắt đầu gameplay thực tế (Được gọi sau khi đọc xong Comic Cutscene hoặc khi bấm Restart/Retry).
+        /// </summary>
+        public void StartGameplayActual()
+        {
+            Time.timeScale = 1.0f;
+            _isPaused = false;
             _sessionScore = 0;
             _sessionHits = 0;
             ShowState(UIViewState.Gameplay);
@@ -550,12 +597,6 @@ namespace VirtualRail
 
             // Bắt đầu game thông qua hệ thống GameEventManager
             GameEventManager.StartGame();
-        }
-
-        public void OnMultiplayerClicked()
-        {
-            // Bắt đầu Arcade Star Fox Endless mode
-            OnSinglePlayerClicked();
         }
 
         public void OnOptionsClicked()
@@ -648,7 +689,9 @@ namespace VirtualRail
             if (VirtualRailAsteroidSpawner.Instance != null) VirtualRailAsteroidSpawner.Instance.RecycleAll();
             if (EnemyProjectilePool.Instance != null) EnemyProjectilePool.Instance.ClearAllActiveProjectiles();
             if (BossF3CorvetteController.Instance != null) Destroy(BossF3CorvetteController.Instance.gameObject);
-            OnSinglePlayerClicked();
+
+            // TUYỆT ĐỐI BỎ QUA COMIC CUTSCENE KHI BẤM RETRY / RESTART
+            StartGameplayActual();
         }
 
         private void OnDebriefRestartClicked()
@@ -660,7 +703,9 @@ namespace VirtualRail
             if (VirtualRailAsteroidSpawner.Instance != null) VirtualRailAsteroidSpawner.Instance.RecycleAll();
             if (EnemyProjectilePool.Instance != null) EnemyProjectilePool.Instance.ClearAllActiveProjectiles();
             if (BossF3CorvetteController.Instance != null) Destroy(BossF3CorvetteController.Instance.gameObject);
-            OnSinglePlayerClicked();
+
+            // TUYỆT ĐỐI BỎ QUA COMIC CUTSCENE KHI BẤM RETRY / RESTART
+            StartGameplayActual();
         }
 
         private void OnPauseMainMenuClicked()
