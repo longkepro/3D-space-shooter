@@ -144,6 +144,13 @@ namespace VirtualRail
         {
             if (Instance == null) Instance = this;
 
+            // Ép hướng màn hình ngang cố định trên thiết bị di động (Mobile Landscape Lock)
+            Screen.autorotateToPortrait = false;
+            Screen.autorotateToPortraitUpsideDown = false;
+            Screen.autorotateToLandscapeLeft = true;
+            Screen.autorotateToLandscapeRight = true;
+            Screen.orientation = ScreenOrientation.AutoRotation;
+
             _cgMainMenu = EnsureCanvasGroup(mainMenuPanel);
             _cgSettings = EnsureCanvasGroup(settingsModal);
             _cgHallOfFame = EnsureCanvasGroup(hallOfFameModal);

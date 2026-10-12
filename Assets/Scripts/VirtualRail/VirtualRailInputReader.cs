@@ -50,6 +50,13 @@ namespace VirtualRail
 
         private void Awake()
         {
+            // Ép hướng màn hình ngang cố định trên thiết bị di động (Mobile Landscape Lock)
+            Screen.autorotateToPortrait = false;
+            Screen.autorotateToPortraitUpsideDown = false;
+            Screen.autorotateToLandscapeLeft = true;
+            Screen.autorotateToLandscapeRight = true;
+            Screen.orientation = ScreenOrientation.AutoRotation;
+
             if (config == null)
             {
                 var anchor = GetComponentInParent<VirtualRailAnchor>();
