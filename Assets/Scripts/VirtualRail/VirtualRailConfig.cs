@@ -418,6 +418,26 @@ namespace VirtualRail
         [Tooltip("Góc nghiêng ray tối đa (độ - chuẩn 35 độ)")]
         public float maxSplineBankAngle = 35f;
 
+        [Header("24. Golden Path Solvability Verifier (Task 4.2)")]
+        [Tooltip("Bật thuật toán bảo chứng khả thi hình học quét trước hành lang an toàn (Golden Path Raycast)")]
+        public bool enableGoldenPathVerification = true;
+        [Tooltip("Chiều rộng hộp quét an toàn (m - sải cánh tàu 10m * 1.5 = 15m)")]
+        public float goldenPathClearanceWidth = 15f;
+        [Tooltip("Chiều cao hộp quét an toàn (m - chiều cao tàu 3.5m * 1.5 = 5.25m)")]
+        public float goldenPathClearanceHeight = 5.25f;
+        [Tooltip("Góc thoát hiểm tối đa khả thi (độ - chuẩn 26.5 độ cho tỷ lệ vận tốc né tránh 1:2)")]
+        public float maxEscapeAngle = 26.5f;
+        [Tooltip("Khoảng cách bước kiểm định lát cắt dọc theo Chunk (m)")]
+        public float verificationSliceInterval = 25f;
+        [Tooltip("Số lần thử sinh lại cấu hình tối đa khi phát hiện bức tường chết (Unwinnable scenario)")]
+        public int maxReseedAttempts = 5;
+
+        [Header("25. World Origin Shifting (Task 4.3)")]
+        [Tooltip("Bật cơ chế tái định vị thế giới triệt tiêu rung giật số thực 32-bit")]
+        public bool enableWorldOriginShifting = true;
+        [Tooltip("Chu kỳ quãng đường kích hoạt dịch chuyển ngược về gốc tọa độ (m - chuẩn 4,000m)")]
+        public float originShiftThreshold = 4000f;
+
         /// <summary>
         /// Khung biên Frustum bất đối xứng (do Camera đặt trên cao Y = 5.5m và chúc xuống 5 độ).
         /// </summary>

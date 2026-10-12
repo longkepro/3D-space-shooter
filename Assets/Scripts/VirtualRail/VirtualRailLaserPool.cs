@@ -149,5 +149,19 @@ namespace VirtualRail
 
             return selectedBolt;
         }
+
+        /// <summary>
+        /// Dịch chuyển toàn bộ đạn laser của người chơi đang bay trong quá trình Tái định vị thế giới (Task 4.3).
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                if (_pool[i] != null && _pool[i].gameObject.activeSelf)
+                {
+                    _pool[i].transform.position -= shift;
+                }
+            }
+        }
     }
 }

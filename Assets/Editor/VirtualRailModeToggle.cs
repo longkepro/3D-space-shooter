@@ -3060,5 +3060,77 @@ public class VirtualRailModeToggle
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ ĐƯỜNG RAY THẲNG CỔ ĐIỂN (OFF - LEGACY):</b></color> Phi thuyền chuyển động thẳng tịnh tiến theo trục Z như trước.");
     }
+
+    [MenuItem("Tools/Virtual Rail/59. Golden Path & World Origin Shifting (ON)")]
+    [MenuItem("Tools/Virtual Rail/Solvability & Shifting/1. Enable Golden Path & Origin Shifting (ON)")]
+    public static void EnableGoldenPathAndOriginShifting()
+    {
+        var anchors = Object.FindObjectsByType<VirtualRailAnchor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < anchors.Length; i++)
+        {
+            if (anchors[i].GetComponent<VirtualRailGoldenPathVerifier>() == null)
+            {
+                anchors[i].gameObject.AddComponent<VirtualRailGoldenPathVerifier>();
+            }
+            if (anchors[i].GetComponent<VirtualRailOriginShifter>() == null)
+            {
+                anchors[i].gameObject.AddComponent<VirtualRailOriginShifter>();
+            }
+            EditorUtility.SetDirty(anchors[i]);
+        }
+
+        GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(VIRTUAL_RAIL_PREFAB);
+        if (rigPrefab != null)
+        {
+            if (rigPrefab.GetComponent<VirtualRailGoldenPathVerifier>() == null)
+            {
+                rigPrefab.AddComponent<VirtualRailGoldenPathVerifier>();
+            }
+            if (rigPrefab.GetComponent<VirtualRailOriginShifter>() == null)
+            {
+                rigPrefab.AddComponent<VirtualRailOriginShifter>();
+            }
+            EditorUtility.SetDirty(rigPrefab);
+            PrefabUtility.SavePrefabAsset(rigPrefab);
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ KÍCH HOẠT GOLDEN PATH VERIFIER & WORLD ORIGIN SHIFTER (ON):</b></color>\n" +
+                  "1. Bảo chứng khả thi hình học: Quét trước hành lang an toàn 15m x 5.25m dọc theo Chunk mới sinh.\n" +
+                  "2. Chống bức tường chết: Tự động phát hiện và giải phóng (Carve) luồng thoát hiểm góc 26.5 độ.\n" +
+                  "3. Tái định vị thế giới: Dịch chuyển toàn bộ thực thể về (0,0,0) mỗi chu kỳ 4,000m triệt tiêu rung số thực 32-bit.\n" +
+                  "4. Quãng đường tích lũy 64-bit double độc lập, bảo toàn 100% kỷ lục Telemetry HUD.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/60. Revert Solvability & Origin Shifting (OFF - Legacy)")]
+    [MenuItem("Tools/Virtual Rail/Solvability & Shifting/2. Revert Solvability & Origin Shifting (OFF - Legacy)")]
+    public static void DisableGoldenPathAndOriginShifting()
+    {
+        var verifiers = Object.FindObjectsByType<VirtualRailGoldenPathVerifier>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < verifiers.Length; i++)
+        {
+            Object.DestroyImmediate(verifiers[i]);
+        }
+
+        var shifters = Object.FindObjectsByType<VirtualRailOriginShifter>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < shifters.Length; i++)
+        {
+            Object.DestroyImmediate(shifters[i]);
+        }
+
+        GameObject rigPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(VIRTUAL_RAIL_PREFAB);
+        if (rigPrefab != null)
+        {
+            var pVerifier = rigPrefab.GetComponent<VirtualRailGoldenPathVerifier>();
+            if (pVerifier != null) Object.DestroyImmediate(pVerifier, true);
+            var pShifter = rigPrefab.GetComponent<VirtualRailOriginShifter>();
+            if (pShifter != null) Object.DestroyImmediate(pShifter, true);
+            EditorUtility.SetDirty(rigPrefab);
+            PrefabUtility.SavePrefabAsset(rigPrefab);
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN GOLDEN PATH & WORLD ORIGIN SHIFTER (OFF - LEGACY):</b></color> Trở về cơ chế spawn và tọa độ thế giới nguyên thủy.");
+    }
     #endregion
 }

@@ -836,5 +836,13 @@ namespace VirtualRail
             VirtualRailCameraRig.TriggerShake(1.0f);
             Destroy(gameObject);
         }
+
+        /// <summary>
+        /// Dịch chuyển chiến hạm trùm trong quá trình Tái định vị thế giới (Task 4.3).
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            transform.position -= shift;
+        }
     }
 }

@@ -224,6 +224,26 @@ namespace VirtualRail
                 _chunks[1] = _chunks[2];
                 _chunks[2] = GenerateNextChunk(_chunks[1], _chunkCounter++);
                 currentChunkId = _chunks[1].chunkIndex;
+
+                // Tự động kiểm định khả thi hình học cho Chunk mới sinh (Task 4.2)
+                if (VirtualRailGoldenPathVerifier.Instance != null)
+                {
+                    VirtualRailGoldenPathVerifier.Instance.VerifyAndSecureChunk(_chunks[2].startArcDistance, _chunks[2].endArcDistance);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Dịch chuyển hệ quy chiếu Spline Chunks trong quá trình Tái định vị thế giới (World Origin Shifting - Task 4.3).
+        /// 0 GC Alloc, bảo toàn chính xác đạo hàm và độ cong liên tục C2.
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                _chunks[i].p0 -= shift;
+                _chunks[i].p1 -= shift;
+                _chunks[i].c0 -= shift;
             }
         }
 

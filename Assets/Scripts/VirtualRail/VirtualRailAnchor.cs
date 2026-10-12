@@ -149,6 +149,17 @@ namespace VirtualRail
                 chunker.Initialize(transform.position, transform.forward);
             }
 
+            // Khởi tạo Golden Path Verifier & World Origin Shifter (Task 4.2 & 4.3)
+            if (GetComponent<VirtualRailGoldenPathVerifier>() == null)
+            {
+                gameObject.AddComponent<VirtualRailGoldenPathVerifier>();
+            }
+
+            if (GetComponent<VirtualRailOriginShifter>() == null)
+            {
+                gameObject.AddComponent<VirtualRailOriginShifter>();
+            }
+
             // Đảm bảo Pool đạn địch sẵn sàng
             if (EnemyProjectilePool.Instance == null)
             {
@@ -210,6 +221,10 @@ namespace VirtualRail
             if (VirtualRailSplineChunker.Instance != null)
             {
                 VirtualRailSplineChunker.Instance.ResetSpline(spawnPosition, spawnRotation * Vector3.forward);
+            }
+            if (VirtualRailOriginShifter.Instance != null)
+            {
+                VirtualRailOriginShifter.Instance.ResetDistance();
             }
 
             // 2. Phục hồi tốc độ bay ray

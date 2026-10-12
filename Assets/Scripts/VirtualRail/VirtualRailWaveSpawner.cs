@@ -982,6 +982,27 @@ namespace VirtualRail
             }
         }
 
+        /// <summary>
+        /// Dịch chuyển toàn bộ tàu địch và đội hình đang hoạt động trong quá trình Tái định vị thế giới (Task 4.3).
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                if (_pool[i] != null && _pool[i].gameObject.activeSelf)
+                {
+                    _pool[i].transform.position -= shift;
+                }
+            }
+            for (int i = 0; i < _formationPool.Count; i++)
+            {
+                if (_formationPool[i] != null && _formationPool[i].gameObject.activeSelf)
+                {
+                    _formationPool[i].transform.position -= shift;
+                }
+            }
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;

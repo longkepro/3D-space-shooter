@@ -229,10 +229,19 @@ namespace VirtualRail
             }
 
             // 2. Sinh thêm thiên thạch đón đầu khi tàu tiến lên
+            bool spawnedNew = false;
             while (playerZ + effSpawnDist > _lastSpawnZ)
             {
                 _lastSpawnZ += effZInterval;
                 SpawnSingleAsteroid(_lastSpawnZ);
+                spawnedNew = true;
+            }
+
+            // 3. Bảo chứng khả thi hình học Golden Path (Task 4.2)
+            if (spawnedNew && VirtualRailGoldenPathVerifier.Instance != null)
+            {
+                float currentDist = anchor.UseProceduralSpline ? anchor.AccumulatedArcDistance : playerZ;
+                VirtualRailGoldenPathVerifier.Instance.VerifyAndSecureChunk(currentDist, currentDist + effSpawnDist);
             }
         }
 
@@ -320,6 +329,23 @@ namespace VirtualRail
             {
                 Destroy(_poolRoot.gameObject);
                 _poolRoot = null;
+            }
+        }
+
+        public List<Asteroid> GetActiveAsteroidsBuffer() => _pool;
+
+        /// <summary>
+        /// Dịch chuyển toàn bộ thiên thạch đang hoạt động trong quá trình Tái định vị thế giới (Task 4.3).
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            _lastSpawnZ -= shift.z;
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                if (_pool[i] != null && _pool[i].gameObject.activeSelf)
+                {
+                    _pool[i].transform.position -= shift;
+                }
             }
         }
 
