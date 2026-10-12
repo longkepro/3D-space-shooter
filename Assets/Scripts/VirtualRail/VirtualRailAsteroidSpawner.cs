@@ -45,9 +45,12 @@ namespace VirtualRail
         public void ApplyStageHazardSettings(StageHazardSettings settings)
         {
             _stageEnableAsteroids = settings.enableAsteroids;
-            _stageIndestructibleChance = settings.indestructibleChance;
+            if (!_enableDDAScaling)
+            {
+                _stageIndestructibleChance = settings.indestructibleChance;
+                if (settings.asteroidZInterval > 5f) _stageSpawnZInterval = settings.asteroidZInterval;
+            }
             if (settings.asteroidSpawnDistance > 10f) _stageSpawnDistance = settings.asteroidSpawnDistance;
-            if (settings.asteroidZInterval > 5f) _stageSpawnZInterval = settings.asteroidZInterval;
 
             if (!_stageEnableAsteroids)
             {
@@ -55,41 +58,85 @@ namespace VirtualRail
             }
         }
 
-        [Header("DDA Difficulty Scaling")]
+        [Header("DDA Difficulty Scaling & Progressive Cap")]
         [SerializeField] private bool _enableDDAScaling = true;
+        [SerializeField] private int _currentMaxActiveCap = 2; // Cấp 1 ban đầu: tối đa 1-2 thiên thạch
         public bool EnableDDAScaling { get => _enableDDAScaling; set => _enableDDAScaling = value; }
+        public int CurrentMaxActiveCap => _currentMaxActiveCap;
+
+        /// <summary>
+        /// Đếm số lượng thiên thạch đang hoạt động trên màn hình (0 GC Alloc).
+        /// </summary>
+        public int GetActiveAsteroidCount()
+        {
+            int count = 0;
+            for (int i = 0; i < _pool.Count; i++)
+            {
+                if (_pool[i] != null && _pool[i].gameObject.activeSelf)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
 
         /// <summary>
         /// Cập nhật mật độ và chướng ngại vật thích ứng theo DDA Threat Level (0 GC Alloc).
+        /// Độ khó tăng dần 5 bậc:
+        /// - Cấp 1 (0-45s): Khởi động (Warmup) -> Tối đa 2 thiên thạch, khoảng cách 140m, 0% bất hoại (1-2 thiên thạch trên màn hình).
+        /// - Cấp 2 (45-90s): Cảnh giác (Alert) -> Tối đa 3 thiên thạch, khoảng cách 95m, 10% bất hoại.
+        /// - Cấp 3 (90-135s): Tăng tốc (Pressure) -> Tối đa 5 thiên thạch, khoảng cách 65m, 20% bất hoại.
+        /// - Cấp 4 (135-180s): Bão đá (Meteor Shower) -> Tối đa 7 thiên thạch, khoảng cách 45m, 30% bất hoại.
+        /// - Cấp 5+ (>180s): Hỗn độn (Overdrive) -> Tối đa 9-10 thiên thạch, khoảng cách 30m, 40% bất hoại.
         /// </summary>
         public void SetThreatLevelScaling(int threatLevel)
         {
             if (!_enableDDAScaling) return;
 
-            var cfg = anchor != null ? anchor.config : null;
-            float baseInterval = (cfg != null && cfg.asteroidZInterval > 5f) ? cfg.asteroidZInterval : 35f;
-            float baseChance = (cfg != null) ? cfg.indestructibleAsteroidChance : 0.15f;
-
-            // Giảm khoảng cách Z giữa các thiên thạch (tăng mật độ): từ base xuống tối thiểu 22m (-2m mỗi bậc ThreatLevel)
-            _stageSpawnZInterval = Mathf.Max(22f, baseInterval - (threatLevel - 1) * 2.0f);
-
-            // Tăng nhẹ tỉ lệ thiên thạch bất hoại: từ base lên tối đa 40% (+4% mỗi bậc ThreatLevel)
-            _stageIndestructibleChance = Mathf.Min(0.40f, baseChance + (threatLevel - 1) * 0.04f);
+            switch (threatLevel)
+            {
+                case 1:
+                    _currentMaxActiveCap = 2;
+                    _stageSpawnZInterval = 140f;
+                    _stageIndestructibleChance = 0f;
+                    break;
+                case 2:
+                    _currentMaxActiveCap = 3;
+                    _stageSpawnZInterval = 95f;
+                    _stageIndestructibleChance = 0.10f;
+                    break;
+                case 3:
+                    _currentMaxActiveCap = 5;
+                    _stageSpawnZInterval = 65f;
+                    _stageIndestructibleChance = 0.20f;
+                    break;
+                case 4:
+                    _currentMaxActiveCap = 7;
+                    _stageSpawnZInterval = 45f;
+                    _stageIndestructibleChance = 0.30f;
+                    break;
+                default: // Threat Level >= 5
+                    int extra = threatLevel - 5;
+                    _currentMaxActiveCap = Mathf.Min(12, 8 + extra);
+                    _stageSpawnZInterval = Mathf.Max(26f, 35f - extra * 2f);
+                    _stageIndestructibleChance = Mathf.Min(0.40f, 0.35f + extra * 0.02f);
+                    break;
+            }
         }
 
         /// <summary>
-        /// Khôi phục thông số thiên thạch về mặc định ban đầu (0 GC Alloc).
+        /// Khôi phục thông số thiên thạch về mặc định ban đầu Cấp 1 (0 GC Alloc).
         /// </summary>
         public void ResetThreatLevelScaling()
         {
-            _stageSpawnZInterval = -1f;
-            _stageIndestructibleChance = -1f;
+            SetThreatLevelScaling(1);
         }
 
         private void Awake()
         {
             if (Instance == null) Instance = this;
             InitializePool();
+            SetThreatLevelScaling(1);
         }
 
         private void Start()
@@ -183,14 +230,19 @@ namespace VirtualRail
         private void PrewarmCorridor(float currentZ)
         {
             var cfg = anchor != null ? anchor.config : null;
-            float effSpawnDist = cfg != null ? cfg.asteroidSpawnDistance : spawnDistance;
-            float effZInterval = cfg != null ? cfg.asteroidZInterval : spawnZInterval;
+            float effSpawnDist = _stageSpawnDistance > 0f ? _stageSpawnDistance : (cfg != null ? cfg.asteroidSpawnDistance : spawnDistance);
+            float effZInterval = _stageSpawnZInterval > 0f ? _stageSpawnZInterval : (cfg != null ? cfg.asteroidZInterval : spawnZInterval);
 
-            for (float z = currentZ + 80f; z < currentZ + effSpawnDist; z += effZInterval)
+            // Tiền tạo vừa đủ theo trần số lượng cho phép của giai đoạn hiện tại (Cấp 1: đúng 1 thiên thạch đón đầu ở cự ly an toàn 120m)
+            int prewarmCount = Mathf.Min(_currentMaxActiveCap, 1);
+            float spawnZ = currentZ + 120f;
+
+            for (int i = 0; i < prewarmCount; i++)
             {
-                SpawnSingleAsteroid(z);
+                SpawnSingleAsteroid(spawnZ);
+                spawnZ += effZInterval;
             }
-            _lastSpawnZ = currentZ + effSpawnDist;
+            _lastSpawnZ = Mathf.Max(spawnZ, currentZ + effSpawnDist);
         }
 
         private void Update()
@@ -228,13 +280,21 @@ namespace VirtualRail
                 }
             }
 
-            // 2. Sinh thêm thiên thạch đón đầu khi tàu tiến lên
+            // 2. Sinh thêm thiên thạch đón đầu khi tàu tiến lên (khống chế theo Active Cap độ khó tăng dần)
             bool spawnedNew = false;
             while (playerZ + effSpawnDist > _lastSpawnZ)
             {
                 _lastSpawnZ += effZInterval;
-                SpawnSingleAsteroid(_lastSpawnZ);
-                spawnedNew = true;
+                if (GetActiveAsteroidCount() < _currentMaxActiveCap)
+                {
+                    SpawnSingleAsteroid(_lastSpawnZ);
+                    spawnedNew = true;
+                }
+                else
+                {
+                    // Đã đạt trần thiên thạch tối đa cho phép ở cấp độ hiện tại -> hoãn sinh thêm
+                    break;
+                }
             }
 
             // 3. Bảo chứng khả thi hình học Golden Path (Task 4.2)
