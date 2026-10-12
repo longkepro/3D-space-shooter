@@ -43,7 +43,6 @@ namespace VirtualRail
 
         [Header("Main Menu Controls")]
         public Button btnSinglePlayer;
-        public Button btnMultiplayer;
         public Button btnOptions;
         public Button btnHallOfFame;
         public Button btnQuit;
@@ -146,6 +145,11 @@ namespace VirtualRail
             _cgHallOfFame = EnsureCanvasGroup(hallOfFameModal);
             _cgPause = EnsureCanvasGroup(pauseModal);
             _cgDebriefing = EnsureCanvasGroup(debriefingModal);
+            if (comicCutscenePanel == null)
+            {
+                EnsureComicCutscenePanelRuntime();
+            }
+
             _cgComicCutscene = EnsureCanvasGroup(comicCutscenePanel);
 
             if (comicCutsceneController != null)
@@ -198,6 +202,18 @@ namespace VirtualRail
             if (oldMainMenu != null) oldMainMenu.SetActive(false);
             GameObject oldGameUI = GameObject.Find("Game UI");
             if (oldGameUI != null) oldGameUI.SetActive(false);
+
+            // Tự động triệt tiêu nút Multiplayer cũ và chuẩn hóa cự ly 4 nút Menu chính
+            if (mainMenuPanel != null)
+            {
+                Transform mp = mainMenuPanel.Find("Btn_Multiplayer");
+                if (mp != null) mp.gameObject.SetActive(false);
+
+                if (btnSinglePlayer != null) ((RectTransform)btnSinglePlayer.transform).anchoredPosition = new Vector2(0f, -80f);
+                if (btnOptions != null) ((RectTransform)btnOptions.transform).anchoredPosition = new Vector2(0f, -145f);
+                if (btnHallOfFame != null) ((RectTransform)btnHallOfFame.transform).anchoredPosition = new Vector2(0f, -210f);
+                if (btnQuit != null) ((RectTransform)btnQuit.transform).anchoredPosition = new Vector2(0f, -275f);
+            }
 
             // Khởi đầu ở Main Menu
             ShowState(UIViewState.MainMenu);
@@ -279,6 +295,153 @@ namespace VirtualRail
             CanvasGroup cg = rt.GetComponent<CanvasGroup>();
             if (cg == null) cg = rt.gameObject.AddComponent<CanvasGroup>();
             return cg;
+        }
+
+        private void EnsureComicCutscenePanelRuntime()
+        {
+            Transform existing = transform.Find("ComicCutscenePanel");
+            if (existing != null)
+            {
+                comicCutscenePanel = existing.GetComponent<RectTransform>();
+                if (comicCutsceneController == null) comicCutsceneController = existing.GetComponent<ComicCutsceneController>();
+                return;
+            }
+
+            GameObject prefab = Resources.Load<GameObject>("ComicCutscenePanel");
+            if (prefab != null)
+            {
+                GameObject inst = Instantiate(prefab, transform, false);
+                inst.name = "ComicCutscenePanel";
+                comicCutscenePanel = inst.GetComponent<RectTransform>();
+                comicCutsceneController = inst.GetComponent<ComicCutsceneController>();
+                return;
+            }
+
+            // Tự động dựng ComicCutscenePanel nếu chưa có trong Scene lẫn Prefab
+            GameObject panelObj = new GameObject("ComicCutscenePanel", typeof(RectTransform), typeof(CanvasGroup));
+            panelObj.transform.SetParent(transform, false);
+            panelObj.transform.SetSiblingIndex(Mathf.Max(0, transform.childCount - 3));
+
+            RectTransform panelRt = panelObj.GetComponent<RectTransform>();
+            panelRt.anchorMin = Vector2.zero;
+            panelRt.anchorMax = Vector2.one;
+            panelRt.offsetMin = Vector2.zero;
+            panelRt.offsetMax = Vector2.zero;
+
+            CanvasGroup panelCg = panelObj.GetComponent<CanvasGroup>();
+            panelCg.alpha = 0f;
+            panelCg.interactable = false;
+            panelCg.blocksRaycasts = false;
+            panelObj.SetActive(false);
+
+            ComicCutsceneController controller = panelObj.AddComponent<ComicCutsceneController>();
+            controller.cutsceneCanvasGroup = panelCg;
+
+            // 1. Nền mờ Backdrop màu đen thẫm
+            GameObject bgObj = new GameObject("BackdropBackground", typeof(RectTransform), typeof(Image));
+            bgObj.transform.SetParent(panelRt, false);
+            bgObj.transform.SetAsFirstSibling();
+            RectTransform bgRt = bgObj.GetComponent<RectTransform>();
+            bgRt.anchorMin = Vector2.zero;
+            bgRt.anchorMax = Vector2.one;
+            bgRt.offsetMin = Vector2.zero;
+            bgRt.offsetMax = Vector2.zero;
+            Image bgImg = bgObj.GetComponent<Image>();
+            bgImg.color = new Color(0.04f, 0.05f, 0.08f, 0.98f);
+            bgImg.raycastTarget = true;
+
+            // 2. Khung ảnh truyện tranh chính (ComicPageDisplay)
+            GameObject displayObj = new GameObject("ComicPageDisplay", typeof(RectTransform), typeof(Image), typeof(AspectRatioFitter));
+            displayObj.transform.SetParent(panelRt, false);
+            RectTransform displayRt = displayObj.GetComponent<RectTransform>();
+            displayRt.anchorMin = new Vector2(0.02f, 0.02f);
+            displayRt.anchorMax = new Vector2(0.98f, 0.98f);
+            displayRt.offsetMin = Vector2.zero;
+            displayRt.offsetMax = Vector2.zero;
+            Image displayImg = displayObj.GetComponent<Image>();
+            displayImg.preserveAspect = true;
+            displayImg.raycastTarget = false;
+
+            AspectRatioFitter arf = displayObj.GetComponent<AspectRatioFitter>();
+            arf.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            arf.aspectRatio = 1376f / 768f;
+
+            controller.comicDisplayImage = displayImg;
+
+            // 3. Nút TIẾP THEO >> (BtnNext)
+            controller.btnNext = CreateCutsceneButtonRuntime(panelRt, "BtnNext", "TIẾP THEO >>", new Vector2(1f, 0.05f), new Vector2(1f, 0.05f), new Vector2(-120f, 40f), new Vector2(200f, 55f));
+
+            // 4. Nút << TRƯỚC (BtnPrev)
+            controller.btnPrev = CreateCutsceneButtonRuntime(panelRt, "BtnPrev", "<< TRƯỚC", new Vector2(0f, 0.05f), new Vector2(0f, 0.05f), new Vector2(120f, 40f), new Vector2(170f, 55f));
+
+            // 5. Nút BỎ QUA [ESC] (BtnSkip)
+            controller.btnSkip = CreateCutsceneButtonRuntime(panelRt, "BtnSkip", "BỎ QUA [ESC] >>", new Vector2(1f, 0.95f), new Vector2(1f, 0.95f), new Vector2(-110f, -30f), new Vector2(190f, 45f), new Color(0.85f, 0.25f, 0.25f, 0.9f));
+
+            // 6. Text Chỉ Số Trang (TxtPageIndicator)
+            GameObject indObj = new GameObject("TxtPageIndicator", typeof(RectTransform), typeof(Text));
+            indObj.transform.SetParent(panelRt, false);
+            RectTransform indRt = indObj.GetComponent<RectTransform>();
+            indRt.anchorMin = new Vector2(0.5f, 0.05f);
+            indRt.anchorMax = new Vector2(0.5f, 0.05f);
+            indRt.anchoredPosition = new Vector2(0f, 40f);
+            indRt.sizeDelta = new Vector2(220f, 40f);
+
+            Text indTxt = indObj.GetComponent<Text>();
+            Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            indTxt.font = font;
+            indTxt.fontSize = 20;
+            indTxt.fontStyle = FontStyle.Bold;
+            indTxt.alignment = TextAnchor.MiddleCenter;
+            indTxt.color = new Color(0.2f, 0.9f, 1f, 1f);
+            indTxt.text = "TRANG 1 / 4";
+            controller.txtPageIndicator = indTxt;
+
+            comicCutscenePanel = panelRt;
+            comicCutsceneController = controller;
+        }
+
+        private Button CreateCutsceneButtonRuntime(RectTransform parent, string name, string textLabel, Vector2 anchorMin, Vector2 anchorMax, Vector2 pos, Vector2 size, Color? buttonColor = null)
+        {
+            GameObject btnObj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            btnObj.transform.SetParent(parent, false);
+
+            RectTransform rt = btnObj.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+
+            Image img = btnObj.GetComponent<Image>();
+            img.color = buttonColor ?? new Color(0.08f, 0.45f, 0.85f, 0.95f);
+
+            Button btn = btnObj.GetComponent<Button>();
+            ColorBlock cb = btn.colors;
+            cb.normalColor = Color.white;
+            cb.highlightedColor = new Color(1.2f, 1.2f, 1.2f, 1f);
+            cb.pressedColor = new Color(0.7f, 0.7f, 0.7f, 1f);
+            btn.colors = cb;
+
+            GameObject txtObj = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            txtObj.transform.SetParent(rt, false);
+
+            RectTransform txtRt = txtObj.GetComponent<RectTransform>();
+            txtRt.anchorMin = Vector2.zero;
+            txtRt.anchorMax = Vector2.one;
+            txtRt.offsetMin = Vector2.zero;
+            txtRt.offsetMax = Vector2.zero;
+
+            Text txt = txtObj.GetComponent<Text>();
+            Font font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            txt.font = font;
+            txt.fontSize = 17;
+            txt.fontStyle = FontStyle.Bold;
+            txt.alignment = TextAnchor.MiddleCenter;
+            txt.color = Color.white;
+            txt.text = textLabel;
+
+            return btn;
         }
 
         private void SetGroupVisible(CanvasGroup cg, bool visible)
@@ -370,7 +533,6 @@ namespace VirtualRail
         private void SetupButtonListeners()
         {
             if (btnSinglePlayer != null) btnSinglePlayer.onClick.AddListener(OnSinglePlayerClicked);
-            if (btnMultiplayer != null) btnMultiplayer.onClick.AddListener(OnMultiplayerClicked);
             if (btnOptions != null) btnOptions.onClick.AddListener(OnOptionsClicked);
             if (btnHallOfFame != null) btnHallOfFame.onClick.AddListener(OnHallOfFameClicked);
             if (btnQuit != null) btnQuit.onClick.AddListener(OnQuitClicked);
@@ -575,12 +737,6 @@ namespace VirtualRail
             {
                 StartGameplayActual();
             }
-        }
-
-        public void OnMultiplayerClicked()
-        {
-            // Bắt đầu Arcade Star Fox Endless mode với Comic Cutscene dẫn nhập
-            OnSinglePlayerClicked();
         }
 
         private void HandleComicCutsceneCompleted()

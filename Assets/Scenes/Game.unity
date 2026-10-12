@@ -3327,7 +3327,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &234173449
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6978,7 +6978,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -275}
+  m_AnchoredPosition: {x: 0, y: -210}
   m_SizeDelta: {x: 240, y: 52}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &576480781
@@ -9779,7 +9779,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -210}
+  m_AnchoredPosition: {x: 0, y: -145}
   m_SizeDelta: {x: 240, y: 52}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &834302163
@@ -18215,7 +18215,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -340}
+  m_AnchoredPosition: {x: 0, y: -275}
   m_SizeDelta: {x: 240, y: 52}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1435230471
@@ -20226,7 +20226,6 @@ MonoBehaviour:
   fullScreenBackdrop: {fileID: 1769691764}
   backdropImage: {fileID: 1769691765}
   btnSinglePlayer: {fileID: 1305565538}
-  btnMultiplayer: {fileID: 234173450}
   btnOptions: {fileID: 834302163}
   btnHallOfFame: {fileID: 576480781}
   btnQuit: {fileID: 1435230471}
@@ -21771,7 +21770,6 @@ RectTransform:
   m_Children:
   - {fileID: 1115368100}
   - {fileID: 1305565537}
-  - {fileID: 234173449}
   - {fileID: 834302162}
   - {fileID: 576480780}
   - {fileID: 1435230470}

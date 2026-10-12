@@ -285,7 +285,6 @@ namespace VirtualRail.Editor
 
             // 4 Pill Buttons Stack (Clean, focused 4-button layout for Endless Arcade)
             uiMgr.btnSinglePlayer = CreatePillButton("Btn_StartGame", mmObj.transform, new Vector2(0f, -80f), "LAUNCH MISSION", font, spBtn, spBtnHover, spBtnPressed);
-            uiMgr.btnMultiplayer = null;
             uiMgr.btnOptions = CreatePillButton("Btn_Options", mmObj.transform, new Vector2(0f, -145f), "OPTIONS", font, spBtn, spBtnHover, spBtnPressed);
             uiMgr.btnHallOfFame = CreatePillButton("Btn_HallOfFame", mmObj.transform, new Vector2(0f, -210f), "HALL OF FAME", font, spBtn, spBtnHover, spBtnPressed);
             uiMgr.btnQuit = CreatePillButton("Btn_Quit", mmObj.transform, new Vector2(0f, -275f), "QUIT GAME", font, spBtn, spBtnHover, spBtnPressed);
