@@ -748,6 +748,14 @@ namespace VirtualRail
                 PopulateHallOfFameRows();
             }
 
+            if (newState == UIViewState.Pause || newState == UIViewState.Settings)
+            {
+                if (SettingsManager.Instance != null)
+                {
+                    SyncAimSensitivitySliders(SettingsManager.Instance.mobileAimSensitivity);
+                }
+            }
+
             // Tự động đồng bộ HUD buồng lái và tâm ngắm bắn
             if (ModernCockpitHUD.Instance != null)
             {
@@ -940,6 +948,128 @@ namespace VirtualRail
                 inputPilotCallsign.onValueChanged.RemoveAllListeners();
                 inputPilotCallsign.onValueChanged.AddListener(val => mgr.pilotCallsign = val.ToUpper());
             }
+
+            // Mobile Aim Sensitivity Sliders (Tab Controls & Pause Modal)
+            SetupAimSensitivityUI();
+        }
+
+        private Slider _sliderAimControls;
+        private Slider _sliderAimPause;
+        private Text _txtAimControlsVal;
+        private Text _txtAimPauseVal;
+
+        private void SetupAimSensitivityUI()
+        {
+            var mgr = SettingsManager.Instance;
+            float currentVal = (mgr != null) ? mgr.mobileAimSensitivity : 1.0f;
+
+            // 1. Setup trong Tab Controls của Settings
+            if (tabControlsContent != null && _sliderAimControls == null)
+            {
+                _sliderAimControls = CreateAimSensitivityRow(tabControlsContent.transform, new Vector2(0f, -135f), new Vector2(340f, 22f), "MOBILE AIM SENSITIVITY", out _txtAimControlsVal);
+            }
+
+            // 2. Setup trực tiếp trên Pause Modal (truy cập nhanh 1-chạm khi đang chơi)
+            if (pauseModal != null && _sliderAimPause == null)
+            {
+                pauseModal.sizeDelta = new Vector2(440f, 455f);
+                _sliderAimPause = CreateAimSensitivityRow(pauseModal.transform, new Vector2(0f, -385f), new Vector2(300f, 20f), "AIM SENSITIVITY", out _txtAimPauseVal, true);
+            }
+
+            SyncAimSensitivitySliders(currentVal);
+        }
+
+        private Slider CreateAimSensitivityRow(Transform parent, Vector2 pos, Vector2 size, string title, out Text outValTxt, bool anchorTop = false)
+        {
+            outValTxt = null;
+            if (sliderVolMaster == null || parent == null) return null;
+
+            string cleanId = title.Replace(" ", "");
+            Transform existing = parent.Find("AimSensContainer_" + cleanId);
+            if (existing != null)
+            {
+                outValTxt = existing.GetComponentInChildren<Text>();
+                return existing.GetComponentInChildren<Slider>();
+            }
+
+            GameObject container = new GameObject("AimSensContainer_" + cleanId);
+            container.transform.SetParent(parent, false);
+            RectTransform cRt = container.AddComponent<RectTransform>();
+            if (anchorTop)
+            {
+                cRt.anchorMin = new Vector2(0.5f, 1f);
+                cRt.anchorMax = new Vector2(0.5f, 1f);
+                cRt.pivot = new Vector2(0.5f, 0.5f);
+            }
+            else
+            {
+                cRt.anchorMin = new Vector2(0.5f, 0.5f);
+                cRt.anchorMax = new Vector2(0.5f, 0.5f);
+                cRt.pivot = new Vector2(0.5f, 0.5f);
+            }
+            cRt.anchoredPosition = pos;
+            cRt.sizeDelta = new Vector2(size.x, size.y + 26f);
+
+            // Label Text
+            GameObject labelObj = new GameObject("Label");
+            labelObj.transform.SetParent(container.transform, false);
+            RectTransform lRt = labelObj.AddComponent<RectTransform>();
+            lRt.anchorMin = new Vector2(0f, 1f);
+            lRt.anchorMax = new Vector2(1f, 1f);
+            lRt.pivot = new Vector2(0.5f, 1f);
+            lRt.anchoredPosition = Vector2.zero;
+            lRt.sizeDelta = new Vector2(size.x, 22f);
+
+            Text labelTxt = labelObj.AddComponent<Text>();
+            Font font = (txtMusicVolVal != null && txtMusicVolVal.font != null) ? txtMusicVolVal.font : Resources.GetBuiltinResource<Font>("Arial.ttf");
+            labelTxt.font = font;
+            labelTxt.fontSize = 12;
+            labelTxt.fontStyle = FontStyle.Bold;
+            labelTxt.alignment = TextAnchor.MiddleCenter;
+            labelTxt.color = new Color(0f, 0.95f, 1f, 1f);
+            outValTxt = labelTxt;
+
+            // Clone Slider từ sliderVolMaster
+            GameObject sObj = Instantiate(sliderVolMaster.gameObject, container.transform);
+            sObj.name = "Slider";
+            RectTransform sRt = sObj.GetComponent<RectTransform>();
+            sRt.anchorMin = new Vector2(0.5f, 0f);
+            sRt.anchorMax = new Vector2(0.5f, 0f);
+            sRt.pivot = new Vector2(0.5f, 0f);
+            sRt.anchoredPosition = Vector2.zero;
+            sRt.sizeDelta = size;
+
+            Slider s = sObj.GetComponent<Slider>();
+            s.minValue = 0.3f;
+            s.maxValue = 2.2f;
+            s.wholeNumbers = false;
+
+            s.onValueChanged.RemoveAllListeners();
+            s.onValueChanged.AddListener(val =>
+            {
+                if (SettingsManager.Instance != null)
+                {
+                    SettingsManager.Instance.SetMobileAimSensitivity(val);
+                }
+                SyncAimSensitivitySliders(val);
+            });
+
+            return s;
+        }
+
+        private void SyncAimSensitivitySliders(float val)
+        {
+            string txt = $"{val:F1}x";
+            if (_sliderAimControls != null && Mathf.Abs(_sliderAimControls.value - val) > 0.01f)
+            {
+                _sliderAimControls.value = val;
+            }
+            if (_sliderAimPause != null && Mathf.Abs(_sliderAimPause.value - val) > 0.01f)
+            {
+                _sliderAimPause.value = val;
+            }
+            if (_txtAimControlsVal != null) _txtAimControlsVal.text = $"MOBILE AIM SENSITIVITY: {txt}";
+            if (_txtAimPauseVal != null) _txtAimPauseVal.text = $"AIM SENSITIVITY: {txt}";
         }
 
         private float _lastSfxSampleTime = 0f;

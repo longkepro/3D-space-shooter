@@ -135,21 +135,23 @@ namespace VirtualRail
             if (inputReader != null && inputReader.IsRightStickActive)
             {
                 // ==================== CHẾ ĐỘ CẦN GẠT ẢO PHẢI (ANDROID RIGHT JOYSTICK) ====================
-                Vector2 aimStick = inputReader.GetAimMovement() * cfg.mobileAimSensitivity;
+                float sensitivity = (cfg != null) ? cfg.mobileAimSensitivity : 1.0f;
+                Vector2 aimStick = inputReader.GetAimMovement();
 
                 float baseSpeedX = (currentBounds.HalfWidth > 0.001f) ? (cfg.reticleSpeedX / currentBounds.HalfWidth) : 1.5f;
                 float baseSpeedY = (currentBounds.HalfHeight > 0.001f) ? (cfg.reticleSpeedY / currentBounds.HalfHeight) : 1.5f;
 
-                // Tăng tốc độ phản hồi Mobile tức thì (khử 100% độ trễ/delay ngắm bắn):
-                // - Đẩy nhẹ (< 0.4): Hệ số ~2.5x hỗ trợ vi chỉnh mục tiêu mượt mà
-                // - Đẩy mạnh (> 0.4): Gia tốc lũy tiến lên đến 5.5x để lia tâm ngắm nhạy bén ngang tốc độ thân tàu
+                // Chuẩn hóa đường cong gia tốc công thái học (Hướng 1):
+                // - Đẩy nhẹ (< 0.4): Hệ số ~1.15x giúp vi chỉnh micro-aiming cực kỳ đầm, chắc tay, không rung giật
+                // - Đẩy mạnh (> 0.4): Gia tốc lũy tiến mượt mà lên ~2.85x để chuyển hướng mục tiêu nhanh nhẹn
+                // - Nhân với độ nhạy người dùng tùy chỉnh (Hướng 3: Sensitivity Slider 0.3x - 2.2x)
                 float stickMag = aimStick.magnitude;
-                float responseMultiplier = Mathf.Lerp(2.5f, 5.5f, stickMag * stickMag);
+                float responseMultiplier = Mathf.Lerp(1.15f, 2.85f, stickMag * stickMag);
 
-                float speedNormX = baseSpeedX * responseMultiplier;
-                float speedNormY = baseSpeedY * responseMultiplier;
+                float speedNormX = baseSpeedX * responseMultiplier * sensitivity;
+                float speedNormY = baseSpeedY * responseMultiplier * sensitivity;
 
-                // Tích lũy vị trí ngắm theo độ lệch cần gạt (nhả tay đứng yên, phản hồi nhanh nhạy tức thì)
+                // Tích lũy vị trí ngắm theo độ lệch cần gạt (nhả tay đứng yên, chuyển động đầm chắc tay)
                 currentNormalizedInput.x = Mathf.Clamp(currentNormalizedInput.x + aimStick.x * speedNormX * Time.deltaTime, -1f, 1f);
                 currentNormalizedInput.y = Mathf.Clamp(currentNormalizedInput.y + aimStick.y * speedNormY * Time.deltaTime, -1f, 1f);
 

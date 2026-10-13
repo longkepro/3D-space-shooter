@@ -24,6 +24,7 @@ namespace VirtualRail
         public const string PREF_VOL_MUSIC = "Settings_VolumeMusic";
         public const string PREF_VOL_SFX = "Settings_VolumeSFX";
         public const string PREF_PILOT_CALLSIGN = "Settings_PilotCallsign";
+        public const string PREF_MOBILE_AIM_SENSITIVITY = "Settings_MobileAimSensitivity";
 
         [Header("Runtime State")]
         public int resolutionIndex;
@@ -38,6 +39,7 @@ namespace VirtualRail
         public float volumeMusic = 0.8f;
         public float volumeSFX = 0.9f;
         public string pilotCallsign = "FOX McCLOUD";
+        public float mobileAimSensitivity = 1.0f;
 
         public event Action OnSettingsChanged;
 
@@ -70,6 +72,7 @@ namespace VirtualRail
             volumeMusic = PlayerPrefs.GetFloat(PREF_VOL_MUSIC, 0.8f);
             volumeSFX = PlayerPrefs.GetFloat(PREF_VOL_SFX, 0.9f);
             pilotCallsign = PlayerPrefs.GetString(PREF_PILOT_CALLSIGN, "FOX McCLOUD");
+            mobileAimSensitivity = PlayerPrefs.GetFloat(PREF_MOBILE_AIM_SENSITIVITY, 1.0f);
         }
 
         public void SaveSettings()
@@ -86,6 +89,7 @@ namespace VirtualRail
             PlayerPrefs.SetFloat(PREF_VOL_MUSIC, volumeMusic);
             PlayerPrefs.SetFloat(PREF_VOL_SFX, volumeSFX);
             PlayerPrefs.SetString(PREF_PILOT_CALLSIGN, string.IsNullOrEmpty(pilotCallsign) ? "FOX McCLOUD" : pilotCallsign);
+            PlayerPrefs.SetFloat(PREF_MOBILE_AIM_SENSITIVITY, mobileAimSensitivity);
             PlayerPrefs.Save();
 
             ApplyAllSettings();
@@ -106,6 +110,7 @@ namespace VirtualRail
             volumeMusic = 0.8f;
             volumeSFX = 0.9f;
             pilotCallsign = "FOX McCLOUD";
+            mobileAimSensitivity = 1.0f;
 
             SaveSettings();
         }
@@ -140,6 +145,27 @@ namespace VirtualRail
                 AudioManager.Instance.SetMusicVolume(volumeMusic * volumeMaster);
                 AudioManager.Instance.SetSfxVolume(volumeSFX * volumeMaster);
             }
+
+            // 5. Mobile Aim Sensitivity
+            var anchor = FindAnyObjectByType<VirtualRailAnchor>();
+            if (anchor != null && anchor.config != null)
+            {
+                anchor.config.mobileAimSensitivity = mobileAimSensitivity;
+            }
+        }
+
+        public void SetMobileAimSensitivity(float val)
+        {
+            mobileAimSensitivity = Mathf.Clamp(val, 0.3f, 2.5f);
+            PlayerPrefs.SetFloat(PREF_MOBILE_AIM_SENSITIVITY, mobileAimSensitivity);
+            PlayerPrefs.Save();
+
+            var anchor = FindAnyObjectByType<VirtualRailAnchor>();
+            if (anchor != null && anchor.config != null)
+            {
+                anchor.config.mobileAimSensitivity = mobileAimSensitivity;
+            }
+            OnSettingsChanged?.Invoke();
         }
 
         public int GetCurrentResolutionIndex()
