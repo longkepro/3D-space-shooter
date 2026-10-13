@@ -256,6 +256,12 @@ namespace VirtualRail
                 if (btnQuit != null) ((RectTransform)btnQuit.transform).anchoredPosition = new Vector2(0f, -275f);
             }
 
+            // Tự động tinh chỉnh tỉ lệ giao diện (Responsive Layout) tương thích hoàn hảo thiết bị di động
+            if (Application.isMobilePlatform || IsForceMobileMode())
+            {
+                ApplyMobileResponsiveLayout();
+            }
+
             // Khởi đầu ở Màn hình Bìa ngoài cùng (Title Screen)
             ShowState(UIViewState.TitleScreen);
             if (titleScreenController != null)
@@ -315,6 +321,11 @@ namespace VirtualRail
 
         private void Update()
         {
+            if (!_mobileLayoutApplied && (Application.isMobilePlatform || IsForceMobileMode()))
+            {
+                ApplyMobileResponsiveLayout();
+            }
+
             // Smooth zero-allocation fade for full-screen backdrop (0 GC Alloc)
             if (fullScreenBackdrop != null)
             {
@@ -990,24 +1001,35 @@ namespace VirtualRail
         {
             var mgr = SettingsManager.Instance;
             float currentVal = (mgr != null) ? mgr.mobileAimSensitivity : 1.0f;
+            bool isMobile = Application.isMobilePlatform || IsForceMobileMode();
 
             // 1. Setup trong Tab Controls của Settings
             if (tabControlsContent != null && _sliderAimControls == null)
             {
-                _sliderAimControls = CreateAimSensitivityRow(tabControlsContent.transform, new Vector2(0f, -135f), new Vector2(340f, 22f), "MOBILE AIM SENSITIVITY", out _txtAimControlsVal);
+                Vector2 pos = isMobile ? new Vector2(0f, -145f) : new Vector2(0f, -135f);
+                Vector2 size = isMobile ? new Vector2(420f, 28f) : new Vector2(340f, 22f);
+                _sliderAimControls = CreateAimSensitivityRow(tabControlsContent.transform, pos, size, "MOBILE AIM SENSITIVITY", out _txtAimControlsVal, false, isMobile);
             }
 
             // 2. Setup trực tiếp trên Pause Modal (truy cập nhanh 1-chạm khi đang chơi)
             if (pauseModal != null && _sliderAimPause == null)
             {
-                pauseModal.sizeDelta = new Vector2(440f, 455f);
-                _sliderAimPause = CreateAimSensitivityRow(pauseModal.transform, new Vector2(0f, -385f), new Vector2(300f, 20f), "AIM SENSITIVITY", out _txtAimPauseVal, true);
+                if (isMobile)
+                {
+                    pauseModal.sizeDelta = new Vector2(580f, 580f);
+                    _sliderAimPause = CreateAimSensitivityRow(pauseModal.transform, new Vector2(0f, -465f), new Vector2(420f, 28f), "AIM SENSITIVITY", out _txtAimPauseVal, true, true);
+                }
+                else
+                {
+                    pauseModal.sizeDelta = new Vector2(440f, 455f);
+                    _sliderAimPause = CreateAimSensitivityRow(pauseModal.transform, new Vector2(0f, -385f), new Vector2(300f, 20f), "AIM SENSITIVITY", out _txtAimPauseVal, true, false);
+                }
             }
 
             SyncAimSensitivitySliders(currentVal);
         }
 
-        private Slider CreateAimSensitivityRow(Transform parent, Vector2 pos, Vector2 size, string title, out Text outValTxt, bool anchorTop = false)
+        private Slider CreateAimSensitivityRow(Transform parent, Vector2 pos, Vector2 size, string title, out Text outValTxt, bool anchorTop = false, bool isMobile = false)
         {
             outValTxt = null;
             if (sliderVolMaster == null || parent == null) return null;
@@ -1036,7 +1058,7 @@ namespace VirtualRail
                 cRt.pivot = new Vector2(0.5f, 0.5f);
             }
             cRt.anchoredPosition = pos;
-            cRt.sizeDelta = new Vector2(size.x, size.y + 26f);
+            cRt.sizeDelta = new Vector2(size.x, size.y + (isMobile ? 36f : 26f));
 
             // Label Text
             GameObject labelObj = new GameObject("Label");
@@ -1046,12 +1068,12 @@ namespace VirtualRail
             lRt.anchorMax = new Vector2(1f, 1f);
             lRt.pivot = new Vector2(0.5f, 1f);
             lRt.anchoredPosition = Vector2.zero;
-            lRt.sizeDelta = new Vector2(size.x, 22f);
+            lRt.sizeDelta = new Vector2(size.x, isMobile ? 28f : 22f);
 
             Text labelTxt = labelObj.AddComponent<Text>();
             Font font = (txtMusicVolVal != null && txtMusicVolVal.font != null) ? txtMusicVolVal.font : Resources.GetBuiltinResource<Font>("Arial.ttf");
             labelTxt.font = font;
-            labelTxt.fontSize = 12;
+            labelTxt.fontSize = isMobile ? 16 : 12;
             labelTxt.fontStyle = FontStyle.Bold;
             labelTxt.alignment = TextAnchor.MiddleCenter;
             labelTxt.color = new Color(0f, 0.95f, 1f, 1f);
@@ -1098,6 +1120,263 @@ namespace VirtualRail
             }
             if (_txtAimControlsVal != null) _txtAimControlsVal.text = $"MOBILE AIM SENSITIVITY: {txt}";
             if (_txtAimPauseVal != null) _txtAimPauseVal.text = $"AIM SENSITIVITY: {txt}";
+        }
+
+        private bool _mobileLayoutApplied = false;
+
+        public bool IsForceMobileMode()
+        {
+            var reader = FindAnyObjectByType<VirtualRailInputReader>();
+            return reader != null && reader.config != null && reader.config.forceShowMobileUI;
+        }
+
+        private void SetModalButton(Button btn, Vector2 pos, Vector2 size, int fontSize)
+        {
+            if (btn == null) return;
+            RectTransform rt = btn.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                rt.anchoredPosition = pos;
+                rt.sizeDelta = size;
+            }
+            Text txt = btn.GetComponentInChildren<Text>();
+            if (txt != null)
+            {
+                txt.fontSize = fontSize;
+                txt.fontStyle = FontStyle.Bold;
+            }
+        }
+
+        /// <summary>
+        /// Tự động thích ứng giao diện menu và các hộp thoại pop-up cho thiết bị di động (Mobile Responsive UI).
+        /// Mở rộng kích thước nút bấm đạt chuẩn 48dp+ chống bấm nhầm, nâng cỡ chữ từ 14 lên 20-26pt giúp dễ đọc trên màn hình điện thoại.
+        /// </summary>
+        public void ApplyMobileResponsiveLayout()
+        {
+            if (_mobileLayoutApplied) return;
+            _mobileLayoutApplied = true;
+
+            // 1. MAIN MENU RESPONSIVE (Màn hình chính)
+            if (mainMenuPanel != null)
+            {
+                mainMenuPanel.sizeDelta = new Vector2(480f, 560f);
+
+                Transform titleT = mainMenuPanel.Find("HeaderTitle");
+                if (titleT != null)
+                {
+                    Text tTxt = titleT.GetComponent<Text>();
+                    if (tTxt != null) tTxt.fontSize = 26;
+                    RectTransform tRt = titleT.GetComponent<RectTransform>();
+                    if (tRt != null) tRt.sizeDelta = new Vector2(400f, 40f);
+                }
+
+                SetModalButton(btnSinglePlayer, new Vector2(0f, -95f), new Vector2(380f, 74f), 20);
+                SetModalButton(btnOptions, new Vector2(0f, -185f), new Vector2(380f, 74f), 20);
+                SetModalButton(btnHallOfFame, new Vector2(0f, -275f), new Vector2(380f, 74f), 20);
+                SetModalButton(btnQuit, new Vector2(0f, -365f), new Vector2(380f, 74f), 20);
+            }
+
+            // 2. PAUSE MODAL RESPONSIVE (Menu Tạm dừng trong trận)
+            if (pauseModal != null)
+            {
+                pauseModal.sizeDelta = new Vector2(580f, 580f);
+
+                Transform pTitle = pauseModal.Find("PauseTitle");
+                if (pTitle != null)
+                {
+                    Text tTxt = pTitle.GetComponent<Text>();
+                    if (tTxt != null) tTxt.fontSize = 26;
+                }
+
+                SetModalButton(btnPauseResume, new Vector2(0f, -95f), new Vector2(420f, 70f), 20);
+                SetModalButton(btnPauseOptions, new Vector2(0f, -180f), new Vector2(420f, 70f), 20);
+                SetModalButton(btnPauseRestart, new Vector2(0f, -265f), new Vector2(420f, 70f), 20);
+                SetModalButton(btnPauseMainMenu, new Vector2(0f, -350f), new Vector2(420f, 70f), 20);
+
+                Transform aimSensT = pauseModal.Find("AimSensContainer_AIMSENSITIVITY");
+                if (aimSensT != null)
+                {
+                    RectTransform aRt = aimSensT.GetComponent<RectTransform>();
+                    if (aRt != null)
+                    {
+                        aRt.anchoredPosition = new Vector2(0f, -465f);
+                        aRt.sizeDelta = new Vector2(420f, 60f);
+                    }
+                    Transform lT = aimSensT.Find("Label");
+                    if (lT != null)
+                    {
+                        Text lTxt = lT.GetComponent<Text>();
+                        if (lTxt != null) lTxt.fontSize = 16;
+                    }
+                    Transform sT = aimSensT.Find("Slider");
+                    if (sT != null)
+                    {
+                        RectTransform sRt = sT.GetComponent<RectTransform>();
+                        if (sRt != null) sRt.sizeDelta = new Vector2(420f, 28f);
+                    }
+                }
+            }
+
+            // 3. SETTINGS MODAL RESPONSIVE (Bảng Cài đặt)
+            if (settingsModal != null)
+            {
+                settingsModal.sizeDelta = new Vector2(920f, 580f);
+
+                // Resize tabs
+                float tabWidth = 190f;
+                float tabHeight = 48f;
+                float tabGap = 10f;
+                float startX = 30f;
+
+                Button[] tabs = new Button[] { tabVideo, tabAudio, tabPlayers, tabControls };
+                for (int i = 0; i < tabs.Length; i++)
+                {
+                    if (tabs[i] != null)
+                    {
+                        RectTransform tRt = tabs[i].GetComponent<RectTransform>();
+                        if (tRt != null)
+                        {
+                            tRt.anchoredPosition = new Vector2(startX + i * (tabWidth + tabGap), 24f);
+                            tRt.sizeDelta = new Vector2(tabWidth, tabHeight);
+                        }
+                        Text tTxt = tabs[i].GetComponentInChildren<Text>();
+                        if (tTxt != null)
+                        {
+                            tTxt.fontSize = 16;
+                            tTxt.fontStyle = FontStyle.Bold;
+                        }
+                    }
+                }
+
+                // Action buttons at the bottom
+                SetModalButton(btnSettingsApply, new Vector2(-230f, 36f), new Vector2(200f, 54f), 18);
+                SetModalButton(btnSettingsDefaults, new Vector2(0f, 36f), new Vector2(200f, 54f), 18);
+                SetModalButton(btnSettingsExit, new Vector2(230f, 36f), new Vector2(200f, 54f), 18);
+                if (btnSettingsCloseX != null)
+                {
+                    RectTransform xRt = btnSettingsCloseX.GetComponent<RectTransform>();
+                    if (xRt != null) xRt.sizeDelta = new Vector2(48f, 48f);
+                    Text xTxt = btnSettingsCloseX.GetComponentInChildren<Text>();
+                    if (xTxt != null) xTxt.fontSize = 22;
+                }
+
+                // Tăng kích thước chữ cho tất cả các nhãn cài đặt
+                Text[] allSettingsTexts = settingsModal.GetComponentsInChildren<Text>(true);
+                for (int i = 0; i < allSettingsTexts.Length; i++)
+                {
+                    Text t = allSettingsTexts[i];
+                    if (t != null && t.fontSize > 0 && t.fontSize < 16)
+                    {
+                        t.fontSize = Mathf.Min(t.fontSize + 4, 18);
+                    }
+                }
+
+                // Mở rộng bề dày thanh kéo Slider trong Settings để ngón tay dễ trượt
+                Slider[] allSliders = settingsModal.GetComponentsInChildren<Slider>(true);
+                for (int i = 0; i < allSliders.Length; i++)
+                {
+                    RectTransform sRt = allSliders[i].GetComponent<RectTransform>();
+                    if (sRt != null && sRt.sizeDelta.y < 28f)
+                    {
+                        sRt.sizeDelta = new Vector2(Mathf.Max(sRt.sizeDelta.x, 320f), 28f);
+                    }
+                }
+            }
+
+            // 4. DEBRIEFING MODAL RESPONSIVE (Báo cáo kết thúc màn)
+            if (debriefingModal != null)
+            {
+                debriefingModal.sizeDelta = new Vector2(680f, 600f);
+
+                Transform dTitle = debriefingModal.Find("DebriefTitle");
+                if (dTitle != null)
+                {
+                    Text tTxt = dTitle.GetComponent<Text>();
+                    if (tTxt != null) tTxt.fontSize = 26;
+                }
+
+                if (txtDebriefScore != null)
+                {
+                    txtDebriefScore.fontSize = 22;
+                    RectTransform rt = txtDebriefScore.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.anchoredPosition = new Vector2(0f, 90f);
+                        rt.sizeDelta = new Vector2(580f, 44f);
+                    }
+                }
+
+                if (txtDebriefHits != null)
+                {
+                    txtDebriefHits.fontSize = 22;
+                    RectTransform rt = txtDebriefHits.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.anchoredPosition = new Vector2(0f, 35f);
+                        rt.sizeDelta = new Vector2(580f, 44f);
+                    }
+                }
+
+                if (txtDebriefRank != null)
+                {
+                    txtDebriefRank.fontSize = 24;
+                    RectTransform rt = txtDebriefRank.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.anchoredPosition = new Vector2(0f, -20f);
+                        rt.sizeDelta = new Vector2(580f, 48f);
+                    }
+                }
+
+                SetModalButton(btnDebriefRestart, new Vector2(0f, -410f), new Vector2(380f, 68f), 20);
+                SetModalButton(btnDebriefMainMenu, new Vector2(0f, -495f), new Vector2(380f, 68f), 20);
+
+                Transform telemGrid = debriefingModal.Find("TelemetryGrid");
+                if (telemGrid != null)
+                {
+                    RectTransform tgRt = telemGrid.GetComponent<RectTransform>();
+                    if (tgRt != null) tgRt.sizeDelta = new Vector2(620f, 260f);
+                }
+                Transform rankBox = debriefingModal.Find("RankBox");
+                if (rankBox != null)
+                {
+                    RectTransform rbRt = rankBox.GetComponent<RectTransform>();
+                    if (rbRt != null) rbRt.sizeDelta = new Vector2(620f, 60f);
+                }
+            }
+
+            // 5. HALL OF FAME MODAL RESPONSIVE (Bảng vàng thành tích)
+            if (hallOfFameModal != null)
+            {
+                hallOfFameModal.sizeDelta = new Vector2(920f, 620f);
+
+                Transform banner = hallOfFameModal.Find("BannerText");
+                if (banner != null)
+                {
+                    Text bTxt = banner.GetComponent<Text>();
+                    if (bTxt != null) bTxt.fontSize = 24;
+                }
+
+                SetModalButton(btnHallOfFameClose, new Vector2(0f, 36f), new Vector2(280f, 60f), 20);
+                if (btnHallOfFameCloseX != null)
+                {
+                    RectTransform xRt = btnHallOfFameCloseX.GetComponent<RectTransform>();
+                    if (xRt != null) xRt.sizeDelta = new Vector2(48f, 48f);
+                    Text xTxt = btnHallOfFameCloseX.GetComponentInChildren<Text>();
+                    if (xTxt != null) xTxt.fontSize = 22;
+                }
+
+                // Tăng kích thước phông chữ bảng thành tích
+                Text[] allHofTexts = hallOfFameModal.GetComponentsInChildren<Text>(true);
+                for (int i = 0; i < allHofTexts.Length; i++)
+                {
+                    Text t = allHofTexts[i];
+                    if (t != null && t.fontSize > 0 && t.fontSize < 16)
+                    {
+                        t.fontSize = Mathf.Min(t.fontSize + 4, 18);
+                    }
+                }
+            }
         }
 
         private float _lastSfxSampleTime = 0f;
