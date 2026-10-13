@@ -25,6 +25,7 @@ namespace VirtualRail
         public const string PREF_VOL_SFX = "Settings_VolumeSFX";
         public const string PREF_PILOT_CALLSIGN = "Settings_PilotCallsign";
         public const string PREF_MOBILE_AIM_SENSITIVITY = "Settings_MobileAimSensitivity";
+        public const string PREF_UNLOCK_MOBILE_FPS = "Settings_UnlockMobileFPS";
 
         [Header("Runtime State")]
         public int resolutionIndex;
@@ -34,6 +35,7 @@ namespace VirtualRail
         public int targetFramerate = 60;
         public bool showFPS = false;
         public int qualityLevel = 2;
+        public bool unlockMobileFramerate = true;
 
         public float volumeMaster = 1.0f;
         public float volumeMusic = 0.8f;
@@ -42,6 +44,18 @@ namespace VirtualRail
         public float mobileAimSensitivity = 1.0f;
 
         public event Action OnSettingsChanged;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void InitMobilePerformancePolicy()
+        {
+            if (Application.isMobilePlatform)
+            {
+                // Mở khóa 60 FPS ngay lập tức từ frame đầu tiên trước khi nạp scene trên Mobile
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = 60;
+                Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            }
+        }
 
         private void Awake()
         {
@@ -73,6 +87,7 @@ namespace VirtualRail
             volumeSFX = PlayerPrefs.GetFloat(PREF_VOL_SFX, 0.9f);
             pilotCallsign = PlayerPrefs.GetString(PREF_PILOT_CALLSIGN, "FOX McCLOUD");
             mobileAimSensitivity = PlayerPrefs.GetFloat(PREF_MOBILE_AIM_SENSITIVITY, 1.0f);
+            unlockMobileFramerate = PlayerPrefs.GetInt(PREF_UNLOCK_MOBILE_FPS, 1) == 1;
         }
 
         public void SaveSettings()
@@ -90,6 +105,7 @@ namespace VirtualRail
             PlayerPrefs.SetFloat(PREF_VOL_SFX, volumeSFX);
             PlayerPrefs.SetString(PREF_PILOT_CALLSIGN, string.IsNullOrEmpty(pilotCallsign) ? "FOX McCLOUD" : pilotCallsign);
             PlayerPrefs.SetFloat(PREF_MOBILE_AIM_SENSITIVITY, mobileAimSensitivity);
+            PlayerPrefs.SetInt(PREF_UNLOCK_MOBILE_FPS, unlockMobileFramerate ? 1 : 0);
             PlayerPrefs.Save();
 
             ApplyAllSettings();
@@ -111,13 +127,20 @@ namespace VirtualRail
             volumeSFX = 0.9f;
             pilotCallsign = "FOX McCLOUD";
             mobileAimSensitivity = 1.0f;
+            unlockMobileFramerate = true;
 
             SaveSettings();
         }
 
         public void ApplyAllSettings()
         {
-            // 1. Resolution & Fullscreen (Chỉ áp dụng trên Desktop PC/Mac, tuyệt đối không ép độ phân giải trên Mobile để chống kéo dãn màn hình)
+            // 1. Quality Level (Thiết lập trước để không ghi đè cấu hình VSync/Framerate tùy chỉnh phía sau)
+            if (qualityLevel >= 0 && qualityLevel < QualitySettings.names.Length)
+            {
+                QualitySettings.SetQualityLevel(qualityLevel, true);
+            }
+
+            // 2. Resolution & Fullscreen (Chỉ áp dụng trên Desktop PC/Mac, tuyệt đối không ép độ phân giải trên Mobile để chống kéo dãn màn hình)
             if (!Application.isMobilePlatform)
             {
                 Resolution[] resList = Screen.resolutions;
@@ -129,14 +152,20 @@ namespace VirtualRail
                 }
             }
 
-            // 2. VSync & Framerate
-            QualitySettings.vSyncCount = isVSync ? 1 : 0;
-            Application.targetFrameRate = isVSync ? -1 : targetFramerate;
-
-            // 3. Quality Level
-            if (qualityLevel >= 0 && qualityLevel < QualitySettings.names.Length)
+            // 3. VSync & Framerate (Thiết lập sau Quality Level để tránh bị Unity khôi phục vSyncCount=1 gây khóa cứng 30fps trên Android)
+            if (Application.isMobilePlatform && unlockMobileFramerate)
             {
-                QualitySettings.SetQualityLevel(qualityLevel, true);
+                // Trên Mobile: Hệ điều hành Android/iOS đã có bộ chia nhịp phần cứng (Choreographer/SurfaceFlinger).
+                // Phải tắt vSyncCount của Unity (= 0) và gán targetFrameRate rõ ràng (tối thiểu 60 FPS) để mở khóa 60-120 FPS mượt mà.
+                QualitySettings.vSyncCount = 0;
+                Application.targetFrameRate = (targetFramerate > 0) ? targetFramerate : 60;
+                Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            }
+            else
+            {
+                // Desktop PC hoặc chế độ Legacy: Áp dụng logic chuẩn theo VSync
+                QualitySettings.vSyncCount = isVSync ? 1 : 0;
+                Application.targetFrameRate = isVSync ? -1 : targetFramerate;
             }
 
             // 4. Audio
@@ -152,6 +181,15 @@ namespace VirtualRail
             {
                 anchor.config.mobileAimSensitivity = mobileAimSensitivity;
             }
+        }
+
+        public void SetUnlockMobileFramerate(bool enable)
+        {
+            unlockMobileFramerate = enable;
+            PlayerPrefs.SetInt(PREF_UNLOCK_MOBILE_FPS, unlockMobileFramerate ? 1 : 0);
+            PlayerPrefs.Save();
+            ApplyAllSettings();
+            OnSettingsChanged?.Invoke();
         }
 
         public void SetMobileAimSensitivity(float val)

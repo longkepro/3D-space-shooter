@@ -3476,4 +3476,38 @@ public class VirtualRailModeToggle
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN CẤU HÌNH ĐẠN ĐỊCH VỀ LEGACY (OFF - LEGACY):</b></color> Xóa liên kết Prefab đạn để quay về cơ chế sinh thủ tục.");
     }
     #endregion
+
+    #region Mobile Frame Rate & Performance
+    [MenuItem("Tools/Virtual Rail/Performance/1. Unlock Mobile 60-120 FPS Mode (ON - Spec)")]
+    public static void UnlockMobile60FPSMode()
+    {
+        VirtualRail.SettingsManager mgr = Object.FindAnyObjectByType<VirtualRail.SettingsManager>();
+        if (mgr != null)
+        {
+            mgr.SetUnlockMobileFramerate(true);
+            EditorUtility.SetDirty(mgr);
+        }
+        PlayerPrefs.SetInt(VirtualRail.SettingsManager.PREF_UNLOCK_MOBILE_FPS, 1);
+        PlayerPrefs.Save();
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
+        Debug.Log("<color=green><b>[VirtualRail] ĐÃ MỞ KHÓA 60-120 FPS CHO MOBILE (ON - SPEC):</b></color> Đã tắt Unity vSyncCount (= 0) và thiết lập targetFrameRate >= 60 trên mobile.");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Performance/2. Revert Mobile Frame Rate to Legacy 30 FPS Cap (OFF - Legacy)")]
+    public static void RevertMobileFrameRateToLegacy()
+    {
+        VirtualRail.SettingsManager mgr = Object.FindAnyObjectByType<VirtualRail.SettingsManager>();
+        if (mgr != null)
+        {
+            mgr.SetUnlockMobileFramerate(false);
+            EditorUtility.SetDirty(mgr);
+        }
+        PlayerPrefs.SetInt(VirtualRail.SettingsManager.PREF_UNLOCK_MOBILE_FPS, 0);
+        PlayerPrefs.Save();
+        QualitySettings.vSyncCount = 1;
+        Application.targetFrameRate = -1;
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN VỀ MỨC KHÓA 30 FPS CỦA UNITY (OFF - LEGACY):</b></color> vSyncCount = 1, targetFrameRate = -1 (30 FPS throttle trên mobile).");
+    }
+    #endregion
 }
