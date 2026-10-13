@@ -326,8 +326,8 @@ namespace VirtualRail
 
             var cfg = anchor.config;
 
-            // Nếu không bị điều khiển bởi VirtualRailWeapon, hỗ trợ Chuột phải (Fire2) độc lập
-            if (!_weaponDrivesCharge)
+            // Nếu không bị điều khiển bởi VirtualRailWeapon, hỗ trợ Chuột phải (Fire2) độc lập (Chỉ dành cho PC, tránh đa chạm Mobile kích hoạt nhầm)
+            if (!_weaponDrivesCharge && !Application.isMobilePlatform)
             {
                 bool rightClickHeld = Input.GetButton("Fire2");
 

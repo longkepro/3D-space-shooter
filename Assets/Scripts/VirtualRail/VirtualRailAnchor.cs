@@ -186,8 +186,9 @@ namespace VirtualRail
             }
 
             // Kiểm tra boost và brake (hỗ trợ đồng thời cả PC bàn phím lẫn Mobile Touch)
-            bool boostRequested = (Input.GetAxis("Fire3") > 0.1f || Input.GetKey(KeyCode.LeftShift)) || (_cachedInputReader != null && _cachedInputReader.IsBoosting());
-            bool brakeRequested = (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C) || Input.GetKey(KeyCode.S)) || (_cachedInputReader != null && _cachedInputReader.IsBraking());
+            bool isPc = !Application.isMobilePlatform;
+            bool boostRequested = (isPc && (Input.GetAxis("Fire3") > 0.1f || Input.GetKey(KeyCode.LeftShift))) || (_cachedInputReader != null && _cachedInputReader.IsBoosting());
+            bool brakeRequested = (isPc && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C) || Input.GetKey(KeyCode.S))) || (_cachedInputReader != null && _cachedInputReader.IsBraking());
 
             // Ưu tiên: Hãm phanh (Brake) sẽ ghi đè Tăng tốc (Boost) nếu kích hoạt đồng thời
             isBraking = brakeRequested;
