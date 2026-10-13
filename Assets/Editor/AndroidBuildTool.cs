@@ -23,7 +23,6 @@ namespace VirtualRail.Editor
         }
 
         private static bool _isBuilding = false;
-        private static bool _isWaitingForCompile = false;
         private static int _settleFrames = 0;
 
         private static void CheckAutoBuildTrigger()
@@ -32,26 +31,28 @@ namespace VirtualRail.Editor
 
             if (File.Exists(FLAG_FILE))
             {
-                try { File.Delete(FLAG_FILE); } catch { }
-                AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-                _isWaitingForCompile = true;
-                _settleFrames = 25;
-                File.WriteAllText(STATUS_FILE, $"WAITING: Waiting for domain reload at {DateTime.Now:HH:mm:ss}");
-                return;
-            }
-
-            if (_isWaitingForCompile)
-            {
-                if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+                bool refreshDone = SessionState.GetBool("AndroidBuild_RefreshDone", false);
+                if (!refreshDone)
                 {
-                    _settleFrames = 25;
+                    SessionState.SetBool("AndroidBuild_RefreshDone", true);
+                    AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+                    File.WriteAllText(STATUS_FILE, $"WAITING: Refreshing assets and waiting for compile at {DateTime.Now:HH:mm:ss}");
                     return;
                 }
 
-                _settleFrames--;
-                if (_settleFrames > 0) return;
+                if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+                {
+                    _settleFrames = 0;
+                    return;
+                }
 
-                _isWaitingForCompile = false;
+                _settleFrames++;
+                if (_settleFrames < 20) return;
+
+                // Done settling! Clear session state and delete flag file
+                SessionState.EraseBool("AndroidBuild_RefreshDone");
+                try { File.Delete(FLAG_FILE); } catch { }
+                _settleFrames = 0;
                 _isBuilding = true;
                 try
                 {
@@ -61,6 +62,11 @@ namespace VirtualRail.Editor
                 {
                     _isBuilding = false;
                 }
+            }
+            else
+            {
+                SessionState.EraseBool("AndroidBuild_RefreshDone");
+                _settleFrames = 0;
             }
         }
 
