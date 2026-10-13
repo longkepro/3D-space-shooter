@@ -3412,4 +3412,68 @@ public class VirtualRailModeToggle
         Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN ÂM LƯỢNG SẠC ĐẠN CŨ (OFF - LEGACY):</b></color> Trở lại mức âm lượng lớn nguyên bản.");
     }
     #endregion
+
+    #region APK Enemy Projectile Pool Toggles (Task: Fix Enemy Shooting on APK)
+    private const string ENEMY_PROJECTILE_RESOURCES_PATH = "Prefabs/EnemyProjectile_PlasmaOrb";
+    private const string ENEMY_IMPACT_RESOURCES_PATH = "Prefabs/CFX4_Hit_B_Orange";
+
+    [MenuItem("Tools/Virtual Rail/Projectiles/3. Ensure APK Projectile Pool Resources (ON - Spec)")]
+    public static void EnsureAPKProjectilePoolResources()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        GameObject projPrefab = Resources.Load<GameObject>(ENEMY_PROJECTILE_RESOURCES_PATH);
+        if (projPrefab == null)
+        {
+            projPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyProjectile_PlasmaOrb.prefab");
+        }
+
+        GameObject hitPrefab = Resources.Load<GameObject>(ENEMY_IMPACT_RESOURCES_PATH);
+        if (hitPrefab == null)
+        {
+            hitPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX4 Hit B (Orange).prefab");
+        }
+
+        if (cfg != null)
+        {
+            cfg.useEnhancedPlasmaProjectiles = true;
+            if (projPrefab != null) cfg.enemyProjectilePrefab = projPrefab;
+            if (hitPrefab != null) cfg.enemyImpactVFXPrefab = hitPrefab;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+
+        EnemyProjectilePool pool = Object.FindAnyObjectByType<EnemyProjectilePool>();
+        if (pool != null)
+        {
+            if (projPrefab != null) pool.SetProjectilePrefab(projPrefab);
+            if (hitPrefab != null) pool.SetImpactVFXPrefab(hitPrefab);
+            EditorUtility.SetDirty(pool);
+        }
+
+        Debug.Log("<color=cyan><b>[VirtualRail] ĐÃ BẢO ĐẢM TÀI NGUYÊN ĐẠN ĐỊCH CHO APK (ON - SPEC):</b></color> Prefab đạn và Impact FX đã sẵn sàng trong Resources/Prefabs và liên kết vào Config!");
+    }
+
+    [MenuItem("Tools/Virtual Rail/Projectiles/4. Revert APK Projectile Pool to Legacy (OFF - Legacy)")]
+    public static void RevertAPKProjectilePoolToLegacy()
+    {
+        VirtualRailConfig cfg = AssetDatabase.LoadAssetAtPath<VirtualRailConfig>(CONFIG_PATH);
+        if (cfg != null)
+        {
+            cfg.enemyProjectilePrefab = null;
+            cfg.enemyImpactVFXPrefab = null;
+            EditorUtility.SetDirty(cfg);
+            AssetDatabase.SaveAssets();
+        }
+
+        EnemyProjectilePool pool = Object.FindAnyObjectByType<EnemyProjectilePool>();
+        if (pool != null)
+        {
+            pool.SetProjectilePrefab(null);
+            pool.SetImpactVFXPrefab(null);
+            EditorUtility.SetDirty(pool);
+        }
+
+        Debug.Log("<color=yellow><b>[VirtualRail] ĐÃ HOÀN NGUYÊN CẤU HÌNH ĐẠN ĐỊCH VỀ LEGACY (OFF - LEGACY):</b></color> Xóa liên kết Prefab đạn để quay về cơ chế sinh thủ tục.");
+    }
+    #endregion
 }

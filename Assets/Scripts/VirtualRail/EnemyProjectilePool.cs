@@ -70,24 +70,54 @@ namespace VirtualRail
         {
             if (_isInitialized) return;
 
-            // 1. Tu dong nap Impact FX neu chua duoc gan
+            // 1. Tự động nạp từ VirtualRailConfig nếu có
+            var config = (VirtualRailAnchor.Instance != null) ? VirtualRailAnchor.Instance.config : null;
+            if (config != null)
+            {
+                if (projectilePrefab == null && config.enemyProjectilePrefab != null)
+                {
+                    projectilePrefab = config.enemyProjectilePrefab;
+                }
+                if (impactVFXPrefab == null && config.enemyImpactVFXPrefab != null)
+                {
+                    impactVFXPrefab = config.enemyImpactVFXPrefab;
+                }
+            }
+
+            // 2. Tự động nạp Impact FX nếu chưa được gán
             if (impactVFXPrefab == null)
             {
+                impactVFXPrefab = Resources.Load<GameObject>("Prefabs/CFX4_Hit_B_Orange");
 #if UNITY_EDITOR
-                impactVFXPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX4 Hit B (Orange).prefab");
+                if (impactVFXPrefab == null)
+                {
+                    impactVFXPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Asset Store/JMO Assets/Cartoon FX/Prefabs/CFX4 Hit B (Orange).prefab");
+                }
 #endif
             }
 
-            // 2. Tu dong nap Prefab dan chuan tu thu muc Prefabs neu chua duoc gan
+            // 3. Tự động nạp Prefab đạn chuẩn từ Resources hoặc Prefabs nếu chưa được gán
             if (projectilePrefab == null)
             {
-#if UNITY_EDITOR
-                projectilePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyProjectile_PlasmaOrb.prefab");
-#endif
+                projectilePrefab = Resources.Load<GameObject>("Prefabs/EnemyProjectile_PlasmaOrb");
+                if (projectilePrefab == null)
+                {
+                    projectilePrefab = Resources.Load<GameObject>("Prefabs/EnemyProjectile_BrightRed");
+                }
                 if (projectilePrefab == null)
                 {
                     projectilePrefab = Resources.Load<GameObject>("EnemyProjectile_PlasmaOrb");
                 }
+#if UNITY_EDITOR
+                if (projectilePrefab == null)
+                {
+                    projectilePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyProjectile_PlasmaOrb.prefab");
+                }
+                if (projectilePrefab == null)
+                {
+                    projectilePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyProjectile_BrightRed.prefab");
+                }
+#endif
                 if (projectilePrefab == null)
                 {
                     projectilePrefab = CreateDefaultPlasmaOrbTemplate();
@@ -131,7 +161,11 @@ namespace VirtualRail
             corona.transform.SetParent(visualRoot.transform, false);
             corona.transform.localScale = Vector3.one * 1.2f;
             var coronaCol = corona.GetComponent<Collider>();
-            if (coronaCol != null) DestroyImmediate(coronaCol);
+            if (coronaCol != null)
+            {
+                if (Application.isPlaying) Destroy(coronaCol);
+                else DestroyImmediate(coronaCol);
+            }
 
             Renderer coronaRend = corona.GetComponent<Renderer>();
             if (coronaRend != null)
@@ -146,10 +180,17 @@ namespace VirtualRail
 #endif
                 if (coronaMat == null)
                 {
-                    coronaMat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
-                    coronaMat.color = new Color(1f, 0.35f, 0.05f, 1f);
+                    Shader coronaShader = Shader.Find("Mobile/Particles/Additive")
+                        ?? Shader.Find("Particles/Additive")
+                        ?? Shader.Find("Particles/Standard Unlit")
+                        ?? Shader.Find("Sprites/Default");
+                    if (coronaShader != null)
+                    {
+                        coronaMat = new Material(coronaShader);
+                        coronaMat.color = new Color(1f, 0.35f, 0.05f, 1f);
+                    }
                 }
-                coronaRend.sharedMaterial = coronaMat;
+                if (coronaMat != null) coronaRend.sharedMaterial = coronaMat;
             }
 
             // Tang 2: Loi trang phat sang sieu nhiet (White-Hot Inner Core)
@@ -158,7 +199,11 @@ namespace VirtualRail
             core.transform.SetParent(visualRoot.transform, false);
             core.transform.localScale = Vector3.one * 0.55f;
             var coreCol = core.GetComponent<Collider>();
-            if (coreCol != null) DestroyImmediate(coreCol);
+            if (coreCol != null)
+            {
+                if (Application.isPlaying) Destroy(coreCol);
+                else DestroyImmediate(coreCol);
+            }
 
             Renderer coreRend = core.GetComponent<Renderer>();
             if (coreRend != null)
@@ -169,12 +214,18 @@ namespace VirtualRail
 #endif
                 if (coreMat == null)
                 {
-                    Shader coreShader = Shader.Find("VirtualRail/PlasmaOrbCore") ?? Shader.Find("Unlit/Color");
-                    coreMat = new Material(coreShader);
-                    coreMat.SetColor("_CoreColor", new Color(3.0f, 2.8f, 2.2f, 1.0f));
-                    coreMat.SetColor("_RimColor", new Color(2.5f, 1.0f, 0.1f, 1.0f));
+                    Shader coreShader = Shader.Find("VirtualRail/PlasmaOrbCore")
+                        ?? Shader.Find("Mobile/Particles/Additive")
+                        ?? Shader.Find("Particles/Additive")
+                        ?? Shader.Find("Sprites/Default");
+                    if (coreShader != null)
+                    {
+                        coreMat = new Material(coreShader);
+                        coreMat.SetColor("_CoreColor", new Color(3.0f, 2.8f, 2.2f, 1.0f));
+                        coreMat.SetColor("_RimColor", new Color(2.5f, 1.0f, 0.1f, 1.0f));
+                    }
                 }
-                coreRend.sharedMaterial = coreMat;
+                if (coreMat != null) coreRend.sharedMaterial = coreMat;
             }
 
             // Tang 3: Vet duoi Ribbon Trail nang luong
@@ -194,6 +245,13 @@ namespace VirtualRail
             if (trailMat == null)
             {
                 trailMat = coronaRend != null ? coronaRend.sharedMaterial : null;
+            }
+            if (trailMat == null)
+            {
+                Shader trailShader = Shader.Find("Mobile/Particles/Additive")
+                    ?? Shader.Find("Particles/Additive")
+                    ?? Shader.Find("Sprites/Default");
+                if (trailShader != null) trailMat = new Material(trailShader);
             }
             trail.material = trailMat;
 

@@ -97,46 +97,79 @@ public class EnemyAttack : MonoBehaviour
         return Vector3.Dot(transform.forward, toTarget) > 0f;
     }
 
+    private bool IsPlayerCollider(Collider col)
+    {
+        if (col == null) return false;
+        if (col.CompareTag("Player")) return true;
+        Transform t = col.transform;
+        if (t.root != null && t.root.CompareTag("Player")) return true;
+        if (t.GetComponentInParent<VirtualRail.VirtualRailShip>() != null) return true;
+        return false;
+    }
+
     private bool HaveRaycastLineOfSight()
     {
-        Vector3 attackDirection = _target.position - transform.position;
-        float maxRange = 300f;
+        if (_target == null) return false;
+        Vector3 toTarget = _target.position - transform.position;
+        float distSq = toTarget.sqrMagnitude;
+        float maxRange = 260f;
+        if (distSq > maxRange * maxRange) return false;
 
+        // 1. Nếu có muzzles riêng
         if (_muzzles != null && _muzzles.Length > 0)
         {
             for (int i = 0; i < _muzzles.Length; i++)
             {
                 if (_muzzles[i] == null) continue;
                 Vector3 origin = _muzzles[i].Position;
-                if (Physics.Raycast(origin, attackDirection, out RaycastHit hit, maxRange))
+                Vector3 aimDir = (_target.position - origin).normalized;
+                if (Physics.Raycast(origin, aimDir, out RaycastHit hit, maxRange))
                 {
-                    if (hit.transform.CompareTag("Player"))
+                    if (IsPlayerCollider(hit.collider) || hit.collider.CompareTag("Enemy") || hit.collider.transform.root == transform.root)
                     {
-                        _hitPosition = hit.transform.position;
+                        _hitPosition = hit.point;
                         return true;
                     }
+                }
+                else
+                {
+                    return true;
                 }
             }
             return false;
         }
 
-        if (_lasers != null)
+        // 2. Fallback lấy vị trí từ _lasers
+        if (_lasers != null && _lasers.Length > 0)
         {
             for (int i = 0; i < _lasers.Length; i++)
             {
                 if (_lasers[i] == null) continue;
                 Vector3 origin = _lasers[i].transform.position;
-                if (Physics.Raycast(origin, attackDirection, out RaycastHit hit, maxRange))
+                Vector3 aimDir = (_target.position - origin).normalized;
+                if (Physics.Raycast(origin, aimDir, out RaycastHit hit, maxRange))
                 {
-                    if (hit.transform.CompareTag("Player"))
+                    if (IsPlayerCollider(hit.collider) || hit.collider.CompareTag("Enemy") || hit.collider.transform.root == transform.root)
                     {
-                        _hitPosition = hit.transform.position;
+                        _hitPosition = hit.point;
                         return true;
                     }
                 }
+                else
+                {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
+
+        // 3. Fallback bắn từ tâm tàu nếu chưa gán muzzles/lasers
+        Vector3 shipAimDir = toTarget.normalized;
+        if (Physics.Raycast(transform.position, shipAimDir, out RaycastHit centerHit, maxRange))
+        {
+            return IsPlayerCollider(centerHit.collider) || centerHit.collider.CompareTag("Enemy") || centerHit.collider.transform.root == transform.root;
+        }
+        return true;
     }
 
     private void FireWeapons()
