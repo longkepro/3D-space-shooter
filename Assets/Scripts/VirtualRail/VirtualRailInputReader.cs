@@ -222,6 +222,11 @@ namespace VirtualRail
                 }
             }
 
+            if (mobileUIRoot != null && mobileUIRoot.GetComponent<SafeAreaFitter>() == null)
+            {
+                mobileUIRoot.AddComponent<SafeAreaFitter>();
+            }
+
             // Tải Sprites và Fonts từ Resources
             Sprite baseRing = Resources.Load<Sprite>("UI/ui_touch_ring_base");
             Sprite handleRing = Resources.Load<Sprite>("UI/ui_touch_ring_handle");
@@ -590,17 +595,17 @@ namespace VirtualRail
                 }
             }
 
-            // 7. Nút Tạm dừng trận đấu Mobile (Mobile Pause Button - Góc trên cùng bên phải)
+            // 7. Nút Tạm dừng trận đấu Mobile (Mobile Pause Button - Đặt cạnh cụm Khiên Top-Left, tránh đè lên Cluster_TopRight)
             Transform existingPauseBtn = mobileUIRoot.transform.Find("Btn_MobilePause");
             if (existingPauseBtn == null)
             {
                 GameObject pauseObj = new GameObject("Btn_MobilePause");
                 pauseObj.transform.SetParent(mobileUIRoot.transform, false);
                 RectTransform pauseRt = pauseObj.AddComponent<RectTransform>();
-                pauseRt.anchorMin = new Vector2(1f, 1f);
-                pauseRt.anchorMax = new Vector2(1f, 1f);
-                pauseRt.pivot = new Vector2(1f, 1f);
-                pauseRt.anchoredPosition = new Vector2(-45f, -40f);
+                pauseRt.anchorMin = new Vector2(0f, 1f);
+                pauseRt.anchorMax = new Vector2(0f, 1f);
+                pauseRt.pivot = new Vector2(0f, 1f);
+                pauseRt.anchoredPosition = new Vector2(485f, -40f);
                 pauseRt.sizeDelta = new Vector2(56f, 56f);
 
                 Image pauseImg = pauseObj.AddComponent<Image>();
@@ -634,6 +639,17 @@ namespace VirtualRail
                 iconTxt.alignment = TextAnchor.MiddleCenter;
                 iconTxt.color = Color.white;
                 iconTxt.raycastTarget = false;
+            }
+            else
+            {
+                RectTransform pRt = existingPauseBtn.GetComponent<RectTransform>();
+                if (pRt != null)
+                {
+                    pRt.anchorMin = new Vector2(0f, 1f);
+                    pRt.anchorMax = new Vector2(0f, 1f);
+                    pRt.pivot = new Vector2(0f, 1f);
+                    pRt.anchoredPosition = new Vector2(485f, -40f);
+                }
             }
 
             // Đảm bảo có EventSystem trong scene

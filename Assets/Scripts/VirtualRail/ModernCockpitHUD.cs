@@ -172,6 +172,11 @@ namespace VirtualRail
             if (Instance == null) Instance = this;
             _hudCanvasGroup = GetComponent<CanvasGroup>();
             if (_hudCanvasGroup == null) _hudCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+
+            if (GetComponent<SafeAreaFitter>() == null)
+            {
+                gameObject.AddComponent<SafeAreaFitter>();
+            }
         }
 
         private void OnEnable()

@@ -152,6 +152,16 @@ namespace VirtualRail
             Screen.autorotateToLandscapeRight = true;
             Screen.orientation = ScreenOrientation.AutoRotation;
 
+            if (Application.isMobilePlatform)
+            {
+                CanvasScaler[] scalers = FindObjectsByType<CanvasScaler>(FindObjectsSortMode.None);
+                for (int i = 0; i < scalers.Length; i++)
+                {
+                    scalers[i].uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                    scalers[i].matchWidthOrHeight = 1.0f; // Khóa tỉ lệ chiều cao chuẩn 1080p, triệt tiêu méo dọc trên màn hình siêu dài 19.5:9 / 20:9
+                }
+            }
+
             _cgMainMenu = EnsureCanvasGroup(mainMenuPanel);
             _cgSettings = EnsureCanvasGroup(settingsModal);
             _cgHallOfFame = EnsureCanvasGroup(hallOfFameModal);
@@ -860,17 +870,35 @@ namespace VirtualRail
             // Resolution dropdown
             if (dropdownResolution != null)
             {
-                dropdownResolution.ClearOptions();
-                dropdownResolution.AddOptions(mgr.GetResolutionOptions());
-                dropdownResolution.value = mgr.resolutionIndex;
-                dropdownResolution.onValueChanged.AddListener(val => mgr.resolutionIndex = val);
+                if (Application.isMobilePlatform)
+                {
+                    dropdownResolution.ClearOptions();
+                    dropdownResolution.AddOptions(new List<string> { $"{Screen.width} x {Screen.height} (NATIVE)" });
+                    dropdownResolution.value = 0;
+                    dropdownResolution.interactable = false;
+                }
+                else
+                {
+                    dropdownResolution.ClearOptions();
+                    dropdownResolution.AddOptions(mgr.GetResolutionOptions());
+                    dropdownResolution.value = mgr.resolutionIndex;
+                    dropdownResolution.onValueChanged.AddListener(val => mgr.resolutionIndex = val);
+                }
             }
 
             // Fullscreen toggle
             if (toggleFullscreen != null)
             {
-                toggleFullscreen.isOn = mgr.isFullscreen;
-                toggleFullscreen.onValueChanged.AddListener(val => mgr.isFullscreen = val);
+                if (Application.isMobilePlatform)
+                {
+                    toggleFullscreen.isOn = true;
+                    toggleFullscreen.interactable = false;
+                }
+                else
+                {
+                    toggleFullscreen.isOn = mgr.isFullscreen;
+                    toggleFullscreen.onValueChanged.AddListener(val => mgr.isFullscreen = val);
+                }
             }
 
             // Luminosity
