@@ -720,5 +720,22 @@ namespace VirtualRail
             _activeWingmen.Clear();
             gameObject.SetActive(false);
         }
+
+        /// <summary>
+        /// Dịch chuyển hệ quy chiếu của Đội hình ảo trong quá trình Tái định vị thế giới (Task 4.3).
+        /// Triệt tiêu 100% lỗi bay lệch hoặc mất tích quái vật khi anchor tịnh tiến 4000m về gốc.
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            _baseRayPosition -= shift;
+            transform.position -= shift;
+            for (int i = 0; i < _activeWingmen.Count; i++)
+            {
+                if (_activeWingmen[i] != null && _activeWingmen[i].gameObject.activeSelf)
+                {
+                    _activeWingmen[i].ShiftOrigin(shift);
+                }
+            }
+        }
     }
 }

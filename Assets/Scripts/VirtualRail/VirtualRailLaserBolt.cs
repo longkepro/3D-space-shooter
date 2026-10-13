@@ -238,5 +238,21 @@ namespace VirtualRail
             gameObject.SetActive(false);
             OnDespawn?.Invoke(this);
         }
+
+        /// <summary>
+        /// Dịch chuyển tọa độ đạn laser đang bay trong quá trình Tái định vị thế giới (Task 4.3).
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            _currentPos -= shift;
+            transform.position -= shift;
+            if (_lineRenderer != null && _lineRenderer.enabled)
+            {
+                Vector3 p0 = _lineRenderer.GetPosition(0) - shift;
+                Vector3 p1 = _lineRenderer.GetPosition(1) - shift;
+                _lineRenderer.SetPosition(0, p0);
+                _lineRenderer.SetPosition(1, p1);
+            }
+        }
     }
 }

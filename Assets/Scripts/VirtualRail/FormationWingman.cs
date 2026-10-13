@@ -852,5 +852,15 @@ namespace VirtualRail
                 gameObject.SetActive(false);
             }
         }
+
+        /// <summary>
+        /// Dịch chuyển các mốc tọa độ Bézier ráp nối đội hình trong quá trình Tái định vị thế giới (Task 4.3).
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            _spawnPos -= shift;
+            _ctrl1 -= shift;
+            _ctrl2 -= shift;
+        }
     }
 }

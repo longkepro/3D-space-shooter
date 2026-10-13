@@ -217,5 +217,15 @@ namespace VirtualRail
             _isCollected = false;
             if (_collider != null) _collider.enabled = true;
         }
+
+        /// <summary>
+        /// Dịch chuyển hệ quy chiếu của Vòng năng lượng trong quá trình Tái định vị thế giới (Task 4.3).
+        /// Triệt tiêu 100% lỗi vòng năng lượng bị nhảy cóc 4000m về phía trước và biến mất.
+        /// </summary>
+        public void ShiftOrigin(Vector3 shift)
+        {
+            _basePosition -= shift;
+            transform.position -= shift;
+        }
     }
 }

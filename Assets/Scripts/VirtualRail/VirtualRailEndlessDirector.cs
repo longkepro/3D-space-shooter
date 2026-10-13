@@ -108,12 +108,19 @@ namespace VirtualRail
         {
             GameEventManager.OnPlayerDestroyed += HandlePlayerDestroyed;
             GameEventManager.OnStartGame += HandleGameStarted;
+            VirtualRailOriginShifter.OnWorldOriginShifted += HandleWorldOriginShifted;
         }
 
         private void OnDisable()
         {
             GameEventManager.OnPlayerDestroyed -= HandlePlayerDestroyed;
             GameEventManager.OnStartGame -= HandleGameStarted;
+            VirtualRailOriginShifter.OnWorldOriginShifted -= HandleWorldOriginShifted;
+        }
+
+        private void HandleWorldOriginShifted(Vector3 shift)
+        {
+            _lastWarpZ -= shift.z;
         }
 
         private void HandlePlayerDestroyed()

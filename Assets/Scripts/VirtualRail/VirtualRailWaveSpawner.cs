@@ -997,7 +997,7 @@ namespace VirtualRail
             {
                 if (_formationPool[i] != null && _formationPool[i].gameObject.activeSelf)
                 {
-                    _formationPool[i].transform.position -= shift;
+                    _formationPool[i].ShiftOrigin(shift);
                 }
             }
         }
