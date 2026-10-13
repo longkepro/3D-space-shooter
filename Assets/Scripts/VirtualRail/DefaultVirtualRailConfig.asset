@@ -85,9 +85,9 @@ MonoBehaviour:
   enableDynamicLookAt: 0
   cameraLookAtWeight: 0.2
   cameraSmoothSpeed: 8
-  enableBulletMagnetism: 0
-  magnetismRadius: 2.5
-  magnetismMaxAngle: 6
+  enableBulletMagnetism: 1
+  magnetismRadius: 3.5
+  magnetismMaxAngle: 7
   bulletSpeed: 220
   enemyLayer:
     serializedVersion: 2

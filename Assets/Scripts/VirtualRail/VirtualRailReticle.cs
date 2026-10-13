@@ -132,24 +132,58 @@ namespace VirtualRail
             // 1. Tính toán biên ngoài Frustum chính xác (Outer Box: 80% - 85% Camera Frustum)
             currentBounds = cfg.CalculateFrustumBounds(mainCamera, anchor, cfg.convergenceDistance, cfg.reticleViewportRatio);
 
-            if (inputReader != null && inputReader.IsRightStickActive)
+            if (inputReader != null && inputReader.IsTouchAimActive)
             {
-                // ==================== CHẾ ĐỘ CẦN GẠT ẢO PHẢI (ANDROID RIGHT JOYSTICK) ====================
+                // ==================== CHẾ ĐỘ VUỐT NGẮM CẢM ỨNG (TOUCH DRAG AIM - ANDROID) ====================
+                Vector2 dragDelta = inputReader.GetTouchAimDelta();
+                float sensitivity = (cfg != null) ? cfg.mobileAimSensitivity : 1.0f;
+
+                // Chuẩn hóa theo chiều cao màn hình (1080p Match Height)
+                float screenH = Screen.height > 0 ? (float)Screen.height : 1080f;
+                // Kéo khoảng 420px di chuyển hết 1 bán kính ngắm (tương đương ngón tay vuốt 1/3 màn hình)
+                float dragScale = 3.2f / screenH;
+
+                // Áp dụng Ma sát Giảm tốc (Reticle Friction) khi lướt qua kẻ địch để bắt dính mục tiêu
+                float friction = GetReticleFrictionFactor(cfg);
+
+                // Lọc vi rung (micro-jitter threshold 0.5px)
+                Vector2 filteredDelta = dragDelta.sqrMagnitude > 0.25f ? dragDelta : Vector2.zero;
+
+                float deltaX = filteredDelta.x * dragScale * sensitivity * friction;
+                float deltaY = filteredDelta.y * dragScale * sensitivity * friction;
+
+                currentNormalizedInput.x = Mathf.Clamp(currentNormalizedInput.x + deltaX, -1f, 1f);
+                currentNormalizedInput.y = Mathf.Clamp(currentNormalizedInput.y + deltaY, -1f, 1f);
+
+                float targetX = currentNormalizedInput.x >= 0f
+                    ? Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.maxX, currentNormalizedInput.x)
+                    : Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.minX, -currentNormalizedInput.x);
+
+                float targetY = currentNormalizedInput.y >= 0f
+                    ? Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.maxY, currentNormalizedInput.y)
+                    : Mathf.Lerp(currentBounds.opticalCenter.y, currentBounds.minY, -currentNormalizedInput.y);
+
+                localPos2D = currentBounds.Clamp(new Vector2(targetX, targetY));
+
+                // Tự động khai hỏa khi đang vuốt ngắm
+                autoFireTimer = cfg.autoFireHoldTime;
+                isAimingMoving = true;
+            }
+            else if (inputReader != null && inputReader.IsRightStickActive)
+            {
+                // ==================== CHẾ ĐỘ CẦN GẠT ẢO PHẢI (FALLBACK JOYSTICK) ====================
                 float sensitivity = (cfg != null) ? cfg.mobileAimSensitivity : 1.0f;
                 Vector2 aimStick = inputReader.GetAimMovement();
 
                 float baseSpeedX = (currentBounds.HalfWidth > 0.001f) ? (cfg.reticleSpeedX / currentBounds.HalfWidth) : 1.5f;
                 float baseSpeedY = (currentBounds.HalfHeight > 0.001f) ? (cfg.reticleSpeedY / currentBounds.HalfHeight) : 1.5f;
 
-                // Chuẩn hóa đường cong gia tốc công thái học (Hướng 1):
-                // - Đẩy nhẹ (< 0.4): Hệ số ~1.15x giúp vi chỉnh micro-aiming cực kỳ đầm, chắc tay, không rung giật
-                // - Đẩy mạnh (> 0.4): Gia tốc lũy tiến mượt mà lên ~2.85x để chuyển hướng mục tiêu nhanh nhẹn
-                // - Nhân với độ nhạy người dùng tùy chỉnh (Hướng 3: Sensitivity Slider 0.3x - 2.2x)
                 float stickMag = aimStick.magnitude;
                 float responseMultiplier = Mathf.Lerp(1.15f, 2.85f, stickMag * stickMag);
+                float friction = GetReticleFrictionFactor(cfg);
 
-                float speedNormX = baseSpeedX * responseMultiplier * sensitivity;
-                float speedNormY = baseSpeedY * responseMultiplier * sensitivity;
+                float speedNormX = baseSpeedX * responseMultiplier * sensitivity * friction;
+                float speedNormY = baseSpeedY * responseMultiplier * sensitivity * friction;
 
                 // Tích lũy vị trí ngắm theo độ lệch cần gạt (nhả tay đứng yên, chuyển động đầm chắc tay)
                 currentNormalizedInput.x = Mathf.Clamp(currentNormalizedInput.x + aimStick.x * speedNormX * Time.deltaTime, -1f, 1f);
@@ -179,7 +213,7 @@ namespace VirtualRail
             }
             else if (Application.isMobilePlatform)
             {
-                // ==================== TRẠNG THÁI NGHỈ TRÊN MOBILE (NHẢ CẦN GẠT PHẢI) ====================
+                // ==================== TRẠNG THÁI NGHỈ TRÊN MOBILE (NHẢ TAY ĐỨNG YÊN) ====================
                 // Giữ nguyên vị trí ngắm đã tích lũy (nhả tay đứng yên), ngừng xả đạn tự động
                 float targetX = currentNormalizedInput.x >= 0f
                     ? Mathf.Lerp(currentBounds.opticalCenter.x, currentBounds.maxX, currentNormalizedInput.x)
@@ -343,6 +377,48 @@ namespace VirtualRail
                 localPos2D = Vector2.MoveTowards(localPos2D, targetPos2D, lerpSpeed * Time.deltaTime * Mathf.Min(dist, 20f));
                 localPos2D = currentBounds.Clamp(localPos2D);
             }
+        }
+
+        private static readonly RaycastHit[] _frictionHits = new RaycastHit[16];
+
+        /// <summary>
+        /// Tính toán ma sát giảm tốc (Reticle Friction - 0 GC Alloc).
+        /// Tự động giảm 45% tốc độ ngắm khi tâm ngắm quét qua gần thân máy bay địch, giúp bắt dính mục tiêu.
+        /// </summary>
+        private float GetReticleFrictionFactor(VirtualRailConfig cfg)
+        {
+            if (mainCamera == null) mainCamera = Camera.main;
+            if (mainCamera == null) return 1.0f;
+
+            Vector3 aimWorld = WorldPosition;
+            Vector3 camPos = mainCamera.transform.position;
+            Vector3 rayDir = (aimWorld - camPos).normalized;
+
+            float scanRadius = (cfg != null && cfg.magnetismRadius > 0.1f) ? (cfg.magnetismRadius * 1.25f) : 3.5f;
+            float maxDist = (cfg != null && cfg.lockMaxDistance > 10f) ? cfg.lockMaxDistance : 250f;
+            LayerMask mask = (cfg != null && cfg.enemyLayer.value != 0) ? cfg.enemyLayer : ~0;
+
+            int hitCount = Physics.SphereCastNonAlloc(camPos, scanRadius, rayDir, _frictionHits, maxDist, mask, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider col = _frictionHits[i].collider;
+                if (col == null) continue;
+                if (col.CompareTag("Player") || (ship != null && col.transform.IsChildOf(ship.transform))) continue;
+
+                var eh = col.GetComponentInParent<EnemyHealth>();
+                if (eh != null && !eh.IsDead)
+                {
+                    _frictionHits[i] = default;
+                    return 0.55f;
+                }
+                var em = col.GetComponentInParent<EnemyMovement>();
+                if (em != null && em.gameObject.activeInHierarchy)
+                {
+                    _frictionHits[i] = default;
+                    return 0.55f;
+                }
+            }
+            return 1.0f;
         }
 
         private void UpdateCrosshairUI()

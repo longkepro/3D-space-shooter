@@ -514,26 +514,33 @@ namespace VirtualRail
             Transform hitTarget = null;
             Vector3 targetPoint = targetAim;
 
-            // Kiểm tra phễu từ tính (Bullet Magnetism) - Chỉ can thiệp nếu được chủ động bật trong Config
-            if (cfg.enableBulletMagnetism && cfg.magnetismRadius > 0.01f)
+            // Kiểm tra phễu từ tính (Bullet Magnetism) - Tự động kích hoạt trên Mobile hoặc khi bật trong Config
+            bool isMagnetismEnabled = (cfg != null && cfg.enableBulletMagnetism) || Application.isMobilePlatform;
+            if (isMagnetismEnabled)
             {
-                if (Physics.SphereCast(muzzlePos, cfg.magnetismRadius, baseFireDirection, out hit, cfg.convergenceDistance * 1.5f, cfg.enemyLayer))
+                float magRadius = (cfg != null && cfg.magnetismRadius > 0.01f) ? cfg.magnetismRadius : 3.5f;
+                float maxAngle = (cfg != null && cfg.magnetismMaxAngle > 0.01f) ? cfg.magnetismMaxAngle : 7.0f;
+                float scanDist = (cfg != null && cfg.convergenceDistance > 10f) ? cfg.convergenceDistance * 1.5f : 225f;
+                LayerMask enemyMask = (cfg != null && cfg.enemyLayer.value != 0) ? cfg.enemyLayer : ~0;
+
+                if (Physics.SphereCast(muzzlePos, magRadius, baseFireDirection, out hit, scanDist, enemyMask))
                 {
                     bool isSelf = hit.transform == transform || hit.transform.IsChildOf(transform) || hit.transform.root == transform.root || hit.transform.CompareTag("Player");
                     if (!isSelf)
                     {
-                        // Lọc nghiêm ngặt: Chỉ áp dụng từ tính khi đối tượng quét trúng THẬT SỰ là Enemy
-                        var enemy = hit.transform.GetComponentInParent<EnemyMovement>();
-                        if (enemy != null)
+                        var eh = hit.transform.GetComponentInParent<EnemyHealth>();
+                        var em = (eh == null) ? hit.transform.GetComponentInParent<EnemyMovement>() : null;
+                        Transform targetTrans = (eh != null) ? eh.transform : ((em != null) ? em.transform : (hit.transform.CompareTag("Enemy") ? hit.transform : null));
+
+                        if (targetTrans != null)
                         {
-                            // Hướng về tâm hình học của kẻ địch thay vì mép chạm vỏ ngoài hit.point
-                            Vector3 enemyCenter = enemy.transform.position;
+                            Vector3 enemyCenter = targetTrans.position;
                             Vector3 candidateDir = (enemyCenter - muzzlePos).normalized;
                             float angle = Vector3.Angle(baseFireDirection, candidateDir);
-                            if (angle <= cfg.magnetismMaxAngle)
+                            if (angle <= maxAngle)
                             {
                                 fireDirection = candidateDir;
-                                hitTarget = enemy.transform;
+                                hitTarget = targetTrans;
                                 targetPoint = enemyCenter;
                             }
                         }

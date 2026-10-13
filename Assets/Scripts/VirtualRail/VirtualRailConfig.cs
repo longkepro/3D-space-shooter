@@ -189,10 +189,10 @@ namespace VirtualRail
 
         [Header("9. Aim Assist & Bullet Magnetism")]
         [Tooltip("Bật phễu từ tính uốn nhẹ đường đạn về kẻ địch")]
-        public bool enableBulletMagnetism = false;
-        public float magnetismRadius = 2.5f;
+        public bool enableBulletMagnetism = true;
+        public float magnetismRadius = 3.5f;
         [Tooltip("Góc lệch tối đa mà phễu từ tính được phép uốn nắn hướng đạn (độ)")]
-        public float magnetismMaxAngle = 6.0f;
+        public float magnetismMaxAngle = 7.0f;
         public float bulletSpeed = 220f;
         public LayerMask enemyLayer = ~0;
 

@@ -12,11 +12,13 @@ namespace VirtualRail
     [DisallowMultipleComponent]
     public class VirtualRailInputReader : MonoBehaviour
     {
-        [Header("Mobile Joysticks")]
+        [Header("Mobile Joysticks & Aim Pad")]
         [Tooltip("Cần gạt ảo bên trái (Điều khiển thân tàu)")]
         public VirtualJoystick leftJoystick;
         [Tooltip("Cần gạt ảo bên phải (Fallback/Legacy)")]
         public VirtualJoystick rightJoystick;
+        [Tooltip("Bàn vuốt ngắm cảm ứng độc lập (Touch Drag Aim Pad)")]
+        public VirtualTouchAimPad touchAimPad;
 
         [Header("Mobile Touch Buttons (Minimalist White Rings)")]
         [Tooltip("Nút Bắn Laser & Tụ lực (Fallback/Legacy)")]
@@ -418,14 +420,16 @@ namespace VirtualRail
                 rightAimZone = new GameObject("RightAimZone");
                 rightAimZone.transform.SetParent(mobileUIRoot.transform, false);
                 RectTransform rightAimRt = rightAimZone.AddComponent<RectTransform>();
-                rightAimRt.anchorMin = new Vector2(0.5f, 0f);
-                rightAimRt.anchorMax = new Vector2(1f, 0.75f);
+                rightAimRt.anchorMin = new Vector2(0.40f, 0f);
+                rightAimRt.anchorMax = new Vector2(1f, 0.85f);
                 rightAimRt.offsetMin = Vector2.zero;
                 rightAimRt.offsetMax = Vector2.zero;
 
                 Image rightAimImg = rightAimZone.AddComponent<Image>();
                 rightAimImg.color = new Color(0f, 0f, 0f, 0.001f);
                 rightAimImg.raycastTarget = true;
+
+                touchAimPad = rightAimZone.AddComponent<VirtualTouchAimPad>();
 
                 rightJoystick = rightAimZone.AddComponent<VirtualJoystick>();
                 rightJoystick.handleRange = handleRange;
@@ -459,9 +463,23 @@ namespace VirtualRail
                 rightJoystick.handle = rightHandleRt;
                 rightJoystick.bgImage = rightBgImg;
                 rightJoystick.handleImage = rightHandleImg;
+
+                touchAimPad.touchIndicator = rightHandleRt;
+                touchAimPad.indicatorImage = rightHandleImg;
+                touchAimPad.SyncVisualElements();
             }
             else
             {
+                RectTransform rightAimRt = rightAimZone.GetComponent<RectTransform>();
+                if (rightAimRt != null)
+                {
+                    rightAimRt.anchorMin = new Vector2(0.40f, 0f);
+                    rightAimRt.anchorMax = new Vector2(1f, 0.85f);
+                }
+
+                touchAimPad = rightAimZone.GetComponent<VirtualTouchAimPad>();
+                if (touchAimPad == null) touchAimPad = rightAimZone.AddComponent<VirtualTouchAimPad>();
+
                 rightJoystick = rightAimZone.GetComponent<VirtualJoystick>();
                 if (rightJoystick == null) rightJoystick = rightAimZone.AddComponent<VirtualJoystick>();
                 rightJoystick.isDynamicFloating = false;
@@ -493,13 +511,17 @@ namespace VirtualRail
                         }
                         rightJoystick.handle = hRt;
                         rightJoystick.handleImage = hImg;
+
+                        touchAimPad.touchIndicator = hRt;
+                        touchAimPad.indicatorImage = hImg;
                     }
                 }
+                touchAimPad.SyncVisualElements();
             }
             if (rightJoystick != null)
             {
                 rightJoystick.SyncVisualElements();
-                rightJoystick.ApplyAlpha(0.35f);
+                rightJoystick.ApplyAlpha(0.20f);
             }
 
             // 6. Khởi tạo MID-RIGHT ACTION CLUSTER (Cụm Nút Sạc Hỏa Lực & Bom - Giữa mép phải 50% màn hình)
@@ -530,6 +552,8 @@ namespace VirtualRail
                     clusterRt.sizeDelta = new Vector2(270f, 130f);
                 }
             }
+            // Đảm bảo cụm nút Sạc & Bom luôn nằm ở layer trên cùng để ưu tiên bắt touch
+            actionCluster.transform.SetAsLastSibling();
 
             // Nút Sạc Tụ Lực Riêng Biệt (Dedicated Charge Shot Button)
             if (btnCharge == null)
@@ -773,7 +797,20 @@ namespace VirtualRail
         }
 
         public bool IsLeftStickActive => leftJoystick != null && leftJoystick.IsHeld;
-        public bool IsRightStickActive => rightJoystick != null && rightJoystick.IsHeld;
+        public bool IsTouchAimActive => touchAimPad != null && touchAimPad.IsHeld;
+        public bool IsRightStickActive => IsTouchAimActive || (rightJoystick != null && rightJoystick.IsHeld);
+
+        /// <summary>
+        /// Lấy lượng delta di chuyển của ngón tay trên Bàn vuốt ngắm (Touch Drag Aim Pad).
+        /// </summary>
+        public Vector2 GetTouchAimDelta()
+        {
+            if (touchAimPad != null)
+            {
+                return touchAimPad.ConsumeDelta();
+            }
+            return Vector2.zero;
+        }
 
         /// <summary>
         /// Lấy vector di chuyển của thân tàu [-1, 1].
@@ -921,11 +958,12 @@ namespace VirtualRail
         }
 
         /// <summary>
-        /// Kiểm tra xem có đang nhận tín hiệu điều khiển tâm ngắm từ Cần gạt phải hay không (Legacy).
+        /// Kiểm tra xem có đang nhận tín hiệu điều khiển tâm ngắm từ Bàn vuốt ngắm hoặc Cần gạt phải hay không.
         /// </summary>
         public bool IsAimingMoving()
         {
-            if (IsRightStickActive)
+            if (IsTouchAimActive) return touchAimPad.IsHeld;
+            if (rightJoystick != null && rightJoystick.IsHeld)
             {
                 return rightJoystick.InputVector.sqrMagnitude > 0.01f;
             }
