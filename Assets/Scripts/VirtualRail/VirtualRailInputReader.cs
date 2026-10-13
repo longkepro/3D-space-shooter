@@ -166,7 +166,8 @@ namespace VirtualRail
             if (mobileUIRoot != null)
             {
                 bool allowMobile = (config == null) || config.enableMobileUI;
-                bool showMobile = allowMobile && (Application.isMobilePlatform || (config != null && config.forceShowMobileUI));
+                bool isGameplay = (UIManager.Instance == null) || (UIManager.Instance.CurrentState == UIViewState.Gameplay && !UIManager.Instance.IsPaused);
+                bool showMobile = allowMobile && isGameplay && (Application.isMobilePlatform || (config != null && config.forceShowMobileUI));
                 if (mobileUIRoot.activeSelf != showMobile)
                 {
                     mobileUIRoot.SetActive(showMobile);
@@ -587,6 +588,52 @@ namespace VirtualRail
                     rt.pivot = new Vector2(0.5f, 0.5f);
                     rt.anchoredPosition = new Vector2(-70f, 0f);
                 }
+            }
+
+            // 7. Nút Tạm dừng trận đấu Mobile (Mobile Pause Button - Góc trên cùng bên phải)
+            Transform existingPauseBtn = mobileUIRoot.transform.Find("Btn_MobilePause");
+            if (existingPauseBtn == null)
+            {
+                GameObject pauseObj = new GameObject("Btn_MobilePause");
+                pauseObj.transform.SetParent(mobileUIRoot.transform, false);
+                RectTransform pauseRt = pauseObj.AddComponent<RectTransform>();
+                pauseRt.anchorMin = new Vector2(1f, 1f);
+                pauseRt.anchorMax = new Vector2(1f, 1f);
+                pauseRt.pivot = new Vector2(1f, 1f);
+                pauseRt.anchoredPosition = new Vector2(-45f, -40f);
+                pauseRt.sizeDelta = new Vector2(56f, 56f);
+
+                Image pauseImg = pauseObj.AddComponent<Image>();
+                if (baseRing != null) pauseImg.sprite = baseRing;
+                pauseImg.color = new Color(1f, 1f, 1f, 0.45f);
+
+                Button pauseBtn = pauseObj.AddComponent<Button>();
+                pauseBtn.targetGraphic = pauseImg;
+                pauseBtn.onClick.AddListener(() =>
+                {
+                    if (UIManager.Instance != null && UIManager.Instance.CurrentState == UIViewState.Gameplay)
+                    {
+                        UIManager.Instance.TogglePauseGame(true);
+                    }
+                });
+
+                // Icon 2 gạch song song (Pause bars "II")
+                GameObject iconObj = new GameObject("PauseIcon");
+                iconObj.transform.SetParent(pauseObj.transform, false);
+                RectTransform iconRt = iconObj.AddComponent<RectTransform>();
+                iconRt.anchorMin = Vector2.zero;
+                iconRt.anchorMax = Vector2.one;
+                iconRt.offsetMin = Vector2.zero;
+                iconRt.offsetMax = Vector2.zero;
+
+                Text iconTxt = iconObj.AddComponent<Text>();
+                iconTxt.text = "II";
+                iconTxt.font = scifiFont;
+                iconTxt.fontSize = 22;
+                iconTxt.fontStyle = FontStyle.Bold;
+                iconTxt.alignment = TextAnchor.MiddleCenter;
+                iconTxt.color = Color.white;
+                iconTxt.raycastTarget = false;
             }
 
             // Đảm bảo có EventSystem trong scene

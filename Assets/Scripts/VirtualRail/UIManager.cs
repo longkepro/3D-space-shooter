@@ -128,6 +128,7 @@ namespace VirtualRail
         private CanvasGroup _cgTitleScreen;
 
         private bool _isPaused = false;
+        public bool IsPaused => _isPaused;
         private static readonly string[] FLOAT_STRINGS = PrecomputeFloatStrings();
 
         private static string[] PrecomputeFloatStrings()
@@ -755,6 +756,16 @@ namespace VirtualRail
             if (DualReticleHUD.Instance != null)
             {
                 DualReticleHUD.Instance.SetHUDVisible(newState == UIViewState.Gameplay || newState == UIViewState.Pause);
+            }
+
+            // Tự động đồng bộ giao diện phím điều khiển cảm ứng Mobile Touch Controls (ẩn hoàn toàn khi Tạm dừng/Pause hoặc vào Menu)
+            var inputReader = FindAnyObjectByType<VirtualRailInputReader>();
+            if (inputReader != null && inputReader.mobileUIRoot != null)
+            {
+                bool allowMobile = (inputReader.config == null) || inputReader.config.enableMobileUI;
+                bool isGameplay = (newState == UIViewState.Gameplay && !_isPaused);
+                bool showMobile = allowMobile && isGameplay && (Application.isMobilePlatform || (inputReader.config != null && inputReader.config.forceShowMobileUI));
+                inputReader.mobileUIRoot.SetActive(showMobile);
             }
 
             // Ẩn các UI phụ trợ chặng bay khi không ở Gameplay

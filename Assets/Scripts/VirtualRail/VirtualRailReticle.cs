@@ -137,10 +137,19 @@ namespace VirtualRail
                 // ==================== CHẾ ĐỘ CẦN GẠT ẢO PHẢI (ANDROID RIGHT JOYSTICK) ====================
                 Vector2 aimStick = inputReader.GetAimMovement() * cfg.mobileAimSensitivity;
 
-                float speedNormX = (currentBounds.HalfWidth > 0.001f) ? (cfg.reticleSpeedX / currentBounds.HalfWidth) : 1.5f;
-                float speedNormY = (currentBounds.HalfHeight > 0.001f) ? (cfg.reticleSpeedY / currentBounds.HalfHeight) : 1.5f;
+                float baseSpeedX = (currentBounds.HalfWidth > 0.001f) ? (cfg.reticleSpeedX / currentBounds.HalfWidth) : 1.5f;
+                float baseSpeedY = (currentBounds.HalfHeight > 0.001f) ? (cfg.reticleSpeedY / currentBounds.HalfHeight) : 1.5f;
 
-                // Hướng A: Tích lũy vị trí ngắm theo độ lệch cần gạt (nhả tay đứng yên)
+                // Tăng tốc độ phản hồi Mobile tức thì (khử 100% độ trễ/delay ngắm bắn):
+                // - Đẩy nhẹ (< 0.4): Hệ số ~2.5x hỗ trợ vi chỉnh mục tiêu mượt mà
+                // - Đẩy mạnh (> 0.4): Gia tốc lũy tiến lên đến 5.5x để lia tâm ngắm nhạy bén ngang tốc độ thân tàu
+                float stickMag = aimStick.magnitude;
+                float responseMultiplier = Mathf.Lerp(2.5f, 5.5f, stickMag * stickMag);
+
+                float speedNormX = baseSpeedX * responseMultiplier;
+                float speedNormY = baseSpeedY * responseMultiplier;
+
+                // Tích lũy vị trí ngắm theo độ lệch cần gạt (nhả tay đứng yên, phản hồi nhanh nhạy tức thì)
                 currentNormalizedInput.x = Mathf.Clamp(currentNormalizedInput.x + aimStick.x * speedNormX * Time.deltaTime, -1f, 1f);
                 currentNormalizedInput.y = Mathf.Clamp(currentNormalizedInput.y + aimStick.y * speedNormY * Time.deltaTime, -1f, 1f);
 
