@@ -260,7 +260,7 @@ namespace VirtualRail
                 leftJoystick = leftZone.AddComponent<VirtualJoystick>();
                 leftJoystick.handleRange = handleRange;
                 leftJoystick.deadZone = deadZone;
-                leftJoystick.isDynamicFloating = true;
+                leftJoystick.isDynamicFloating = false;
 
                 // Background
                 GameObject leftBg = new GameObject("LeftJoyBackground");
@@ -294,6 +294,7 @@ namespace VirtualRail
             {
                 leftJoystick = leftZone.GetComponent<VirtualJoystick>();
                 if (leftJoystick == null) leftJoystick = leftZone.AddComponent<VirtualJoystick>();
+                leftJoystick.isDynamicFloating = false;
 
                 Transform leftBgTrans = leftZone.transform.Find("LeftJoyBackground");
                 if (leftBgTrans != null)
@@ -423,7 +424,7 @@ namespace VirtualRail
                 rightJoystick = rightAimZone.AddComponent<VirtualJoystick>();
                 rightJoystick.handleRange = handleRange;
                 rightJoystick.deadZone = deadZone;
-                rightJoystick.isDynamicFloating = true;
+                rightJoystick.isDynamicFloating = false;
 
                 // Background
                 GameObject rightBg = new GameObject("RightJoyBackground");
@@ -457,6 +458,7 @@ namespace VirtualRail
             {
                 rightJoystick = rightAimZone.GetComponent<VirtualJoystick>();
                 if (rightJoystick == null) rightJoystick = rightAimZone.AddComponent<VirtualJoystick>();
+                rightJoystick.isDynamicFloating = false;
 
                 Transform rightBgTrans = rightAimZone.transform.Find("RightJoyBackground");
                 if (rightBgTrans != null)

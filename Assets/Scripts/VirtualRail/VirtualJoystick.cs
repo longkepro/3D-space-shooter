@@ -116,13 +116,16 @@ namespace VirtualRail
 
             if (isDynamicFloating && background != null)
             {
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    (RectTransform)transform,
+                RectTransform parentRt = background.parent as RectTransform;
+                if (parentRt != null && RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    parentRt,
                     eventData.position,
                     uiCamera,
                     out Vector2 localPoint
-                );
-                background.anchoredPosition = localPoint;
+                ))
+                {
+                    background.localPosition = new Vector3(localPoint.x, localPoint.y, 0f);
+                }
                 background.gameObject.SetActive(true);
             }
 
